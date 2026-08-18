@@ -1,0 +1,301 @@
+# TESTING.md
+
+# Stratégie de tests et Definition of Done
+
+## 1. Objectif
+
+Chaque itération doit être testable complètement et indépendamment.
+
+Les mêmes commandes doivent être utilisables :
+
+- sur le Mac dans Claude Code ;
+- dans GitHub Actions ;
+- indirectement depuis iPhone en déclenchant les workflows GitHub.
+
+## 2. Commande canonique
+
+```bash
+./scripts/check.sh
+```
+
+Cette commande doit produire un résultat clair et non ambigu.
+
+## 3. Sous-commandes utiles
+
+Possibles :
+
+```bash
+./scripts/check.sh --fast
+./scripts/check.sh --php
+./scripts/check.sh --js
+./scripts/check.sh --db
+./scripts/check.sh --e2e
+./scripts/check.sh --full
+```
+
+La variante complète est l’autorité locale avant release.
+
+## 4. PHP
+
+### Syntaxe
+
+Vérifier tous les fichiers PHP applicatifs.
+
+### PHPStan
+
+Analyse statique avec niveau strict progressif mais non régressif.
+
+Aucune erreur acceptée dans `main`.
+
+### PHPUnit
+
+Tests :
+
+- unitaires ;
+- services ;
+- repositories ;
+- sécurité ;
+- validation ;
+- calculs tarifaires ;
+- taxe séjour ;
+- i18n ;
+- backup/restore helpers ;
+- update logic.
+
+Produire :
+
+- JUnit ;
+- Clover coverage.
+
+## 5. Base de données
+
+Tests d’intégration avec MySQL/MariaDB de test.
+
+Couvrir :
+
+- migrations ;
+- repositories ;
+- contraintes ;
+- transactions ;
+- anti-double-booking ;
+- idempotence.
+
+GitHub Actions fournit un service MySQL.
+
+Localement, la commande peut utiliser Docker ou une DB test explicitement configurée, mais ne doit jamais toucher la DB de production.
+
+## 6. JavaScript
+
+Vitest pour :
+
+- validation UI ;
+- interactions calendrier ;
+- formatage ;
+- composants first-party ;
+- helpers PWA ;
+- comportement formulaires.
+
+Produire LCOV.
+
+## 7. Playwright E2E
+
+### Principes
+
+- vraie app PHP ;
+- vraie DB test ;
+- fake providers ;
+- données reproductibles ;
+- viewports desktop + mobile ;
+- traces/screenshots sur échec.
+
+### Scénarios critiques permanents
+
+1. fresh install ;
+2. login admin ;
+3. protection chemins sensibles ;
+4. signup/confirmation/login client ;
+5. rôles ;
+6. calendrier/pricing ;
+7. réservation ;
+8. double booking concurrent ;
+9. paiement fake + webhook ;
+10. SMTP fake + push fake ;
+11. IMAP mail + attachment → Documents ;
+12. PWA/offline ;
+13. guest link ;
+14. check-in/check-out mobile ;
+15. backup/restore ;
+16. update/migration ;
+17. conformité/versioning légal ;
+18. i18n FR/EN/NL/DE.
+
+## 8. Fake providers
+
+Obligatoires :
+
+- `FakePaymentProvider`
+- `FakeMailTransport`
+- `FakeImapProvider`
+- `FakePushProvider`
+- `FakeLlmProvider`
+
+Ils doivent permettre un scénario complet sans réseau externe.
+
+## 9. Tests i18n
+
+### Static/check
+
+- aucune clé manquante ;
+- placeholders cohérents ;
+- catalogues FR/EN/NL/DE valides ;
+- aucun texte système critique en dur détectable dans les zones concernées si le projet met en place un lint.
+
+### E2E
+
+Matrice de locale pour les parcours principaux.
+
+La release doit au minimum démontrer :
+
+- navigation FR ;
+- navigation EN ;
+- navigation NL ;
+- navigation DE ;
+- réservation localisée ;
+- e-mail localisé ;
+- contrat localisé/fallback maîtrisé.
+
+## 10. Accessibilité
+
+Automatiser autant que possible :
+
+- axe ou outil équivalent via Playwright ;
+- labels ;
+- focus ;
+- navigation clavier ;
+- erreurs formulaire ;
+- contrastes lorsque mesurable.
+
+Objectif WCAG 2.2 AA.
+
+## 11. Sécurité
+
+Tests obligatoires :
+
+- accès direct fichiers privés ;
+- authorization/IDOR ;
+- CSRF ;
+- XSS ;
+- HTML e-mail sanitization ;
+- uploads ;
+- SSRF ;
+- share/ICS tokens ;
+- webhook replay ;
+- session revocation ;
+- secrets jamais affichés ;
+- release artifact leak.
+
+## 12. CI GitHub
+
+Jobs suggérés :
+
+### `php`
+
+- syntax ;
+- composer install ;
+- PHPStan ;
+- PHPUnit ;
+- reports.
+
+### `database`
+
+- MySQL service ;
+- migrations ;
+- DB tests.
+
+### `javascript`
+
+- npm ci ;
+- Vitest coverage.
+
+### `e2e`
+
+- setup PHP/Node ;
+- DB ;
+- fake providers ;
+- Playwright ;
+- upload report/traces.
+
+### `security`
+
+- composer audit ;
+- éventuellement checks secrets/config.
+
+### `sonarcloud`
+
+- récupère coverage PHP + JS ;
+- scan ;
+- Quality Gate bloquante.
+
+### `codeql`
+
+CodeQL pour JavaScript/TypeScript et GitHub Actions, ou autres langages supportés utilisés par le dépôt.
+
+PHP n’étant pas couvert par CodeQL de la même façon, PHPStan + SonarCloud + tests restent essentiels.
+
+## 13. Dependabot
+
+Activer pour :
+
+- Composer ;
+- npm ;
+- GitHub Actions.
+
+Les alertes sécurité ouvertes bloquent une release selon `RELEASE.md`.
+
+## 14. SonarCloud
+
+Importer :
+
+- PHP coverage ;
+- PHPUnit JUnit ;
+- JS LCOV.
+
+Quality Gate obligatoire.
+
+Les Security Hotspots doivent être examinés avant release.
+
+## 15. Mobile
+
+Les E2E critiques utilisent au moins :
+
+- viewport desktop ;
+- viewport iPhone moderne ;
+- viewport Android raisonnable si utile.
+
+État des lieux et Mon séjour sont toujours testés mobile.
+
+## 16. Definition of Done
+
+Une fonctionnalité est terminée si :
+
+- tests unitaires pertinents ;
+- tests intégration pertinents ;
+- E2E pertinent ;
+- i18n FR/EN/NL/DE ;
+- docs à jour ;
+- security impact traité ;
+- PHPStan/Vitest/Playwright verts ;
+- SonarCloud vert ;
+- CodeQL applicable vert ;
+- pas d’alerte dépendance bloquante.
+
+## 17. Itération indépendante
+
+Chaque itération doit fournir :
+
+- fixtures/données test ;
+- fresh install testable ;
+- migration depuis N-1 si applicable ;
+- scénario E2E propre ;
+- ZIP installable ;
+- rollback/restore testé lorsque pertinent.
