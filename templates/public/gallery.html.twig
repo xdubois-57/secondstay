@@ -1,0 +1,62 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <article class="py-5" data-testid="content-page" data-page-slug="{{ page.slug }}" data-season="{{ season }}">
+        <div class="container">
+            <h1 class="h2 mb-3">{{ translation ? translation.title : t('nav.gallery') }}</h1>
+
+            {% if translation and translation.lead %}
+                <p class="lead">{{ translation.lead }}</p>
+            {% endif %}
+
+            {% if gallery_categories|length > 1 %}
+                <nav class="mb-4" aria-label="{{ t('nav.gallery') }}" data-testid="gallery-filters">
+                    <a class="btn btn-sm {{ gallery_category == '' ? 'btn-primary' : 'btn-outline-secondary' }} me-2 mb-2"
+                       href="{{ path('page.show', {'slug': page.slug}) }}">{{ t('content.gallery.all') }}</a>
+                    {% for category in gallery_categories %}
+                        <a class="btn btn-sm {{ gallery_category == category ? 'btn-primary' : 'btn-outline-secondary' }} me-2 mb-2"
+                           href="{{ path('page.show', {'slug': page.slug, 'category': category}) }}"
+                           data-gallery-category="{{ category }}">{{ category }}</a>
+                    {% endfor %}
+                </nav>
+            {% endif %}
+
+            {% if gallery_items is empty %}
+                <p class="text-body-secondary" data-testid="gallery-empty">{{ t('content.gallery.empty') }}</p>
+            {% else %}
+                <div class="ss-gallery-grid" data-testid="gallery-grid" data-lightbox-gallery>
+                    {% for item in gallery_items %}
+                        <figure class="mb-0">
+                            <button type="button" class="btn p-0 border-0 w-100"
+                                    data-lightbox-open="{{ loop.index0 }}"
+                                    data-full="{{ base_path }}/media/large/{{ item.filename }}"
+                                    data-caption="{{ item.caption }}"
+                                    aria-label="{{ t('content.gallery.open') }}">
+                                <img class="img-fluid rounded" loading="lazy"
+                                     src="{{ base_path }}/media/thumb/{{ item.filename }}"
+                                     alt="{{ item.alt }}" width="{{ item.width }}" height="{{ item.height }}"
+                                     data-media-id="{{ item.id }}">
+                            </button>
+                            {% if item.caption %}
+                                <figcaption class="small text-body-secondary mt-1">{{ item.caption }}</figcaption>
+                            {% endif %}
+                        </figure>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </article>
+
+    <div class="ss-lightbox" data-lightbox hidden role="dialog" aria-modal="true" aria-label="{{ t('nav.gallery') }}">
+        <button type="button" class="ss-lightbox__close btn btn-light" data-lightbox-close
+                aria-label="{{ t('common.close') }}">&times;</button>
+        <button type="button" class="ss-lightbox__nav ss-lightbox__nav--prev btn btn-light" data-lightbox-prev
+                aria-label="{{ t('content.gallery.previous') }}">&lsaquo;</button>
+        <figure class="ss-lightbox__figure">
+            <img data-lightbox-image src="" alt="">
+            <figcaption data-lightbox-caption class="text-center text-light small mt-2"></figcaption>
+        </figure>
+        <button type="button" class="ss-lightbox__nav ss-lightbox__nav--next btn btn-light" data-lightbox-next
+                aria-label="{{ t('content.gallery.next') }}">&rsaquo;</button>
+    </div>
+{% endblock %}

@@ -8,6 +8,8 @@ use PDO;
 use PDOException;
 use RuntimeException;
 use SecondStay\Audit\AuditTrail;
+use SecondStay\Content\ContentRepository;
+use SecondStay\Content\ContentSeeder;
 use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
@@ -18,6 +20,7 @@ use SecondStay\Database\Database;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
 use SecondStay\I18n\Locales;
+use SecondStay\I18n\Translator;
 use SecondStay\Security\Encryptor;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
@@ -136,6 +139,13 @@ final class Installer
             'site.default_locale' => $locale,
             'site.timezone' => $input['timezone'] ?? 'Europe/Paris',
         ], 'installer');
+
+        // Le site public est immédiatement complet dans les quatre langues.
+        (new ContentSeeder(
+            new ContentRepository($database),
+            new Translator($this->paths->translations(), $locale, Locales::FALLBACK),
+            $database,
+        ))->seed();
 
         (new AuditTrail($database))->record(
             'install.completed',

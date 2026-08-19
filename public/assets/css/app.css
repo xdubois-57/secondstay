@@ -66,3 +66,97 @@
         font-size: .7rem;
     }
 }
+
+/* --- Contenus éditoriaux ------------------------------------------------ */
+
+.ss-rich-text > :last-child {
+    margin-bottom: 0;
+}
+
+.ss-rich-text img {
+    max-width: 100%;
+    height: auto;
+    border-radius: .375rem;
+}
+
+.ss-rich-text table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.ss-rich-text th,
+.ss-rich-text td {
+    border: 1px solid var(--bs-border-color);
+    padding: .5rem;
+}
+
+/* --- Galerie et visionneuse --------------------------------------------- */
+
+.ss-gallery-grid figure button {
+    background: none;
+    cursor: zoom-in;
+}
+
+.ss-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, .92);
+}
+
+.ss-lightbox[hidden] {
+    display: none;
+}
+
+.ss-lightbox__figure {
+    margin: 0;
+    max-width: min(96vw, 1400px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ss-lightbox__figure img {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: .375rem;
+}
+
+.ss-lightbox__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    line-height: 1;
+    padding: .25rem .6rem;
+    font-size: 1.5rem;
+}
+
+.ss-lightbox__nav {
+    font-size: 2rem;
+    line-height: 1;
+    padding: .25rem .75rem;
+    opacity: .85;
+}
+
+@media (max-width: 575.98px) {
+    .ss-lightbox__nav {
+        position: absolute;
+        bottom: 1rem;
+    }
+
+    .ss-lightbox__nav--prev {
+        left: 1rem;
+    }
+
+    .ss-lightbox__nav--next {
+        right: 1rem;
+    }
+}

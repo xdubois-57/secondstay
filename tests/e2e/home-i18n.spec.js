@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { openLocaleSwitcher, openNavigation } from './helpers/navigation.js';
 
 const expectations = [
-    { locale: 'fr', hero: 'Votre résidence secondaire, louée simplement', nav: 'Accueil' },
-    { locale: 'en', hero: 'Your holiday home, rented simply', nav: 'Home' },
-    { locale: 'nl', hero: 'Uw vakantiewoning, eenvoudig verhuurd', nav: 'Home' },
-    { locale: 'de', hero: 'Ihr Ferienhaus, einfach vermietet', nav: 'Startseite' }
+    { locale: 'fr', hero: 'Bienvenue', nav: 'Accueil' },
+    { locale: 'en', hero: 'Welcome', nav: 'Home' },
+    { locale: 'nl', hero: 'Welkom', nav: 'Home' },
+    { locale: 'de', hero: 'Willkommen', nav: 'Startseite' }
 ];
 
 test.describe('page d’accueil multilingue', () => {
@@ -15,7 +15,7 @@ test.describe('page d’accueil multilingue', () => {
 
             await expect(page.locator('html')).toHaveAttribute('lang', locale);
             await expect(page.getByRole('heading', { level: 1 })).toHaveText(hero);
-            await expect(page.locator('[data-testid="home-intro"]')).not.toBeEmpty();
+            await expect(page.locator('[data-testid="home-body"]')).not.toBeEmpty();
             await openNavigation(page);
             await expect(page.getByRole('link', { name: nav, exact: true }).first()).toBeVisible();
 
@@ -36,9 +36,7 @@ test.describe('page d’accueil multilingue', () => {
         await page.locator('[data-locale-switcher] a[data-locale-option="de"]').click();
 
         await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-            'Ihr Ferienhaus, einfach vermietet'
-        );
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen');
     });
 
     test('le choix de langue persiste via cookie fonctionnel', async ({ page, context }) => {

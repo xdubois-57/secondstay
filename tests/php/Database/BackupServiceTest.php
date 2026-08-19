@@ -64,7 +64,10 @@ final class BackupServiceTest extends DatabaseTestCase
 
         self::assertFileExists($result['path']);
         self::assertSame('1.2.3', $result['manifest']->appVersion);
-        self::assertSame('0001', $result['manifest']->schemaVersion);
+        self::assertSame(
+            (new \SecondStay\Database\Migrator($this->database, self::projectRoot() . '/migrations'))->currentVersion(),
+            $result['manifest']->schemaVersion
+        );
         self::assertArrayHasKey('user', $result['manifest']->tableRows);
         self::assertSame(1, $result['manifest']->tableRows['user']);
 

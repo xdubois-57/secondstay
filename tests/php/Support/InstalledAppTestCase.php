@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SecondStay\Tests\Support;
 
 use SecondStay\Auth\PasswordHasher;
+use SecondStay\Content\ContentRepository;
+use SecondStay\Content\ContentSeeder;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
 use SecondStay\Auth\UserStatus;
@@ -14,6 +16,7 @@ use SecondStay\Core\Http\Response;
 use SecondStay\Core\Kernel;
 use SecondStay\Core\Session;
 use SecondStay\Security\Csrf;
+use SecondStay\I18n\Translator;
 use SecondStay\Security\Encryptor;
 
 /**
@@ -79,6 +82,14 @@ abstract class InstalledAppTestCase extends DatabaseTestCase
         $this->container->instance(Session::class, $session);
 
         $this->createAdministrator();
+
+        // L'installation réelle crée l'arborescence de contenu par défaut :
+        // les tests travaillent donc sur un site complet.
+        (new ContentSeeder(
+            new ContentRepository($this->database),
+            new Translator(self::projectRoot() . '/translations'),
+            $this->database,
+        ))->seed();
     }
 
     protected function tearDown(): void

@@ -166,10 +166,37 @@ Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la b
 devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
 rouvrir l'installation d'une instance existante.
 
+## Site public
+
+L'installation crée un site complet, traduit dans les quatre langues :
+
+```text
+/fr/                 accueil éditorial + données structurées LodgingBusiness
+/fr/property         le logement
+/fr/availability     disponibilités
+/fr/rates            tarifs et conditions
+/fr/gallery          galerie avec filtres par catégorie et visionneuse
+/fr/activities       activités
+/fr/access           accès
+/fr/contact          contact
+/fr/legal-notice     mentions légales
+/fr/privacy          confidentialité
+/fr/terms            conditions générales
+/sitemap.xml         toutes les pages dans les quatre langues
+/robots.txt
+```
+
+Les segments d'URL sont neutres et stables ; seule la langue varie par le
+préfixe. Le menu est construit à partir de l'arborescence des pages et accepte
+plusieurs niveaux. La présentation s'adapte à la saison configurée
+(automatique, été ou hiver).
+
 ## Administration
 
 ```text
 /fr/admin              tableau de bord et « À faire »
+/fr/admin/content      pages éditoriales, traductions FR/EN/NL/DE, publication
+/fr/admin/media        galerie : téléversement, catégories, légendes, saison
 /fr/admin/settings     réglages typés par module, avec aide et validation
 /fr/admin/users        plusieurs administrateurs et responsables locaux
 /fr/admin/backups      création, vérification, téléchargement, restauration

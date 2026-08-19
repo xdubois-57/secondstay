@@ -3,6 +3,7 @@
  */
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
 import { evaluatePassword, levelClass } from './modules/password.js';
+import { initGalleryLightbox } from './modules/lightbox.js';
 
 function prefersDark() {
     return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -71,5 +72,6 @@ function ready(callback) {
 ready(() => {
     initTheme();
     initPasswordStrength();
+    initGalleryLightbox(document, document);
     document.documentElement.setAttribute('data-js-ready', 'true');
 });

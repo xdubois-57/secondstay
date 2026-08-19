@@ -29,11 +29,18 @@ final class MigratorTest extends DatabaseTestCase
 
     public function testCurrentVersionIsRecorded(): void
     {
-        self::assertSame('0001', $this->migrator()->currentVersion());
+        $migrator = $this->migrator();
+        $available = $migrator->available();
+        $latest = $available[count($available) - 1]['version'];
 
-        $applied = $this->migrator()->applied();
-        self::assertArrayHasKey('0001', $applied);
-        self::assertSame(64, strlen($applied['0001']['checksum']));
+        self::assertSame($latest, $migrator->currentVersion());
+
+        $applied = $migrator->applied();
+        self::assertCount(count($available), $applied);
+        foreach ($available as $migration) {
+            self::assertArrayHasKey($migration['version'], $applied);
+            self::assertSame(64, strlen($applied[$migration['version']]['checksum']));
+        }
     }
 
     public function testDriftIsDetectedWhenAnAppliedMigrationDisappears(): void

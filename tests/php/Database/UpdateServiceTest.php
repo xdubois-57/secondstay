@@ -48,10 +48,9 @@ final class UpdateServiceTest extends DatabaseTestCase
         file_put_contents($this->sandboxRoot . '/VERSION', "1.0.0\n");
         file_put_contents($this->sandboxRoot . '/public/index.php', "<?php // ancienne version\n");
         file_put_contents($this->sandboxRoot . '/vendor/autoload.php', "<?php // ancien autoload\n");
-        copy(
-            self::projectRoot() . '/migrations/0001_core.sql',
-            $this->sandboxRoot . '/migrations/0001_core.sql'
-        );
+        foreach (glob(self::projectRoot() . '/migrations/*.sql') ?: [] as $migration) {
+            copy($migration, $this->sandboxRoot . '/migrations/' . basename($migration));
+        }
 
         $this->sandboxPaths = new Paths($this->sandboxRoot, $this->sandboxRoot . '/storage');
         $this->sandboxPaths->ensureStorageDirectories();
@@ -206,7 +205,7 @@ final class UpdateServiceTest extends DatabaseTestCase
     public function testFailedMigrationTriggersRollback(): void
     {
         $this->provider->addRelease($this->release('1.2.0'), $this->buildArtifact('1.2.0', [
-            'migrations/0002_broken.sql' => "CREATE TABLE `broken` (this is not valid sql);\n",
+            'migrations/9999_broken.sql' => "CREATE TABLE `broken` (this is not valid sql);\n",
         ]));
 
         $result = $this->updates->install($this->latestRelease(), 'owner@example.test', 1);
@@ -215,7 +214,7 @@ final class UpdateServiceTest extends DatabaseTestCase
         self::assertTrue($result['rolled_back']);
         self::assertSame('1.0.0', trim((string) file_get_contents($this->sandboxRoot . '/VERSION')));
         self::assertStringContainsString('ancienne version', (string) file_get_contents($this->sandboxRoot . '/public/index.php'));
-        self::assertFileDoesNotExist($this->sandboxRoot . '/migrations/0002_broken.sql');
+        self::assertFileDoesNotExist($this->sandboxRoot . '/migrations/9999_broken.sql');
 
         $actions = array_column((new AuditTrail($this->database))->recent(), 'action');
         self::assertContains('update.rolled_back', $actions);
@@ -270,7 +269,7 @@ final class UpdateServiceTest extends DatabaseTestCase
     {
         self::assertTrue($this->updates->healthCheck());
 
-        file_put_contents($this->sandboxRoot . '/migrations/0002_pending.sql', "SELECT 1;\n");
+        file_put_contents($this->sandboxRoot . '/migrations/9999_pending.sql', "SELECT 1;\n");
 
         self::assertFalse($this->updates->healthCheck());
     }

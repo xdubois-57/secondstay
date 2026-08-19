@@ -27,10 +27,10 @@ final class InstalledAppTest extends InstalledAppTestCase
     public static function homeExpectations(): array
     {
         return [
-            ['fr', 'Votre résidence secondaire, louée simplement'],
-            ['en', 'Your holiday home, rented simply'],
-            ['nl', 'Uw vakantiewoning, eenvoudig verhuurd'],
-            ['de', 'Ihr Ferienhaus, einfach vermietet'],
+            ['fr', 'Bienvenue'],
+            ['en', 'Welcome'],
+            ['nl', 'Welkom'],
+            ['de', 'Willkommen'],
         ];
     }
 

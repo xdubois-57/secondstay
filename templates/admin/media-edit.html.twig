@@ -1,0 +1,76 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="row g-4">
+        <div class="col-12 col-lg-5">
+            <img class="img-fluid rounded" src="{{ base_path }}/media/large/{{ item.filename }}" alt=""
+                 width="{{ item.width }}" height="{{ item.height }}">
+            <p class="small text-body-secondary mt-2">
+                {{ item.width }}×{{ item.height }} — {{ (item.size / 1024)|round }} kB
+            </p>
+        </div>
+        <div class="col-12 col-lg-7">
+            <form method="post" action="{{ path('admin.media.save', {'id': item.id}) }}" data-testid="media-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="category">{{ t('admin.media.category') }}</label>
+                        <input class="form-control" id="category" name="category" value="{{ item.category }}" list="media-categories">
+                        <datalist id="media-categories">
+                            {% for category in categories %}<option value="{{ category }}"></option>{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label" for="season">{{ t('admin.content.season') }}</label>
+                        <select class="form-select" id="season" name="season">
+                            {% for season in seasons %}
+                                <option value="{{ season }}"{{ season == item.season ? ' selected' : '' }}>{{ t('content.season.' ~ season) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label" for="position">{{ t('admin.content.position') }}</label>
+                        <input class="form-control" id="position" name="position" type="number" value="{{ item.position }}">
+                    </div>
+                    <div class="col-12 d-flex gap-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_published"
+                                   name="is_published" value="1"{{ item.is_published ? ' checked' : '' }}>
+                            <label class="form-check-label" for="is_published">{{ t('admin.content.published') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_private"
+                                   name="is_private" value="1"{{ item.is_private ? ' checked' : '' }}>
+                            <label class="form-check-label" for="is_private">{{ t('admin.media.private') }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                {% for locale_code in locales %}
+                    <fieldset class="mb-3">
+                        <legend class="h6">{{ locale_name(locale_code) }}</legend>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="caption_{{ locale_code }}">{{ t('admin.media.caption') }}</label>
+                                <input class="form-control" id="caption_{{ locale_code }}" name="caption_{{ locale_code }}"
+                                       value="{{ translations[locale_code].caption }}" lang="{{ locale_code }}">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="alt_{{ locale_code }}">{{ t('admin.media.alt') }}</label>
+                                <input class="form-control" id="alt_{{ locale_code }}" name="alt_{{ locale_code }}"
+                                       value="{{ translations[locale_code].alt_text }}" lang="{{ locale_code }}">
+                                <div class="form-text">{{ t('admin.media.alt_help') }}</div>
+                            </div>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" type="submit" data-testid="save-media">{{ t('common.save') }}</button>
+                    <a class="btn btn-outline-secondary" href="{{ path('admin.media') }}">{{ t('common.back') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

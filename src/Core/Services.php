@@ -10,6 +10,9 @@ use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\SessionRepository;
 use SecondStay\Auth\UserRepository;
 use SecondStay\Backup\BackupService;
+use SecondStay\Content\ContentRepository;
+use SecondStay\Content\ContentSeeder;
+use SecondStay\Content\ContentService;
 use SecondStay\Database\Database;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
@@ -19,7 +22,13 @@ use SecondStay\Http\HttpFetcher;
 use SecondStay\Installer\InstallationState;
 use SecondStay\Installer\Installer;
 use SecondStay\Installer\RequirementChecker;
+use SecondStay\I18n\Translator;
 use SecondStay\Logging\Logger;
+use SecondStay\Media\ImageProcessor;
+use SecondStay\Media\MediaRepository;
+use SecondStay\Media\MediaService;
+use SecondStay\Seo\SeoBuilder;
+use SecondStay\Support\HtmlSanitizer;
 use SecondStay\Logging\LogLevel;
 use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Security\Csrf;
@@ -202,6 +211,41 @@ final class Services
             $c->get(MaintenanceMode::class),
             $c->get(Logger::class),
             $c->get(AuditTrail::class),
+        ));
+
+        $container->set(HtmlSanitizer::class, static fn (): HtmlSanitizer => new HtmlSanitizer());
+
+        $container->set(ContentRepository::class, static fn (Container $c): ContentRepository
+            => new ContentRepository($c->get(Database::class)));
+
+        $container->set(ContentService::class, static fn (Container $c): ContentService => new ContentService(
+            $c->get(ContentRepository::class),
+            $c->get(SettingsService::class),
+            $c->get(HtmlSanitizer::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(ContentSeeder::class, static fn (Container $c): ContentSeeder => new ContentSeeder(
+            $c->get(ContentRepository::class),
+            $c->get(Translator::class),
+            $c->get(Database::class),
+        ));
+
+        $container->set(ImageProcessor::class, static fn (): ImageProcessor => new ImageProcessor());
+
+        $container->set(MediaRepository::class, static fn (Container $c): MediaRepository
+            => new MediaRepository($c->get(Database::class)));
+
+        $container->set(MediaService::class, static fn (Container $c): MediaService => new MediaService(
+            $c->get(MediaRepository::class),
+            $c->get(Paths::class),
+            $c->get(ImageProcessor::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(SeoBuilder::class, static fn (Container $c): SeoBuilder => new SeoBuilder(
+            $c->get(ContentService::class),
+            $c->get(SettingsService::class),
         ));
 
         $container->set(DiagnosticRunner::class, static function (Container $c) use ($appVersion): DiagnosticRunner {

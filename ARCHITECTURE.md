@@ -664,3 +664,71 @@ Les segments de chemin sont neutres et stables (`/admin/settings`,
 `/login`) ; seule la langue varie via le préfixe (`/fr`, `/en`, `/nl`, `/de`).
 Cela garantit des URLs durables, des `hreflang` cohérents et évite de dupliquer
 la table de routage par langue.
+
+## 31. Itération 2 — site public, contenus et médias
+
+### 31.1 Nouveaux modules
+
+```text
+src/
+├── Content/   Season, PageKind, ContentPage, PageTranslation,
+│              ContentRepository, ContentService, DefaultContent, ContentSeeder
+├── Media/     MediaItem, MediaTranslation, MediaRepository, ImageProcessor,
+│              MediaService
+├── Seo/       SeoBuilder (canonical, hreflang, sitemap, robots, JSON-LD)
+└── Support/   HtmlSanitizer, Slugger
+```
+
+### 31.2 Modèle de contenu
+
+```text
+content_page          slug, kind, season, parent_id, position,
+                      is_published, show_in_menu, is_system
+content_translation   (content_page_id, locale) unique :
+                      title, menu_label, lead, body, meta_title, meta_description
+```
+
+`kind` détermine le gabarit (`home`, `page`, `gallery`, `contact`, `legal`).
+`parent_id` produit le menu multi-niveaux, sans table de menu séparée.
+`season` (`all`, `summer`, `winter`) filtre l'affichage selon la saison
+effective, elle-même déduite du réglage `site.season` (`auto` suit le mois :
+hiver de novembre à mars).
+
+L'installation crée onze pages, traduites dans les quatre langues, à partir des
+catalogues `content.default.*` : le site est immédiatement complet et
+entièrement réécrivable.
+
+### 31.3 Médias
+
+```text
+media               filename (généré), mime, dimensions, category, season,
+                    position, is_published, is_private, hash
+media_translation   (media_id, locale) unique : caption, alt_text
+```
+
+Chaque téléversement est ré-encodé par GD en trois variantes (`thumb`, `large`,
+`original`). Le ré-encodage supprime toutes les métadonnées, GPS compris, et
+applique l'orientation EXIF. Les fichiers vivent dans `storage/media/<variante>/`
+et ne sont accessibles que par la route `/media/{variante}/{fichier}`, qui
+applique la visibilité côté serveur.
+
+### 31.4 HTML éditorial
+
+`HtmlSanitizer` applique une liste blanche explicite de balises et d'attributs,
+supprime `script`/`style`/`iframe`/`form` avec leur contenu, refuse les URL
+`javascript:`, `vbscript:` et `data:` non-images, et force
+`rel="noopener noreferrer"` sur les liens `target="_blank"`.
+
+### 31.5 SEO
+
+`SeoBuilder` produit `canonical`, `hreflang` pour les quatre langues plus
+`x-default`, l'Open Graph, `/sitemap.xml` (une entrée par page et par langue,
+avec liens alternatifs) et `/robots.txt`. La page d'accueil publie un bloc
+JSON-LD `LodgingBusiness` construit à partir des réglages du logement.
+
+### 31.6 Routage
+
+La route attrape-tout `/{slug}` est déclarée en dernier : les routes
+techniques (`/admin`, `/login`, `/api/*`, `/media/*`, `/sitemap.xml`) sont
+résolues avant elle. Les contraintes de route acceptent les quantificateurs
+`{n,m}` : l'analyse des paramètres suit la profondeur des accolades.

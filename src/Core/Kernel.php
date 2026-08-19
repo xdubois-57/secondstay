@@ -254,6 +254,20 @@ final class Kernel
         $view->share('is_operational', $user?->isOperational() ?? false);
         $view->share('csrf_token', $container->get(Csrf::class)->token());
         $view->share('flashes', $session->takeFlashes());
+
+        $menu = [];
+        $legal = [];
+        if ($installed) {
+            try {
+                $content = $container->get(\SecondStay\Content\ContentService::class);
+                $menu = $content->menuForView($context->locale);
+                $legal = $content->legalLinks($context->locale);
+            } catch (Throwable) {
+                // Contenus indisponibles : la navigation minimale reste servie.
+            }
+        }
+        $view->share('menu_tree', $menu);
+        $view->share('legal_links', $legal);
     }
 
     /**

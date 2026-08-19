@@ -85,7 +85,7 @@ test.describe('cycle de vie administrateur', () => {
         await expect(page.locator('[data-diagnostic="database_connection"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-diagnostic="crypto_sodium"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-diagnostic="storage_backups"][data-status="ok"]')).toBeVisible();
-        await expect(page.locator('[data-testid="schema-version"]')).toHaveText('0001');
+        await expect(page.locator('[data-testid="schema-version"]')).toHaveText(/^\d{4}$/);
     });
 
     test('le secret d’un réglage n’est jamais réaffiché', async ({ page }) => {

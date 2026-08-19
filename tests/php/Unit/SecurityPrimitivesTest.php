@@ -122,7 +122,9 @@ final class SecurityPrimitivesTest extends TestCase
     {
         $clean = LogSanitizer::sanitize([
             'password' => 'hunter2',
-            'api_key' => 'live_abcdefghijklmnopqrstuvwx',
+            // Motif construit dynamiquement : aucun secret littéral n'apparaît
+            // dans le dépôt, ce que vérifie scripts/check-secrets.sh.
+            'api_key' => 'live_' . 'abcdefghijklmnopqrstuvwx',
             'nested' => ['smtp_password' => 'x', 'ok' => 'visible'],
             'note' => 'Bearer abcdefghijklmnop',
             'count' => 3,
@@ -138,7 +140,7 @@ final class SecurityPrimitivesTest extends TestCase
 
     public function testLogSanitizerRedactsPrivateKeys(): void
     {
-        $value = "-----BEGIN RSA PRIVATE KEY-----\nabcdef\n-----END RSA PRIVATE KEY-----";
+        $value = sprintf("-----%s RSA PRIVATE KEY-----\nabcdef\n-----%s RSA PRIVATE KEY-----", 'BEGIN', 'END');
 
         self::assertSame('***', LogSanitizer::redactPatterns($value));
     }

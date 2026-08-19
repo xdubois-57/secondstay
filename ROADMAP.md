@@ -27,7 +27,7 @@ Une itération est terminée seulement si :
 |---|---|---|
 | 0 | Squelette et chaîne de confiance | ✅ livrée |
 | 1 | Installation, configuration, backups, updater | ✅ livrée |
-| 2 | Site public et contenu | ⏳ à venir |
+| 2 | Site public et contenu | ✅ livrée |
 | 3 | Comptes et auth | ⏳ à venir |
 | 4 | Notifications et PWA | ⏳ à venir |
 | 5 | Disponibilités et prix | ⏳ à venir |

@@ -1,0 +1,8 @@
+{# Pastilles d'état de traduction FR ✓ EN ✓ NL ! DE ✓ (I18N.md §10). #}
+<span class="d-inline-flex gap-1" data-translation-status>
+    {% for locale, complete in status %}
+        <span class="badge {{ complete ? 'text-bg-success' : 'text-bg-warning' }}"
+              data-locale-status="{{ locale }}" data-complete="{{ complete ? '1' : '0' }}"
+              title="{{ locale_name(locale) }}">{{ locale|upper }} {{ complete ? '✓' : '!' }}</span>
+    {% endfor %}
+</span>

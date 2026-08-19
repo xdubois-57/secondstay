@@ -18,6 +18,9 @@
     <link rel="canonical" href="{{ base_path }}/{{ locale }}{{ current_path == '/' ? '/' : current_path }}">
     <link rel="stylesheet" href="{{ base_path }}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ base_path }}/assets/css/app.css">
+    {% if structured_data is defined and structured_data %}
+        <script type="application/ld+json">{{ structured_data|raw }}</script>
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -32,11 +35,39 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="primary-navigation">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0" data-testid="primary-menu">
                     {% block navigation %}
                         <li class="nav-item">
                             <a class="nav-link{{ current_path == '/' ? ' active' : '' }}" href="{{ path('home') }}">{{ t('nav.home') }}</a>
                         </li>
+                        {% for item in menu_tree|default([]) %}
+                            {% if item.children is empty %}
+                                <li class="nav-item">
+                                    <a class="nav-link{{ current_path == '/' ~ item.slug ? ' active' : '' }}"
+                                       href="{{ path('page.show', {'slug': item.slug}) }}"
+                                       data-menu-slug="{{ item.slug }}">{{ item.label }}</a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle{{ current_path == '/' ~ item.slug ? ' active' : '' }}"
+                                       href="{{ path('page.show', {'slug': item.slug}) }}"
+                                       id="menu-{{ item.slug }}" role="button" data-bs-toggle="dropdown"
+                                       aria-expanded="false" data-menu-slug="{{ item.slug }}">{{ item.label }}</a>
+                                    <ul class="dropdown-menu" aria-labelledby="menu-{{ item.slug }}">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ path('page.show', {'slug': item.slug}) }}">{{ item.label }}</a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% for child in item.children %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ path('page.show', {'slug': child.slug}) }}"
+                                                   data-menu-slug="{{ child.slug }}">{{ child.label }}</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
                     {% endblock %}
                 </ul>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -99,9 +130,23 @@
 </main>
 
 <footer class="bg-body-tertiary border-top mt-5">
-    <div class="container py-4 d-flex flex-column flex-md-row justify-content-between gap-2">
-        <p class="mb-0 text-body-secondary small">{{ app_name }} — {{ t('common.tagline') }}</p>
-        <p class="mb-0 text-body-secondary small" data-app-version>{{ t('common.version') }} {{ app_version }}</p>
+    <div class="container py-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+            <p class="mb-0 text-body-secondary small">{{ app_name }} — {{ t('common.tagline') }}</p>
+            <p class="mb-0 text-body-secondary small" data-app-version>{{ t('common.version') }} {{ app_version }}</p>
+        </div>
+        {% if legal_links|default([]) is not empty %}
+            <nav class="mt-3" aria-label="{{ t('content.legal_footer') }}" data-testid="legal-links">
+                <ul class="list-inline mb-0 small">
+                    {% for link in legal_links %}
+                        <li class="list-inline-item">
+                            <a class="link-secondary" href="{{ path('page.show', {'slug': link.slug}) }}"
+                               data-legal-slug="{{ link.slug }}">{{ link.label }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
     </div>
 </footer>
 

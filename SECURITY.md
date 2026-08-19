@@ -394,3 +394,37 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   protocoles hors HTTP(S), localhost, loopback, link-local, RFC1918, CGNAT,
   IPv6 uniques locales et mappées, ainsi que les noms d'hôtes internes. La
   cible est vérifiée à chaque redirection, pas seulement sur l'URL initiale.
+
+## 25. Décisions de mise en œuvre (itération 2)
+
+### 25.1 Contenus riches
+
+- Tout corps de page passe par `HtmlSanitizer` **à l'enregistrement** : la base
+  ne contient jamais de HTML non assaini, et le rendu reste `|raw` sur une
+  valeur déjà nettoyée.
+- Liste blanche de balises et d'attributs ; `script`, `style`, `iframe`,
+  `object`, `embed`, `form`, `input`, `link` et `meta` sont supprimés avec leur
+  contenu ; les balises inconnues sont dépliées en conservant le texte.
+- Schémas d'URL refusés : `javascript:`, `vbscript:`, `file:`, `about:` et
+  toute `data:` qui n'est pas une image.
+
+### 25.2 Médias
+
+- Le type MIME déclaré par le client est ignoré : seul le contenu réel décide
+  (`getimagesize`), et seuls JPEG, PNG, WebP et AVIF sont acceptés.
+- Toute image est ré-encodée : une charge utile dissimulée dans un fichier
+  « image » ne survit pas au traitement. Les métadonnées, dont la
+  géolocalisation, disparaissent.
+- Le nom de fichier est généré par le serveur (16 caractères hexadécimaux) ;
+  le nom d'origine n'est conservé que comme libellé.
+- Le stockage est hors racine web. La route de diffusion valide le nom de
+  fichier et la variante par expression régulière stricte, puis applique la
+  visibilité : un média privé ou dépublié exige le rôle responsable local.
+- Taille maximale de 12 Mo, appliquée avant tout traitement.
+
+### 25.3 Diffusion et cache
+
+- Les médias publics sont immuables (nom aléatoire) : `Cache-Control: public,
+  max-age=2592000, immutable`. Les médias privés sont servis en
+  `private, no-store`.
+- `X-Content-Type-Options: nosniff` sur toute réponse de fichier.

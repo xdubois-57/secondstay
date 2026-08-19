@@ -112,17 +112,16 @@ final class Router
         $route = $this->named[$name];
         $pattern = $route['pattern'];
 
-        $result = preg_replace_callback(
-            '/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::[^}]+)?\}/',
-            static function (array $m) use (&$params): string {
-                $key = $m[1];
-                $value = $params[$key] ?? '';
-                unset($params[$key]);
-
-                return rawurlencode((string) $value);
-            },
-            $pattern
-        ) ?? $pattern;
+        $result = '';
+        $offset = 0;
+        foreach (self::parsePlaceholders($pattern) as $placeholder) {
+            $result .= substr($pattern, $offset, $placeholder['start'] - $offset);
+            $value = $params[$placeholder['name']] ?? '';
+            unset($params[$placeholder['name']]);
+            $result .= rawurlencode((string) $value);
+            $offset = $placeholder['start'] + $placeholder['length'];
+        }
+        $result .= substr($pattern, $offset);
 
         if ($route['localised'] && $locale !== null && $locale !== '') {
             $result = '/' . $locale . ($result === '/' ? '' : $result);
@@ -154,18 +153,79 @@ final class Router
         );
     }
 
+    /**
+     * Analyse les paramètres `{nom}` ou `{nom:contrainte}`.
+     *
+     * Le scan suit la profondeur des accolades : une contrainte peut donc
+     * contenir des quantificateurs comme `{2,5}` sans casser le motif.
+     *
+     * @return list<array{name: string, constraint: string, start: int, length: int}>
+     */
+    public static function parsePlaceholders(string $pattern): array
+    {
+        $placeholders = [];
+        $length = strlen($pattern);
+        $index = 0;
+
+        while ($index < $length) {
+            $open = strpos($pattern, '{', $index);
+            if ($open === false) {
+                break;
+            }
+
+            $depth = 1;
+            $cursor = $open + 1;
+            while ($cursor < $length) {
+                if ($pattern[$cursor] === '{') {
+                    $depth++;
+                } elseif ($pattern[$cursor] === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        break;
+                    }
+                }
+                $cursor++;
+            }
+
+            if ($depth !== 0) {
+                throw new \InvalidArgumentException('Accolade non fermée dans la route : ' . $pattern);
+            }
+
+            $inner = substr($pattern, $open + 1, $cursor - $open - 1);
+            $separator = strpos($inner, ':');
+            $name = $separator === false ? $inner : substr($inner, 0, $separator);
+            $constraint = $separator === false ? '[^/]+' : substr($inner, $separator + 1);
+
+            if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name) !== 1) {
+                throw new \InvalidArgumentException('Nom de paramètre invalide dans la route : ' . $pattern);
+            }
+
+            $placeholders[] = [
+                'name' => $name,
+                'constraint' => $constraint === '' ? '[^/]+' : $constraint,
+                'start' => $open,
+                'length' => $cursor - $open + 1,
+            ];
+
+
+            $index = $cursor + 1;
+        }
+
+        return $placeholders;
+    }
+
     private function compile(string $pattern): string
     {
-        $regex = preg_replace_callback(
-            '/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?\}/',
-            static function (array $m): string {
-                $name = $m[1];
-                $constraint = $m[2] ?? '[^/]+';
+        $regex = '';
+        $offset = 0;
 
-                return '(?P<' . $name . '>' . $constraint . ')';
-            },
-            $pattern
-        ) ?? $pattern;
+        foreach (self::parsePlaceholders($pattern) as $placeholder) {
+            $regex .= preg_quote(substr($pattern, $offset, $placeholder['start'] - $offset), '#');
+            $regex .= '(?P<' . $placeholder['name'] . '>' . $placeholder['constraint'] . ')';
+            $offset = $placeholder['start'] + $placeholder['length'];
+        }
+
+        $regex .= preg_quote(substr($pattern, $offset), '#');
 
         return '#^' . $regex . '$#u';
     }

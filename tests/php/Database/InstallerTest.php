@@ -97,7 +97,12 @@ final class InstallerTest extends DatabaseTestCase
 
         $result = $this->installer->install($this->validInput());
 
-        self::assertSame(['0001'], $result['migrations']);
+        $expected = array_map(
+            static fn (array $migration): string => $migration['version'],
+            (new \SecondStay\Database\Migrator($this->database, $this->sandboxRoot . '/migrations'))->available()
+        );
+        self::assertSame($expected, $result['migrations']);
+        self::assertNotSame([], $expected);
         self::assertTrue($this->state->hasLocalConfig());
         self::assertTrue($this->state->isInstalled($this->database));
 
@@ -248,8 +253,9 @@ final class InstallerTest extends DatabaseTestCase
         $this->installer->install($this->validInput());
 
         $state = $this->state->schemaState($this->database);
+        $available = (new \SecondStay\Database\Migrator($this->database, $this->sandboxRoot . '/migrations'))->available();
 
-        self::assertSame('0001', $state['schema']);
+        self::assertSame($available[count($available) - 1]['version'], $state['schema']);
         self::assertSame(0, $state['pending']);
         self::assertSame([], $state['drift']);
     }
