@@ -1,0 +1,63 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <ul class="nav nav-tabs mb-4" data-testid="settings-modules">
+        {% for module in modules %}
+            <li class="nav-item">
+                <a class="nav-link{{ module == current_module ? ' active' : '' }}"
+                   href="{{ path('admin.settings', {'module': module}) }}"
+                   data-settings-module="{{ module }}">{{ t('admin.settings.module.' ~ module) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <form method="post" action="{{ path('admin.settings.save') }}" novalidate data-testid="settings-form">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="module" value="{{ current_module }}">
+
+        <div class="row g-3">
+            {% for field in fields %}
+                <div class="col-12 col-lg-6">
+                    <label class="form-label" for="{{ field.field }}">
+                        {{ field.label }}{% if field.required %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}
+                    </label>
+
+                    {% if field.type == 'bool' %}
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="{{ field.field }}" name="{{ field.field }}" value="1"
+                                   {{ field.value == '1' ? 'checked' : '' }}>
+                        </div>
+                    {% elseif field.type == 'enum' %}
+                        <select class="form-select{{ field.error ? ' is-invalid' : '' }}" id="{{ field.field }}" name="{{ field.field }}">
+                            {% for option in field.enum %}
+                                <option value="{{ option }}"{{ option == field.value ? ' selected' : '' }}>{{ t('admin.settings.value.' ~ field.key ~ '.' ~ option) }}</option>
+                            {% endfor %}
+                        </select>
+                    {% elseif field.input_type == 'textarea' %}
+                        <textarea class="form-control{{ field.error ? ' is-invalid' : '' }}" id="{{ field.field }}"
+                                  name="{{ field.field }}" rows="4">{{ field.value }}</textarea>
+                    {% elseif field.type == 'secret' %}
+                        <input class="form-control{{ field.error ? ' is-invalid' : '' }}" type="password"
+                               id="{{ field.field }}" name="{{ field.field }}" autocomplete="new-password"
+                               placeholder="{{ field.secret_defined ? field.secret_preview : t('admin.settings.secret_empty') }}">
+                        <div class="form-text">{{ field.secret_defined ? t('admin.settings.secret_defined') : t('admin.settings.secret_not_defined') }}</div>
+                    {% else %}
+                        <input class="form-control{{ field.error ? ' is-invalid' : '' }}" type="{{ field.input_type }}"
+                               id="{{ field.field }}" name="{{ field.field }}" value="{{ field.value }}"
+                               {% if field.type == 'money' or field.type == 'decimal' %}step="0.01"{% endif %}
+                               {% if field.min is not null %}min="{{ field.min }}"{% endif %}
+                               {% if field.max is not null and field.type != 'string' and field.type != 'text' %}max="{{ field.max }}"{% endif %}>
+                    {% endif %}
+
+                    {% if field.error %}
+                        <div class="invalid-feedback d-block" data-error-for="{{ field.key }}">{{ t(field.error) }}</div>
+                    {% endif %}
+                    <div class="form-text">{{ field.help }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <button class="btn btn-primary mt-4" type="submit" data-testid="settings-save">{{ t('common.save') }}</button>
+    </form>
+{% endblock %}

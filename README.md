@@ -140,6 +140,110 @@ Assistant conformité propriétaire, taxe de séjour, classement, déclaration/e
 
 Abstraction LLM, sources par URLs publiques, protections SSRF et prompt injection, aucune donnée personnelle client envoyée, génération avant séjour et affichage uniquement des activités correspondant aux dates exactes du séjour.
 
+## Installation
+
+Une installation SecondStay se fait en copiant l'archive de release à la racine
+web (FTP possible), puis en ouvrant le site : l'assistant d'installation prend
+la main.
+
+```text
+/            → redirige vers /fr/install tant que l'installation n'est pas faite
+/fr/install  → prérequis serveur, base de données, premier administrateur,
+               logement et langue par défaut
+```
+
+L'assistant :
+
+1. vérifie les prérequis (PHP, extensions, droits d'écriture, espace disque) ;
+2. teste la connexion à la base sans jamais divulguer les identifiants ;
+3. écrit `config/local.php` (permissions `0600`, jamais versionné) contenant les
+   identifiants de base et la clé de chiffrement générée ;
+4. applique les migrations ;
+5. crée le premier administrateur et le connecte ;
+6. enregistre les réglages initiaux.
+
+Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la base
+devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
+rouvrir l'installation d'une instance existante.
+
+## Site public
+
+L'installation crée un site complet, traduit dans les quatre langues :
+
+```text
+/fr/                 accueil éditorial + données structurées LodgingBusiness
+/fr/property         le logement
+/fr/availability     disponibilités
+/fr/rates            tarifs et conditions
+/fr/gallery          galerie avec filtres par catégorie et visionneuse
+/fr/activities       activités
+/fr/access           accès
+/fr/contact          contact
+/fr/legal-notice     mentions légales
+/fr/privacy          confidentialité
+/fr/terms            conditions générales
+/sitemap.xml         toutes les pages dans les quatre langues
+/robots.txt
+```
+
+Les segments d'URL sont neutres et stables ; seule la langue varie par le
+préfixe. Le menu est construit à partir de l'arborescence des pages et accepte
+plusieurs niveaux. La présentation s'adapte à la saison configurée
+(automatique, été ou hiver).
+
+## Administration
+
+```text
+/fr/admin              tableau de bord et « À faire »
+/fr/admin/content      pages éditoriales, traductions FR/EN/NL/DE, publication
+/fr/admin/media        galerie : téléversement, catégories, légendes, saison
+/fr/admin/settings     réglages typés par module, avec aide et validation
+/fr/admin/users        plusieurs administrateurs et responsables locaux
+/fr/admin/backups      création, vérification, téléchargement, restauration
+/fr/admin/updates      vérification et installation des GitHub Releases
+/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation,
+                       remise à zéro des compteurs de limitation de débit
+/fr/admin/logs         journal technique filtrable et purgeable
+/fr/admin/audit        journal des actions sensibles
+```
+
+Le mode maintenance ferme le site public (503) tout en laissant l'administration
+et les endpoints techniques accessibles.
+
+## Espace client
+
+```text
+/fr/account/signup           création de compte (prénom, nom, e-mail, téléphone)
+/fr/account/confirm          confirmation de l'adresse e-mail
+/fr/account/forgot-password  demande de réinitialisation
+/fr/account/reset            nouveau mot de passe
+/fr/account                  profil, langue préférée, mot de passe, appareils,
+                             clés d'accès, export et suppression RGPD
+```
+
+L'inscription envoie un e-mail de confirmation dans la langue choisie. Une
+inscription sur une adresse déjà connue produit exactement la même réponse
+qu'une inscription neuve : c'est le titulaire réel qui est prévenu.
+
+Les clés d'accès (passkeys) remplacent le mot de passe lorsque le navigateur
+les prend en charge et que le site est servi depuis un domaine — une
+installation accessible uniquement par adresse IP ne peut pas les proposer.
+
+La suppression de compte anonymise les données identifiantes plutôt que de les
+effacer : les obligations comptables et contractuelles restent honorées.
+
+## Envoi d'e-mails
+
+SecondStay embarque son propre client SMTP : ni Composer ni extension
+supplémentaire ne sont nécessaires sur l'hébergement. Les réglages
+(`/fr/admin/settings`, module « E-mail ») couvrent l'hôte, le port, le
+chiffrement (STARTTLS ou TLS implicite), l'authentification et l'adresse
+d'expédition. La signature DKIM reste à la charge du fournisseur SMTP.
+
+En développement et en CI, `SECONDSTAY_MAIL_TRANSPORT=fake` remplace l'envoi
+réel par un dépôt de messages inspectable : aucun réseau sortant n'est requis
+pour tester les parcours de compte.
+
 ## Hébergement et sécurité
 
 Le dépôt est public. Les données du logement, secrets, médias et fichiers de production ne doivent jamais être publiés.
@@ -150,23 +254,57 @@ Voir `SECURITY.md`.
 
 ## Développement
 
+### Préparation
+
+```bash
+composer install
+npm install
+npx playwright install --with-deps chromium webkit
+cp config/local.php.dist config/local.php          # configuration locale, jamais versionnée
+cp scripts/test-env.local.sh.dist scripts/test-env.local.sh   # base de test dédiée
+```
+
+### Serveur local
+
+```bash
+./scripts/dev-server.sh start      # http://127.0.0.1:8123
+./scripts/dev-server.sh stop
+```
+
+Le serveur PHP intégré passe par `scripts/router.php`, qui applique la même
+politique de chemins privés que le `.htaccess` racine : les tests de sécurité
+sont donc représentatifs de la production.
+
+### Validation
+
 Commande locale de référence :
 
 ```bash
-./scripts/check.sh
+./scripts/check.sh              # tout (défaut)
+./scripts/check.sh --fast       # syntaxe + PHPStan + PHPUnit + i18n
+./scripts/check.sh --php
+./scripts/check.sh --db
+./scripts/check.sh --js
+./scripts/check.sh --e2e
+./scripts/check.sh --security
 ```
 
-Elle doit couvrir au minimum :
+Elle couvre :
 
 - syntaxe PHP ;
-- PHPStan ;
-- PHPUnit ;
-- tests DB ;
-- Vitest ;
-- Playwright ;
-- audit Composer.
+- PHPStan (niveau 8, aucune erreur tolérée) ;
+- PHPUnit + couverture Clover ;
+- contrôle i18n FR/EN/NL/DE ;
+- tests d’intégration base de données ;
+- Vitest + couverture LCOV ;
+- Playwright (desktop + mobile) ;
+- audit Composer ;
+- absence de secrets versionnés ;
+- conformité de l’artefact de release.
 
-GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations doivent pouvoir être utilisées depuis Claude Code sur macOS et être déclenchées dans GitHub Actions depuis mobile.
+GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations sont
+utilisables depuis Claude Code sur macOS et déclenchables dans GitHub Actions
+depuis mobile.
 
 Voir `TESTING.md`.
 
@@ -181,6 +319,12 @@ Une release installable :
 - exclut `storage/`, secrets, tests, `.github`, `node_modules`, couverture et données locales ;
 - est publiée en GitHub Release ;
 - est installable par l’updater intégré.
+
+```bash
+./scripts/release.sh patch --dry-run   # vérifie toutes les gates sans rien écrire
+./scripts/release.sh minor             # publication complète
+./scripts/build-release-zip.sh --verify-only   # construit et inspecte le ZIP
+```
 
 Voir `RELEASE.md` et `ROADMAP.md`.
 

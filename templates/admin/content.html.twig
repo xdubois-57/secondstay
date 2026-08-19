@@ -1,0 +1,88 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">
+        {{ t('admin.content.intro') }}
+        <span class="badge text-bg-secondary">{{ t('content.season.' ~ effective_season) }}</span>
+    </p>
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle" data-testid="content-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('admin.content.page') }}</th>
+                    <th scope="col">{{ t('admin.content.slug') }}</th>
+                    <th scope="col">{{ t('admin.content.kind') }}</th>
+                    <th scope="col">{{ t('admin.content.season') }}</th>
+                    <th scope="col">{{ t('admin.content.translations') }}</th>
+                    <th scope="col">{{ t('admin.content.published') }}</th>
+                    <th scope="col" class="text-end">{{ t('admin.users.actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in overview %}
+                    <tr data-page-slug="{{ row.slug }}" data-complete="{{ row.complete ? '1' : '0' }}">
+                        <td>
+                            {% if row.parent_id %}<span class="text-body-secondary">↳ </span>{% endif %}
+                            <a href="{{ path('admin.content.edit', {'id': row.id}) }}">{{ row.title ?: row.slug }}</a>
+                        </td>
+                        <td><code>{{ row.slug }}</code></td>
+                        <td>{{ t('content.kind.' ~ row.kind) }}</td>
+                        <td>{{ t('content.season.' ~ row.season) }}</td>
+                        <td>{% include 'admin/_translation-status.html.twig' with {'status': row.status} %}</td>
+                        <td>
+                            <span class="badge {{ row.is_published ? 'text-bg-success' : 'text-bg-secondary' }}"
+                                  data-published="{{ row.is_published ? '1' : '0' }}">
+                                {{ row.is_published ? t('admin.content.state_published') : t('admin.content.state_draft') }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2">
+                                <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.content.edit', {'id': row.id}) }}">{{ t('admin.content.edit') }}</a>
+                                {% if not row.is_system %}
+                                    <form method="post" action="{{ path('admin.content.delete', {'id': row.id}) }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('admin.content.delete') }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('admin.content.create') }}</div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.content.create') }}" class="row g-3" data-testid="create-page-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="col-12 col-md-5">
+                    <label class="form-label" for="new_slug">{{ t('admin.content.slug') }}</label>
+                    <input class="form-control" id="new_slug" name="slug" required pattern="[a-z0-9][a-z0-9-]*">
+                    <div class="form-text">{{ t('admin.content.slug_help') }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="new_kind">{{ t('admin.content.kind') }}</label>
+                    <select class="form-select" id="new_kind" name="kind">
+                        {% for kind in kinds %}
+                            {% if kind != 'home' %}<option value="{{ kind }}">{{ t('content.kind.' ~ kind) }}</option>{% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="new_season">{{ t('admin.content.season') }}</label>
+                    <select class="form-select" id="new_season" name="season">
+                        {% for season in seasons %}
+                            <option value="{{ season }}">{{ t('content.season.' ~ season) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary" type="submit">{{ t('admin.content.create') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

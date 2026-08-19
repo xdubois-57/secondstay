@@ -21,6 +21,29 @@ Une itération est terminée seulement si :
 - ZIP release contrôlé ;
 - documentation mise à jour.
 
+## État d’avancement
+
+| Itération | Intitulé | État |
+|---|---|---|
+| 0 | Squelette et chaîne de confiance | ✅ livrée |
+| 1 | Installation, configuration, backups, updater | ✅ livrée |
+| 2 | Site public et contenu | ✅ livrée |
+| 3 | Comptes et auth | ✅ livrée |
+| 4 | Notifications et PWA | ⏳ à venir |
+| 5 | Disponibilités et prix | ⏳ à venir |
+| 6 | Réservation sans paiement | ⏳ à venir |
+| 7 | Paiements | ⏳ à venir |
+| 8 | Contrats, documents, IMAP | ⏳ à venir |
+| 9 | Responsable local et opérations | ⏳ à venir |
+| 10 | Mon séjour et invités | ⏳ à venir |
+| 11 | États des lieux et incidents | ⏳ à venir |
+| 12 | France et conformité | ⏳ à venir |
+| 13 | Contenu local IA | ⏳ à venir |
+| 14 | ICS externes, reporting, consolidation | ⏳ à venir |
+
+Le numéro de version mineure suit l’itération livrée : l’itération N correspond
+à la série `0.(N+1).x`.
+
 ## Itération 0 — Squelette et chaîne de confiance
 
 Livrer :
@@ -111,6 +134,24 @@ Livrer :
 - accessibilité.
 
 E2E : cycle compte complet et permissions dans matrice de locales.
+
+### Livré (0.4.0)
+
+- inscription, confirmation d'adresse, connexion et réinitialisation, avec
+  e-mails rendus dans la langue du destinataire ;
+- transport SMTP maison (STARTTLS / TLS implicite, `AUTH PLAIN` puis
+  `AUTH LOGIN`) et transport factice pour les tests ;
+- clés d'accès WebAuthn complètes (CBOR, COSE ES256/RS256, vérification
+  d'assertion et compteur anti-clonage), masquées lorsque le domaine ne le
+  permet pas ;
+- espace client : profil, langue préférée, mot de passe, appareils connectés
+  et révocation ;
+- RGPD : consentements horodatés, export JSON, anonymisation du compte ;
+- limitation de débit sur inscription, réinitialisation et clés d'accès, avec
+  remise à zéro par un administrateur depuis `/admin/diagnostics` ;
+- E2E `account.spec.js` et `passkeys.spec.js`, tests PHP `AccountServiceTest`,
+  `WebAuthnServiceTest`, `SmtpMailTransportTest`, `MailMessageTest` et suite
+  Vitest `passkey.test.js`.
 
 ## Itération 4 — Notifications et PWA
 

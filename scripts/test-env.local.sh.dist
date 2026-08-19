@@ -1,0 +1,7 @@
+# Copiez ce fichier vers scripts/test-env.local.sh et adaptez-le.
+# Ces valeurs ne doivent JAMAIS pointer vers une base de production.
+export SECONDSTAY_TEST_DB_HOST=127.0.0.1
+export SECONDSTAY_TEST_DB_PORT=3306
+export SECONDSTAY_TEST_DB_NAME=secondstay_test
+export SECONDSTAY_TEST_DB_USER=secondstay
+export SECONDSTAY_TEST_DB_PASSWORD=secondstay

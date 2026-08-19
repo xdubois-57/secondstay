@@ -1,0 +1,77 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 40rem;">
+            <h1 class="h3 mb-3">{{ t('account.signup.title') }}</h1>
+            <p class="text-body-secondary">{{ t('account.signup.intro') }}</p>
+
+            {% if errors.general is defined %}
+                <div class="alert alert-danger" role="alert" data-testid="signup-error">{{ t(errors.general) }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ path('account.signup.submit') }}" novalidate data-testid="signup-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="first_name">{{ t('auth.field.first_name') }}</label>
+                        <input class="form-control{{ errors.first_name is defined ? ' is-invalid' : '' }}" id="first_name"
+                               name="first_name" value="{{ values.first_name }}" autocomplete="given-name" required>
+                        {% if errors.first_name is defined %}<div class="invalid-feedback">{{ t(errors.first_name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="last_name">{{ t('auth.field.last_name') }}</label>
+                        <input class="form-control{{ errors.last_name is defined ? ' is-invalid' : '' }}" id="last_name"
+                               name="last_name" value="{{ values.last_name }}" autocomplete="family-name" required>
+                        {% if errors.last_name is defined %}<div class="invalid-feedback">{{ t(errors.last_name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="email">{{ t('auth.field.email') }}</label>
+                        <input class="form-control{{ errors.email is defined ? ' is-invalid' : '' }}" id="email"
+                               name="email" type="email" value="{{ values.email }}" autocomplete="email"
+                               inputmode="email" required>
+                        {% if errors.email is defined %}<div class="invalid-feedback">{{ t(errors.email) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="phone">{{ t('auth.field.phone') }}</label>
+                        <input class="form-control{{ errors.phone is defined ? ' is-invalid' : '' }}" id="phone"
+                               name="phone" type="tel" value="{{ values.phone }}" autocomplete="tel">
+                        {% if errors.phone is defined %}<div class="invalid-feedback">{{ t(errors.phone) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="password">{{ t('auth.field.password') }}</label>
+                        <input class="form-control{{ errors.password is defined ? ' is-invalid' : '' }}" id="password"
+                               name="password" type="password" autocomplete="new-password"
+                               minlength="{{ min_password_length }}" required data-password-input>
+                        <div class="form-text">{{ t('auth.password.requirements', {'length': min_password_length}) }}</div>
+                        <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
+                             aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
+                            <div class="progress-bar" data-password-strength style="width: 0"></div>
+                        </div>
+                        {% if errors.password is defined %}<div class="invalid-feedback d-block">{{ t(errors.password) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input{{ errors.accept_terms is defined ? ' is-invalid' : '' }}"
+                                   type="checkbox" id="accept_terms" name="accept_terms" value="1" required>
+                            <label class="form-check-label" for="accept_terms">
+                                {{ t('account.signup.accept_terms') }}
+                                <a href="{{ path('page.show', {'slug': 'terms'}) }}" target="_blank" rel="noopener">{{ t('nav.terms') }}</a>
+                                —
+                                <a href="{{ path('page.show', {'slug': 'privacy'}) }}" target="_blank" rel="noopener">{{ t('nav.privacy') }}</a>
+                            </label>
+                            {% if errors.accept_terms is defined %}<div class="invalid-feedback d-block">{{ t(errors.accept_terms) }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary mt-4 w-100" type="submit">{{ t('account.signup.action') }}</button>
+            </form>
+
+            <p class="mt-3 mb-0 text-center">
+                <a href="{{ path('login') }}">{{ t('account.signup.already_registered') }}</a>
+            </p>
+        </div>
+    </section>
+{% endblock %}

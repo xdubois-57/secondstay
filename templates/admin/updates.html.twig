@@ -1,0 +1,46 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <p class="mb-1">{{ t('admin.updates.current') }} : <strong data-testid="current-version">{{ current_version }}</strong></p>
+            <p class="mb-1">{{ t('admin.updates.repository') }} : <code>{{ repository }}</code> ({{ t('admin.settings.value.update.channel.' ~ channel) }})</p>
+            <p class="mb-0">
+                {{ t('admin.updates.health') }} :
+                <span class="badge {{ health_ok ? 'text-bg-success' : 'text-bg-danger' }}" data-testid="update-health">
+                    {{ health_ok ? t('diagnostics.status.ok') : t('diagnostics.status.error') }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    {% if unreachable %}
+        <div class="alert alert-warning" role="alert" data-testid="update-unreachable">{{ t('admin.updates.unreachable') }}</div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-3 align-items-center mb-4">
+        <form method="post" action="{{ path('admin.updates.check') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <button class="btn btn-outline-primary" type="submit" data-testid="check-updates">{{ t('admin.updates.check_now') }}</button>
+        </form>
+
+        {% if available %}
+            <form method="post" action="{{ path('admin.updates.install') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <button class="btn btn-primary" type="submit" data-testid="install-update">{{ t('admin.updates.install') }}</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if available and latest %}
+        <div class="card" data-testid="available-update" data-version="{{ latest.version }}">
+            <div class="card-header">{{ t('admin.updates.available') }} — {{ latest.version }}</div>
+            <div class="card-body">
+                <p class="mb-1 small text-body-secondary">{{ latest.asset_name }} — {{ latest.published_at }}</p>
+                {% if notes %}<pre class="small mb-0 overflow-auto">{{ notes }}</pre>{% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-body-secondary" data-testid="no-update">{{ t('admin.updates.up_to_date') }}</p>
+    {% endif %}
+{% endblock %}

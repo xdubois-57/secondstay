@@ -1,0 +1,19 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <article class="py-5" data-testid="content-page" data-page-slug="{{ page.slug }}" data-season="{{ season }}">
+        <div class="container">
+            <h1 class="h2 mb-3">{{ translation ? translation.title : page.slug }}</h1>
+
+            {% if is_fallback_translation %}
+                <p class="alert alert-warning" data-testid="fallback-notice">{{ t('content.fallback_notice') }}</p>
+            {% endif %}
+
+            {% if translation and translation.lead %}
+                <p class="lead" data-testid="page-lead">{{ translation.lead }}</p>
+            {% endif %}
+
+            <div class="ss-rich-text" data-testid="page-body">{{ translation ? translation.body|raw : '' }}</div>
+        </div>
+    </article>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="card mb-4">
+        <div class="card-header">{{ t('admin.media.upload') }}</div>
+        <div class="card-body">
+            {% if errors.file is defined %}
+                <div class="alert alert-danger" role="alert" data-testid="upload-error">{{ t(errors.file) }}</div>
+            {% endif %}
+            <form method="post" action="{{ path('admin.media.upload') }}" enctype="multipart/form-data"
+                  class="row g-3 align-items-end" data-testid="upload-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="col-12 col-md-5">
+                    <label class="form-label" for="media">{{ t('admin.media.file') }}</label>
+                    <input class="form-control" id="media" name="media" type="file"
+                           accept="image/jpeg,image/png,image/webp,image/avif" required>
+                    <div class="form-text">{{ t('admin.media.file_help', {'size': (max_bytes / 1048576)|round}) }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="category">{{ t('admin.media.category') }}</label>
+                    <input class="form-control" id="category" name="category" value="general" list="media-categories">
+                    <datalist id="media-categories">
+                        {% for category in categories %}<option value="{{ category }}"></option>{% endfor %}
+                    </datalist>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="upload_season">{{ t('admin.content.season') }}</label>
+                    <select class="form-select" id="upload_season" name="season">
+                        {% for season in seasons %}
+                            <option value="{{ season }}">{{ t('content.season.' ~ season) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button class="btn btn-primary w-100" type="submit">{{ t('admin.media.upload') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="ss-gallery-grid" data-testid="media-library">
+        {% for item in items %}
+            <div class="card h-100" data-media-item="{{ item.id }}">
+                <img class="card-img-top" src="{{ base_path }}/media/thumb/{{ item.filename }}" alt=""
+                     loading="lazy" width="{{ item.width }}" height="{{ item.height }}">
+                <div class="card-body p-2">
+                    <p class="small mb-1 text-truncate" title="{{ item.original_filename }}">{{ item.original_filename }}</p>
+                    <p class="small mb-2">
+                        <span class="badge text-bg-secondary">{{ item.category }}</span>
+                        <span class="badge text-bg-light">{{ t('content.season.' ~ item.season) }}</span>
+                        {% if not item.is_published %}<span class="badge text-bg-warning">{{ t('admin.content.state_draft') }}</span>{% endif %}
+                        {% if item.is_private %}<span class="badge text-bg-dark">{{ t('admin.media.private') }}</span>{% endif %}
+                    </p>
+                    {% include 'admin/_translation-status.html.twig' with {'status': item.status} %}
+                    <div class="d-flex gap-2 mt-2">
+                        <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.media.edit', {'id': item.id}) }}">{{ t('admin.content.edit') }}</a>
+                        <form method="post" action="{{ path('admin.media.delete', {'id': item.id}) }}">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('admin.content.delete') }}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-body-secondary" data-testid="media-empty">{{ t('admin.media.empty') }}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

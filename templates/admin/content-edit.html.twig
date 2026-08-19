@@ -1,0 +1,123 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_title %}{{ t('admin.content.edit') }} — <code>{{ page.slug }}</code>{% endblock %}
+
+{% block admin_content %}
+    <form method="post" action="{{ path('admin.content.save', {'id': page.id}) }}" data-testid="page-form">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+        <div class="card mb-4">
+            <div class="card-header">{{ t('admin.content.settings') }}</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="slug">{{ t('admin.content.slug') }}</label>
+                        <input class="form-control{{ errors.slug is defined ? ' is-invalid' : '' }}" id="slug" name="slug"
+                               value="{{ page.slug }}" {{ page.is_system ? 'readonly' : '' }} pattern="[a-z0-9][a-z0-9-]*">
+                        {% if errors.slug is defined %}<div class="invalid-feedback">{{ t(errors.slug) }}</div>{% endif %}
+                        {% if page.is_system %}<div class="form-text">{{ t('admin.content.system_page') }}</div>{% endif %}
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="season">{{ t('admin.content.season') }}</label>
+                        <select class="form-select" id="season" name="season">
+                            {% for season in seasons %}
+                                <option value="{{ season }}"{{ season == page.season ? ' selected' : '' }}>{{ t('content.season.' ~ season) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="position">{{ t('admin.content.position') }}</label>
+                        <input class="form-control" id="position" name="position" type="number" value="{{ page.position }}">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="parent_id">{{ t('admin.content.parent') }}</label>
+                        <select class="form-select" id="parent_id" name="parent_id" {{ page.is_system ? 'disabled' : '' }}>
+                            <option value="0">{{ t('admin.content.no_parent') }}</option>
+                            {% for parent in parents %}
+                                <option value="{{ parent.id }}"{{ parent.id == page.parent_id ? ' selected' : '' }}>{{ parent.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex gap-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_published"
+                                   name="is_published" value="1"{{ page.is_published ? ' checked' : '' }}>
+                            <label class="form-check-label" for="is_published">{{ t('admin.content.published') }}</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="show_in_menu"
+                                   name="show_in_menu" value="1"{{ page.show_in_menu ? ' checked' : '' }}>
+                            <label class="form-check-label" for="show_in_menu">{{ t('admin.content.show_in_menu') }}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs" role="tablist" data-testid="locale-tabs">
+            {% for locale_code in locales %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link{{ loop.first ? ' active' : '' }}" id="tab-{{ locale_code }}"
+                            data-bs-toggle="tab" data-bs-target="#pane-{{ locale_code }}" type="button" role="tab"
+                            data-locale-tab="{{ locale_code }}" aria-controls="pane-{{ locale_code }}"
+                            aria-selected="{{ loop.first ? 'true' : 'false' }}">
+                        {{ locale_name(locale_code) }}
+                        <span class="badge {{ translations[locale_code].complete ? 'text-bg-success' : 'text-bg-warning' }}">
+                            {{ translations[locale_code].complete ? '✓' : '!' }}
+                        </span>
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="tab-content border border-top-0 rounded-bottom p-3 mb-4">
+            {% for locale_code in locales %}
+                <div class="tab-pane fade{{ loop.first ? ' show active' : '' }}" id="pane-{{ locale_code }}"
+                     role="tabpanel" aria-labelledby="tab-{{ locale_code }}" data-locale-pane="{{ locale_code }}">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="title_{{ locale_code }}">{{ t('admin.content.field.title') }}</label>
+                            <input class="form-control" id="title_{{ locale_code }}" name="title_{{ locale_code }}"
+                                   value="{{ translations[locale_code].title }}" lang="{{ locale_code }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="menu_label_{{ locale_code }}">{{ t('admin.content.field.menu_label') }}</label>
+                            <input class="form-control" id="menu_label_{{ locale_code }}" name="menu_label_{{ locale_code }}"
+                                   value="{{ translations[locale_code].menu_label }}" lang="{{ locale_code }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="lead_{{ locale_code }}">{{ t('admin.content.field.lead') }}</label>
+                            <textarea class="form-control" id="lead_{{ locale_code }}" name="lead_{{ locale_code }}"
+                                      rows="2" lang="{{ locale_code }}">{{ translations[locale_code].lead }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="body_{{ locale_code }}">{{ t('admin.content.field.body') }}</label>
+                            <textarea class="form-control font-monospace" id="body_{{ locale_code }}"
+                                      name="body_{{ locale_code }}" rows="12" lang="{{ locale_code }}">{{ translations[locale_code].body }}</textarea>
+                            <div class="form-text">{{ t('admin.content.field.body_help') }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="meta_title_{{ locale_code }}">{{ t('admin.content.field.meta_title') }}</label>
+                            <input class="form-control" id="meta_title_{{ locale_code }}" name="meta_title_{{ locale_code }}"
+                                   value="{{ translations[locale_code].meta_title }}" lang="{{ locale_code }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="meta_description_{{ locale_code }}">{{ t('admin.content.field.meta_description') }}</label>
+                            <input class="form-control" id="meta_description_{{ locale_code }}" name="meta_description_{{ locale_code }}"
+                                   value="{{ translations[locale_code].meta_description }}" maxlength="320" lang="{{ locale_code }}">
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit" data-testid="save-page">{{ t('common.save') }}</button>
+            <a class="btn btn-outline-secondary" href="{{ path('admin.content') }}">{{ t('common.back') }}</a>
+            {% if page.is_published %}
+                <a class="btn btn-outline-secondary ms-auto" target="_blank" rel="noopener"
+                   href="{{ page.kind == 'home' ? path('home') : path('page.show', {'slug': page.slug}) }}">{{ t('admin.content.preview') }}</a>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}

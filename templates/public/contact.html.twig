@@ -1,0 +1,33 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <article class="py-5" data-testid="content-page" data-page-slug="{{ page.slug }}">
+        <div class="container" style="max-width: 46rem;">
+            <h1 class="h2 mb-3">{{ translation ? translation.title : t('nav.contact') }}</h1>
+
+            {% if translation and translation.lead %}
+                <p class="lead">{{ translation.lead }}</p>
+            {% endif %}
+
+            <div class="ss-rich-text mb-4">{{ translation ? translation.body|raw : '' }}</div>
+
+            <div class="card" data-testid="contact-details">
+                <div class="card-body">
+                    {% if contact_email or contact_phone %}
+                        <p class="mb-2">{{ t('content.contact_intro') }}</p>
+                        <ul class="list-unstyled mb-0">
+                            {% if contact_email %}
+                                <li><a href="mailto:{{ contact_email }}" data-testid="contact-email">{{ contact_email }}</a></li>
+                            {% endif %}
+                            {% if contact_phone %}
+                                <li><a href="tel:{{ contact_phone|replace({' ': ''}) }}" data-testid="contact-phone">{{ contact_phone }}</a></li>
+                            {% endif %}
+                        </ul>
+                    {% else %}
+                        <p class="mb-0 text-body-secondary" data-testid="no-contact">{{ t('content.no_contact') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </article>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block navigation %}{% endblock %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 52rem;">
+            <h1 class="h3 mb-2">{{ t('install.title') }}</h1>
+            <p class="text-body-secondary">{{ t('install.intro') }}</p>
+
+            {% if errors.general is defined %}
+                <div class="alert alert-danger" role="alert" data-testid="install-error">{{ t(errors.general) }}</div>
+            {% endif %}
+
+            <h2 class="h5 mt-4">{{ t('install.step.requirements') }}</h2>
+            <ul class="list-group mb-4" data-testid="requirements">
+                {% for requirement in requirements %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ t('install.requirement.' ~ requirement.id) }} <span class="text-body-secondary small">{{ requirement.detail }}</span></span>
+                        <span class="badge {{ requirement.ok ? 'text-bg-success' : (requirement.required ? 'text-bg-danger' : 'text-bg-warning') }}"
+                              data-requirement="{{ requirement.id }}" data-ok="{{ requirement.ok ? '1' : '0' }}">
+                            {{ requirement.ok ? t('install.requirement.ok') : (requirement.required ? t('install.requirement.missing') : t('install.requirement.recommended')) }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            {% if not requirements_ok %}
+                <div class="alert alert-danger" role="alert">{{ t('install.requirements_not_met') }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ path('install.submit') }}" novalidate data-testid="install-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+                <h2 class="h5">{{ t('install.step.database') }}</h2>
+                {% if errors.database is defined %}
+                    <div class="alert alert-danger" role="alert" data-testid="database-error">{{ t(errors.database) }}</div>
+                {% endif %}
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_host">{{ t('install.field.db_host') }}</label>
+                        <input class="form-control" id="db_host" name="db_host" value="{{ values.db_host }}" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_port">{{ t('install.field.db_port') }}</label>
+                        <input class="form-control" id="db_port" name="db_port" type="number" value="{{ values.db_port }}" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_name">{{ t('install.field.db_name') }}</label>
+                        <input class="form-control" id="db_name" name="db_name" value="{{ values.db_name }}" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_user">{{ t('install.field.db_user') }}</label>
+                        <input class="form-control" id="db_user" name="db_user" value="{{ values.db_user }}" autocomplete="off" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_password">{{ t('install.field.db_password') }}</label>
+                        <input class="form-control" id="db_password" name="db_password" type="password" autocomplete="new-password">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="db_charset">{{ t('install.field.db_charset') }}</label>
+                        <input class="form-control" id="db_charset" name="db_charset" value="{{ values.db_charset }}">
+                    </div>
+                </div>
+
+                <h2 class="h5">{{ t('install.step.administrator') }}</h2>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_first_name">{{ t('auth.field.first_name') }}</label>
+                        <input class="form-control{{ errors.admin_first_name is defined ? ' is-invalid' : '' }}"
+                               id="admin_first_name" name="admin_first_name" value="{{ values.admin_first_name }}"
+                               autocomplete="given-name" required>
+                        {% if errors.admin_first_name is defined %}<div class="invalid-feedback">{{ t(errors.admin_first_name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_last_name">{{ t('auth.field.last_name') }}</label>
+                        <input class="form-control{{ errors.admin_last_name is defined ? ' is-invalid' : '' }}"
+                               id="admin_last_name" name="admin_last_name" value="{{ values.admin_last_name }}"
+                               autocomplete="family-name" required>
+                        {% if errors.admin_last_name is defined %}<div class="invalid-feedback">{{ t(errors.admin_last_name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_email">{{ t('auth.field.email') }}</label>
+                        <input class="form-control{{ errors.admin_email is defined ? ' is-invalid' : '' }}"
+                               id="admin_email" name="admin_email" type="email" value="{{ values.admin_email }}"
+                               autocomplete="email" inputmode="email" required>
+                        {% if errors.admin_email is defined %}<div class="invalid-feedback">{{ t(errors.admin_email) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_phone">{{ t('auth.field.phone') }}</label>
+                        <input class="form-control" id="admin_phone" name="admin_phone" type="tel"
+                               value="{{ values.admin_phone }}" autocomplete="tel">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_password">{{ t('auth.field.password') }}</label>
+                        <input class="form-control{{ errors.admin_password is defined ? ' is-invalid' : '' }}"
+                               id="admin_password" name="admin_password" type="password"
+                               autocomplete="new-password" minlength="{{ min_password_length }}" required
+                               data-password-input>
+                        <div class="form-text">{{ t('auth.password.requirements', {'length': min_password_length}) }}</div>
+                        <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
+                             aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
+                            <div class="progress-bar" data-password-strength style="width: 0"></div>
+                        </div>
+                        {% if errors.admin_password is defined %}<div class="invalid-feedback">{{ t(errors.admin_password) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="admin_password_confirm">{{ t('auth.field.password_confirm') }}</label>
+                        <input class="form-control{{ errors.admin_password_confirm is defined ? ' is-invalid' : '' }}"
+                               id="admin_password_confirm" name="admin_password_confirm" type="password"
+                               autocomplete="new-password" required>
+                        {% if errors.admin_password_confirm is defined %}<div class="invalid-feedback">{{ t(errors.admin_password_confirm) }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <h2 class="h5">{{ t('install.step.site') }}</h2>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="property_name">{{ t('install.field.property_name') }}</label>
+                        <input class="form-control{{ errors.property_name is defined ? ' is-invalid' : '' }}"
+                               id="property_name" name="property_name" value="{{ values.property_name }}" required>
+                        {% if errors.property_name is defined %}<div class="invalid-feedback">{{ t(errors.property_name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="locale">{{ t('install.field.default_locale') }}</label>
+                        <select class="form-select" id="locale" name="locale">
+                            {% for available in locales %}
+                                <option value="{{ available }}"{{ available == values.locale ? ' selected' : '' }}>{{ locale_name(available) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="timezone">{{ t('install.field.timezone') }}</label>
+                        <select class="form-select" id="timezone" name="timezone">
+                            {% for zone in timezones %}
+                                <option value="{{ zone }}"{{ zone == values.timezone ? ' selected' : '' }}>{{ zone }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-lg" type="submit" {{ requirements_ok ? '' : 'disabled' }}
+                        data-testid="install-submit">{{ t('install.action.install') }}</button>
+            </form>
+        </div>
+    </section>
+{% endblock %}

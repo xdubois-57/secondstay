@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="{{ locale }}" data-bs-theme="light" data-theme-mode="auto">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ meta_title|default(t('common.app_name')) }}{% endblock %} — {{ app_name }}</title>
+    <meta name="description" content="{{ meta_description|default(t('common.tagline')) }}">
+    <meta name="generator" content="SecondStay">
+    <meta property="og:site_name" content="{{ app_name }}">
+    <meta property="og:title" content="{{ meta_title|default(t('common.app_name')) }}">
+    <meta property="og:description" content="{{ meta_description|default(t('common.tagline')) }}">
+    <meta property="og:locale" content="{{ locale }}">
+    <meta property="og:type" content="website">
+    {% for alternate in locales %}
+        <link rel="alternate" hreflang="{{ alternate }}" href="{{ base_path }}/{{ alternate }}{{ current_path == '/' ? '/' : current_path }}">
+    {% endfor %}
+    <link rel="alternate" hreflang="x-default" href="{{ base_path }}/{{ 'fr' }}{{ current_path == '/' ? '/' : current_path }}">
+    <link rel="canonical" href="{{ base_path }}/{{ locale }}{{ current_path == '/' ? '/' : current_path }}">
+    <link rel="stylesheet" href="{{ base_path }}/assets/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ base_path }}/assets/css/app.css">
+    {% if structured_data is defined and structured_data %}
+        <script type="application/ld+json">{{ structured_data|raw }}</script>
+    {% endif %}
+    {% block head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+<a class="visually-hidden-focusable skip-link" href="#main-content">{{ t('common.skip_to_content') }}</a>
+
+<header>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" aria-label="{{ t('nav.home') }}">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="{{ path('home') }}">{{ app_name }}</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primary-navigation"
+                    aria-controls="primary-navigation" aria-expanded="false" aria-label="{{ t('common.menu') }}">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="primary-navigation">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0" data-testid="primary-menu">
+                    {% block navigation %}
+                        <li class="nav-item">
+                            <a class="nav-link{{ current_path == '/' ? ' active' : '' }}" href="{{ path('home') }}">{{ t('nav.home') }}</a>
+                        </li>
+                        {% for item in menu_tree|default([]) %}
+                            {% if item.children is empty %}
+                                <li class="nav-item">
+                                    <a class="nav-link{{ current_path == '/' ~ item.slug ? ' active' : '' }}"
+                                       href="{{ path('page.show', {'slug': item.slug}) }}"
+                                       data-menu-slug="{{ item.slug }}">{{ item.label }}</a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle{{ current_path == '/' ~ item.slug ? ' active' : '' }}"
+                                       href="{{ path('page.show', {'slug': item.slug}) }}"
+                                       id="menu-{{ item.slug }}" role="button" data-bs-toggle="dropdown"
+                                       aria-expanded="false" data-menu-slug="{{ item.slug }}">{{ item.label }}</a>
+                                    <ul class="dropdown-menu" aria-labelledby="menu-{{ item.slug }}">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ path('page.show', {'slug': item.slug}) }}">{{ item.label }}</a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% for child in item.children %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ path('page.show', {'slug': child.slug}) }}"
+                                                   data-menu-slug="{{ child.slug }}">{{ child.label }}</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endblock %}
+                </ul>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    {% if current_user %}
+                        {% if is_operational %}
+                            <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.dashboard') }}" data-testid="admin-link">{{ t('admin.nav.administration') }}</a>
+                        {% endif %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('account.profile') }}" data-testid="account-link">{{ t('account.profile.title') }}</a>
+                        <span class="small text-body-secondary" data-testid="current-user">{{ current_user.name }}</span>
+                        <form method="post" action="{{ path('logout') }}" class="d-inline">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="logout">{{ t('auth.logout.action') }}</button>
+                        </form>
+                    {% else %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('login') }}" data-testid="login-link">{{ t('auth.login.action') }}</a>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle
+                            aria-label="{{ t('common.theme.auto') }}">
+                        <span data-theme-label
+                              data-auto="{{ t('common.theme.auto') }}"
+                              data-light="{{ t('common.theme.light') }}"
+                              data-dark="{{ t('common.theme.dark') }}">{{ t('common.theme.auto') }}</span>
+                    </button>
+                    <div class="dropdown" data-locale-switcher>
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                id="locale-switcher" data-bs-toggle="dropdown" aria-expanded="false"
+                                aria-label="{{ t('common.language_selector') }}">
+                            {{ locale_name(locale) }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="locale-switcher">
+                            {% for available in locales %}
+                                <li>
+                                    <a class="dropdown-item{{ available == locale ? ' active' : '' }}"
+                                       hreflang="{{ available }}"
+                                       lang="{{ available }}"
+                                       data-locale-option="{{ available }}"
+                                       {{ available == locale ? 'aria-current="true"' : '' }}
+                                       href="{{ base_path }}/{{ available }}{{ current_path == '/' ? '/' : current_path }}">{{ locale_name(available) }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main id="main-content" class="flex-grow-1">
+    {% if flashes is defined and flashes %}
+        <div class="container mt-3" data-testid="flash-messages">
+            {% for flash in flashes %}
+                <div class="alert alert-{{ flash.type }} alert-dismissible fade show" role="alert" data-flash-type="{{ flash.type }}">
+                    {{ t(flash.key) }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('common.close') }}"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="bg-body-tertiary border-top mt-5">
+    <div class="container py-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+            <p class="mb-0 text-body-secondary small">{{ app_name }} — {{ t('common.tagline') }}</p>
+            <p class="mb-0 text-body-secondary small" data-app-version>{{ t('common.version') }} {{ app_version }}</p>
+        </div>
+        {% if legal_links|default([]) is not empty %}
+            <nav class="mt-3" aria-label="{{ t('content.legal_footer') }}" data-testid="legal-links">
+                <ul class="list-inline mb-0 small">
+                    {% for link in legal_links %}
+                        <li class="list-inline-item">
+                            <a class="link-secondary" href="{{ path('page.show', {'slug': link.slug}) }}"
+                               data-legal-slug="{{ link.slug }}">{{ link.label }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</footer>
+
+<script src="{{ base_path }}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="{{ base_path }}/assets/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

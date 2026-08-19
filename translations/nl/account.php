@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'signup' => [
+        'title' => 'Account aanmaken',
+        'intro' => 'Met een account volgt u uw reservering, uw documenten en uw verblijf.',
+        'action' => 'Mijn account aanmaken',
+        'accept_terms' => 'Ik aanvaard de',
+        'already_registered' => 'Ik heb al een account',
+        'sent_title' => 'Controleer uw mailbox',
+        'sent_message' => 'Als registratie mogelijk is voor {email}, is er zojuist een bericht naar dat adres gestuurd.',
+        'sent_hint' => 'De bevestigingslink blijft zeven dagen geldig.',
+    ],
+    'confirm' => [
+        'title' => 'E-mailbevestiging',
+        'success' => 'Uw e-mailadres is bevestigd. Welkom.',
+    ],
+    'forgot' => [
+        'title' => 'Wachtwoord vergeten',
+        'intro' => 'Geef uw e-mailadres op: als er een account bestaat, ontvangt u een resetlink.',
+        'action' => 'Link versturen',
+        'sent' => 'Als er een account bestaat voor dit adres, is zojuist een resetlink verstuurd.',
+    ],
+    'reset' => [
+        'title' => 'Nieuw wachtwoord',
+        'new_password' => 'Nieuw wachtwoord',
+        'action' => 'Wachtwoord opslaan',
+        'success' => 'Wachtwoord gewijzigd. U kunt inloggen.',
+    ],
+    'profile' => [
+        'title' => 'Mijn account',
+        'identity' => 'Mijn gegevens',
+        'locale' => 'Voorkeurstaal',
+        'locale_help' => 'Uw e-mails en meldingen gebruiken deze taal.',
+        'saved' => 'Gegevens opgeslagen.',
+    ],
+    'password' => [
+        'title' => 'Wachtwoord',
+        'current' => 'Huidig wachtwoord',
+        'new' => 'Nieuw wachtwoord',
+        'action' => 'Wachtwoord wijzigen',
+        'changed' => 'Wachtwoord gewijzigd. Uw andere apparaten zijn afgemeld.',
+    ],
+    'sessions' => [
+        'title' => 'Aangemelde apparaten',
+        'current' => 'huidig apparaat',
+        'last_seen' => 'laatst gezien',
+        'unknown_device' => 'Onbekend apparaat',
+        'revoke_others' => 'Andere apparaten afmelden',
+        'revoked' => 'De andere apparaten zijn afgemeld.',
+    ],
+    'passkey' => [
+        'title' => 'Toegangssleutels (passkeys)',
+        'intro' => 'Een passkey vervangt het wachtwoord: hij gebruikt uw vingerafdruk, gezicht of apparaatcode.',
+        'add' => 'Passkey toevoegen',
+        'remove' => 'Verwijderen',
+        'removed' => 'Passkey verwijderd.',
+        'not_found' => 'Passkey niet gevonden.',
+        'added' => 'toegevoegd op',
+        'last_used' => 'laatst gebruikt',
+        'empty' => 'Geen passkey geregistreerd.',
+        'label_placeholder' => 'Naam van het apparaat',
+        'unsupported' => 'Uw browser ondersteunt geen passkeys.',
+        'registered' => 'Passkey geregistreerd.',
+        'sign_in' => 'Inloggen met een passkey',
+    ],
+    'privacy' => [
+        'title' => 'Mijn persoonsgegevens',
+        'intro' => 'U kunt uw gegevens op elk moment exporteren of verwijdering van uw account vragen.',
+        'export' => 'Mijn gegevens exporteren (JSON)',
+        'consent_terms' => 'Algemene voorwaarden',
+        'consent_privacy' => 'Privacybeleid',
+    ],
+    'delete' => [
+        'warning' => 'Verwijdering anonimiseert uw account definitief. Gegevens die wettelijk bewaard blijven, blijven geanonimiseerd.',
+        'action' => 'Mijn account verwijderen',
+        'done' => 'Uw account is verwijderd.',
+    ],
+    'error' => [
+        'required' => 'Dit veld is verplicht.',
+        'email_invalid' => 'Ongeldig e-mailadres.',
+        'phone_invalid' => 'Ongeldig telefoonnummer.',
+        'password_mismatch' => 'De twee wachtwoorden komen niet overeen.',
+        'current_password' => 'Huidig wachtwoord is onjuist.',
+        'terms_required' => 'U moet de voorwaarden aanvaarden om een account aan te maken.',
+        'token_invalid' => 'Deze link is ongeldig of verlopen.',
+        'rate_limited' => 'Te veel pogingen. Probeer het later opnieuw.',
+        'administrator_delete' => 'Een beheerder moet eerst zijn rol overdragen voordat het account wordt verwijderd.',
+    ],
+];

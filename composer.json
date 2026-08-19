@@ -1,0 +1,38 @@
+{
+    "name": "xdubois-57/secondstay",
+    "description": "SecondStay — location d'une residence secondaire en France",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-zip": "*",
+        "ext-dom": "*",
+        "twig/twig": "^3.11"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SecondStay\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SecondStay\\Tests\\": "tests/php/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {}
+    },
+    "scripts": {
+        "check": "./scripts/check.sh"
+    }
+}
