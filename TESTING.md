@@ -299,3 +299,51 @@ Chaque itération doit fournir :
 - scénario E2E propre ;
 - ZIP installable ;
 - rollback/restore testé lorsque pertinent.
+
+## 18. Mise en œuvre effective
+
+### 18.1 Couverture de code
+
+PHPUnit produit la couverture Clover via Xdebug (`XDEBUG_MODE=coverage`) en
+local et via pcov en CI. `./scripts/check.sh --full` détecte l'absence de driver
+et exécute alors les tests sans couverture plutôt que d'échouer faussement.
+
+### 18.2 Base de données de test
+
+`./scripts/check.sh` source `scripts/test-env.local.sh` s'il existe (fichier non
+versionné, modèle : `scripts/test-env.local.sh.dist`). Les variables attendues
+sont :
+
+```text
+SECONDSTAY_TEST_DB_HOST
+SECONDSTAY_TEST_DB_PORT
+SECONDSTAY_TEST_DB_NAME
+SECONDSTAY_TEST_DB_USER
+SECONDSTAY_TEST_DB_PASSWORD
+```
+
+La suite `database` refuse de s'exécuter sans base de test explicitement
+configurée : la base de production ne doit jamais être touchée.
+
+### 18.3 Serveur utilisé par Playwright
+
+Playwright démarre `./scripts/dev-server.sh start`, qui lance le serveur PHP
+intégré derrière `scripts/router.php`. Ce routeur applique la politique de
+chemins privés de `PublicPathPolicy`, ce qui rend les tests de sécurité
+représentatifs du comportement Apache en production.
+
+### 18.4 Matrice de navigateurs
+
+| Projet Playwright | Moteur | Viewport |
+|---|---|---|
+| `desktop-chromium` | Chromium | Desktop Chrome |
+| `mobile-safari` | WebKit | iPhone 14 |
+
+Les parcours « Mon séjour » et « états des lieux » doivent toujours être
+exécutés sur le projet mobile.
+
+### 18.5 Contrôle de l'artefact
+
+`./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
+exécution. La CI ajoute une vérification de démarrage réel de l'artefact extrait
+(`/api/version` et une page publique localisée).

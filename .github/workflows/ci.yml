@@ -1,0 +1,219 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'claude/**', 'agent/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  php:
+    name: PHP — syntaxe, PHPStan, PHPUnit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      - name: Syntaxe PHP
+        run: ./scripts/check.sh --php
+
+      - name: PHPUnit avec couverture
+        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover.xml --log-junit build/reports/phpunit-junit.xml
+
+      - name: Upload des rapports PHP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-reports
+          path: build/
+          retention-days: 7
+
+  database:
+    name: Base de données — migrations et intégration
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      - name: Tests base de données
+        run: ./scripts/check.sh --db
+
+  javascript:
+    name: JavaScript — Vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vitest avec couverture
+        run: npm run test:coverage
+
+      - name: Upload de la couverture JS
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-coverage
+          path: coverage/
+          retention-days: 7
+
+  e2e:
+    name: E2E — Playwright
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+
+      - name: Playwright
+        run: ./scripts/check.sh --e2e
+
+      - name: Upload du rapport Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  security:
+    name: Sécurité — audit et fuites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --no-progress
+
+      - name: Audit et contrôle de secrets
+        run: ./scripts/check.sh --security
+
+  release-artifact:
+    name: Artefact de release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --no-progress
+
+      - name: Construction et inspection du ZIP
+        run: ./scripts/build-release-zip.sh --verify-only
+
+      - name: Vérification que l'artefact démarre
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact
+          unzip -q build/release/secondstay-*.zip -d /tmp/artifact
+          php -S 127.0.0.1:8321 -t /tmp/artifact/public &
+          SERVER_PID=$!
+          sleep 3
+          curl -fsS http://127.0.0.1:8321/api/version | tee /dev/stderr | grep -q '"version"'
+          curl -fsS http://127.0.0.1:8321/de/ | grep -q 'Ihr Ferienhaus'
+          kill "$SERVER_PID"

@@ -1,0 +1,23 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" data-testid="error-page" data-error-status="{{ status }}">
+            <p class="text-body-secondary mb-1">{{ status }}</p>
+            <h1 class="h3 mb-3">{{ title }}</h1>
+            <p>{{ message }}</p>
+            {% if reference %}
+                <p class="text-body-secondary small">{{ t('error.reference') }} : <code>{{ reference }}</code></p>
+            {% endif %}
+            {% if debug_message %}
+                <div class="alert alert-warning" role="alert">
+                    <p class="mb-1 fw-semibold">{{ debug_message }}</p>
+                    {% if debug_trace %}<pre class="mb-0 small overflow-auto">{{ debug_trace }}</pre>{% endif %}
+                </div>
+            {% endif %}
+            <a class="btn btn-primary" href="{{ path('home') }}">{{ t('error.back_home') }}</a>
+        </div>
+    </section>
+{% endblock %}

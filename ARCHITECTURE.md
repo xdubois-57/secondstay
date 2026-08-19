@@ -491,3 +491,75 @@ Exclut :
 - coverage ;
 - node_modules ;
 - IDE/agent local state.
+
+## 29. Implémentation effective
+
+Cette section décrit l'état réel du dépôt. Elle est mise à jour à chaque itération.
+
+### 29.1 Arborescence
+
+```text
+public/
+├── index.php                 front controller unique
+├── .htaccess                 racine servie
+└── assets/
+    ├── css/app.css
+    ├── js/app.js             module ES, aucune étape de build
+    ├── js/modules/*.js       modules testés par Vitest
+    └── vendor/bootstrap/     Bootstrap 5 vendorisé (pas de CDN, CSP `self`)
+src/
+├── Core/                     Kernel, Router, Routes, Container, Config, Paths,
+│                             View (Twig), RequestContext, PublicPathPolicy,
+│                             Http/, Exception/
+├── Controller/               AbstractController, HomeController, ApiController
+├── I18n/                     Locales, Translator, LocaleResolver, Formatter
+└── Release/                  ReleaseArtifactPolicy/Builder/Inspector
+templates/                    layout/, public/, error/
+translations/{fr,en,nl,de}/   catalogues système versionnés avec le code
+config/app.php                valeurs par défaut, jamais de secret
+scripts/                      check.sh, release.sh, dev-server.sh, router.php,
+                              build-release-zip.sh, release-artifact.php,
+                              check-secrets.sh, update-manifest.php
+tests/php|js|e2e/             PHPUnit, Vitest, Playwright
+```
+
+### 29.2 Cycle de requête
+
+```text
+public/index.php
+  → Request::fromGlobals()          (calcule le base path, /public est transparent)
+  → Kernel::handle()
+      → PublicPathPolicy            refus des chemins privés (défense en profondeur)
+      → LocaleResolver              préfixe URL > compte > cookie > Accept-Language > défaut > fr
+      → Translator / Formatter      liés à la locale effective
+      → Router::match()
+      → Controller                  reçoit RequestContext + paramètres de route
+      → Response                    en-têtes de sécurité + cookie de langue fonctionnel
+```
+
+### 29.3 Politique de chemins privés
+
+`SecondStay\Core\PublicPathPolicy` est la source de vérité unique. Elle est
+appliquée par :
+
+1. le `.htaccess` racine (production Apache) ;
+2. `scripts/router.php` (serveur PHP intégré, développement et E2E) ;
+3. `Kernel::handle()` (défense en profondeur applicative).
+
+Un test PHPUnit vérifie que le `.htaccess` couvre chaque entrée déclarée dans la
+politique ; un test Playwright vérifie les réponses réelles du serveur.
+
+### 29.4 URLs et langues
+
+Le site public utilise un préfixe de langue explicite : `/fr/…`, `/en/…`,
+`/nl/…`, `/de/…`. Les endpoints techniques (`/api/*`) ne sont pas préfixés.
+`/` redirige vers la langue résolue. Chaque page publie `canonical` et
+`hreflang` pour les quatre langues plus `x-default`.
+
+### 29.5 Artefact de release
+
+`ReleaseArtifactPolicy` déclare les chemins inclus, les entrées obligatoires et
+les motifs interdits. `ReleaseArtifactBuilder` construit le ZIP, régénère
+l'autoloader Composer en mode `--no-dev` et élague `vendor/`.
+`ReleaseArtifactInspector` valide le résultat. Les trois sont couverts par
+PHPUnit, et la CI vérifie en plus que le ZIP extrait démarre réellement.

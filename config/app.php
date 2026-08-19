@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Configuration par defaut de SecondStay.
+ *
+ * Ce fichier ne contient JAMAIS de secret. Les valeurs specifiques a une
+ * installation vivent dans `config/local.php` (non versionne) ou en base.
+ */
+
+return [
+    'app' => [
+        'name' => 'SecondStay',
+        'env' => 'production',
+        'debug' => false,
+        'timezone' => 'Europe/Paris',
+        'currency' => 'EUR',
+    ],
+    'i18n' => [
+        'default_locale' => 'fr',
+        'locales' => ['fr', 'en', 'nl', 'de'],
+        'fallback_locale' => 'fr',
+        'cookie_name' => 'ss_locale',
+        'cookie_lifetime_days' => 365,
+    ],
+    'database' => [
+        'dsn' => '',
+        'driver' => 'mysql',
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'name' => '',
+        'user' => '',
+        'password' => '',
+        'charset' => 'utf8mb4',
+    ],
+    'security' => [
+        'encryption_key' => '',
+        'session_name' => 'secondstay_session',
+        'session_lifetime_minutes' => 120,
+        'csrf_field' => '_csrf',
+    ],
+    'paths' => [
+        'storage' => '',
+    ],
+    'logging' => [
+        'level' => 'info',
+        'retention_days' => 90,
+    ],
+];

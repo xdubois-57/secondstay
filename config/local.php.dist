@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Copiez ce fichier vers config/local.php et adaptez-le.
+ * config/local.php n'est jamais versionne et ne doit jamais etre publie.
+ */
+
+return [
+    'app' => [
+        'env' => 'development',
+        'debug' => true,
+    ],
+    'database' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'name' => 'secondstay',
+        'user' => 'secondstay',
+        'password' => 'change-me',
+    ],
+    'security' => [
+        // Genere avec : php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+        'encryption_key' => '',
+    ],
+];

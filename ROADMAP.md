@@ -21,6 +21,29 @@ Une itération est terminée seulement si :
 - ZIP release contrôlé ;
 - documentation mise à jour.
 
+## État d’avancement
+
+| Itération | Intitulé | État |
+|---|---|---|
+| 0 | Squelette et chaîne de confiance | ✅ livrée |
+| 1 | Installation, configuration, backups, updater | ⏳ à venir |
+| 2 | Site public et contenu | ⏳ à venir |
+| 3 | Comptes et auth | ⏳ à venir |
+| 4 | Notifications et PWA | ⏳ à venir |
+| 5 | Disponibilités et prix | ⏳ à venir |
+| 6 | Réservation sans paiement | ⏳ à venir |
+| 7 | Paiements | ⏳ à venir |
+| 8 | Contrats, documents, IMAP | ⏳ à venir |
+| 9 | Responsable local et opérations | ⏳ à venir |
+| 10 | Mon séjour et invités | ⏳ à venir |
+| 11 | États des lieux et incidents | ⏳ à venir |
+| 12 | France et conformité | ⏳ à venir |
+| 13 | Contenu local IA | ⏳ à venir |
+| 14 | ICS externes, reporting, consolidation | ⏳ à venir |
+
+Le numéro de version mineure suit l’itération livrée : l’itération N correspond
+à la série `0.(N+1).x`.
+
 ## Itération 0 — Squelette et chaîne de confiance
 
 Livrer :

@@ -1,0 +1,68 @@
+/* SecondStay — styles first-party complémentaires à Bootstrap 5. */
+
+:root {
+    --ss-hero-overlay: rgba(0, 0, 0, .35);
+}
+
+.skip-link {
+    position: absolute;
+    top: .5rem;
+    left: .5rem;
+    z-index: 1080;
+    padding: .5rem .75rem;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .375rem;
+}
+
+[data-testid="hero"] {
+    background-size: cover;
+    background-position: center;
+}
+
+.ss-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.ss-status-dot {
+    display: inline-block;
+    width: .625rem;
+    height: .625rem;
+    border-radius: 50%;
+}
+
+.ss-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+}
+
+.ss-calendar__day {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bs-border-color);
+    border-radius: .25rem;
+    font-size: .8rem;
+}
+
+.ss-calendar__day--unavailable {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+    text-decoration: line-through;
+}
+
+.ss-calendar__day--selected {
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    .ss-calendar__day {
+        font-size: .7rem;
+    }
+}

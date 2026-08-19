@@ -1,0 +1,13 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - public
+        - scripts
+        - tests/php
+    excludePaths:
+        analyse:
+            - scripts/*.sh
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: true
+    tmpDir: build/phpstan

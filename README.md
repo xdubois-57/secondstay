@@ -150,23 +150,57 @@ Voir `SECURITY.md`.
 
 ## Développement
 
+### Préparation
+
+```bash
+composer install
+npm install
+npx playwright install --with-deps chromium webkit
+cp config/local.php.dist config/local.php          # configuration locale, jamais versionnée
+cp scripts/test-env.local.sh.dist scripts/test-env.local.sh   # base de test dédiée
+```
+
+### Serveur local
+
+```bash
+./scripts/dev-server.sh start      # http://127.0.0.1:8123
+./scripts/dev-server.sh stop
+```
+
+Le serveur PHP intégré passe par `scripts/router.php`, qui applique la même
+politique de chemins privés que le `.htaccess` racine : les tests de sécurité
+sont donc représentatifs de la production.
+
+### Validation
+
 Commande locale de référence :
 
 ```bash
-./scripts/check.sh
+./scripts/check.sh              # tout (défaut)
+./scripts/check.sh --fast       # syntaxe + PHPStan + PHPUnit + i18n
+./scripts/check.sh --php
+./scripts/check.sh --db
+./scripts/check.sh --js
+./scripts/check.sh --e2e
+./scripts/check.sh --security
 ```
 
-Elle doit couvrir au minimum :
+Elle couvre :
 
 - syntaxe PHP ;
-- PHPStan ;
-- PHPUnit ;
-- tests DB ;
-- Vitest ;
-- Playwright ;
-- audit Composer.
+- PHPStan (niveau 8, aucune erreur tolérée) ;
+- PHPUnit + couverture Clover ;
+- contrôle i18n FR/EN/NL/DE ;
+- tests d’intégration base de données ;
+- Vitest + couverture LCOV ;
+- Playwright (desktop + mobile) ;
+- audit Composer ;
+- absence de secrets versionnés ;
+- conformité de l’artefact de release.
 
-GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations doivent pouvoir être utilisées depuis Claude Code sur macOS et être déclenchées dans GitHub Actions depuis mobile.
+GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations sont
+utilisables depuis Claude Code sur macOS et déclenchables dans GitHub Actions
+depuis mobile.
 
 Voir `TESTING.md`.
 
@@ -181,6 +215,12 @@ Une release installable :
 - exclut `storage/`, secrets, tests, `.github`, `node_modules`, couverture et données locales ;
 - est publiée en GitHub Release ;
 - est installable par l’updater intégré.
+
+```bash
+./scripts/release.sh patch --dry-run   # vérifie toutes les gates sans rien écrire
+./scripts/release.sh minor             # publication complète
+./scripts/build-release-zip.sh --verify-only   # construit et inspecte le ZIP
+```
 
 Voir `RELEASE.md` et `ROADMAP.md`.
 
