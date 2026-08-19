@@ -12,8 +12,12 @@ use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminSettingsController;
 use SecondStay\Controller\Admin\AdminUpdateController;
 use SecondStay\Controller\Admin\AdminUserController;
+use SecondStay\Controller\Account\PasskeyController;
+use SecondStay\Controller\Account\ProfileController;
+use SecondStay\Controller\AccountController;
 use SecondStay\Controller\ApiController;
 use SecondStay\Controller\AuthController;
+use SecondStay\Controller\DevMailboxController;
 use SecondStay\Controller\Admin\AdminContentController;
 use SecondStay\Controller\Admin\AdminMediaController;
 use SecondStay\Controller\InstallController;
@@ -58,6 +62,29 @@ final class Routes
         $router->post('/login', [AuthController::class, 'login'], 'login.submit');
         $router->post('/logout', [AuthController::class, 'logout'], 'logout');
 
+        // --- Comptes clients ---------------------------------------------
+        $router->get('/account/signup', [AccountController::class, 'showSignup'], 'account.signup');
+        $router->post('/account/signup', [AccountController::class, 'signup'], 'account.signup.submit');
+        $router->get('/account/confirm', [AccountController::class, 'confirm'], 'account.confirm');
+        $router->get('/account/forgot-password', [AccountController::class, 'showForgotPassword'], 'account.forgot');
+        $router->post('/account/forgot-password', [AccountController::class, 'forgotPassword'], 'account.forgot.submit');
+        $router->get('/account/reset', [AccountController::class, 'showResetPassword'], 'account.reset');
+        $router->post('/account/reset', [AccountController::class, 'resetPassword'], 'account.reset.submit');
+
+        $router->get('/account', [ProfileController::class, 'show'], 'account.profile');
+        $router->post('/account/profile', [ProfileController::class, 'updateProfile'], 'account.profile.save');
+        $router->post('/account/password', [ProfileController::class, 'changePassword'], 'account.password.change');
+        $router->post('/account/sessions/revoke', [ProfileController::class, 'revokeOtherSessions'], 'account.sessions.revoke');
+        $router->get('/account/export', [ProfileController::class, 'exportData'], 'account.export');
+        $router->post('/account/delete', [ProfileController::class, 'deleteAccount'], 'account.delete');
+        $router->post('/account/passkeys/{id:\d+}/delete', [ProfileController::class, 'deletePasskey'], 'account.passkey.delete');
+
+        // --- WebAuthn (JSON) ------------------------------------------------
+        $router->post('/api/passkeys/register/options', [PasskeyController::class, 'registrationOptions'], 'api.passkeys.register_options', false);
+        $router->post('/api/passkeys/register', [PasskeyController::class, 'register'], 'api.passkeys.register', false);
+        $router->post('/api/passkeys/login/options', [PasskeyController::class, 'authenticationOptions'], 'api.passkeys.login_options', false);
+        $router->post('/api/passkeys/login', [PasskeyController::class, 'authenticate'], 'api.passkeys.login', false);
+
         // --- Administration --------------------------------------------------
         $router->get('/admin', [AdminDashboardController::class, 'index'], 'admin.dashboard');
 
@@ -74,6 +101,11 @@ final class Routes
         $router->get('/admin/audit', [AdminLogController::class, 'auditTrail'], 'admin.audit');
 
         $router->get('/admin/diagnostics', [AdminDiagnosticsController::class, 'index'], 'admin.diagnostics');
+        $router->post(
+            '/admin/diagnostics/rate-limits/clear',
+            [AdminDiagnosticsController::class, 'clearRateLimits'],
+            'admin.diagnostics.rate_limits_clear'
+        );
 
         $router->get('/admin/backups', [AdminBackupController::class, 'index'], 'admin.backups');
         $router->post('/admin/backups/create', [AdminBackupController::class, 'create'], 'admin.backups.create');
@@ -103,6 +135,10 @@ final class Routes
         // --- API technique ------------------------------------------------
         $router->get('/api/version', [ApiController::class, 'version'], 'api.version', false);
         $router->get('/api/health', [ApiController::class, 'health'], 'api.health', false);
+
+        // --- Boîte e-mail de test (transport factice uniquement) -------------
+        $router->get('/api/dev/mailbox', [DevMailboxController::class, 'index'], 'dev.mailbox', false);
+        $router->post('/api/dev/mailbox/purge', [DevMailboxController::class, 'purge'], 'dev.mailbox.purge', false);
 
         // --- Pages éditoriales (attrape-tout, déclaré en dernier) ------------
         $router->get('/{slug:[a-z0-9][a-z0-9-]*}', [PageController::class, 'show'], 'page.show');

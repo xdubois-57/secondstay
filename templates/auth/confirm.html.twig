@@ -1,0 +1,15 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 36rem;" data-testid="confirm-result" data-confirmed="{{ confirmed ? '1' : '0' }}">
+            <h1 class="h3 mb-3">{{ t('account.confirm.title') }}</h1>
+            {% if confirmed %}
+                <p class="alert alert-success">{{ t('account.confirm.success') }}</p>
+            {% else %}
+                <p class="alert alert-danger">{{ t(error_key) }}</p>
+                <a class="btn btn-outline-primary" href="{{ path('account.forgot') }}">{{ t('account.forgot.title') }}</a>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

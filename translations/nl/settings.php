@@ -180,4 +180,52 @@ return [
         'too_small' => 'Waarde is te klein.',
         'too_large' => 'Waarde is te groot.',
     ],
+    'mail' => [
+        'from_address' => [
+            'label' => 'Afzenderadres',
+            'help' => 'Adres dat als afzender van de e-mails wordt getoond.',
+        ],
+        'from_name' => [
+            'label' => 'Afzendernaam',
+            'help' => 'Naam die naast het afzenderadres wordt getoond.',
+        ],
+        'reply_to' => [
+            'label' => 'Antwoordadres',
+            'help' => 'Bewaakte mailbox die antwoorden van gasten ontvangt.',
+        ],
+        'smtp_host' => [
+            'label' => 'SMTP-server',
+            'help' => 'Host van uw e-mailverzenddienst.',
+        ],
+        'smtp_port' => [
+            'label' => 'SMTP-poort',
+            'help' => '587 met STARTTLS, 465 met impliciete TLS.',
+        ],
+        'smtp_encryption' => [
+            'label' => 'SMTP-versleuteling',
+            'help' => 'STARTTLS wordt aanbevolen. Het servercertificaat wordt altijd gecontroleerd.',
+        ],
+        'smtp_username' => [
+            'label' => 'SMTP-gebruiker',
+            'help' => 'Aanmeldnaam voor de SMTP-server.',
+        ],
+        'smtp_password' => [
+            'label' => 'SMTP-wachtwoord',
+            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Laat leeg om de huidige waarde te behouden.',
+        ],
+    ],
+    'account' => [
+        'allow_signup' => [
+            'label' => 'Registraties toestaan',
+            'help' => 'Laat gasten een account aanmaken vanaf de publieke site.',
+        ],
+        'allow_passkeys' => [
+            'label' => 'Passkeys toestaan',
+            'help' => 'Schakelt wachtwoordloos inloggen met passkeys (WebAuthn) in.',
+        ],
+        'require_email_confirmation' => [
+            'label' => 'E-mailbevestiging verplicht',
+            'help' => 'Het account blijft inactief tot het adres is bevestigd.',
+        ],
+    ],
 ];

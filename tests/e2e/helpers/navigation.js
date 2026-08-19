@@ -3,6 +3,11 @@
  * Ce helper garantit que les tests fonctionnent sur les deux viewports.
  */
 export async function openNavigation(page) {
+    // Les commandes de la barre (thème, langue, repli mobile) sont pilotées
+    // par JavaScript : on attend que les modules soient installés, sinon un
+    // clic trop précoce est simplement perdu.
+    await page.waitForSelector('html[data-js-ready="true"]');
+
     const toggler = page.locator('.navbar-toggler');
     if (await toggler.isVisible()) {
         const collapse = page.locator('#primary-navigation');

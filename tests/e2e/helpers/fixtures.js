@@ -30,3 +30,23 @@ export async function signIn(page, email = ADMIN.email, password = ADMIN.passwor
 export async function anonymousContext(browser) {
     return browser.newContext({ storageState: { cookies: [], origins: [] } });
 }
+
+/**
+ * Remet à zéro les compteurs de limitation de débit via l'action
+ * d'administration prévue pour cela.
+ *
+ * Les deux projets Playwright partagent la même installation et la même
+ * adresse IP : sans cela, les scénarios d'inscription se bloqueraient
+ * mutuellement. On utilise la fonctionnalité réelle du produit, jamais une
+ * porte dérobée réservée aux tests.
+ */
+export async function clearRateLimits(browser) {
+    const context = await browser.newContext({ storageState: ADMIN_STATE_FILE });
+    const page = await context.newPage();
+
+    await page.goto('/fr/admin/diagnostics');
+    await page.click('[data-testid="clear-rate-limits"]');
+    await page.waitForSelector('[data-flash-type="success"]');
+
+    await context.close();
+}

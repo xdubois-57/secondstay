@@ -46,6 +46,8 @@ return [
             'site' => 'Site',
             'booking' => 'Reservering',
             'pricing' => 'Tarieven',
+            'mail' => 'E-mail',
+            'account' => 'Accounts',
             'maintenance' => 'Onderhoud',
             'backup' => 'Back-up',
             'update' => 'Update',
@@ -61,6 +63,13 @@ return [
             ],
             'pricing' => [
                 'cleaning_mode' => ['none' => 'Geen', 'optional' => 'Optioneel', 'mandatory' => 'Verplicht'],
+            ],
+            'mail' => [
+                'smtp_encryption' => [
+                    'none' => 'Geen',
+                    'starttls' => 'STARTTLS',
+                    'tls' => 'Impliciete TLS',
+                ],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stabiel', 'prerelease' => 'Pre-release'],
@@ -139,6 +148,10 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostiek',
+        'rate_limits' => 'Snelheidsbeperking',
+        'rate_limits_help' => 'Pogingen om in te loggen, te registreren of een wachtwoord te herstellen zijn per adres beperkt. U kunt de tellers opnieuw instellen als u zichzelf hebt buitengesloten.',
+        'rate_limits_clear' => 'Tellers opnieuw instellen',
+        'rate_limits_cleared' => 'Tellers voor snelheidsbeperking opnieuw ingesteld.',
         'migrations' => 'Databaseschema',
         'current_schema' => 'Toegepaste versie',
         'pending' => 'Openstaande migraties',

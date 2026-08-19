@@ -75,6 +75,7 @@
                         {% if is_operational %}
                             <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.dashboard') }}" data-testid="admin-link">{{ t('admin.nav.administration') }}</a>
                         {% endif %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('account.profile') }}" data-testid="account-link">{{ t('account.profile.title') }}</a>
                         <span class="small text-body-secondary" data-testid="current-user">{{ current_user.name }}</span>
                         <form method="post" action="{{ path('logout') }}" class="d-inline">
                             <input type="hidden" name="_csrf" value="{{ csrf_token }}">

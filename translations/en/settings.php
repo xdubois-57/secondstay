@@ -180,4 +180,52 @@ return [
         'too_small' => 'Value is too small.',
         'too_large' => 'Value is too large.',
     ],
+    'mail' => [
+        'from_address' => [
+            'label' => 'Sender address',
+            'help' => 'Address shown as the sender of the site\'s emails.',
+        ],
+        'from_name' => [
+            'label' => 'Sender name',
+            'help' => 'Name shown next to the sender address.',
+        ],
+        'reply_to' => [
+            'label' => 'Reply-to address',
+            'help' => 'Monitored mailbox that receives guest replies.',
+        ],
+        'smtp_host' => [
+            'label' => 'SMTP server',
+            'help' => 'Host provided by your email sending service.',
+        ],
+        'smtp_port' => [
+            'label' => 'SMTP port',
+            'help' => '587 with STARTTLS, 465 with implicit TLS.',
+        ],
+        'smtp_encryption' => [
+            'label' => 'SMTP encryption',
+            'help' => 'STARTTLS is recommended. The server certificate is always verified.',
+        ],
+        'smtp_username' => [
+            'label' => 'SMTP user',
+            'help' => 'Authentication identifier for the SMTP server.',
+        ],
+        'smtp_password' => [
+            'label' => 'SMTP password',
+            'help' => 'Encrypted at rest and never displayed again. Leave empty to keep the current value.',
+        ],
+    ],
+    'account' => [
+        'allow_signup' => [
+            'label' => 'Allow sign-ups',
+            'help' => 'Lets guests create an account from the public site.',
+        ],
+        'allow_passkeys' => [
+            'label' => 'Allow passkeys',
+            'help' => 'Enables password-free sign-in with passkeys (WebAuthn).',
+        ],
+        'require_email_confirmation' => [
+            'label' => 'Require email confirmation',
+            'help' => 'The account stays inactive until the address is confirmed.',
+        ],
+    ],
 ];

@@ -88,6 +88,7 @@ final class InstallerTest extends DatabaseTestCase
             'locale' => 'nl',
             'property_name' => 'Maison des Pins',
             'timezone' => 'Europe/Paris',
+            'site_url' => 'https://exemple.test/sejour',
         ];
     }
 
@@ -130,6 +131,34 @@ final class InstallerTest extends DatabaseTestCase
         self::assertSame('Maison des Pins', $settings->string('property.name'));
         self::assertSame('nl', $settings->string('site.default_locale'));
         self::assertSame('Europe/Paris', $settings->string('site.timezone'));
+
+        // L'URL d'installation amorce les liens des e-mails transactionnels.
+        self::assertSame('https://exemple.test/sejour', $settings->string('site.public_url'));
+        self::assertSame('noreply@exemple.test', $settings->string('mail.from_address'));
+        self::assertSame('Maison des Pins', $settings->string('mail.from_name'));
+    }
+
+    public function testInstallationWithoutAUsableUrlStillHasAValidSenderAddress(): void
+    {
+        $input = $this->validInput();
+        $input['site_url'] = 'http://localhost:8123';
+
+        $this->installer->install($input);
+
+        /** @var array{security: array{encryption_keys: array<string, string>}} $config */
+        $config = require $this->state->localConfigPath();
+
+        $settings = new SettingsService(
+            new SettingRegistry(),
+            new SettingsRepository($this->database),
+            Encryptor::fromSingleKey($config['security']['encryption_keys']['k1']),
+        );
+
+        // « localhost » seul ne forme pas une adresse valide : on retombe sur
+        // un domaine local complet plutôt que sur une adresse impossible.
+        $address = $settings->string('mail.from_address');
+        self::assertNotSame('', $address);
+        self::assertNotFalse(filter_var($address, FILTER_VALIDATE_EMAIL));
     }
 
     public function testLocalConfigNeverLandsInTheRepositoryAndIsRestrictive(): void

@@ -4,6 +4,7 @@
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
 import { evaluatePassword, levelClass } from './modules/password.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
+import { initPasskeyRegistration, initPasskeySignIn } from './modules/passkey.js';
 
 function prefersDark() {
     return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -73,5 +74,7 @@ ready(() => {
     initTheme();
     initPasswordStrength();
     initGalleryLightbox(document, document);
+    initPasskeyRegistration(document, window);
+    initPasskeySignIn(document, window);
     document.documentElement.setAttribute('data-js-ready', 'true');
 });

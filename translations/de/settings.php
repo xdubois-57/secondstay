@@ -180,4 +180,52 @@ return [
         'too_small' => 'Wert ist zu klein.',
         'too_large' => 'Wert ist zu groß.',
     ],
+    'mail' => [
+        'from_address' => [
+            'label' => 'Absenderadresse',
+            'help' => 'Adresse, die als Absender der E-Mails angezeigt wird.',
+        ],
+        'from_name' => [
+            'label' => 'Absendername',
+            'help' => 'Name, der neben der Absenderadresse angezeigt wird.',
+        ],
+        'reply_to' => [
+            'label' => 'Antwortadresse',
+            'help' => 'Überwachtes Postfach, das Antworten der Gäste empfängt.',
+        ],
+        'smtp_host' => [
+            'label' => 'SMTP-Server',
+            'help' => 'Host Ihres E-Mail-Versanddienstes.',
+        ],
+        'smtp_port' => [
+            'label' => 'SMTP-Port',
+            'help' => '587 mit STARTTLS, 465 mit implizitem TLS.',
+        ],
+        'smtp_encryption' => [
+            'label' => 'SMTP-Verschlüsselung',
+            'help' => 'STARTTLS wird empfohlen. Das Serverzertifikat wird immer geprüft.',
+        ],
+        'smtp_username' => [
+            'label' => 'SMTP-Benutzer',
+            'help' => 'Anmeldename für den SMTP-Server.',
+        ],
+        'smtp_password' => [
+            'label' => 'SMTP-Passwort',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Leer lassen, um den aktuellen Wert zu behalten.',
+        ],
+    ],
+    'account' => [
+        'allow_signup' => [
+            'label' => 'Registrierungen zulassen',
+            'help' => 'Erlaubt Gästen, über die öffentliche Website ein Konto zu erstellen.',
+        ],
+        'allow_passkeys' => [
+            'label' => 'Passkeys zulassen',
+            'help' => 'Aktiviert die passwortlose Anmeldung mit Passkeys (WebAuthn).',
+        ],
+        'require_email_confirmation' => [
+            'label' => 'E-Mail-Bestätigung erforderlich',
+            'help' => 'Das Konto bleibt inaktiv, bis die Adresse bestätigt ist.',
+        ],
+    ],
 ];

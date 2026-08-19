@@ -46,6 +46,8 @@ return [
             'site' => 'Site',
             'booking' => 'Booking',
             'pricing' => 'Rates',
+            'mail' => 'Email',
+            'account' => 'Accounts',
             'maintenance' => 'Maintenance',
             'backup' => 'Backup',
             'update' => 'Update',
@@ -61,6 +63,13 @@ return [
             ],
             'pricing' => [
                 'cleaning_mode' => ['none' => 'None', 'optional' => 'Optional', 'mandatory' => 'Mandatory'],
+            ],
+            'mail' => [
+                'smtp_encryption' => [
+                    'none' => 'None',
+                    'starttls' => 'STARTTLS',
+                    'tls' => 'Implicit TLS',
+                ],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stable', 'prerelease' => 'Pre-release'],
@@ -139,6 +148,10 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostics',
+        'rate_limits' => 'Rate limiting',
+        'rate_limits_help' => 'Sign-in, sign-up and password reset attempts are limited per address. You can reset the counters if you locked yourself out.',
+        'rate_limits_clear' => 'Reset the counters',
+        'rate_limits_cleared' => 'Rate limit counters reset.',
         'migrations' => 'Database schema',
         'current_schema' => 'Applied version',
         'pending' => 'Pending migrations',

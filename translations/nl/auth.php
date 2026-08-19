@@ -10,6 +10,7 @@ return [
         'invalid_credentials' => 'Onjuist e-mailadres of wachtwoord.',
         'rate_limited' => 'Te veel pogingen. Probeer het over enkele minuten opnieuw.',
         'account_pending' => 'Dit account is nog niet geactiveerd.',
+        'or' => 'of',
         'account_suspended' => 'Dit account is geschorst.',
     ],
     'logout' => [

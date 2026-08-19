@@ -73,6 +73,7 @@ final class InstallController extends AbstractController
             'locale' => (string) $request->input('locale', $context->locale),
             'property_name' => (string) $request->input('property_name', ''),
             'timezone' => (string) $request->input('timezone', 'Europe/Paris'),
+            'site_url' => $request->baseUrl(),
         ];
 
         if ((string) $request->input('admin_password', '') !== (string) $request->input('admin_password_confirm', '')) {

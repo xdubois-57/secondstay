@@ -8,6 +8,7 @@ use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
+use SecondStay\Security\RateLimiter;
 
 final class AdminDiagnosticsController extends AdminController
 {
@@ -50,5 +51,35 @@ final class AdminDiagnosticsController extends AdminController
                 'drift' => $migrator->drift(),
             ],
         ]);
+    }
+
+    /**
+     * Débloque les compteurs de limitation de débit.
+     *
+     * Un propriétaire qui s'est verrouillé lui-même (tentatives de connexion,
+     * inscriptions répétées depuis la même adresse) doit pouvoir repartir sans
+     * attendre la fin de la fenêtre. L'action est tracée.
+     *
+     * @param array<string, string> $params
+     */
+    public function clearRateLimits(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireAdministrator();
+
+        $removed = $this->container->get(RateLimiter::class)->clearAll();
+
+        $this->audit()->record(
+            'security.rate_limits_cleared',
+            'rate_limit',
+            '',
+            null,
+            ['removed' => $removed],
+            $user->id,
+            $user->email,
+        );
+
+        $this->flashSuccess('admin.diagnostics.rate_limits_cleared');
+
+        return $this->redirectToRoute($context, 'admin.diagnostics');
     }
 }

@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace SecondStay\Core;
 
 use SecondStay\Audit\AuditTrail;
+use SecondStay\Auth\AccountService;
 use SecondStay\Auth\AuthService;
+use SecondStay\Auth\ConsentRepository;
+use SecondStay\Auth\TokenRepository;
+use SecondStay\Auth\WebAuthn\WebAuthnCredentialRepository;
+use SecondStay\Auth\WebAuthn\WebAuthnService;
 use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\SessionRepository;
 use SecondStay\Auth\UserRepository;
@@ -26,6 +31,12 @@ use SecondStay\I18n\Translator;
 use SecondStay\Logging\Logger;
 use SecondStay\Media\ImageProcessor;
 use SecondStay\Media\MediaRepository;
+use SecondStay\Mail\FakeMailTransport;
+use SecondStay\Mail\MailAddress;
+use SecondStay\Mail\MailRepository;
+use SecondStay\Mail\MailService;
+use SecondStay\Mail\MailTransport;
+use SecondStay\Mail\SmtpMailTransport;
 use SecondStay\Media\MediaService;
 use SecondStay\Seo\SeoBuilder;
 use SecondStay\Support\HtmlSanitizer;
@@ -247,6 +258,100 @@ final class Services
             $c->get(ContentService::class),
             $c->get(SettingsService::class),
         ));
+
+        $container->set(MailTransport::class, static function (Container $c): MailTransport {
+            $config = $c->get(Config::class);
+
+            // Le transport factice n'est activable que par variable
+            // d'environnement : il ne peut jamais être choisi depuis l'UI.
+            if ($config->string('mail.transport', 'smtp') === 'fake') {
+                return new FakeMailTransport($c->get(Paths::class)->storage('temp/mail'));
+            }
+
+            $settings = $c->get(SettingsService::class);
+            $fromAddress = $settings->string('mail.from_address');
+            $from = filter_var($fromAddress, FILTER_VALIDATE_EMAIL) !== false
+                ? new MailAddress($fromAddress, $settings->string('mail.from_name'))
+                : new MailAddress('noreply@localhost', 'SecondStay');
+
+            $publicUrl = $settings->string('site.public_url');
+            $helo = $publicUrl === '' ? 'localhost' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? 'localhost');
+
+            return new SmtpMailTransport(
+                $settings->string('mail.smtp_host'),
+                $settings->int('mail.smtp_port'),
+                $settings->string('mail.smtp_username'),
+                $settings->isSecretDefined('mail.smtp_password')
+                    ? (string) $settings->get('mail.smtp_password')
+                    : '',
+                $settings->string('mail.smtp_encryption'),
+                $from,
+                $helo,
+            );
+        });
+
+        $container->set(MailRepository::class, static fn (Container $c): MailRepository
+            => new MailRepository($c->get(Database::class)));
+
+        $container->set(MailService::class, static fn (Container $c): MailService => new MailService(
+            $c->get(MailTransport::class),
+            $c->get(View::class),
+            $c->get(Translator::class),
+            $c->get(SettingsService::class),
+            $c->get(MailRepository::class),
+            $c->get(Logger::class),
+        ));
+
+        $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
+            => new TokenRepository($c->get(Database::class)));
+
+        $container->set(ConsentRepository::class, static fn (Container $c): ConsentRepository
+            => new ConsentRepository($c->get(Database::class)));
+
+        $container->set(AccountService::class, static fn (Container $c): AccountService => new AccountService(
+            $c->get(UserRepository::class),
+            $c->get(TokenRepository::class),
+            $c->get(SessionRepository::class),
+            $c->get(ConsentRepository::class),
+            $c->get(PasswordHasher::class),
+            $c->get(MailService::class),
+            $c->get(RateLimiter::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(WebAuthnCredentialRepository::class, static fn (Container $c): WebAuthnCredentialRepository
+            => new WebAuthnCredentialRepository($c->get(Database::class)));
+
+        $container->set(WebAuthnService::class, static function (Container $c) : WebAuthnService {
+            $settings = $c->get(SettingsService::class);
+            $publicUrl = rtrim($settings->string('site.public_url'), '/');
+
+            $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
+            $origin = $publicUrl;
+            $host = $publicUrl === '' ? '' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? '');
+
+            if ($context instanceof RequestContext) {
+                // En l'absence d'URL publique configurée, l'origine effective de
+                // la requête fait foi : WebAuthn exige une correspondance exacte.
+                $requestOrigin = ($context->request->isSecure() ? 'https://' : 'http://') . $context->request->host();
+                if ($origin === '') {
+                    $origin = $requestOrigin;
+                }
+                if ($host === '') {
+                    $host = (string) (parse_url($requestOrigin, PHP_URL_HOST) ?? 'localhost');
+                }
+            }
+
+            return new WebAuthnService(
+                $c->get(WebAuthnCredentialRepository::class),
+                $c->get(Session::class),
+                $host === '' ? 'localhost' : $host,
+                $settings->string('property.name') !== '' ? $settings->string('property.name') : 'SecondStay',
+                $origin === '' ? 'http://localhost' : $origin,
+                $c->get(AuditTrail::class),
+            );
+        });
 
         $container->set(DiagnosticRunner::class, static function (Container $c) use ($appVersion): DiagnosticRunner {
             $database = self::optionalDatabase($c);

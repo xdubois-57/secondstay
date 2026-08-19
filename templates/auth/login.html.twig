@@ -26,6 +26,21 @@
 
                 <button class="btn btn-primary w-100" type="submit">{{ t('auth.login.action') }}</button>
             </form>
+
+            {% if passkeys_enabled %}
+                <div class="text-center my-3 text-body-secondary small">{{ t('auth.login.or') }}</div>
+                <button class="btn btn-outline-primary w-100" type="button" hidden
+                        data-passkey-signin data-csrf="{{ csrf_token }}" data-base="{{ base_path }}"
+                        data-testid="passkey-signin">{{ t('account.passkey.sign_in') }}</button>
+                <p class="small mt-2 mb-0 text-center" data-passkey-signin-status role="status"></p>
+            {% endif %}
+
+            <div class="d-flex justify-content-between mt-4 small">
+                <a href="{{ path('account.forgot') }}" data-testid="forgot-link">{{ t('account.forgot.title') }}</a>
+                {% if signup_enabled %}
+                    <a href="{{ path('account.signup') }}" data-testid="signup-link">{{ t('account.signup.action') }}</a>
+                {% endif %}
+            </div>
         </div>
     </section>
 {% endblock %}

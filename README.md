@@ -201,13 +201,48 @@ plusieurs niveaux. La présentation s'adapte à la saison configurée
 /fr/admin/users        plusieurs administrateurs et responsables locaux
 /fr/admin/backups      création, vérification, téléchargement, restauration
 /fr/admin/updates      vérification et installation des GitHub Releases
-/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation
+/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation,
+                       remise à zéro des compteurs de limitation de débit
 /fr/admin/logs         journal technique filtrable et purgeable
 /fr/admin/audit        journal des actions sensibles
 ```
 
 Le mode maintenance ferme le site public (503) tout en laissant l'administration
 et les endpoints techniques accessibles.
+
+## Espace client
+
+```text
+/fr/account/signup           création de compte (prénom, nom, e-mail, téléphone)
+/fr/account/confirm          confirmation de l'adresse e-mail
+/fr/account/forgot-password  demande de réinitialisation
+/fr/account/reset            nouveau mot de passe
+/fr/account                  profil, langue préférée, mot de passe, appareils,
+                             clés d'accès, export et suppression RGPD
+```
+
+L'inscription envoie un e-mail de confirmation dans la langue choisie. Une
+inscription sur une adresse déjà connue produit exactement la même réponse
+qu'une inscription neuve : c'est le titulaire réel qui est prévenu.
+
+Les clés d'accès (passkeys) remplacent le mot de passe lorsque le navigateur
+les prend en charge et que le site est servi depuis un domaine — une
+installation accessible uniquement par adresse IP ne peut pas les proposer.
+
+La suppression de compte anonymise les données identifiantes plutôt que de les
+effacer : les obligations comptables et contractuelles restent honorées.
+
+## Envoi d'e-mails
+
+SecondStay embarque son propre client SMTP : ni Composer ni extension
+supplémentaire ne sont nécessaires sur l'hébergement. Les réglages
+(`/fr/admin/settings`, module « E-mail ») couvrent l'hôte, le port, le
+chiffrement (STARTTLS ou TLS implicite), l'authentification et l'adresse
+d'expédition. La signature DKIM reste à la charge du fournisseur SMTP.
+
+En développement et en CI, `SECONDSTAY_MAIL_TRANSPORT=fake` remplace l'envoi
+réel par un dépôt de messages inspectable : aucun réseau sortant n'est requis
+pour tester les parcours de compte.
 
 ## Hébergement et sécurité
 

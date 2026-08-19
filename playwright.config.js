@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = Number(process.env.SECONDSTAY_PORT || 8123);
-const host = process.env.SECONDSTAY_HOST || '127.0.0.1';
+// `localhost` et non `127.0.0.1` : une adresse IP n'est pas une « relying
+// party » WebAuthn valide, les clés d'accès seraient refusées par le navigateur.
+const host = process.env.SECONDSTAY_HOST || 'localhost';
 const baseURL = process.env.SECONDSTAY_BASE_URL || `http://${host}:${port}`;
 
 export default defineConfig({
@@ -54,6 +56,9 @@ export default defineConfig({
     ],
     webServer: {
         command: './scripts/dev-server.sh start',
+        // Transport e-mail factice : les parcours de compte (confirmation,
+        // réinitialisation) sont vérifiables sans SMTP ni réseau sortant.
+        env: { ...process.env, SECONDSTAY_MAIL_TRANSPORT: 'fake' },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,
         timeout: 60000

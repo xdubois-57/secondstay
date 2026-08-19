@@ -46,7 +46,11 @@ abstract class DatabaseTestCase extends TestCase
 
     protected function tearDown(): void
     {
-        self::removeDirectory($this->storagePath);
+        // `setUp()` peut avoir marqué le test ignoré avant d'ouvrir un bac à
+        // sable : le nettoyage ne doit pas masquer la raison réelle.
+        if (isset($this->storagePath)) {
+            self::removeDirectory($this->storagePath);
+        }
     }
 
     protected function resetSchema(): void

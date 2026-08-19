@@ -46,6 +46,8 @@ return [
             'site' => 'Site',
             'booking' => 'Réservation',
             'pricing' => 'Tarifs',
+            'mail' => 'E-mail',
+            'account' => 'Comptes',
             'maintenance' => 'Maintenance',
             'backup' => 'Sauvegarde',
             'update' => 'Mise à jour',
@@ -61,6 +63,13 @@ return [
             ],
             'pricing' => [
                 'cleaning_mode' => ['none' => 'Aucun', 'optional' => 'Optionnel', 'mandatory' => 'Obligatoire'],
+            ],
+            'mail' => [
+                'smtp_encryption' => [
+                    'none' => 'Aucun',
+                    'starttls' => 'STARTTLS',
+                    'tls' => 'TLS implicite',
+                ],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stable', 'prerelease' => 'Préversion'],
@@ -139,6 +148,10 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostics',
+        'rate_limits' => 'Limitation de débit',
+        'rate_limits_help' => 'Les tentatives de connexion, d’inscription et de réinitialisation sont limitées par adresse. Vous pouvez remettre les compteurs à zéro si vous vous êtes bloqué vous-même.',
+        'rate_limits_clear' => 'Réinitialiser les compteurs',
+        'rate_limits_cleared' => 'Compteurs de limitation remis à zéro.',
         'migrations' => 'Schéma de base de données',
         'current_schema' => 'Version appliquée',
         'pending' => 'Migrations en attente',

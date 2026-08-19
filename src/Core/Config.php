@@ -67,6 +67,7 @@ final class Config
             'SECONDSTAY_ENCRYPTION_KEY' => 'security.encryption_key',
             'SECONDSTAY_STORAGE_PATH' => 'paths.storage',
             'SECONDSTAY_DEFAULT_LOCALE' => 'i18n.default_locale',
+            'SECONDSTAY_MAIL_TRANSPORT' => 'mail.transport',
         ];
 
         foreach ($map as $env => $key) {

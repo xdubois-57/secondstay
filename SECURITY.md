@@ -428,3 +428,78 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   max-age=2592000, immutable`. Les médias privés sont servis en
   `private, no-store`.
 - `X-Content-Type-Options: nosniff` sur toute réponse de fichier.
+
+## 26. Décisions de mise en œuvre (itération 3)
+
+### 26.1 Non-divulgation des comptes
+
+- Inscription, réinitialisation et confirmation renvoient toujours la même
+  réponse, qu'un compte existe ou non. Une inscription sur une adresse déjà
+  connue n'écrase jamais le mot de passe existant : elle notifie le titulaire
+  réel par un message `account_exists`.
+- Les erreurs d'authentification restent génériques ; le hachage de mot de
+  passe est exécuté même pour un compte inexistant (condensat constant), afin
+  de ne pas révéler l'existence d'un compte par le temps de réponse.
+
+### 26.2 Jetons
+
+- Les jetons de confirmation et de réinitialisation sont stockés **hachés** :
+  une fuite de base ne permet pas de les rejouer.
+- Un jeton est à usage unique et invalide les précédents du même type.
+- Durées de vie : confirmation 7 jours, réinitialisation 1 heure, changement
+  d'adresse 24 heures.
+- Une réinitialisation réussie révoque **toutes** les sessions du compte ; un
+  changement de mot de passe depuis l'espace client conserve l'appareil
+  courant et révoque les autres.
+
+### 26.3 E-mails
+
+- Aucun retour de ligne ne peut être injecté dans un en-tête : sujets,
+  noms d'affichage et en-têtes personnalisés sont expurgés des caractères de
+  contrôle, et le `Message-ID` n'est jamais dupliqué.
+- Le nom d'une pièce jointe est réduit à `[A-Za-z0-9._-]`, borné à 120
+  caractères, et retombe sur un nom neutre s'il ne contient aucun caractère
+  alphanumérique : il ne peut pas s'échapper de `Content-Disposition`.
+- Les erreurs SMTP sont exposées sous forme de clés de traduction ; ni l'hôte,
+  ni le port, ni le message système ne remontent à l'interface.
+- Les adresses sont masquées dans les journaux (`c*****@example.test`) et le
+  corps des messages n'est jamais stocké en base.
+- Le transport factice n'existe que si `SECONDSTAY_MAIL_TRANSPORT=fake` ; la
+  boîte de test `/api/dev/mailbox` renvoie 404 dans toute autre configuration.
+
+### 26.4 Clés d'accès
+
+- Vérification complète de l'assertion : origine exacte, `rpIdHash`, défi
+  stocké en session et expirant en 5 minutes, type d'opération, refus des
+  requêtes inter-origines, signature ECDSA/RSA et **compteur strictement
+  croissant** (un compteur qui recule signale une clé clonée).
+- L'identifiant utilisateur transmis à l'authentificateur est un condensat
+  opaque : ni l'adresse e-mail ni l'identifiant interne n'y figurent.
+- Une clé déjà enregistrée est refusée ; les clés existantes sont exclues à
+  l'enregistrement.
+- Les endpoints `/api/passkeys/*` exigent le jeton CSRF (en-tête
+  `X-CSRF-Token`) et sont limités en débit par adresse.
+- Sur un domaine non enregistrable (adresse IP), la fonction est masquée et
+  les endpoints renvoient 404 plutôt que d'échouer silencieusement.
+
+### 26.5 RGPD
+
+- L'export personnel ne contient ni condensat de mot de passe ni jeton de
+  session ; il est servi en `private, no-store`.
+- La suppression **anonymise** le compte plutôt que de l'effacer : l'intégrité
+  comptable et contractuelle est préservée, les données directement
+  identifiantes disparaissent, les sessions sont révoquées et le compte ne
+  peut plus s'authentifier.
+- Un administrateur doit d'abord transmettre son rôle avant de supprimer son
+  compte.
+- Les consentements sont horodatés avec leur version, leur langue et
+  l'adresse IP d'acceptation.
+
+### 26.6 Limitation de débit
+
+- Inscriptions : 5 par adresse IP et par fenêtre de 15 minutes.
+- Réinitialisations : 5 par compte et par fenêtre.
+- Clés d'accès : 20 tentatives d'authentification par adresse IP et par
+  fenêtre.
+- Un administrateur peut remettre les compteurs à zéro depuis
+  `/admin/diagnostics` ; l'action est tracée (`security.rate_limits_cleared`).

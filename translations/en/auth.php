@@ -10,6 +10,7 @@ return [
         'invalid_credentials' => 'Incorrect email address or password.',
         'rate_limited' => 'Too many attempts. Try again in a few minutes.',
         'account_pending' => 'This account is not activated yet.',
+        'or' => 'or',
         'account_suspended' => 'This account is suspended.',
     ],
     'logout' => [

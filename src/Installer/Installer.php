@@ -83,7 +83,8 @@ final class Installer
      *     admin_phone?: string,
      *     locale: string,
      *     property_name: string,
-     *     timezone?: string
+     *     timezone?: string,
+     *     site_url?: string
      * } $input
      *
      * @return array{database: Database, admin_id: int, migrations: list<string>}
@@ -134,11 +135,32 @@ final class Installer
             Encryptor::fromSingleKey($encryptionKey),
         );
 
-        $settings->setMany([
+        $initialSettings = [
             'property.name' => $input['property_name'],
             'site.default_locale' => $locale,
             'site.timezone' => $input['timezone'] ?? 'Europe/Paris',
-        ], 'installer');
+        ];
+
+        // L'URL réellement utilisée pour installer sert de valeur de départ :
+        // les liens des e-mails transactionnels sont ainsi corrects dès la
+        // première inscription, avant toute configuration manuelle.
+        $siteUrl = trim($input['site_url'] ?? '');
+        if ($siteUrl !== '' && filter_var($siteUrl, FILTER_VALIDATE_URL) !== false) {
+            $initialSettings['site.public_url'] = rtrim($siteUrl, '/');
+
+            $host = parse_url($siteUrl, PHP_URL_HOST);
+            if (is_string($host) && filter_var('noreply@' . $host, FILTER_VALIDATE_EMAIL) !== false) {
+                $initialSettings['mail.from_address'] = 'noreply@' . $host;
+            }
+        }
+
+        if (!isset($initialSettings['mail.from_address'])) {
+            $initialSettings['mail.from_address'] = 'noreply@localhost.localdomain';
+        }
+
+        $initialSettings['mail.from_name'] = $input['property_name'];
+
+        $settings->setMany($initialSettings, 'installer');
 
         // Le site public est immédiatement complet dans les quatre langues.
         (new ContentSeeder(

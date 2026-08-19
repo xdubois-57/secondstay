@@ -388,3 +388,59 @@ simuler un visiteur, utiliser `anonymousContext(browser)`
 temporaire (liens symboliques vers `templates/`, `translations/`,
 `migrations/`, `public/`, `vendor/`). Les tests ne dépendent donc jamais de
 l'état du dépôt de travail, même après une campagne E2E.
+
+## 20. Itération 3 — comptes, e-mails et clés d’accès
+
+### 20.1 Couverture des scénarios critiques
+
+| Scénario critique | Fichier |
+|---|---|
+| 4 — signup / confirmation / login client | `tests/e2e/account.spec.js` |
+| 10 — SMTP fake | `tests/e2e/account.spec.js`, `tests/php/Unit/SmtpMailTransportTest.php` |
+
+`account.spec.js` couvre le cycle complet : inscription, e-mail de
+confirmation, refus de connexion avant confirmation, activation, unicité du
+lien, non-divulgation d’un compte existant, réinitialisation de bout en bout,
+préférence de langue, changement de mot de passe, appareils connectés, export
+RGPD, suppression de compte et exigence de jeton CSRF.
+
+`passkeys.spec.js` couvre l’enregistrement et la connexion sans mot de passe
+avec l’authentificateur virtuel de Chromium. WebKit ne fournit pas cette API :
+le scénario y est explicitement ignoré, et la vérification serveur des
+assertions (ES256 et RS256) est couverte en PHP par `WebAuthnServiceTest`, qui
+s’appuie sur un authentificateur simulé produisant de véritables structures
+CBOR et de véritables signatures.
+
+### 20.2 Boîte e-mail de test
+
+Le transport `fake` est activé par `SECONDSTAY_MAIL_TRANSPORT=fake` ; les
+messages sont déposés en JSON dans `storage/temp/mail` et lus par
+`/api/dev/mailbox`, qui renvoie 404 dans toute autre configuration. Les
+helpers `waitForMail()` et `linkFrom()` (`tests/e2e/helpers/mailbox.js`)
+extraient le lien applicatif d’un message. `globalSetup` relance le serveur de
+développement avec ce transport et vérifie que la boîte répond : un scénario
+de compte qui échoue signale un vrai défaut, jamais une configuration locale
+incorrecte.
+
+### 20.3 Client SMTP
+
+`SmtpMailTransportTest` fait dialoguer le client avec un serveur SMTP factice
+local (`tests/php/Support/bin/smtp-stub.php`) qui écrit la transcription
+reçue : la conversation réellement parlée est vérifiée, y compris le repli
+`AUTH PLAIN` → `AUTH LOGIN`, les refus de destinataire et de message, et
+l’absence de fuite de détail système dans les erreurs. Aucun réseau sortant,
+aucun identifiant réel.
+
+### 20.4 Limitation de débit et déterminisme
+
+Les deux projets Playwright partagent l’installation **et** l’adresse IP : les
+compteurs d’inscription sont donc communs. Les scénarios de compte remettent
+ces compteurs à zéro via l’action d’administration réelle
+(`/admin/diagnostics`, helper `clearRateLimits()`), jamais par une porte
+dérobée réservée aux tests.
+
+### 20.5 Domaine de test
+
+Les campagnes E2E s’exécutent sur `http://localhost:8123` et non sur une
+adresse IP : une adresse IP n’est pas une « relying party » WebAuthn valide et
+les clés d’accès seraient refusées par le navigateur.

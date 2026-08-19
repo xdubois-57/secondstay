@@ -130,6 +130,27 @@ final class SettingRegistry
             new SettingDefinition('pricing.deposit_percent', SettingType::Integer, 30, 'pricing', min: 0, max: 100),
             new SettingDefinition('pricing.security_deposit', SettingType::Money, 50000, 'pricing', min: 0),
 
+            // --- E-mail -----------------------------------------------------
+            new SettingDefinition('mail.from_address', SettingType::Email, '', 'mail'),
+            new SettingDefinition('mail.from_name', SettingType::String, '', 'mail', max: 120),
+            new SettingDefinition('mail.reply_to', SettingType::Email, '', 'mail'),
+            new SettingDefinition('mail.smtp_host', SettingType::String, '', 'mail', max: 190),
+            new SettingDefinition('mail.smtp_port', SettingType::Integer, 587, 'mail', min: 1, max: 65535),
+            new SettingDefinition(
+                'mail.smtp_encryption',
+                SettingType::Enum,
+                'starttls',
+                'mail',
+                enumValues: ['none', 'starttls', 'tls']
+            ),
+            new SettingDefinition('mail.smtp_username', SettingType::String, '', 'mail', max: 190),
+            new SettingDefinition('mail.smtp_password', SettingType::Secret, null, 'mail'),
+
+            // --- Comptes ----------------------------------------------------
+            new SettingDefinition('account.allow_signup', SettingType::Bool, true, 'account'),
+            new SettingDefinition('account.allow_passkeys', SettingType::Bool, true, 'account'),
+            new SettingDefinition('account.require_email_confirmation', SettingType::Bool, true, 'account'),
+
             // --- Maintenance / sauvegarde ---------------------------------
             new SettingDefinition('maintenance.enabled', SettingType::Bool, false, 'maintenance'),
             new SettingDefinition('maintenance.message', SettingType::Text, '', 'maintenance'),

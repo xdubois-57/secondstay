@@ -8,6 +8,19 @@
     </p>
 
     <div class="card mb-4">
+        <div class="card-header">{{ t('admin.diagnostics.rate_limits') }}</div>
+        <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+            <p class="mb-0 text-body-secondary flex-grow-1">{{ t('admin.diagnostics.rate_limits_help') }}</p>
+            <form method="post" action="{{ path('admin.diagnostics.rate_limits_clear') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <button class="btn btn-outline-secondary" type="submit" data-testid="clear-rate-limits">
+                    {{ t('admin.diagnostics.rate_limits_clear') }}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header">{{ t('admin.diagnostics.migrations') }}</div>
         <div class="card-body">
             <p class="mb-1">{{ t('admin.diagnostics.current_schema') }} : <code data-testid="schema-version">{{ migrations.current ?: '—' }}</code></p>

@@ -46,6 +46,8 @@ return [
             'site' => 'Website',
             'booking' => 'Buchung',
             'pricing' => 'Preise',
+            'mail' => 'E-Mail',
+            'account' => 'Konten',
             'maintenance' => 'Wartung',
             'backup' => 'Sicherung',
             'update' => 'Aktualisierung',
@@ -61,6 +63,13 @@ return [
             ],
             'pricing' => [
                 'cleaning_mode' => ['none' => 'Keine', 'optional' => 'Optional', 'mandatory' => 'Verpflichtend'],
+            ],
+            'mail' => [
+                'smtp_encryption' => [
+                    'none' => 'Keine',
+                    'starttls' => 'STARTTLS',
+                    'tls' => 'Implizites TLS',
+                ],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stabil', 'prerelease' => 'Vorabversion'],
@@ -139,6 +148,10 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnose',
+        'rate_limits' => 'Ratenbegrenzung',
+        'rate_limits_help' => 'Anmelde-, Registrierungs- und Zurücksetzungsversuche sind pro Adresse begrenzt. Sie können die Zähler zurücksetzen, wenn Sie sich selbst ausgesperrt haben.',
+        'rate_limits_clear' => 'Zähler zurücksetzen',
+        'rate_limits_cleared' => 'Zähler der Ratenbegrenzung zurückgesetzt.',
         'migrations' => 'Datenbankschema',
         'current_schema' => 'Angewendete Version',
         'pending' => 'Ausstehende Migrationen',

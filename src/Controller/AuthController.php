@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SecondStay\Controller;
 
+use SecondStay\Auth\WebAuthn\WebAuthnService;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 
@@ -42,7 +43,7 @@ final class AuthController extends AbstractController
 
         $this->flashSuccess('auth.login.welcome');
 
-        $target = $result['user']->isOperational() ? 'admin.dashboard' : 'home';
+        $target = $result['user']->isOperational() ? 'admin.dashboard' : 'account.profile';
 
         return $this->redirectToRoute($context, $target, [], $result['user']->locale);
     }
@@ -64,6 +65,9 @@ final class AuthController extends AbstractController
             'meta_title' => $this->trans('auth.login.title'),
             'error_key' => $errorKey,
             'email' => $email,
+            'passkeys_enabled' => $this->settings()->bool('account.allow_passkeys')
+                && $this->container->get(WebAuthnService::class)->isAvailable(),
+            'signup_enabled' => $this->settings()->bool('account.allow_signup'),
         ], $status);
     }
 }

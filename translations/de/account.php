@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'signup' => [
+        'title' => 'Konto erstellen',
+        'intro' => 'Mit einem Konto verfolgen Sie Ihre Buchung, Ihre Dokumente und Ihren Aufenthalt.',
+        'action' => 'Mein Konto erstellen',
+        'accept_terms' => 'Ich akzeptiere die',
+        'already_registered' => 'Ich habe bereits ein Konto',
+        'sent_title' => 'Prüfen Sie Ihr Postfach',
+        'sent_message' => 'Wenn eine Registrierung für {email} möglich ist, wurde soeben eine Nachricht an diese Adresse gesendet.',
+        'sent_hint' => 'Der Bestätigungslink bleibt sieben Tage gültig.',
+    ],
+    'confirm' => [
+        'title' => 'E-Mail-Bestätigung',
+        'success' => 'Ihre E-Mail-Adresse ist bestätigt. Willkommen.',
+    ],
+    'forgot' => [
+        'title' => 'Passwort vergessen',
+        'intro' => 'Geben Sie Ihre E-Mail-Adresse an: Wenn ein Konto existiert, erhalten Sie einen Link zum Zurücksetzen.',
+        'action' => 'Link senden',
+        'sent' => 'Wenn für diese Adresse ein Konto existiert, wurde soeben ein Link zum Zurücksetzen gesendet.',
+    ],
+    'reset' => [
+        'title' => 'Neues Passwort',
+        'new_password' => 'Neues Passwort',
+        'action' => 'Passwort speichern',
+        'success' => 'Passwort geändert. Sie können sich anmelden.',
+    ],
+    'profile' => [
+        'title' => 'Mein Konto',
+        'identity' => 'Meine Daten',
+        'locale' => 'Bevorzugte Sprache',
+        'locale_help' => 'Ihre E-Mails und Benachrichtigungen verwenden diese Sprache.',
+        'saved' => 'Daten gespeichert.',
+    ],
+    'password' => [
+        'title' => 'Passwort',
+        'current' => 'Aktuelles Passwort',
+        'new' => 'Neues Passwort',
+        'action' => 'Passwort ändern',
+        'changed' => 'Passwort geändert. Ihre anderen Geräte wurden abgemeldet.',
+    ],
+    'sessions' => [
+        'title' => 'Angemeldete Geräte',
+        'current' => 'aktuelles Gerät',
+        'last_seen' => 'zuletzt gesehen',
+        'unknown_device' => 'Unbekanntes Gerät',
+        'revoke_others' => 'Andere Geräte abmelden',
+        'revoked' => 'Die anderen Geräte wurden abgemeldet.',
+    ],
+    'passkey' => [
+        'title' => 'Passkeys',
+        'intro' => 'Ein Passkey ersetzt das Passwort: Er nutzt Fingerabdruck, Gesicht oder Gerätecode.',
+        'add' => 'Passkey hinzufügen',
+        'remove' => 'Entfernen',
+        'removed' => 'Passkey entfernt.',
+        'not_found' => 'Passkey nicht gefunden.',
+        'added' => 'hinzugefügt am',
+        'last_used' => 'zuletzt verwendet',
+        'empty' => 'Kein Passkey registriert.',
+        'label_placeholder' => 'Gerätename',
+        'unsupported' => 'Ihr Browser unterstützt keine Passkeys.',
+        'registered' => 'Passkey registriert.',
+        'sign_in' => 'Mit einem Passkey anmelden',
+    ],
+    'privacy' => [
+        'title' => 'Meine personenbezogenen Daten',
+        'intro' => 'Sie können Ihre Daten jederzeit exportieren oder die Löschung Ihres Kontos verlangen.',
+        'export' => 'Meine Daten exportieren (JSON)',
+        'consent_terms' => 'Allgemeine Geschäftsbedingungen',
+        'consent_privacy' => 'Datenschutzerklärung',
+    ],
+    'delete' => [
+        'warning' => 'Die Löschung anonymisiert Ihr Konto dauerhaft. Gesetzlich aufzubewahrende Daten bleiben anonymisiert.',
+        'action' => 'Mein Konto löschen',
+        'done' => 'Ihr Konto wurde gelöscht.',
+    ],
+    'error' => [
+        'required' => 'Dieses Feld ist erforderlich.',
+        'email_invalid' => 'Ungültige E-Mail-Adresse.',
+        'phone_invalid' => 'Ungültige Telefonnummer.',
+        'password_mismatch' => 'Die beiden Passwörter stimmen nicht überein.',
+        'current_password' => 'Aktuelles Passwort ist falsch.',
+        'terms_required' => 'Sie müssen die Bedingungen akzeptieren, um ein Konto zu erstellen.',
+        'token_invalid' => 'Dieser Link ist ungültig oder abgelaufen.',
+        'rate_limited' => 'Zu viele Versuche. Bitte später erneut versuchen.',
+        'administrator_delete' => 'Ein Administrator muss seine Rolle zuerst übergeben, bevor das Konto gelöscht wird.',
+    ],
+];

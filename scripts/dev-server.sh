@@ -3,7 +3,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HOST="${SECONDSTAY_HOST:-127.0.0.1}"
+# `localhost` : une adresse IP n'est pas un domaine WebAuthn valide, les clés
+# d'accès ne fonctionneraient pas en développement.
+HOST="${SECONDSTAY_HOST:-localhost}"
 PORT="${SECONDSTAY_PORT:-8123}"
 PIDFILE="${ROOT}/storage/temp/dev-server.pid"
 LOGFILE="${ROOT}/storage/logs/dev-server.log"
@@ -41,6 +43,17 @@ stop() {
         fi
         rm -f "$PIDFILE"
     fi
+
+    # Un serveur lancé hors de ce script (session précédente, arrêt brutal)
+    # garderait le port et servirait un environnement obsolète. Le motif est
+    # ancré en début de ligne de commande : il ne peut pas correspondre au
+    # shell qui exécute ce script.
+    for ORPHAN in $(pgrep -f "^php -S ${HOST}:${PORT}" 2>/dev/null || true); do
+        kill "$ORPHAN" 2>/dev/null || true
+        sleep 0.3
+        kill -9 "$ORPHAN" 2>/dev/null || true
+    done
+
     echo "dev-server stopped"
 }
 

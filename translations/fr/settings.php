@@ -180,4 +180,52 @@ return [
         'too_small' => 'Valeur trop petite.',
         'too_large' => 'Valeur trop grande.',
     ],
+    'mail' => [
+        'from_address' => [
+            'label' => 'Adresse d’expédition',
+            'help' => 'Adresse affichée comme expéditeur des e-mails du site.',
+        ],
+        'from_name' => [
+            'label' => 'Nom d’expéditeur',
+            'help' => 'Nom affiché à côté de l’adresse d’expédition.',
+        ],
+        'reply_to' => [
+            'label' => 'Adresse de réponse',
+            'help' => 'Boîte surveillée qui reçoit les réponses des voyageurs.',
+        ],
+        'smtp_host' => [
+            'label' => 'Serveur SMTP',
+            'help' => 'Hôte fourni par votre service d’envoi d’e-mails.',
+        ],
+        'smtp_port' => [
+            'label' => 'Port SMTP',
+            'help' => '587 avec STARTTLS, 465 avec TLS implicite.',
+        ],
+        'smtp_encryption' => [
+            'label' => 'Chiffrement SMTP',
+            'help' => 'STARTTLS est recommandé. Le certificat du serveur est toujours vérifié.',
+        ],
+        'smtp_username' => [
+            'label' => 'Utilisateur SMTP',
+            'help' => 'Identifiant d’authentification auprès du serveur SMTP.',
+        ],
+        'smtp_password' => [
+            'label' => 'Mot de passe SMTP',
+            'help' => 'Chiffré au repos et jamais réaffiché. Laissez vide pour conserver la valeur actuelle.',
+        ],
+    ],
+    'account' => [
+        'allow_signup' => [
+            'label' => 'Autoriser les inscriptions',
+            'help' => 'Permet aux voyageurs de créer un compte depuis le site public.',
+        ],
+        'allow_passkeys' => [
+            'label' => 'Autoriser les clés d’accès',
+            'help' => 'Active la connexion sans mot de passe par passkey (WebAuthn).',
+        ],
+        'require_email_confirmation' => [
+            'label' => 'Confirmation d’e-mail obligatoire',
+            'help' => 'Le compte reste inactif tant que l’adresse n’est pas confirmée.',
+        ],
+    ],
 ];

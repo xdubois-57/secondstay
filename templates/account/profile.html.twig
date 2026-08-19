@@ -1,0 +1,194 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 52rem;" data-testid="account-profile">
+            <h1 class="h3 mb-4">{{ t('account.profile.title') }}</h1>
+
+            {# --- Profil ---------------------------------------------------- #}
+            <div class="card mb-4">
+                <div class="card-header">{{ t('account.profile.identity') }}</div>
+                <div class="card-body">
+                    <form method="post" action="{{ path('account.profile.save') }}" novalidate data-testid="profile-form">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="first_name">{{ t('auth.field.first_name') }}</label>
+                                <input class="form-control{{ errors.first_name is defined ? ' is-invalid' : '' }}"
+                                       id="first_name" name="first_name" value="{{ profile.first_name }}"
+                                       autocomplete="given-name" required>
+                                {% if errors.first_name is defined %}<div class="invalid-feedback">{{ t(errors.first_name) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="last_name">{{ t('auth.field.last_name') }}</label>
+                                <input class="form-control{{ errors.last_name is defined ? ' is-invalid' : '' }}"
+                                       id="last_name" name="last_name" value="{{ profile.last_name }}"
+                                       autocomplete="family-name" required>
+                                {% if errors.last_name is defined %}<div class="invalid-feedback">{{ t(errors.last_name) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="email">{{ t('auth.field.email') }}</label>
+                                <input class="form-control" id="email" type="email" value="{{ profile.email }}" readonly>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="phone">{{ t('auth.field.phone') }}</label>
+                                <input class="form-control{{ errors.phone is defined ? ' is-invalid' : '' }}"
+                                       id="phone" name="phone" type="tel" value="{{ profile.phone }}" autocomplete="tel">
+                                {% if errors.phone is defined %}<div class="invalid-feedback">{{ t(errors.phone) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="locale">{{ t('account.profile.locale') }}</label>
+                                <select class="form-select" id="locale" name="locale" data-testid="locale-preference">
+                                    {% for available in locales %}
+                                        <option value="{{ available }}"{{ available == profile.locale ? ' selected' : '' }}>{{ locale_name(available) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">{{ t('account.profile.locale_help') }}</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mt-3" type="submit" data-testid="save-profile">{{ common_save|default(t('common.save')) }}</button>
+                    </form>
+                </div>
+            </div>
+
+            {# --- Mot de passe ---------------------------------------------- #}
+            <div class="card mb-4">
+                <div class="card-header">{{ t('account.password.title') }}</div>
+                <div class="card-body">
+                    <form method="post" action="{{ path('account.password.change') }}" novalidate data-testid="password-form">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="current_password">{{ t('account.password.current') }}</label>
+                                <input class="form-control{{ errors.current_password is defined ? ' is-invalid' : '' }}"
+                                       id="current_password" name="current_password" type="password"
+                                       autocomplete="current-password" required>
+                                {% if errors.current_password is defined %}<div class="invalid-feedback">{{ t(errors.current_password) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="new_password">{{ t('account.password.new') }}</label>
+                                <input class="form-control{{ errors.new_password is defined ? ' is-invalid' : '' }}"
+                                       id="new_password" name="new_password" type="password"
+                                       autocomplete="new-password" minlength="{{ min_password_length }}" required
+                                       data-password-input>
+                                <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
+                                     aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
+                                    <div class="progress-bar" data-password-strength style="width: 0"></div>
+                                </div>
+                                {% if errors.new_password is defined %}<div class="invalid-feedback d-block">{{ t(errors.new_password) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="new_password_confirm">{{ t('auth.field.password_confirm') }}</label>
+                                <input class="form-control" id="new_password_confirm" name="new_password_confirm"
+                                       type="password" autocomplete="new-password" required>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary mt-3" type="submit">{{ t('account.password.action') }}</button>
+                    </form>
+                </div>
+            </div>
+
+            {# --- Passkeys --------------------------------------------------- #}
+            {% if passkeys_enabled %}
+                <div class="card mb-4" data-testid="passkeys">
+                    <div class="card-header">{{ t('account.passkey.title') }}</div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">{{ t('account.passkey.intro') }}</p>
+
+                        <ul class="list-group mb-3">
+                            {% for passkey in passkeys %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center"
+                                    data-passkey-id="{{ passkey.id }}">
+                                    <span>
+                                        {{ passkey.label }}
+                                        <span class="text-body-secondary small d-block">
+                                            {{ t('account.passkey.added') }} {{ passkey.created_at }}
+                                            {% if passkey.last_used_at %} — {{ t('account.passkey.last_used') }} {{ passkey.last_used_at }}{% endif %}
+                                        </span>
+                                    </span>
+                                    <form method="post" action="{{ path('account.passkey.delete', {'id': passkey.id}) }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('account.passkey.remove') }}</button>
+                                    </form>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-body-secondary" data-testid="no-passkey">{{ t('account.passkey.empty') }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <input class="form-control" style="max-width: 18rem;" id="passkey_label"
+                                   placeholder="{{ t('account.passkey.label_placeholder') }}" data-passkey-label>
+                            <button class="btn btn-outline-primary" type="button" data-passkey-register
+                                    data-csrf="{{ csrf_token }}" data-base="{{ base_path }}"
+                                    data-busy="{{ t('common.loading') }}"
+                                    data-success-label="{{ t('account.passkey.registered') }}"
+                                    data-error-label="{{ t('webauthn.error.generic') }}"
+                                    data-testid="passkey-add">{{ t('account.passkey.add') }}</button>
+                        </div>
+                        <p class="small mt-2 mb-0" data-passkey-status role="status"></p>
+                        <p class="small text-body-secondary mb-0" data-passkey-unsupported hidden>{{ t('account.passkey.unsupported') }}</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# --- Appareils --------------------------------------------------- #}
+            <div class="card mb-4">
+                <div class="card-header">{{ t('account.sessions.title') }}</div>
+                <div class="card-body">
+                    <ul class="list-group mb-3" data-testid="sessions">
+                        {% for session in sessions %}
+                            <li class="list-group-item" data-session-current="{{ session.is_current ? '1' : '0' }}">
+                                <span class="d-block">{{ session.user_agent ?: t('account.sessions.unknown_device') }}</span>
+                                <span class="text-body-secondary small">
+                                    {{ session.ip }} — {{ t('account.sessions.last_seen') }} {{ session.last_seen_at }}
+                                    {% if session.is_current %} — <strong>{{ t('account.sessions.current') }}</strong>{% endif %}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <form method="post" action="{{ path('account.sessions.revoke') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <button class="btn btn-outline-secondary" type="submit" data-testid="revoke-sessions">{{ t('account.sessions.revoke_others') }}</button>
+                    </form>
+                </div>
+            </div>
+
+            {# --- RGPD -------------------------------------------------------- #}
+            <div class="card border-danger-subtle">
+                <div class="card-header">{{ t('account.privacy.title') }}</div>
+                <div class="card-body">
+                    <p class="text-body-secondary">{{ t('account.privacy.intro') }}</p>
+
+                    {% if consents %}
+                        <ul class="list-unstyled small text-body-secondary" data-testid="consents">
+                            {% for consent in consents %}
+                                <li>{{ t('account.privacy.consent_' ~ consent.type) }} — v{{ consent.version }} ({{ consent.locale }}) — {{ consent.accepted_at }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    <a class="btn btn-outline-secondary mb-3" href="{{ path('account.export') }}" data-testid="export-data">{{ t('account.privacy.export') }}</a>
+
+                    <hr>
+
+                    <p class="mb-2">{{ t('account.delete.warning') }}</p>
+                    <form method="post" action="{{ path('account.delete') }}" data-testid="delete-form">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="delete_password">{{ t('account.password.current') }}</label>
+                                <input class="form-control{{ errors.delete_password is defined ? ' is-invalid' : '' }}"
+                                       id="delete_password" name="password" type="password" autocomplete="current-password" required>
+                                {% if errors.delete_password is defined %}<div class="invalid-feedback">{{ t(errors.delete_password) }}</div>{% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <button class="btn btn-danger" type="submit">{{ t('account.delete.action') }}</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

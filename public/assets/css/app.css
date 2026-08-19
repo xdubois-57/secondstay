@@ -160,3 +160,17 @@
         right: 1rem;
     }
 }
+
+/* --- Navigation repliée -------------------------------------------------
+   Le menu du site grandit avec le nombre de pages publiées. Sur un écran
+   étroit, le menu déplié doit rester entièrement atteignable : on le limite
+   à la hauteur disponible et on le rend défilant, sinon les commandes de fin
+   de barre (compte, thème, langue) sortent de l'écran. */
+@media (max-width: 991.98px) {
+    .navbar-expand-lg .navbar-collapse.show,
+    .navbar-expand-lg .navbar-collapse.collapsing {
+        max-height: calc(100vh - 4.5rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}

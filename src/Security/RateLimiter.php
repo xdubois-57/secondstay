@@ -68,6 +68,18 @@ final class RateLimiter
         $this->database->delete('rate_limit', ['bucket' => mb_substr($bucket, 0, 190)]);
     }
 
+    /**
+     * Efface toutes les fenêtres en cours.
+     *
+     * Réservé à une action d'administration explicite : un propriétaire
+     * bloqué par ses propres tentatives doit pouvoir se débloquer sans
+     * attendre l'expiration de la fenêtre ni toucher à la base.
+     */
+    public function clearAll(): int
+    {
+        return $this->database->execute('DELETE FROM `rate_limit`')->rowCount();
+    }
+
     public function purge(): int
     {
         return $this->database->execute(

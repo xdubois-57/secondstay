@@ -128,6 +128,23 @@ final class AuthServiceTest extends DatabaseTestCase
         self::assertSame('auth.login.rate_limited', $result['error']);
     }
 
+    public function testAnAdministratorCanClearRateLimitsToUnlockAnAccount(): void
+    {
+        $this->createAdmin();
+
+        for ($attempt = 0; $attempt < AuthService::MAX_LOGIN_ATTEMPTS; $attempt++) {
+            $this->auth->attempt('admin@example.test', 'nope-' . $attempt, '203.0.113.5', 'PHPUnit');
+        }
+        self::assertFalse($this->auth->attempt('admin@example.test', 'Marée-Haute-2026!', '203.0.113.5', 'PHPUnit')['ok']);
+
+        $removed = (new RateLimiter($this->database))->clearAll();
+        self::assertGreaterThan(0, $removed);
+        self::assertSame(0, (int) $this->database->fetchValue('SELECT COUNT(*) FROM `rate_limit`'));
+
+        // Le bon mot de passe fonctionne de nouveau immédiatement.
+        self::assertTrue($this->auth->attempt('admin@example.test', 'Marée-Haute-2026!', '203.0.113.5', 'PHPUnit')['ok']);
+    }
+
     public function testRevokedSessionEndsAccessImmediately(): void
     {
         $id = $this->createAdmin();

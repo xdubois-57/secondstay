@@ -43,6 +43,11 @@ return [
     'paths' => [
         'storage' => '',
     ],
+    'mail' => [
+        // 'smtp' en production. 'fake' n'est activable que par la variable
+        // d'environnement SECONDSTAY_MAIL_TRANSPORT, pour les tests.
+        'transport' => 'smtp',
+    ],
     'logging' => [
         'level' => 'info',
         'retention_days' => 90,
