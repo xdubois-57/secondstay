@@ -47,7 +47,7 @@ final class Paths
     public function ensureStorageDirectories(): void
     {
         foreach ([
-            '', 'cache', 'cache/twig', 'logs', 'temp', 'media', 'media/thumbs',
+            '', 'cache', 'cache/twig', 'cache/icons', 'logs', 'temp', 'media', 'media/thumbs',
             'documents', 'inspections', 'mail-attachments', 'backups',
         ] as $directory) {
             $path = $this->storage($directory);

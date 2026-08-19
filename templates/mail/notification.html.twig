@@ -1,0 +1,25 @@
+{% extends 'mail/_layout.html.twig' %}
+
+{#
+    Gabarit unique des notifications : le titre, le texte et le libellé du
+    bouton proviennent des clés de traduction de l'événement. Ajouter un
+    événement ne demande donc qu'un jeu de traductions.
+#}
+
+{% block heading %}{{ heading }}{% endblock %}
+
+{% block body %}
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">{{ message }}</p>
+
+    {% if action_path is defined and action_path %}
+        <p style="margin:24px 0;">
+            <a href="{{ site_url }}{{ action_path }}"
+               style="display:inline-block;background:#0d6efd;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;">
+                {{ action_label|default(t('notification.' ~ event ~ '.action')) }}
+            </a>
+        </p>
+        <p style="margin:0 0 16px;font-size:13px;word-break:break-all;">{{ site_url }}{{ action_path }}</p>
+    {% endif %}
+
+    <p style="margin:0;font-size:13px;color:#6c757d;">{{ t('notification.mail.preferences') }}</p>
+{% endblock %}

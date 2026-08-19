@@ -14,6 +14,7 @@ use SecondStay\Installer\InstallationStatus;
 use SecondStay\Logging\Logger;
 use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Security\Csrf;
+use SecondStay\Security\LazyToken;
 use SecondStay\I18n\Formatter;
 use SecondStay\I18n\Locales;
 use SecondStay\I18n\LocaleResolver;
@@ -252,8 +253,12 @@ final class Kernel
         $view->share('current_user', $user?->toSafeArray());
         $view->share('is_admin', $user?->isAdministrator() ?? false);
         $view->share('is_operational', $user?->isOperational() ?? false);
-        $view->share('csrf_token', $container->get(Csrf::class)->token());
-        $view->share('flashes', $session->takeFlashes());
+        // Le jeton n'est calculé que si un gabarit l'écrit : une page sans
+        // formulaire n'ouvre donc pas de session et ne pose pas de cookie.
+        $view->share('csrf_token', new LazyToken($container->get(Csrf::class)));
+        // Les messages flash sont consommés par la page réellement affichée,
+        // jamais par une requête de service worker ou de préchargement.
+        $view->share('flashes', $request->isDocumentNavigation() ? $session->takeFlashes() : []);
 
         $menu = [];
         $legal = [];

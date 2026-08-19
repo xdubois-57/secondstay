@@ -213,6 +213,34 @@ return [
             'label' => 'SMTP-Passwort',
             'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Leer lassen, um den aktuellen Wert zu behalten.',
         ],
+        'dkim_selector' => [
+            'label' => 'DKIM-Selektor',
+            'help' => 'Vom Versanddienst vorgegebener Selektor (oft „default“ oder „mail“). Er dient nur der DNS-Diagnose: Das Signieren bleibt Sache des Anbieters.',
+        ],
+    ],
+    'notification' => [
+        'push_enabled' => [
+            'label' => 'Push-Benachrichtigungen',
+            'help' => 'Erlaubt Browsern, Benachrichtigungen zu empfangen. Die E-Mail wird in jedem Fall versendet.',
+        ],
+        'retention_days' => [
+            'label' => 'Aufbewahrung des Benachrichtigungsprotokolls',
+            'help' => 'Aufbewahrungsdauer der Versandspuren in Tagen.',
+        ],
+    ],
+    'push' => [
+        'subject' => [
+            'label' => 'Push-Kontakt',
+            'help' => 'Kontakt-E-Mail-Adresse oder URL, die den Push-Diensten übermittelt wird, wie es die Norm verlangt. Ist das Feld leer, wird die Absenderadresse verwendet.',
+        ],
+        'vapid_public' => [
+            'label' => 'Öffentlicher VAPID-Schlüssel',
+            'help' => 'Von der Installation erzeugt und an die Browser übergeben. Ein Austausch macht alle bestehenden Abonnements ungültig.',
+        ],
+        'vapid_private' => [
+            'label' => 'Privater VAPID-Schlüssel',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Er signiert die Zustellungen an die Push-Dienste.',
+        ],
     ],
     'account' => [
         'allow_signup' => [

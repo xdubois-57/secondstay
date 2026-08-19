@@ -6,7 +6,7 @@ namespace SecondStay\Settings;
 
 use SecondStay\Database\Database;
 
-final class SettingsRepository
+final class SettingsRepository implements SettingsStore
 {
     public function __construct(private readonly Database $database)
     {

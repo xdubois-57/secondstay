@@ -5,6 +5,7 @@ import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/th
 import { evaluatePassword, levelClass } from './modules/password.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
 import { initPasskeyRegistration, initPasskeySignIn } from './modules/passkey.js';
+import { initPushControls, registerServiceWorker } from './modules/push.js';
 
 function prefersDark() {
     return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -76,5 +77,8 @@ ready(() => {
     initGalleryLightbox(document, document);
     initPasskeyRegistration(document, window);
     initPasskeySignIn(document, window);
+    initPushControls(document, window);
+    // Le service worker apporte le cache hors ligne et la réception du push.
+    registerServiceWorker(window);
     document.documentElement.setAttribute('data-js-ready', 'true');
 });

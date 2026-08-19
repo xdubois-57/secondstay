@@ -102,9 +102,9 @@ vitest() {
 }
 
 playwright() {
-    # Le transport e-mail factice permet de vérifier les parcours de compte
-    # (confirmation, réinitialisation) sans serveur SMTP ni réseau sortant.
-    SECONDSTAY_MAIL_TRANSPORT=fake npx playwright test
+    # Transports factices : les parcours de compte et de notification sont
+    # vérifiables sans serveur SMTP, sans service de push et sans réseau.
+    SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake npx playwright test
 }
 
 composer_audit() {

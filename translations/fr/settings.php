@@ -213,6 +213,34 @@ return [
             'label' => 'Mot de passe SMTP',
             'help' => 'Chiffré au repos et jamais réaffiché. Laissez vide pour conserver la valeur actuelle.',
         ],
+        'dkim_selector' => [
+            'label' => 'Sélecteur DKIM',
+            'help' => 'Sélecteur fourni par votre service d’envoi (souvent « default » ou « mail »). Il sert uniquement au diagnostic DNS : la signature reste assurée par le fournisseur.',
+        ],
+    ],
+    'notification' => [
+        'push_enabled' => [
+            'label' => 'Notifications push',
+            'help' => 'Autorise les navigateurs à recevoir des notifications. L’e-mail reste envoyé dans tous les cas.',
+        ],
+        'retention_days' => [
+            'label' => 'Conservation du journal des notifications',
+            'help' => 'Durée de conservation des traces d’envoi, en jours.',
+        ],
+    ],
+    'push' => [
+        'subject' => [
+            'label' => 'Contact push',
+            'help' => 'Adresse e-mail ou URL de contact transmise aux services de push, comme l’exige la norme. À défaut, l’adresse d’expédition est utilisée.',
+        ],
+        'vapid_public' => [
+            'label' => 'Clé publique VAPID',
+            'help' => 'Générée par l’installation et transmise aux navigateurs. La remplacer invalide tous les abonnements existants.',
+        ],
+        'vapid_private' => [
+            'label' => 'Clé privée VAPID',
+            'help' => 'Chiffrée au repos et jamais réaffichée. Elle signe les envois vers les services de push.',
+        ],
     ],
     'account' => [
         'allow_signup' => [

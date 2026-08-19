@@ -24,7 +24,7 @@ final class SettingsService
 
     public function __construct(
         private readonly SettingRegistry $registry,
-        private readonly SettingsRepository $repository,
+        private readonly SettingsStore $repository,
         private readonly Encryptor $encryptor,
         private readonly SettingValidator $validator = new SettingValidator(),
         private readonly ?AuditTrail $audit = null,

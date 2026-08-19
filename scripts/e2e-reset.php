@@ -56,7 +56,7 @@ foreach (array_merge(
 }
 
 $storage = $root . '/storage';
-foreach (['media', 'documents', 'inspections', 'mail-attachments', 'backups', 'logs', 'cache/twig', 'temp'] as $directory) {
+foreach (['media', 'documents', 'inspections', 'mail-attachments', 'backups', 'logs', 'cache/twig', 'cache/icons', 'temp'] as $directory) {
     $path = $storage . '/' . $directory;
     if (!is_dir($path)) {
         continue;

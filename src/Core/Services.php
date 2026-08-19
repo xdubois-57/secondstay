@@ -22,6 +22,8 @@ use SecondStay\Database\Database;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
+use SecondStay\Diagnostics\MailDnsChecker;
+use SecondStay\Diagnostics\NotificationDiagnostics;
 use SecondStay\Http\CurlHttpFetcher;
 use SecondStay\Http\HttpFetcher;
 use SecondStay\Installer\InstallationState;
@@ -37,6 +39,16 @@ use SecondStay\Mail\MailRepository;
 use SecondStay\Mail\MailService;
 use SecondStay\Mail\MailTransport;
 use SecondStay\Mail\SmtpMailTransport;
+use SecondStay\Notification\NotificationPreferenceRepository;
+use SecondStay\Notification\NotificationRepository;
+use SecondStay\Notification\NotificationService;
+use SecondStay\Pwa\IconGenerator;
+use SecondStay\Pwa\ManifestBuilder;
+use SecondStay\Push\FakePushProvider;
+use SecondStay\Push\PushProvider;
+use SecondStay\Push\PushSubscriptionRepository;
+use SecondStay\Push\VapidKeyManager;
+use SecondStay\Push\WebPushProvider;
 use SecondStay\Media\MediaService;
 use SecondStay\Seo\SeoBuilder;
 use SecondStay\Support\HtmlSanitizer;
@@ -117,13 +129,7 @@ final class Services
             );
         });
 
-        $container->set(Csrf::class, static function (Container $c): Csrf {
-            $session = $c->get(Session::class);
-            /** @var array<string, mixed> $reference */
-            $reference = &$session->reference();
-
-            return new Csrf($reference);
-        });
+        $container->set(Csrf::class, static fn (Container $c): Csrf => new Csrf($c->get(Session::class)));
 
         // ------------------------------------------------------------------
         // Services dépendant de la base de données.
@@ -269,13 +275,20 @@ final class Services
             }
 
             $settings = $c->get(SettingsService::class);
-            $fromAddress = $settings->string('mail.from_address');
-            $from = filter_var($fromAddress, FILTER_VALIDATE_EMAIL) !== false
-                ? new MailAddress($fromAddress, $settings->string('mail.from_name'))
-                : new MailAddress('noreply@localhost', 'SecondStay');
 
             $publicUrl = $settings->string('site.public_url');
             $helo = $publicUrl === '' ? 'localhost' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? 'localhost');
+
+            $fromAddress = $settings->string('mail.from_address');
+            if (filter_var($fromAddress, FILTER_VALIDATE_EMAIL) === false) {
+                // `localhost` seul ne forme pas une adresse e-mail valide.
+                $candidate = 'noreply@' . $helo;
+                $fromAddress = filter_var($candidate, FILTER_VALIDATE_EMAIL) !== false
+                    ? $candidate
+                    : 'noreply@localhost.localdomain';
+            }
+
+            $from = new MailAddress($fromAddress, $settings->string('mail.from_name'));
 
             return new SmtpMailTransport(
                 $settings->string('mail.smtp_host'),
@@ -301,6 +314,63 @@ final class Services
             $c->get(MailRepository::class),
             $c->get(Logger::class),
         ));
+
+        // --- Notifications et push ---------------------------------------
+        $container->set(VapidKeyManager::class, static fn (Container $c): VapidKeyManager
+            => new VapidKeyManager($c->get(SettingsService::class)));
+
+        $container->set(PushSubscriptionRepository::class, static fn (Container $c): PushSubscriptionRepository
+            => new PushSubscriptionRepository($c->get(Database::class)));
+
+        $container->set(PushProvider::class, static function (Container $c): PushProvider {
+            $config = $c->get(Config::class);
+            $keys = $c->get(VapidKeyManager::class);
+
+            // Le fournisseur factice partage la clé publique de l'installation :
+            // le parcours d'abonnement du navigateur est réellement exercé.
+            if ($config->string('push.provider', 'webpush') === 'fake') {
+                return new FakePushProvider(
+                    $keys->publicKey(),
+                    $c->get(Paths::class)->storage('temp/push')
+                );
+            }
+
+            return new WebPushProvider($keys->vapid(), $c->get(HttpFetcher::class));
+        });
+
+        $container->set(NotificationRepository::class, static fn (Container $c): NotificationRepository
+            => new NotificationRepository($c->get(Database::class)));
+
+        $container->set(NotificationPreferenceRepository::class, static fn (Container $c): NotificationPreferenceRepository
+            => new NotificationPreferenceRepository($c->get(Database::class)));
+
+        $container->set(NotificationService::class, static fn (Container $c): NotificationService
+            => new NotificationService(
+                $c->get(MailService::class),
+                $c->get(PushProvider::class),
+                $c->get(PushSubscriptionRepository::class),
+                $c->get(NotificationRepository::class),
+                $c->get(NotificationPreferenceRepository::class),
+                $c->get(Translator::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+            ));
+
+        // --- Application installable --------------------------------------
+        $container->set(ManifestBuilder::class, static function (Container $c): ManifestBuilder {
+            $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
+
+            return new ManifestBuilder(
+                $c->get(SettingsService::class),
+                $c->get(Translator::class),
+                $context instanceof RequestContext ? $context->request->basePath : '',
+            );
+        });
+
+        $container->set(IconGenerator::class, static fn (Container $c): IconGenerator
+            => new IconGenerator($c->get(Paths::class)->storage('cache/icons')));
+
+        $container->set(MailDnsChecker::class, static fn (): MailDnsChecker => new MailDnsChecker());
 
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
             => new TokenRepository($c->get(Database::class)));
@@ -364,13 +434,31 @@ final class Services
                 }
             }
 
-            return new DiagnosticRunner(
+            $runner = new DiagnosticRunner(
                 $c->get(Paths::class),
                 $database,
                 $settings,
                 $c->get(MaintenanceMode::class),
                 $appVersion,
             );
+
+            if ($database !== null && $settings !== null) {
+                // La sonde SMTP n'est déclenchée que sur demande explicite :
+                // afficher la page ne doit pas ouvrir de connexion sortante.
+                $probe = $c->has(RequestContext::class)
+                    && $c->get(RequestContext::class)->request->query('probe') === 'smtp';
+
+                $runner->register(new NotificationDiagnostics(
+                    $settings,
+                    $c->get(MailService::class),
+                    $c->get(MailDnsChecker::class),
+                    $c->get(PushProvider::class),
+                    $c->get(PushSubscriptionRepository::class),
+                    $probe,
+                ));
+            }
+
+            return $runner;
         });
     }
 

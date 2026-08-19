@@ -387,4 +387,37 @@ final class InstalledAppTest extends InstalledAppTestCase
             self::assertStringContainsString('hreflang="' . $locale . '"', $content);
         }
     }
+
+    /**
+     * Un message flash appartient à la page réellement affichée.
+     *
+     * Le service worker précharge des pages avec les cookies de la session :
+     * si ces requêtes consommaient les messages, une confirmation pourrait
+     * disparaître avant d'avoir été lue.
+     */
+    public function testAFlashMessageSurvivesAConcurrentNonNavigationRequest(): void
+    {
+        $this->loginAs();
+        $this->session()->flash('success', 'account.profile.saved');
+
+        // Requête émise par un service worker : rien ne doit être consommé.
+        $prefetch = $this->request('/fr/', 'GET', [], [
+            'HTTP_SEC_FETCH_DEST' => 'empty',
+            'HTTP_SEC_FETCH_MODE' => 'no-cors',
+        ]);
+        self::assertSame(200, $prefetch->status());
+        self::assertStringNotContainsString('data-flash-type="success"', $prefetch->content());
+
+        // La navigation suivante affiche bien le message, une seule fois —
+        // y compris relayée par un service worker, où la destination devient
+        // « empty » alors que le mode reste « navigate ».
+        $page = $this->request('/fr/', 'GET', [], [
+            'HTTP_SEC_FETCH_DEST' => 'empty',
+            'HTTP_SEC_FETCH_MODE' => 'navigate',
+        ]);
+        self::assertStringContainsString('data-flash-type="success"', $page->content());
+
+        $again = $this->request('/fr/', 'GET', [], ['HTTP_SEC_FETCH_DEST' => 'document']);
+        self::assertStringNotContainsString('data-flash-type="success"', $again->content());
+    }
 }

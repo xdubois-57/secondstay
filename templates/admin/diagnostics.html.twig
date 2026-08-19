@@ -8,6 +8,22 @@
     </p>
 
     <div class="card mb-4">
+        <div class="card-header">{{ t('diagnostics.category.notification') }}</div>
+        <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+            <p class="mb-0 text-body-secondary flex-grow-1">{{ t('admin.diagnostics.notification_help') }}</p>
+            <a class="btn btn-outline-secondary" href="{{ path('admin.diagnostics') }}?probe=smtp"
+               data-testid="probe-smtp">{{ t('admin.diagnostics.probe_smtp') }}</a>
+            <form method="post" action="{{ path('admin.diagnostics.push_keys') }}"
+                  onsubmit="return confirm('{{ t('admin.diagnostics.push_keys_confirm')|e('js') }}');">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <button class="btn btn-outline-secondary" type="submit" data-testid="generate-push-keys">
+                    {{ push_keys_present ? t('admin.diagnostics.push_keys_renew') : t('admin.diagnostics.push_keys_generate') }}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header">{{ t('admin.diagnostics.rate_limits') }}</div>
         <div class="card-body d-flex flex-wrap gap-3 align-items-center">
             <p class="mb-0 text-body-secondary flex-grow-1">{{ t('admin.diagnostics.rate_limits_help') }}</p>

@@ -213,6 +213,34 @@ return [
             'label' => 'SMTP-wachtwoord',
             'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Laat leeg om de huidige waarde te behouden.',
         ],
+        'dkim_selector' => [
+            'label' => 'DKIM-selector',
+            'help' => 'Selector van uw verzenddienst (vaak “default” of “mail”). Hij dient enkel voor de DNS-diagnose: het ondertekenen blijft de taak van de provider.',
+        ],
+    ],
+    'notification' => [
+        'push_enabled' => [
+            'label' => 'Pushmeldingen',
+            'help' => 'Laat browsers meldingen ontvangen. E-mail wordt in elk geval verstuurd.',
+        ],
+        'retention_days' => [
+            'label' => 'Bewaartermijn meldingenlogboek',
+            'help' => 'Hoe lang verzendsporen bewaard blijven, in dagen.',
+        ],
+    ],
+    'push' => [
+        'subject' => [
+            'label' => 'Pushcontact',
+            'help' => 'Contact-e-mailadres of URL die naar de pushdiensten wordt gestuurd, zoals de norm vereist. Bij leeg veld wordt het afzenderadres gebruikt.',
+        ],
+        'vapid_public' => [
+            'label' => 'Openbare VAPID-sleutel',
+            'help' => 'Door de installatie gegenereerd en aan browsers doorgegeven. Vervangen maakt alle bestaande abonnementen ongeldig.',
+        ],
+        'vapid_private' => [
+            'label' => 'Privé VAPID-sleutel',
+            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Hij ondertekent de verzendingen naar de pushdiensten.',
+        ],
     ],
     'account' => [
         'allow_signup' => [

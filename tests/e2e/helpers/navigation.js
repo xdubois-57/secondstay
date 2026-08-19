@@ -29,3 +29,22 @@ export async function openLocaleSwitcher(page) {
         await menu.waitFor({ state: 'visible' });
     }
 }
+
+/**
+ * Referme la navigation mobile.
+ *
+ * Le menu déplié recouvre le contenu : le laisser ouvert fausse les
+ * interactions avec le formulaire situé en dessous.
+ */
+export async function closeNavigation(page) {
+    const toggler = page.locator('.navbar-toggler');
+    if (!(await toggler.isVisible())) {
+        return;
+    }
+
+    const collapse = page.locator('#primary-navigation');
+    if (await collapse.evaluate((element) => element.classList.contains('show'))) {
+        await toggler.click();
+        await collapse.waitFor({ state: 'hidden' });
+    }
+}

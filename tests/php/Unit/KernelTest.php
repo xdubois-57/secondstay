@@ -143,6 +143,40 @@ final class KernelTest extends KernelTestCase
         self::assertStringNotContainsString('Kernel.php', $content);
     }
 
+    /**
+     * @return list<array{array<string, string>, bool}>
+     */
+    public static function navigationHeaders(): array
+    {
+        return [
+            // Navigation de document : la page consomme bien les messages.
+            [['HTTP_SEC_FETCH_DEST' => 'document', 'HTTP_SEC_FETCH_MODE' => 'navigate'], true],
+            [['HTTP_SEC_FETCH_DEST' => 'document'], true],
+            [['HTTP_ACCEPT' => 'text/html,application/xhtml+xml'], true],
+            [[], true],
+            // Navigation relayée par un service worker : la destination
+            // devient « empty » alors que le mode reste « navigate ».
+            [['HTTP_SEC_FETCH_DEST' => 'empty', 'HTTP_SEC_FETCH_MODE' => 'navigate'], true],
+            // Requêtes annexes : préchargement, appel JSON, sous-ressource.
+            [['HTTP_SEC_FETCH_DEST' => 'empty', 'HTTP_SEC_FETCH_MODE' => 'cors'], false],
+            [['HTTP_SEC_FETCH_DEST' => 'empty'], false],
+            [['HTTP_SEC_FETCH_DEST' => 'image'], false],
+            [['HTTP_SEC_FETCH_MODE' => 'no-cors'], false],
+            [['HTTP_ACCEPT' => 'application/json'], false],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $server
+     */
+    #[DataProvider('navigationHeaders')]
+    public function testOnlyDocumentNavigationsAreTreatedAsPageViews(array $server, bool $expected): void
+    {
+        $request = $this->request('/fr/install', 'GET', $server);
+
+        self::assertSame($expected, $request->isDocumentNavigation());
+    }
+
     public function testMutationsWithoutCsrfTokenAreRefused(): void
     {
         $response = $this->kernel()->handle(

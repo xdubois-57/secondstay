@@ -1,0 +1,142 @@
+/**
+ * Service worker SecondStay.
+ *
+ * Rendu par l'application afin d'y injecter la version installée : une mise à
+ * jour applicative invalide donc automatiquement les caches précédents.
+ *
+ * Règle de prudence : rien de sensible n'est mis en cache. Les zones
+ * d'administration, l'espace client, les API et les médias privés sont
+ * toujours servis par le réseau, jamais depuis le disque.
+ */
+
+const VERSION = '{{ app_version }}';
+const BASE = '{{ base_path }}';
+const SHELL_CACHE = 'secondstay-shell-' + VERSION;
+const PAGE_PREFIX = 'secondstay-pages-';
+const LOCALES = {{ locales|json_encode|raw }};
+
+const SHELL = [
+    BASE + '/assets/css/app.css',
+    BASE + '/assets/js/app.js',
+    BASE + '/assets/vendor/bootstrap/css/bootstrap.min.css',
+    BASE + '/assets/vendor/bootstrap/js/bootstrap.bundle.min.js'
+].concat(LOCALES.map((locale) => BASE + '/' + locale + '/offline'));
+
+/** Chemins qui ne doivent jamais quitter le réseau. */
+const NEVER_CACHED = [/\/admin(\/|$)/, /\/account(\/|$)/, /\/api\//, /\/login$/, /\/logout$/, /\/media\/original\//];
+
+function pageCacheName(locale) {
+    return PAGE_PREFIX + locale + '-' + VERSION;
+}
+
+function localeOf(pathname) {
+    const stripped = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+    const candidate = stripped.split('/')[1];
+    return LOCALES.indexOf(candidate) === -1 ? LOCALES[0] : candidate;
+}
+
+function isCacheable(request, url) {
+    if (request.method !== 'GET' || url.origin !== self.location.origin) {
+        return false;
+    }
+    return !NEVER_CACHED.some((pattern) => pattern.test(url.pathname));
+}
+
+self.addEventListener('install', (event) => {
+    // Les pages du socle sont récupérées **sans cookie** : rien de personnel
+    // (nom, messages, réservation) ne peut se retrouver dans le cache d'un
+    // appareil partagé.
+    event.waitUntil(
+        caches.open(SHELL_CACHE)
+            .then((cache) => Promise.all(SHELL.map((url) =>
+                fetch(new Request(url, { credentials: 'omit' }))
+                    .then((response) => (response.ok ? cache.put(url, response) : null))
+                    .catch(() => null)
+            )))
+            .then(() => self.skipWaiting())
+    );
+});
+
+self.addEventListener('activate', (event) => {
+    const keep = [SHELL_CACHE].concat(LOCALES.map(pageCacheName));
+    event.waitUntil(
+        caches.keys()
+            .then((names) => Promise.all(names.filter((name) => keep.indexOf(name) === -1).map((name) => caches.delete(name))))
+            .then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+    if (!isCacheable(event.request, url)) {
+        return;
+    }
+
+    // Les ressources statiques : cache d'abord, elles sont versionnées.
+    if (url.pathname.indexOf(BASE + '/assets/') === 0) {
+        event.respondWith(
+            caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+                const copy = response.clone();
+                caches.open(SHELL_CACHE).then((cache) => cache.put(event.request, copy));
+                return response;
+            }))
+        );
+        return;
+    }
+
+    if (event.request.mode !== 'navigate') {
+        return;
+    }
+
+    // Les pages : réseau d'abord, cache localisé en secours.
+    const locale = localeOf(url.pathname);
+    event.respondWith(
+        fetch(event.request)
+            .then((response) => {
+                if (response.ok) {
+                    const copy = response.clone();
+                    caches.open(pageCacheName(locale)).then((cache) => cache.put(event.request, copy));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request)
+                .then((cached) => cached || caches.match(BASE + '/' + locale + '/offline')))
+    );
+});
+
+self.addEventListener('push', (event) => {
+    let payload = {};
+    try {
+        payload = event.data ? event.data.json() : {};
+    } catch (error) {
+        payload = {};
+    }
+
+    const title = payload.title || '{{ app_name|e('js') }}';
+    event.waitUntil(
+        self.registration.showNotification(title, {
+            body: payload.body || '',
+            tag: payload.tag || 'secondstay',
+            lang: payload.locale || LOCALES[0],
+            icon: BASE + '/icon-192.png',
+            badge: BASE + '/icon-192.png',
+            data: { path: payload.path || BASE + '/' }
+        })
+    );
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const target = (event.notification.data && event.notification.data.path) || BASE + '/';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url.indexOf(target) !== -1 && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow(target);
+        })
+    );
+});

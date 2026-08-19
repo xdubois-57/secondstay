@@ -8,6 +8,8 @@ use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
+use SecondStay\Push\PushSubscriptionRepository;
+use SecondStay\Push\VapidKeyManager;
 use SecondStay\Security\RateLimiter;
 
 final class AdminDiagnosticsController extends AdminController
@@ -42,6 +44,7 @@ final class AdminDiagnosticsController extends AdminController
             'meta_title' => $this->trans('admin.diagnostics.title'),
             'groups' => $grouped,
             'summary' => $runner->summary(),
+            'push_keys_present' => $this->container->get(VapidKeyManager::class)->hasKeys(),
             'migrations' => [
                 'current' => $migrator->currentVersion(),
                 'pending' => array_map(
@@ -79,6 +82,45 @@ final class AdminDiagnosticsController extends AdminController
         );
 
         $this->flashSuccess('admin.diagnostics.rate_limits_cleared');
+
+        return $this->redirectToRoute($context, 'admin.diagnostics');
+    }
+
+    /**
+     * Génère (ou renouvelle) la paire de clés VAPID de l'installation.
+     *
+     * Renouveler invalide tous les abonnements existants : les appareils
+     * devront se réabonner. L'action est donc explicite et tracée.
+     *
+     * @param array<string, string> $params
+     */
+    public function generatePushKeys(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireAdministrator();
+
+        $manager = $this->container->get(VapidKeyManager::class);
+        $renewed = $manager->hasKeys();
+
+        if ($renewed) {
+            // Les anciens abonnements ne peuvent plus être déchiffrés.
+            $removed = $this->container->get(PushSubscriptionRepository::class)->clearAll();
+        } else {
+            $removed = 0;
+        }
+
+        $manager->ensureKeys(true, $user->email);
+
+        $this->audit()->record(
+            'push.keys_generated',
+            'setting',
+            VapidKeyManager::PUBLIC_SETTING,
+            null,
+            ['renewed' => $renewed, 'subscriptions_removed' => $removed],
+            $user->id,
+            $user->email,
+        );
+
+        $this->flashSuccess($renewed ? 'admin.diagnostics.push_keys_renewed' : 'admin.diagnostics.push_keys_created');
 
         return $this->redirectToRoute($context, 'admin.diagnostics');
     }

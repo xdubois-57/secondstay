@@ -17,6 +17,9 @@ final class FakeHttpFetcher implements HttpFetcher
     /** @var list<string> */
     public array $requestedUrls = [];
 
+    /** @var list<array{url: string, body: string, headers: array<string, string>}> */
+    public array $postedRequests = [];
+
     public function __construct(private readonly UrlGuard $guard = new UrlGuard())
     {
     }
@@ -55,6 +58,26 @@ final class FakeHttpFetcher implements HttpFetcher
         }
 
         $this->requestedUrls[] = $url;
+        $response = $this->responses[$url] ?? ['status' => 404, 'headers' => [], 'body' => ''];
+
+        return $response + ['final_url' => $url];
+    }
+
+    /**
+     * @param array<string, string> $headers
+     *
+     * @return array{status: int, headers: array<string, string>, body: string, final_url: string}
+     */
+    public function post(string $url, string $body, array $headers = []): array
+    {
+        $inspection = $this->guard->inspect($url);
+        if ($inspection['ok'] === false) {
+            throw new RuntimeException('Requête sortante refusée : ' . $inspection['reason']);
+        }
+
+        $this->postedRequests[] = ['url' => $url, 'body' => $body, 'headers' => $headers];
+        $this->requestedUrls[] = $url;
+
         $response = $this->responses[$url] ?? ['status' => 404, 'headers' => [], 'body' => ''];
 
         return $response + ['final_url' => $url];

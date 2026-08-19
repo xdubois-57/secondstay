@@ -48,6 +48,11 @@ return [
         // d'environnement SECONDSTAY_MAIL_TRANSPORT, pour les tests.
         'transport' => 'smtp',
     ],
+    'push' => [
+        // 'webpush' en production. 'fake' n'est activable que par la variable
+        // d'environnement SECONDSTAY_PUSH_PROVIDER, pour les tests.
+        'provider' => 'webpush',
+    ],
     'logging' => [
         'level' => 'info',
         'retention_days' => 90,

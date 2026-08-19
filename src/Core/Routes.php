@@ -13,6 +13,7 @@ use SecondStay\Controller\Admin\AdminSettingsController;
 use SecondStay\Controller\Admin\AdminUpdateController;
 use SecondStay\Controller\Admin\AdminUserController;
 use SecondStay\Controller\Account\PasskeyController;
+use SecondStay\Controller\Account\PushController;
 use SecondStay\Controller\Account\ProfileController;
 use SecondStay\Controller\AccountController;
 use SecondStay\Controller\ApiController;
@@ -23,6 +24,7 @@ use SecondStay\Controller\Admin\AdminMediaController;
 use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
+use SecondStay\Controller\PwaController;
 use SecondStay\Controller\SeoController;
 
 /**
@@ -43,6 +45,25 @@ final class Routes
         // --- SEO ------------------------------------------------------------
         $router->get('/sitemap.xml', [SeoController::class, 'sitemap'], 'seo.sitemap', false);
         $router->get('/robots.txt', [SeoController::class, 'robots'], 'seo.robots', false);
+
+        // --- Application installable ----------------------------------------
+        // Le service worker et les icônes vivent à la racine : c'est la
+        // condition pour que le périmètre du service worker couvre le site.
+        $router->get('/manifest.webmanifest', [PwaController::class, 'manifest'], 'pwa.manifest', false);
+        $router->get('/sw.js', [PwaController::class, 'serviceWorker'], 'pwa.service_worker', false);
+        $router->get(
+            '/icon-{size:192|512}.png',
+            [PwaController::class, 'icon'],
+            'pwa.icon',
+            false
+        );
+        $router->get(
+            '/icon-{maskable:maskable}-{size:192|512}.png',
+            [PwaController::class, 'icon'],
+            'pwa.icon_maskable',
+            false
+        );
+        $router->get('/offline', [PwaController::class, 'offline'], 'pwa.offline');
 
         // --- Médias -----------------------------------------------------------
         $router->get(
@@ -78,12 +99,19 @@ final class Routes
         $router->get('/account/export', [ProfileController::class, 'exportData'], 'account.export');
         $router->post('/account/delete', [ProfileController::class, 'deleteAccount'], 'account.delete');
         $router->post('/account/passkeys/{id:\d+}/delete', [ProfileController::class, 'deletePasskey'], 'account.passkey.delete');
+        $router->post('/account/notifications', [ProfileController::class, 'saveNotificationPreferences'], 'account.notifications.save');
+        $router->post('/account/notifications/test', [ProfileController::class, 'sendTestNotification'], 'account.notifications.test');
 
         // --- WebAuthn (JSON) ------------------------------------------------
         $router->post('/api/passkeys/register/options', [PasskeyController::class, 'registrationOptions'], 'api.passkeys.register_options', false);
         $router->post('/api/passkeys/register', [PasskeyController::class, 'register'], 'api.passkeys.register', false);
         $router->post('/api/passkeys/login/options', [PasskeyController::class, 'authenticationOptions'], 'api.passkeys.login_options', false);
         $router->post('/api/passkeys/login', [PasskeyController::class, 'authenticate'], 'api.passkeys.login', false);
+
+        // --- Notifications push ------------------------------------------
+        $router->get('/api/push/key', [PushController::class, 'publicKey'], 'api.push.key', false);
+        $router->post('/api/push/subscribe', [PushController::class, 'subscribe'], 'api.push.subscribe', false);
+        $router->post('/api/push/unsubscribe', [PushController::class, 'unsubscribe'], 'api.push.unsubscribe', false);
 
         // --- Administration --------------------------------------------------
         $router->get('/admin', [AdminDashboardController::class, 'index'], 'admin.dashboard');
@@ -105,6 +133,11 @@ final class Routes
             '/admin/diagnostics/rate-limits/clear',
             [AdminDiagnosticsController::class, 'clearRateLimits'],
             'admin.diagnostics.rate_limits_clear'
+        );
+        $router->post(
+            '/admin/diagnostics/push-keys',
+            [AdminDiagnosticsController::class, 'generatePushKeys'],
+            'admin.diagnostics.push_keys'
         );
 
         $router->get('/admin/backups', [AdminBackupController::class, 'index'], 'admin.backups');
@@ -139,6 +172,7 @@ final class Routes
         // --- Boîte e-mail de test (transport factice uniquement) -------------
         $router->get('/api/dev/mailbox', [DevMailboxController::class, 'index'], 'dev.mailbox', false);
         $router->post('/api/dev/mailbox/purge', [DevMailboxController::class, 'purge'], 'dev.mailbox.purge', false);
+        $router->get('/api/dev/notifications', [DevMailboxController::class, 'notifications'], 'dev.notifications', false);
 
         // --- Pages éditoriales (attrape-tout, déclaré en dernier) ------------
         $router->get('/{slug:[a-z0-9][a-z0-9-]*}', [PageController::class, 'show'], 'page.show');

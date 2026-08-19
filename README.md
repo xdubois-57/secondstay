@@ -244,6 +244,33 @@ En développement et en CI, `SECONDSTAY_MAIL_TRANSPORT=fake` remplace l'envoi
 réel par un dépôt de messages inspectable : aucun réseau sortant n'est requis
 pour tester les parcours de compte.
 
+## Notifications
+
+Les événements du séjour sont notifiés par **e-mail et notification push**,
+indépendamment : si le push est actif, les deux partent, et l'échec de l'un
+n'empêche jamais l'autre. Chaque message est rendu dans la langue du compte
+destinataire.
+
+Le push est natif : SecondStay implémente Web Push (VAPID et chiffrement de
+bout en bout) sans dépendance supplémentaire. L'administrateur génère les clés
+depuis `/fr/admin/diagnostics`, puis active les notifications dans les
+réglages. Chaque client choisit ses canaux depuis son espace, abonne ses
+appareils et peut s'envoyer une notification de vérification.
+
+`/fr/admin/diagnostics` contrôle également SPF, DKIM et DMARC du domaine
+d'expédition, et propose une sonde SMTP explicite.
+
+## Application installable
+
+SecondStay s'installe sur iPhone et Android : manifeste localisé dans les
+quatre langues, icônes générées à partir du nom du logement, service worker et
+mode plein écran.
+
+Hors ligne, seules les pages déjà consultées et les informations pratiques
+restent accessibles ; la réservation, le paiement et les documents personnels
+exigent une connexion. Le socle mis en cache est récupéré sans cookie : rien
+de personnel ne se retrouve dans le cache d'un appareil partagé.
+
 ## Hébergement et sécurité
 
 Le dépôt est public. Les données du logement, secrets, médias et fichiers de production ne doivent jamais être publiés.
