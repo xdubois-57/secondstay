@@ -3,7 +3,7 @@
 /coverage/
 /storage/*
 !/storage/.gitkeep
-/config/local.php
+/config/local.php*
 /config/*.local.php
 /.env
 /.env.*
@@ -17,3 +17,4 @@
 .DS_Store
 *.log
 /scripts/test-env.local.sh
+/tests/e2e/.auth/

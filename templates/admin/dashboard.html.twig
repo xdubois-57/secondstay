@@ -1,0 +1,78 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.users') }}</p>
+                <p class="h4 mb-0" data-metric="users">{{ user_count }}</p>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.administrators') }}</p>
+                <p class="h4 mb-0" data-metric="administrators">{{ administrator_count }}</p>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.backups') }}</p>
+                <p class="h4 mb-0" data-metric="backups">{{ backup_count }}</p>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.schema') }}</p>
+                <p class="h4 mb-0" data-metric="schema">{{ schema_version ?: '—' }}</p>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('admin.dashboard.todo') }}</div>
+        <ul class="list-group list-group-flush" data-testid="todo-list">
+            {% for item in todo %}
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-todo="{{ item.key }}">
+                    <span>{{ t(item.key, {'count': item.count}) }}</span>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ path(item.route) }}">{{ t('common.continue') }}</a>
+                </li>
+            {% else %}
+                <li class="list-group-item text-body-secondary" data-todo="none">{{ t('admin.dashboard.todo_empty') }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header">{{ t('admin.dashboard.health') }}</div>
+                <div class="card-body">
+                    <p class="mb-1">
+                        <span class="badge text-bg-success">{{ diagnostics.ok }}</span>
+                        <span class="badge text-bg-warning">{{ diagnostics.warning }}</span>
+                        <span class="badge text-bg-danger">{{ diagnostics.error }}</span>
+                    </p>
+                    <a class="btn btn-sm btn-outline-secondary mt-2" href="{{ path('admin.diagnostics') }}">{{ t('admin.nav.diagnostics') }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header">{{ t('admin.dashboard.maintenance') }}</div>
+                <div class="card-body">
+                    <p data-testid="maintenance-state" data-active="{{ maintenance_active ? '1' : '0' }}">
+                        {{ maintenance_active ? t('admin.maintenance.state_active') : t('admin.maintenance.state_inactive') }}
+                    </p>
+                    <form method="post" action="{{ path('admin.maintenance.toggle') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <input type="hidden" name="enable" value="{{ maintenance_active ? '0' : '1' }}">
+                        <button class="btn btn-sm {{ maintenance_active ? 'btn-success' : 'btn-outline-warning' }}"
+                                type="submit" data-testid="maintenance-toggle">
+                            {{ maintenance_active ? t('admin.maintenance.disable') : t('admin.maintenance.enable') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

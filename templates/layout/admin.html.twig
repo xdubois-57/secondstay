@@ -1,0 +1,38 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block navigation %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('home') }}">{{ t('nav.home') }}</a>
+    </li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <aside class="col-12 col-lg-3 col-xl-2">
+                <nav class="nav flex-column nav-pills" aria-label="{{ t('admin.nav.administration') }}" data-testid="admin-nav">
+                    {% set sections = [
+                        {'id': 'dashboard', 'route': 'admin.dashboard', 'label': 'admin.nav.dashboard'},
+                        {'id': 'settings', 'route': 'admin.settings', 'label': 'admin.nav.settings'},
+                        {'id': 'users', 'route': 'admin.users', 'label': 'admin.nav.users'},
+                        {'id': 'backups', 'route': 'admin.backups', 'label': 'admin.nav.backups'},
+                        {'id': 'updates', 'route': 'admin.updates', 'label': 'admin.nav.updates'},
+                        {'id': 'diagnostics', 'route': 'admin.diagnostics', 'label': 'admin.nav.diagnostics'},
+                        {'id': 'logs', 'route': 'admin.logs', 'label': 'admin.nav.logs'},
+                        {'id': 'audit', 'route': 'admin.audit', 'label': 'admin.nav.audit'}
+                    ] %}
+                    {% for section in sections %}
+                        <a class="nav-link{{ admin_section == section.id ? ' active' : '' }}"
+                           href="{{ path(section.route) }}"
+                           data-admin-section="{{ section.id }}"
+                           {{ admin_section == section.id ? 'aria-current="page"' : '' }}>{{ t(section.label) }}</a>
+                    {% endfor %}
+                </nav>
+            </aside>
+            <div class="col-12 col-lg-9 col-xl-10">
+                <h1 class="h3 mb-4">{% block admin_title %}{{ meta_title }}{% endblock %}</h1>
+                {% block admin_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

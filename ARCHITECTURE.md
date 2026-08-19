@@ -563,3 +563,104 @@ les motifs interdits. `ReleaseArtifactBuilder` construit le ZIP, régénère
 l'autoloader Composer en mode `--no-dev` et élague `vendor/`.
 `ReleaseArtifactInspector` valide le résultat. Les trois sont couverts par
 PHPUnit, et la CI vérifie en plus que le ZIP extrait démarre réellement.
+
+## 30. Itération 1 — installation, configuration, exploitation
+
+### 30.1 Nouveaux modules
+
+```text
+src/
+├── Database/      Database (PDO), DatabaseConfig, Migrator, SqlScriptSplitter
+├── Installer/     InstallationState/Status, Installer, RequirementChecker,
+│                  LocalConfigWriter
+├── Settings/      SettingType, SettingDefinition, SettingRegistry,
+│                  SettingValidator, SettingsRepository, SettingsService
+├── Security/      Encryptor, Tokens, Csrf, RateLimiter
+├── Auth/          Role, UserStatus, User, PasswordHasher, UserRepository,
+│                  SessionRepository, AuthService
+├── Logging/       LogLevel, LogSanitizer, Logger
+├── Audit/         AuditTrail
+├── Maintenance/   MaintenanceMode
+├── Backup/        BackupManifest, SqlDumper, BackupService
+├── Update/        ReleaseInfo, ReleaseProvider, GitHubReleaseProvider,
+│                  FakeReleaseProvider, UpdateService
+├── Http/          HttpFetcher, CurlHttpFetcher, FakeHttpFetcher, UrlGuard
+└── Diagnostics/   DiagnosticStatus, DiagnosticResult, DiagnosticRunner
+```
+
+`src/Core/Services.php` enregistre l'ensemble dans le conteneur. Les services
+dépendant de la base sont paresseux : l'application reste utilisable avant
+l'installation et pendant une panne.
+
+### 30.2 États d'installation
+
+`InstallationStatus` distingue trois états, et le noyau agit différemment pour
+chacun :
+
+| État | Assistant d'installation | Site public | `/api/*` |
+|---|---|---|---|
+| `not_installed` | accessible | redirige vers l'assistant | disponible |
+| `installed` | 404 | normal | disponible |
+| `unavailable` | 404 | 503 | disponible |
+
+L'état `unavailable` (configuration locale présente mais base injoignable,
+schéma absent ou plus aucun administrateur actif) garantit qu'une panne ne peut
+jamais rouvrir l'assistant d'installation d'une instance déployée.
+
+### 30.3 Chaîne de requête complète
+
+```text
+public/index.php
+  → PublicPathPolicy         chemins privés refusés
+  → Session                  démarrage (PhpSession en production)
+  → InstallationState        gate installation / indisponibilité
+  → LocaleResolver           préfixe URL > compte > cookie > Accept-Language
+  → MaintenanceMode          gate maintenance (503 sauf admin et /api)
+  → Router                   résolution de route
+  → CSRF                     obligatoire sur toute mutation navigateur
+  → Controller               autorisation serveur explicite (requireRole)
+  → Response                 en-têtes de sécurité + cookie de langue
+```
+
+### 30.4 Réglages typés
+
+Un réglage déclare son type, sa validation, ses bornes, son module et son aide.
+Les montants sont saisis en euros et stockés en centimes entiers. Les secrets
+sont chiffrés au repos (`Encryptor`, AEAD XChaCha20-Poly1305), jamais
+réaffichés, jamais audités en clair, et rechiffrables par rotation de clé.
+
+### 30.5 Sauvegarde et restauration
+
+`BackupService` produit une archive ZIP contenant :
+
+```text
+database.sql                 dump SQL complet, 100 % PHP
+storage/media/…              médias persistants
+storage/documents/…          documents
+storage/inspections/…        états des lieux
+storage/mail-attachments/…   pièces jointes
+manifest.json                version, schéma, comptages, SHA-256 par entrée
+```
+
+La restauration vérifie chaque empreinte, s'exécute sous maintenance, refuse
+toute traversée de chemin et n'écrit que dans les répertoires de données
+autorisés. Elle est auditée.
+
+### 30.6 Mise à jour
+
+```text
+check (GitHub Releases) → download → validate (ReleaseArtifactPolicy)
+→ backup → maintenance → snapshot des chemins gérés → install → migrations
+→ VERSION → health check → sortie de maintenance
+```
+
+En cas d'échec à n'importe quelle étape, le snapshot est restauré et `VERSION`
+revient à la valeur précédente. `storage/` et `config/local.php` ne sont jamais
+remplacés. `FakeReleaseProvider` permet de tester tout le flux sans réseau.
+
+### 30.7 URLs
+
+Les segments de chemin sont neutres et stables (`/admin/settings`,
+`/login`) ; seule la langue varie via le préfixe (`/fr`, `/en`, `/nl`, `/de`).
+Cela garantit des URLs durables, des `hreflang` cohérents et évite de dupliquer
+la table de routage par langue.

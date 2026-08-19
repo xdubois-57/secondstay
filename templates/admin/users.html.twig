@@ -1,0 +1,107 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="table-responsive mb-4">
+        <table class="table align-middle" data-testid="users-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('auth.field.email') }}</th>
+                    <th scope="col">{{ t('admin.users.name') }}</th>
+                    <th scope="col">{{ t('admin.users.role') }}</th>
+                    <th scope="col">{{ t('admin.users.locale') }}</th>
+                    <th scope="col">{{ t('admin.users.last_login') }}</th>
+                    <th scope="col" class="text-end">{{ t('admin.users.actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr data-user-email="{{ user.email }}">
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>
+                            <form method="post" action="{{ path('admin.users.role', {'id': user.id}) }}" class="d-flex gap-2">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <select class="form-select form-select-sm" name="role" aria-label="{{ t('admin.users.role') }}">
+                                    {% for role in roles %}
+                                        <option value="{{ role }}"{{ role == user.role ? ' selected' : '' }}>{{ t('auth.role.' ~ role) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-sm btn-outline-primary" type="submit">{{ t('common.save') }}</button>
+                            </form>
+                        </td>
+                        <td>{{ locale_name(user.locale) }}</td>
+                        <td class="small text-body-secondary">{{ user.last_login_at ?: '—' }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{{ path('admin.users.delete', {'id': user.id}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <button class="btn btn-sm btn-outline-danger" type="submit"
+                                        data-delete-user="{{ user.email }}">{{ t('admin.users.delete') }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('admin.users.create') }}</div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.users.create') }}" novalidate data-testid="create-user-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="first_name">{{ t('auth.field.first_name') }}</label>
+                        <input class="form-control{{ errors.name is defined ? ' is-invalid' : '' }}" id="first_name"
+                               name="first_name" value="{{ values.first_name|default('') }}" autocomplete="given-name" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="last_name">{{ t('auth.field.last_name') }}</label>
+                        <input class="form-control{{ errors.name is defined ? ' is-invalid' : '' }}" id="last_name"
+                               name="last_name" value="{{ values.last_name|default('') }}" autocomplete="family-name" required>
+                        {% if errors.name is defined %}<div class="invalid-feedback">{{ t(errors.name) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="new_email">{{ t('auth.field.email') }}</label>
+                        <input class="form-control{{ errors.email is defined ? ' is-invalid' : '' }}" id="new_email"
+                               name="email" type="email" value="{{ values.email|default('') }}" autocomplete="email" required>
+                        {% if errors.email is defined %}<div class="invalid-feedback">{{ t(errors.email) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="phone">{{ t('auth.field.phone') }}</label>
+                        <input class="form-control" id="phone" name="phone" type="tel"
+                               value="{{ values.phone|default('') }}" autocomplete="tel">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="new_password">{{ t('auth.field.password') }}</label>
+                        <input class="form-control{{ errors.password is defined ? ' is-invalid' : '' }}" id="new_password"
+                               name="password" type="password" autocomplete="new-password"
+                               minlength="{{ min_password_length }}" required data-password-input>
+                        <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
+                             aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
+                            <div class="progress-bar" data-password-strength style="width: 0"></div>
+                        </div>
+                        {% if errors.password is defined %}<div class="invalid-feedback">{{ t(errors.password) }}</div>{% endif %}
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="new_role">{{ t('admin.users.role') }}</label>
+                        <select class="form-select" id="new_role" name="role">
+                            {% for role in roles %}
+                                <option value="{{ role }}"{{ role == (values.role|default('local_manager')) ? ' selected' : '' }}>{{ t('auth.role.' ~ role) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="new_locale">{{ t('admin.users.locale') }}</label>
+                        <select class="form-select" id="new_locale" name="locale">
+                            {% for available in locales %}
+                                <option value="{{ available }}"{{ available == (values.locale|default(locale)) ? ' selected' : '' }}>{{ locale_name(available) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-3" type="submit">{{ t('admin.users.create') }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

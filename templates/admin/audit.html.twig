@@ -1,0 +1,32 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('admin.audit.intro') }}</p>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle" data-testid="audit-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('admin.logs.date') }}</th>
+                    <th scope="col">{{ t('admin.audit.actor') }}</th>
+                    <th scope="col">{{ t('admin.audit.action') }}</th>
+                    <th scope="col">{{ t('admin.audit.entity') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr data-audit-action="{{ event.action }}">
+                        <td class="small text-nowrap">{{ event.created_at }}</td>
+                        <td class="small">{{ event.actor_label ?: '—' }}</td>
+                        <td class="small"><code>{{ event.action }}</code></td>
+                        <td class="small">{{ event.entity_type }}{{ event.entity_id ? ' #' ~ event.entity_id : '' }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-body-secondary">{{ t('admin.audit.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="text-body-secondary small">{{ t('admin.logs.page', {'page': page, 'pages': pages}) }}</p>
+{% endblock %}

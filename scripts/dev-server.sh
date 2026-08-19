@@ -15,7 +15,10 @@ start() {
         echo "dev-server already running (pid $(cat "$PIDFILE"))"
         return 0
     fi
-    php -S "${HOST}:${PORT}" -t "$ROOT" "${ROOT}/scripts/router.php" >"$LOGFILE" 2>&1 &
+    # Plusieurs workers : indispensable pour les scénarios concurrents
+    # (anti-double-réservation, webhooks) testés en E2E.
+    PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-6}" \
+        php -S "${HOST}:${PORT}" -t "$ROOT" "${ROOT}/scripts/router.php" >"$LOGFILE" 2>&1 &
     echo $! > "$PIDFILE"
     for _ in $(seq 1 50); do
         if curl -fsS -o /dev/null "http://${HOST}:${PORT}/api/health"; then

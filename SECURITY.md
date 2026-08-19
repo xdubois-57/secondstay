@@ -317,3 +317,80 @@ Automatiser :
 - traduction/fallback sans contournement sécurité.
 
 Toute vulnérabilité corrigée doit recevoir un test de régression.
+
+## 24. Décisions de mise en œuvre (itération 1)
+
+### 24.1 Installation
+
+- L'assistant d'installation n'est accessible que si `config/local.php`
+  n'existe pas. Dès qu'une instance a été installée, il renvoie 404 **même si
+  la base est injoignable** : une panne ne doit jamais permettre de réinstaller
+  une instance existante. Dans ce cas le site public répond 503 et l'incident
+  est journalisé en `critical`.
+- `config/local.php` est écrit de façon atomique avec les permissions `0600` et
+  contient les identifiants de base ainsi que le trousseau de clés de
+  chiffrement. Il n'est jamais versionné ni servi.
+- Les erreurs de connexion sont traduites par clé (`install.database.error.*`)
+  et ne contiennent jamais d'identifiant.
+
+### 24.2 Chiffrement
+
+- `SecondStay\Security\Encryptor` : AEAD XChaCha20-Poly1305 (libsodium).
+- Format `ss1.<key_id>.<nonce>.<ciphertext>` : le trousseau permet la rotation
+  sans réécriture immédiate, et `SettingsService::rotateSecrets()` rechiffre à
+  la demande avec la clé active.
+- Le contexte (`setting:<clé>`) est authentifié : un secret ne peut pas être
+  déplacé d'un réglage à un autre.
+- Les mots de passe utilisent exclusivement `password_hash()`.
+
+### 24.3 Sessions et CSRF
+
+- Session PHP `HttpOnly`, `SameSite=Lax`, `use_strict_mode`, identifiant
+  régénéré après authentification.
+- Chaque session active possède une ligne `user_session` : liste des appareils,
+  révocation individuelle ou globale, expiration. Une session révoquée coupe
+  l'accès à la requête suivante.
+- Toute mutation navigateur exige un jeton CSRF valide comparé en temps
+  constant. Les webhooks fournisseurs sont exclus : ils sont authentifiés par
+  signature, jamais par CSRF.
+- Limitation de débit sur l'authentification, par adresse IP et par compte ; la
+  réponse d'échec est identique qu'un compte existe ou non, et un hash factice
+  est comparé pour égaliser le temps de réponse.
+
+### 24.4 Journaux et audit
+
+- `LogSanitizer` masque toute clé contenant `password`, `token`, `secret`,
+  `api_key`, `session`, `iban`… et rédige les motifs de clés privées et de
+  jetons porteurs, y compris dans les messages.
+- Le journal d'audit est distinct du journal technique et couvre configuration
+  sensible, comptes, rôles, sauvegardes, restaurations, mises à jour et
+  maintenance.
+
+### 24.5 Sauvegardes
+
+- Manifeste avec SHA-256 par entrée ; la restauration refuse toute archive dont
+  une empreinte diverge.
+- L'identifiant de sauvegarde est validé par expression régulière stricte : la
+  traversée de chemin est impossible sur le téléchargement, la vérification, la
+  restauration et la suppression.
+- La restauration n'écrit que dans `storage/media`, `storage/documents`,
+  `storage/inspections` et `storage/mail-attachments`. Toute autre entrée est
+  refusée.
+- Le téléchargement passe par un endpoint contrôlé réservé aux administrateurs,
+  avec `Cache-Control: private, no-store`.
+
+### 24.6 Mises à jour
+
+- Seul un artefact conforme à `ReleaseArtifactPolicy` est installable : la
+  présence de tests, de `storage/`, de `config/local.php`, de `node_modules/`
+  ou de matériel cryptographique invalide l'archive avant toute écriture.
+- L'extraction refuse la traversée de chemin et n'écrit que dans les
+  répertoires gérés.
+- Échec = restauration du snapshot + `VERSION` précédente + audit.
+
+### 24.7 Sorties HTTP
+
+- Toute requête sortante passe par `HttpFetcher`. `UrlGuard` bloque les
+  protocoles hors HTTP(S), localhost, loopback, link-local, RFC1918, CGNAT,
+  IPv6 uniques locales et mappées, ainsi que les noms d'hôtes internes. La
+  cible est vérifiée à chaque redirection, pas seulement sur l'URL initiale.

@@ -347,3 +347,44 @@ exécutés sur le projet mobile.
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
 exécution. La CI ajoute une vérification de démarrage réel de l'artefact extrait
 (`/api/version` et une page publique localisée).
+
+## 19. Organisation E2E (itération 1)
+
+### 19.1 Projets Playwright
+
+| Projet | Rôle |
+|---|---|
+| `install` | joue l'installation neuve dans un navigateur réel et produit `tests/e2e/.auth/admin.json` |
+| `desktop-chromium` | scénarios sur viewport desktop, dépend de `install` |
+| `mobile-safari` | scénarios sur iPhone 14 (WebKit), dépend de `install` |
+
+`globalSetup` exécute `scripts/e2e-reset.php`, qui vide la base de test,
+supprime `config/local.php` et nettoie `storage/`. `globalTeardown` supprime la
+configuration locale générée (elle contient une clé de chiffrement).
+`SECONDSTAY_KEEP_INSTALL=1` conserve l'installation pour inspection manuelle.
+
+### 19.2 Exécution en série
+
+Une installation SecondStay représente **un seul logement** : réglages,
+maintenance et sauvegardes sont un état global partagé. Les scénarios E2E
+s'exécutent donc en série (`workers: 1`). Les scénarios doivent rester
+rejouables : ils ne supposent jamais l'absence de données créées par un projet
+précédent.
+
+### 19.3 Contextes anonymes
+
+`browser.newContext()` hérite du `storageState` déclaré par `test.use`. Pour
+simuler un visiteur, utiliser `anonymousContext(browser)`
+(`tests/e2e/helpers/fixtures.js`), qui force un état vide.
+
+### 19.4 Suites PHP
+
+| Suite | Contenu |
+|---|---|
+| `unit` | logique pure + noyau sur une racine temporaire **non installée** |
+| `database` | migrations, dépôts, services, et application réellement installée |
+
+`KernelTestCase` et `InstalledAppTestCase` construisent une racine de projet
+temporaire (liens symboliques vers `templates/`, `translations/`,
+`migrations/`, `public/`, `vendor/`). Les tests ne dépendent donc jamais de
+l'état du dépôt de travail, même après une campagne E2E.

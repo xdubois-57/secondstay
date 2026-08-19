@@ -1,0 +1,44 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p data-testid="diagnostics-summary">
+        <span class="badge text-bg-success">{{ summary.ok }} {{ t('diagnostics.status.ok') }}</span>
+        <span class="badge text-bg-warning">{{ summary.warning }} {{ t('diagnostics.status.warning') }}</span>
+        <span class="badge text-bg-danger">{{ summary.error }} {{ t('diagnostics.status.error') }}</span>
+    </p>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('admin.diagnostics.migrations') }}</div>
+        <div class="card-body">
+            <p class="mb-1">{{ t('admin.diagnostics.current_schema') }} : <code data-testid="schema-version">{{ migrations.current ?: '—' }}</code></p>
+            {% if migrations.pending %}
+                <p class="text-warning-emphasis mb-1">{{ t('admin.diagnostics.pending') }} : {{ migrations.pending|join(', ') }}</p>
+            {% else %}
+                <p class="text-success-emphasis mb-1">{{ t('diagnostics.schema.up_to_date') }}</p>
+            {% endif %}
+            {% for warning in migrations.drift %}
+                <p class="text-danger-emphasis mb-0 small">{{ warning }}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% for category, results in groups %}
+        <div class="card mb-3">
+            <div class="card-header">{{ t('diagnostics.category.' ~ category) }}</div>
+            <ul class="list-group list-group-flush">
+                {% for result in results %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        data-diagnostic="{{ result.id }}" data-status="{{ result.status }}">
+                        <span>
+                            {{ t('diagnostics.check.' ~ result.id) }}
+                            {% if result.details.detail is defined and result.details.detail %}
+                                <span class="text-body-secondary small">{{ result.details.detail }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="badge {{ result.badge }}">{{ result.message }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+{% endblock %}

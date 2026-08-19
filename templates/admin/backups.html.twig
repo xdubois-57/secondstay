@@ -1,0 +1,53 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="d-flex flex-wrap gap-3 align-items-center mb-4">
+        <form method="post" action="{{ path('admin.backups.create') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <button class="btn btn-primary" type="submit" data-testid="create-backup">{{ t('admin.backups.create') }}</button>
+        </form>
+        <p class="mb-0 text-body-secondary small">
+            {{ t('admin.backups.retention') }} : {{ retention }} —
+            {{ t('admin.backups.disk_usage') }} : {{ disk_usage }} —
+            {{ include_media ? t('admin.backups.with_media') : t('admin.backups.without_media') }}
+        </p>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle" data-testid="backups-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('admin.backups.identifier') }}</th>
+                    <th scope="col">{{ t('admin.backups.created_at') }}</th>
+                    <th scope="col">{{ t('admin.backups.size') }}</th>
+                    <th scope="col" class="text-end">{{ t('admin.users.actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in backups %}
+                    <tr data-backup-id="{{ backup.id }}">
+                        <td><code>{{ backup.id }}</code></td>
+                        <td class="small">{{ backup.created_at }}</td>
+                        <td>{{ backup.human_size }}</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.backups.download', {'id': backup.id}) }}">{{ t('admin.backups.download') }}</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.backups.verify', {'id': backup.id}) }}">{{ t('admin.backups.verify') }}</a>
+                                <form method="post" action="{{ path('admin.backups.restore', {'id': backup.id}) }}">
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                    <button class="btn btn-sm btn-warning" type="submit" data-restore-backup="{{ backup.id }}">{{ t('admin.backups.restore') }}</button>
+                                </form>
+                                <form method="post" action="{{ path('admin.backups.delete', {'id': backup.id}) }}">
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('admin.backups.delete') }}</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-body-secondary" data-testid="no-backup">{{ t('admin.backups.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

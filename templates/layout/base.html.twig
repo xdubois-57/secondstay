@@ -39,7 +39,19 @@
                         </li>
                     {% endblock %}
                 </ul>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    {% if current_user %}
+                        {% if is_operational %}
+                            <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.dashboard') }}" data-testid="admin-link">{{ t('admin.nav.administration') }}</a>
+                        {% endif %}
+                        <span class="small text-body-secondary" data-testid="current-user">{{ current_user.name }}</span>
+                        <form method="post" action="{{ path('logout') }}" class="d-inline">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="logout">{{ t('auth.logout.action') }}</button>
+                        </form>
+                    {% else %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('login') }}" data-testid="login-link">{{ t('auth.login.action') }}</a>
+                    {% endif %}
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-toggle
                             aria-label="{{ t('common.theme.auto') }}">
                         <span data-theme-label
@@ -73,6 +85,16 @@
 </header>
 
 <main id="main-content" class="flex-grow-1">
+    {% if flashes is defined and flashes %}
+        <div class="container mt-3" data-testid="flash-messages">
+            {% for flash in flashes %}
+                <div class="alert alert-{{ flash.type }} alert-dismissible fade show" role="alert" data-flash-type="{{ flash.type }}">
+                    {{ t(flash.key) }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('common.close') }}"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block content %}{% endblock %}
 </main>
 

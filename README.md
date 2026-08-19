@@ -140,6 +140,48 @@ Assistant conformité propriétaire, taxe de séjour, classement, déclaration/e
 
 Abstraction LLM, sources par URLs publiques, protections SSRF et prompt injection, aucune donnée personnelle client envoyée, génération avant séjour et affichage uniquement des activités correspondant aux dates exactes du séjour.
 
+## Installation
+
+Une installation SecondStay se fait en copiant l'archive de release à la racine
+web (FTP possible), puis en ouvrant le site : l'assistant d'installation prend
+la main.
+
+```text
+/            → redirige vers /fr/install tant que l'installation n'est pas faite
+/fr/install  → prérequis serveur, base de données, premier administrateur,
+               logement et langue par défaut
+```
+
+L'assistant :
+
+1. vérifie les prérequis (PHP, extensions, droits d'écriture, espace disque) ;
+2. teste la connexion à la base sans jamais divulguer les identifiants ;
+3. écrit `config/local.php` (permissions `0600`, jamais versionné) contenant les
+   identifiants de base et la clé de chiffrement générée ;
+4. applique les migrations ;
+5. crée le premier administrateur et le connecte ;
+6. enregistre les réglages initiaux.
+
+Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la base
+devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
+rouvrir l'installation d'une instance existante.
+
+## Administration
+
+```text
+/fr/admin              tableau de bord et « À faire »
+/fr/admin/settings     réglages typés par module, avec aide et validation
+/fr/admin/users        plusieurs administrateurs et responsables locaux
+/fr/admin/backups      création, vérification, téléchargement, restauration
+/fr/admin/updates      vérification et installation des GitHub Releases
+/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation
+/fr/admin/logs         journal technique filtrable et purgeable
+/fr/admin/audit        journal des actions sensibles
+```
+
+Le mode maintenance ferme le site public (503) tout en laissant l'administration
+et les endpoints techniques accessibles.
+
 ## Hébergement et sécurité
 
 Le dépôt est public. Les données du logement, secrets, médias et fichiers de production ne doivent jamais être publiés.
