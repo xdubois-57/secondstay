@@ -169,6 +169,46 @@ final class Request
         return $this->header('Accept-Language') ?? '';
     }
 
+    /**
+     * Vrai lorsque la requête est une navigation de document.
+     *
+     * Un service worker, un préchargement ou un second onglet émettent aussi
+     * des requêtes GET authentifiées : elles ne doivent pas consommer les
+     * messages flash destinés à la page suivante réellement affichée.
+     */
+    public function isDocumentNavigation(): bool
+    {
+        // `Sec-Fetch-Mode` fait foi : lorsqu'un service worker relaie une
+        // navigation, le mode reste `navigate` alors que la destination
+        // devient `empty`. Se fier à la seule destination reviendrait à
+        // perdre les messages flash dès qu'un service worker est installé.
+        $mode = $this->header('Sec-Fetch-Mode');
+        if ($mode !== null && strtolower($mode) === 'navigate') {
+            return true;
+        }
+
+        $destination = $this->header('Sec-Fetch-Dest');
+        if ($destination !== null) {
+            return strtolower($destination) === 'document';
+        }
+
+        if ($mode !== null) {
+            return false;
+        }
+
+        // Navigateurs sans en-têtes `Sec-Fetch-*` : on retombe sur `Accept`.
+        $accept = $this->header('Accept');
+        if ($accept === null || $accept === '') {
+            // Client qui ne se décrit pas : on suppose une navigation, comme
+            // avant l'apparition des en-têtes `Sec-Fetch-*`.
+            return true;
+        }
+
+        $accept = strtolower($accept);
+
+        return str_contains($accept, 'text/html') || str_contains($accept, '*/*');
+    }
+
     public function host(): string
     {
         $host = $this->server['HTTP_HOST'] ?? ($this->server['SERVER_NAME'] ?? 'localhost');

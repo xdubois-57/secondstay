@@ -4,42 +4,51 @@ declare(strict_types=1);
 
 namespace SecondStay\Security;
 
+use SecondStay\Core\Session;
+
 /**
  * Protection CSRF pour toute mutation navigateur (SECURITY.md §6).
  *
- * Le jeton vit dans la session PHP ; il est renouvelé à chaque authentification
- * et comparé en temps constant.
+ * Le jeton vit dans la session ; il est renouvelé à chaque authentification et
+ * comparé en temps constant. Il passe par l'API de session plutôt que par une
+ * référence brute : c'est ce qui permet à la session de ne s'ouvrir
+ * réellement qu'au premier besoin.
  */
 final class Csrf
 {
     public const SESSION_KEY = '_csrf_token';
     public const FIELD = '_csrf';
 
-    /**
-     * @param array<string, mixed> $session référence vers $_SESSION ou équivalent testable
-     */
-    public function __construct(private array &$session)
+    public function __construct(private readonly Session $session)
     {
     }
 
     public function token(): string
     {
-        $existing = $this->session[self::SESSION_KEY] ?? null;
-        if (is_string($existing) && $existing !== '') {
+        $existing = $this->session->string(self::SESSION_KEY);
+        if ($existing !== '') {
             return $existing;
         }
 
         $token = Tokens::generate();
-        $this->session[self::SESSION_KEY] = $token;
+        $this->session->set(self::SESSION_KEY, $token);
 
         return $token;
     }
 
     public function rotate(): string
     {
-        unset($this->session[self::SESSION_KEY]);
+        $this->session->remove(self::SESSION_KEY);
 
         return $this->token();
+    }
+
+    /**
+     * Vrai uniquement si un jeton a déjà été émis pour cette session.
+     */
+    public function hasToken(): bool
+    {
+        return $this->session->string(self::SESSION_KEY) !== '';
     }
 
     public function isValid(?string $candidate): bool
@@ -48,8 +57,8 @@ final class Csrf
             return false;
         }
 
-        $expected = $this->session[self::SESSION_KEY] ?? null;
-        if (!is_string($expected) || $expected === '') {
+        $expected = $this->session->string(self::SESSION_KEY);
+        if ($expected === '') {
             return false;
         }
 

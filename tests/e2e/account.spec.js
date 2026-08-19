@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN, ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
-import { openNavigation } from './helpers/navigation.js';
+import { closeNavigation, openNavigation } from './helpers/navigation.js';
 
 /**
  * Scénario critique « comptes et authentification » (TESTING.md §7) :
@@ -161,6 +161,8 @@ test.describe('comptes', () => {
         // Le lien « Mon compte » est présent dans la navigation.
         await openNavigation(page);
         await expect(page.locator('[data-testid="account-link"]')).toBeVisible();
+        // Le menu mobile recouvre le formulaire : on le referme avant de saisir.
+        await closeNavigation(page);
 
         await page.fill('#first_name', 'Claire-Marie');
         await page.fill('#phone', '+33 6 11 22 33 44');

@@ -55,6 +55,24 @@ final class CurlHttpFetcher implements HttpFetcher
     }
 
     /**
+     * Une requête POST n'est jamais suivie en redirection : rejouer un corps
+     * sur une autre origine serait une porte ouverte au SSRF.
+     *
+     * @param array<string, string> $headers
+     *
+     * @return array{status: int, headers: array<string, string>, body: string, final_url: string}
+     */
+    public function post(string $url, string $body, array $headers = []): array
+    {
+        $inspection = $this->guard->inspect($url);
+        if ($inspection['ok'] === false) {
+            throw new RuntimeException('Requête sortante refusée : ' . $inspection['reason']);
+        }
+
+        return $this->request($url, $headers, false, $body);
+    }
+
+    /**
      * @param array<string, string> $headers
      *
      * @return array<mixed>|null
@@ -140,11 +158,16 @@ final class CurlHttpFetcher implements HttpFetcher
      *
      * @return array{status: int, headers: array<string, string>, body: string, final_url: string}
      */
-    private function request(string $url, array $headers, bool $followRedirects): array
+    private function request(string $url, array $headers, bool $followRedirects, ?string $postBody = null): array
     {
         $curl = $this->createHandle($url, $headers);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, $followRedirects);
+
+        if ($postBody !== null) {
+            curl_setopt($curl, CURLOPT_POST, true);
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $postBody);
+        }
 
         $responseHeaders = [];
         curl_setopt(

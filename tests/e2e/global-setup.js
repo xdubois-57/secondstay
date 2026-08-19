@@ -20,7 +20,7 @@ export default async function globalSetup(config) {
     // (`reuseExistingServer`). On le relance systématiquement avec, puis on
     // vérifie que la boîte de test répond : un scénario de compte qui échoue
     // doit signaler un vrai défaut, jamais une mauvaise configuration locale.
-    const env = { ...process.env, SECONDSTAY_MAIL_TRANSPORT: 'fake' };
+    const env = { ...process.env, SECONDSTAY_MAIL_TRANSPORT: 'fake', SECONDSTAY_PUSH_PROVIDER: 'fake' };
     execFileSync(resolve(root, 'scripts/dev-server.sh'), ['restart'], {
         cwd: root,
         stdio: 'inherit',
@@ -31,11 +31,16 @@ export default async function globalSetup(config) {
         || process.env.SECONDSTAY_BASE_URL
         || `http://${process.env.SECONDSTAY_HOST || 'localhost'}:${process.env.SECONDSTAY_PORT || 8123}`;
 
-    const response = await fetch(`${baseURL}/api/dev/mailbox`);
-    if (!response.ok) {
-        throw new Error(
-            `La boîte e-mail de test est indisponible (${response.status}). `
-            + 'Le serveur doit tourner avec SECONDSTAY_MAIL_TRANSPORT=fake.'
-        );
+    for (const [path, variable] of [
+        ['/api/dev/mailbox', 'SECONDSTAY_MAIL_TRANSPORT=fake'],
+        ['/api/dev/notifications', 'SECONDSTAY_PUSH_PROVIDER=fake']
+    ]) {
+        const response = await fetch(`${baseURL}${path}`);
+        if (!response.ok) {
+            throw new Error(
+                `La boîte de test ${path} est indisponible (${response.status}). `
+                + `Le serveur doit tourner avec ${variable}.`
+            );
+        }
     }
 }

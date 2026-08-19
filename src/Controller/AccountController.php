@@ -11,6 +11,8 @@ use SecondStay\Core\Exception\ValidationException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\I18n\Locales;
+use SecondStay\Notification\NotificationEvent;
+use SecondStay\Notification\NotificationService;
 
 /**
  * Parcours public de compte : inscription, confirmation, réinitialisation.
@@ -83,6 +85,15 @@ final class AccountController extends AbstractController
         // La confirmation vaut preuve de possession de la boîte mail :
         // l'utilisateur est connecté immédiatement.
         $this->auth()->startSession($result['user'], $context->request->ip(), $context->request->userAgent());
+
+        // Premier événement notifiable du cycle de vie : e-mail et push sont
+        // envoyés indépendamment, dans la langue du compte.
+        $this->container->get(NotificationService::class)->notify(
+            NotificationEvent::AccountConfirmed,
+            $result['user'],
+            ['action_path' => '/' . $result['user']->locale . '/account'],
+            'user:' . $result['user']->id,
+        );
         $this->flashSuccess('account.confirm.success');
 
         return $this->redirectToRoute($context, 'account.profile', [], $result['user']->locale);

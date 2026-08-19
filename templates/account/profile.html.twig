@@ -132,6 +132,57 @@
                 </div>
             {% endif %}
 
+            {# --- Notifications ----------------------------------------------- #}
+            <div class="card mb-4" data-testid="notifications">
+                <div class="card-header">{{ t('notification.title') }}</div>
+                <div class="card-body">
+                    <p class="text-body-secondary">{{ t('notification.intro') }}</p>
+
+                    <form method="post" action="{{ path('account.notifications.save') }}" data-testid="notification-form">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="channel_email" name="channel_email"
+                                   value="1"{{ notification_preferences.email ? ' checked' : '' }}>
+                            <label class="form-check-label" for="channel_email">{{ t('notification.channel.email') }}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="channel_push" name="channel_push"
+                                   value="1"{{ notification_preferences.push ? ' checked' : '' }}>
+                            <label class="form-check-label" for="channel_push">{{ t('notification.channel.push') }}</label>
+                        </div>
+                        <button class="btn btn-outline-primary mt-3" type="submit" data-testid="save-notifications">{{ common_save|default(t('common.save')) }}</button>
+                    </form>
+
+                    <hr>
+
+                    <p class="mb-2">
+                        {{ t('notification.devices') }} :
+                        <strong data-push-devices>{{ push_devices }}</strong>
+                    </p>
+
+                    {% if push_enabled %}
+                        <div class="d-flex gap-2 flex-wrap" data-push-controls data-base="{{ base_path }}" data-csrf="{{ csrf_token }}">
+                            <button class="btn btn-outline-primary" type="button" data-push-subscribe
+                                    data-testid="push-subscribe">{{ t('notification.push.enable') }}</button>
+                            <button class="btn btn-outline-secondary" type="button" data-push-unsubscribe hidden
+                                    data-testid="push-unsubscribe">{{ t('notification.push.disable') }}</button>
+                        </div>
+                        <form method="post" action="{{ path('account.notifications.test') }}" class="mt-3">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <button class="btn btn-outline-secondary btn-sm" type="submit"
+                                    data-testid="send-test-notification">{{ t('notification.send_test') }}</button>
+                        </form>
+                        <p class="small mt-2 mb-0" data-push-status role="status"
+                           data-enabled="{{ t('notification.push.enabled') }}"
+                           data-disabled="{{ t('notification.push.disabled') }}"
+                           data-unsupported="{{ t('notification.push.unsupported') }}"
+                           data-denied="{{ t('notification.push.denied') }}"></p>
+                    {% else %}
+                        <p class="small text-body-secondary mb-0" data-testid="push-unavailable">{{ t('notification.push.unavailable') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
             {# --- Appareils --------------------------------------------------- #}
             <div class="card mb-4">
                 <div class="card-header">{{ t('account.sessions.title') }}</div>

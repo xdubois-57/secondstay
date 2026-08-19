@@ -31,11 +31,16 @@ final class UrlGuard
         ['240.0.0.0', 4],
     ];
 
+    /** @var (callable(string): list<string>)|null */
+    private $resolver;
+
     /**
-     * @param list<string> $allowedHosts liste blanche optionnelle
+     * @param list<string>                         $allowedHosts liste blanche optionnelle
+     * @param (callable(string): list<string>)|null $resolver     résolution DNS injectable
      */
-    public function __construct(private readonly array $allowedHosts = [])
+    public function __construct(private readonly array $allowedHosts = [], ?callable $resolver = null)
     {
+        $this->resolver = $resolver;
     }
 
     /**
@@ -115,6 +120,12 @@ final class UrlGuard
     {
         if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
             return [$host];
+        }
+
+        // Les tests injectent leur propre résolution : la vérification des
+        // plages privées reste appliquée à l'identique.
+        if ($this->resolver !== null) {
+            return ($this->resolver)($host);
         }
 
         $ips = [];

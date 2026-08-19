@@ -145,6 +145,15 @@ final class SettingRegistry
             ),
             new SettingDefinition('mail.smtp_username', SettingType::String, '', 'mail', max: 190),
             new SettingDefinition('mail.smtp_password', SettingType::Secret, null, 'mail'),
+            new SettingDefinition('mail.dkim_selector', SettingType::String, '', 'mail', max: 64),
+
+            // --- Notifications ----------------------------------------------
+            new SettingDefinition('notification.push_enabled', SettingType::Bool, false, 'notification'),
+            new SettingDefinition('notification.retention_days', SettingType::Integer, 180, 'notification', min: 7, max: 3650),
+            new SettingDefinition('push.subject', SettingType::String, '', 'notification', max: 190),
+            // Générées par l'installation, jamais versionnées.
+            new SettingDefinition('push.vapid_public', SettingType::String, '', 'notification', max: 255),
+            new SettingDefinition('push.vapid_private', SettingType::Secret, null, 'notification'),
 
             // --- Comptes ----------------------------------------------------
             new SettingDefinition('account.allow_signup', SettingType::Bool, true, 'account'),

@@ -29,7 +29,7 @@ Une itération est terminée seulement si :
 | 1 | Installation, configuration, backups, updater | ✅ livrée |
 | 2 | Site public et contenu | ✅ livrée |
 | 3 | Comptes et auth | ✅ livrée |
-| 4 | Notifications et PWA | ⏳ à venir |
+| 4 | Notifications et PWA | ✅ livrée |
 | 5 | Disponibilités et prix | ⏳ à venir |
 | 6 | Réservation sans paiement | ⏳ à venir |
 | 7 | Paiements | ⏳ à venir |
@@ -167,6 +167,24 @@ Livrer :
 - cache localisé.
 
 E2E : événement → fake mail + fake push dans la langue du compte.
+
+### Livré (0.5.0)
+
+- `NotificationService` : e-mail et push indépendants, journalisés séparément,
+  rendus dans la langue du compte ;
+- Web Push natif (VAPID ES256, chiffrement `aes128gcm` de bout en bout), sans
+  dépendance supplémentaire, avec fournisseur factice pour les tests ;
+- clés VAPID générées et renouvelables depuis l'administration ;
+- préférences de canal par compte, abonnement d'appareils et envoi de
+  vérification depuis l'espace client ;
+- diagnostic SPF / DKIM / DMARC du domaine d'expédition et sonde SMTP
+  explicite ;
+- application installable : manifeste localisé, icônes générées, service
+  worker versionné, page hors ligne dans les quatre langues ;
+- session paresseuse : plus aucun cookie sur les réponses publiques ;
+- E2E `pwa-notifications.spec.js`, tests PHP `WebPushTest`,
+  `NotificationServiceTest`, `PushSubscriptionRepositoryTest`,
+  `MailDnsCheckerTest`, `PwaTest` et suite Vitest `push.test.js`.
 
 ## Itération 5 — Disponibilités et prix
 

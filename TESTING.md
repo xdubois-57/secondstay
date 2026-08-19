@@ -444,3 +444,54 @@ dérobée réservée aux tests.
 Les campagnes E2E s’exécutent sur `http://localhost:8123` et non sur une
 adresse IP : une adresse IP n’est pas une « relying party » WebAuthn valide et
 les clés d’accès seraient refusées par le navigateur.
+
+## 21. Itération 4 — notifications, push et application installable
+
+### 21.1 Couverture des scénarios critiques
+
+| Scénario critique | Fichier |
+|---|---|
+| 10 — SMTP fake + push fake | `tests/e2e/pwa-notifications.spec.js` |
+| 12 — PWA | `tests/e2e/pwa-notifications.spec.js` |
+
+`pwa-notifications.spec.js` couvre le manifeste dans les quatre langues, les
+icônes générées, le service worker et son périmètre, la page hors ligne
+localisée, l'activation des clés push par l'administrateur, le diagnostic
+SPF/DKIM/DMARC, l'événement « compte confirmé » qui produit e-mail **et**
+notification dans la langue du compte, l'abonnement d'un appareil par
+l'endpoint réel, l'envoi de vérification, les préférences de canal et le refus
+des abonnements anonymes ou mal formés.
+
+### 21.2 Chiffrement réellement vérifié
+
+`WebPushTest` ne se contente pas de produire des octets : il **déchiffre** ce
+que le serveur émet, en jouant le rôle du navigateur abonné (accord ECDH,
+dérivation HKDF, AES-128-GCM). Une implémentation plausible mais illisible par
+un navigateur échoue donc. Il vérifie aussi la signature du JWT VAPID avec la
+clé publique correspondante.
+
+### 21.3 Aucune dépendance réseau
+
+- `MailDnsChecker` reçoit sa résolution DNS par injection : aucun test ne
+  dépend d'un domaine réel.
+- `UrlGuard` accepte également une résolution injectable ; les tests de push
+  exercent donc la garde SSRF sans réseau.
+- Le fournisseur de push factice est activé par `SECONDSTAY_PUSH_PROVIDER=fake`
+  et dépose ses envois dans `storage/temp/push`, lus par
+  `/api/dev/notifications` — endpoint qui renvoie 404 dans toute autre
+  configuration.
+- Le fournisseur factice n'invente pas de clé publique : il expose celle de
+  l'installation, de sorte que le parcours d'abonnement du navigateur est
+  réellement exercé.
+
+### 21.4 Abonnement E2E
+
+L'abonnement E2E n'utilise pas de clé fabriquée à la main : le scénario
+génère une vraie paire P-256 avec WebCrypto dans la page, puis appelle
+l'endpoint réel. La validation serveur est donc exercée telle qu'en
+production.
+
+### 21.5 Interactions avec le menu mobile
+
+Le menu replié recouvre le contenu. Les scénarios qui l'ouvrent le referment
+avec `closeNavigation()` avant de saisir un formulaire situé en dessous.

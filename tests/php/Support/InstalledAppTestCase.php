@@ -94,13 +94,17 @@ abstract class InstalledAppTestCase extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        foreach (['templates', 'translations', 'migrations', 'public', 'vendor'] as $shared) {
-            $link = $this->appRoot . '/' . $shared;
-            if (is_link($link)) {
-                unlink($link);
+        // `setUp()` peut avoir marqué le test ignoré avant d'ouvrir le bac à
+        // sable : le nettoyage ne doit pas masquer la raison réelle.
+        if (isset($this->appRoot)) {
+            foreach (['templates', 'translations', 'migrations', 'public', 'vendor'] as $shared) {
+                $link = $this->appRoot . '/' . $shared;
+                if (is_link($link)) {
+                    unlink($link);
+                }
             }
+            self::removeDirectory($this->appRoot);
         }
-        self::removeDirectory($this->appRoot);
 
         parent::tearDown();
     }

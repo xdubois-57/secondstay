@@ -1,0 +1,15 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 36rem;" data-testid="offline-page">
+            <h1 class="h3 mb-3">{{ t('pwa.offline.title') }}</h1>
+            <p class="text-body-secondary">{{ t('pwa.offline.message') }}</p>
+            <ul class="text-body-secondary">
+                <li>{{ t('pwa.offline.available') }}</li>
+                <li>{{ t('pwa.offline.unavailable') }}</li>
+            </ul>
+            <a class="btn btn-outline-primary" href="{{ path('home') }}">{{ t('error.back_home') }}</a>
+        </div>
+    </section>
+{% endblock %}

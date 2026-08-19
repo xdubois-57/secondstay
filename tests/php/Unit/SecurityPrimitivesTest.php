@@ -18,11 +18,12 @@ final class SecurityPrimitivesTest extends TestCase
     public function testCsrfTokenIsStableThenRotatable(): void
     {
         $session = new Session();
-        /** @var array<string, mixed> $reference */
-        $reference = &$session->reference();
-        $csrf = new Csrf($reference);
+        $csrf = new Csrf($session);
+
+        self::assertFalse($csrf->hasToken());
 
         $token = $csrf->token();
+        self::assertTrue($csrf->hasToken());
         self::assertSame($token, $csrf->token());
         self::assertTrue($csrf->isValid($token));
 
@@ -35,9 +36,7 @@ final class SecurityPrimitivesTest extends TestCase
     public function testCsrfRejectsEmptyAndWrongTokens(): void
     {
         $session = new Session();
-        /** @var array<string, mixed> $reference */
-        $reference = &$session->reference();
-        $csrf = new Csrf($reference);
+        $csrf = new Csrf($session);
         $csrf->token();
 
         self::assertFalse($csrf->isValid(null));

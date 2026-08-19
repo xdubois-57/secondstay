@@ -20,6 +20,15 @@ interface HttpFetcher
     public function get(string $url, array $headers = []): array;
 
     /**
+     * Requête POST au corps opaque (charge utile chiffrée, JSON, formulaire).
+     *
+     * @param array<string, string> $headers
+     *
+     * @return array{status: int, headers: array<string, string>, body: string, final_url: string}
+     */
+    public function post(string $url, string $body, array $headers = []): array;
+
+    /**
      * @param array<string, string> $headers
      *
      * @return array<mixed>|null

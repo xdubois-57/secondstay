@@ -14,6 +14,11 @@ use SecondStay\Core\Exception\ValidationException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\I18n\Locales;
+use SecondStay\Notification\NotificationChannel;
+use SecondStay\Notification\NotificationEvent;
+use SecondStay\Notification\NotificationPreferenceRepository;
+use SecondStay\Notification\NotificationService;
+use SecondStay\Push\PushSubscriptionRepository;
 use SecondStay\Security\Tokens;
 
 /**
@@ -163,6 +168,59 @@ final class ProfileController extends AbstractController
     }
 
     /**
+     * Envoi de vérification vers les appareils du compte.
+     *
+     * C'est le seul moyen, pour le titulaire, de constater qu'un appareil
+     * reçoit réellement les notifications sans attendre un événement réel.
+     *
+     * @param array<string, string> $params
+     */
+    public function sendTestNotification(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireRole(Role::Customer);
+
+        $result = $this->container->get(NotificationService::class)->notify(
+            NotificationEvent::Test,
+            $user,
+            ['action_path' => '/' . $user->locale . '/account'],
+            'test:' . $user->id,
+        );
+
+        if ($result['push'] === 0 && $result['attempted']['push']) {
+            $this->flashWarning('notification.test_no_device');
+        } else {
+            $this->flashSuccess('notification.test_sent');
+        }
+
+        return $this->redirectToRoute($context, 'account.profile');
+    }
+
+    /**
+     * Canaux de notification. L'e-mail reste obligatoire pour les messages
+     * transactionnels (confirmation, réinitialisation) : la préférence ne
+     * porte que sur les notifications d'événements.
+     *
+     * @param array<string, string> $params
+     */
+    public function saveNotificationPreferences(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireRole(Role::Customer);
+        $preferences = $this->container->get(NotificationPreferenceRepository::class);
+
+        foreach (NotificationChannel::cases() as $channel) {
+            $preferences->set(
+                $user->id,
+                $channel,
+                $context->request->input('channel_' . $channel->value) !== null
+            );
+        }
+
+        $this->flashSuccess('notification.saved');
+
+        return $this->redirectToRoute($context, 'account.profile');
+    }
+
+    /**
      * Les clés d'accès ne sont proposées que si le navigateur pourra les
      * accepter : une installation servie par adresse IP en est privée.
      */
@@ -194,6 +252,9 @@ final class ProfileController extends AbstractController
             'passkeys' => $this->container->get(WebAuthnService::class)->listCredentials($user),
             'passkeys_enabled' => $this->passkeysUsable(),
             'consents' => $this->container->get(ConsentRepository::class)->forUser($user->id),
+            'notification_preferences' => $this->container->get(NotificationPreferenceRepository::class)->forUser($user->id),
+            'push_enabled' => $this->container->get(NotificationService::class)->isPushEnabled(),
+            'push_devices' => count($this->container->get(PushSubscriptionRepository::class)->forUser($user->id)),
             'errors' => $errors,
             'min_password_length' => PasswordHasher::MIN_LENGTH,
         ], $status);

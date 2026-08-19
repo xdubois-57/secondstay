@@ -828,3 +828,107 @@ Les inscriptions (par adresse IP) et les réinitialisations (par compte) sont
 limitées par `RateLimiter`. Un administrateur verrouillé par ses propres
 tentatives peut remettre les compteurs à zéro depuis
 `/admin/diagnostics` ; l’action est tracée dans le journal d’audit.
+
+## 33. Itération 4 — notifications, push et application installable
+
+### 33.1 Nouveaux modules
+
+```text
+src/
+├── Notification/
+│   ├── NotificationEvent       vocabulaire des événements notifiables
+│   ├── NotificationChannel     email | push
+│   ├── NotificationRepository  journal, une ligne par canal et tentative
+│   ├── NotificationPreferenceRepository
+│   └── NotificationService     point d'entrée unique
+├── Push/
+│   ├── Base64Url               encodage sans remplissage
+│   ├── Vapid                   paire P-256, JWT ES256 (RFC 8292)
+│   ├── PushEncryption          aes128gcm + ECDH + HKDF (RFC 8188 / 8291)
+│   ├── PushSubscription        abonnement validé dès la construction
+│   ├── PushMessage             charge utile minimale
+│   ├── PushProvider            frontière (WebPushProvider | FakePushProvider)
+│   ├── PushSubscriptionRepository
+│   └── VapidKeyManager         génération et rotation des clés
+├── Pwa/
+│   ├── ManifestBuilder         manifeste localisé
+│   └── IconGenerator           icônes dessinées par l'installation
+└── Diagnostics/
+    ├── MailDnsChecker          SPF / DKIM / DMARC, résolution injectable
+    └── NotificationDiagnostics contrôles e-mail et push
+```
+
+### 33.2 Modèle de données (`0004_notifications.sql`)
+
+```text
+push_subscription        user_id, endpoint, endpoint_hash, public_key,
+                         auth_secret, locale, user_agent, failures
+notification             event, channel, status, user_id, locale, subject,
+                         reference, error, correlation_id
+notification_preference  (user_id, channel) : l'absence de ligne vaut « actif »
+```
+
+Le corps des notifications n'est jamais stocké, pas plus que celui des e-mails.
+
+### 33.3 Deux canaux indépendants
+
+`NotificationService::notify()` tente l'e-mail **et** le push séparément :
+l'échec de l'un n'empêche jamais l'autre, et chaque tentative produit sa
+propre ligne de journal. Le canal désactivé par le titulaire est tracé
+`skipped` plutôt que silencieusement ignoré.
+
+Tous les événements partagent un gabarit e-mail unique
+(`templates/mail/notification.html.twig`) alimenté par les clés de traduction
+de l'événement : ajouter un événement ne demande qu'un jeu de traductions.
+
+### 33.4 Web Push
+
+L'implémentation est autonome — aucune dépendance Composer supplémentaire sur
+l'hébergement mutualisé visé :
+
+- identification du serveur applicatif par JWT ES256 signé avec la clé privée
+  VAPID, signature convertie du DER d'OpenSSL au format brut `r||s` du JWS ;
+- charge utile chiffrée de bout en bout : accord ECDH P-256 avec la clé de
+  l'abonnement, dérivation HKDF, chiffrement AES-128-GCM, en-tête
+  `aes128gcm` (sel, taille d'enregistrement, clé publique éphémère) ;
+- un abonnement révoqué par le navigateur (404 / 410) est supprimé, un
+  abonnement qui échoue durablement également.
+
+Les clés VAPID sont générées par l'installation et stockées comme un secret :
+aucune clé n'est versionnée. Les renouveler invalide les abonnements
+existants, qui sont donc supprimés dans le même geste.
+
+### 33.5 Application installable
+
+Le manifeste est **localisé** : nom, description, `start_url` et raccourcis
+suivent la langue demandée. Les icônes sont dessinées par l'installation à
+partir du nom du logement, puis mises en cache dans `storage/cache/icons` :
+le dépôt public ne contient aucune image propre à une résidence.
+
+Le service worker est rendu par l'application afin d'y injecter la version
+installée : une mise à jour applicative invalide donc automatiquement les
+caches précédents. Il sert le socle statique depuis le cache, garde une page
+hors ligne par langue, et **n'intercepte jamais** `/admin`, `/account`,
+`/api/` ni les médias privés. La page hors ligne est préchargée **sans
+cookie** : aucun contenu personnel ne peut se retrouver dans le cache d'un
+appareil partagé.
+
+### 33.6 Session paresseuse
+
+La session PHP ne s'ouvre plus qu'au premier besoin réel — c'est-à-dire à la
+première écriture, jeton CSRF compris, ce dernier n'étant calculé que si un
+gabarit l'écrit. Une requête qui n'écrit rien (sitemap, robots, manifeste,
+service worker, icône, page publique consultée par un robot) ne reçoit donc
+aucun cookie : ces réponses restent réellement cachables et une installation
+ne crée plus une session par passage de robot.
+
+### 33.7 Messages flash et service worker
+
+Un message flash appartient à la page réellement affichée. Une requête
+annexe — préchargement, appel JSON, socle récupéré par un service worker — ne
+doit pas le consommer.
+
+La détection s'appuie sur `Sec-Fetch-Mode: navigate` en priorité : lorsqu'un
+service worker relaie une navigation, le mode reste `navigate` alors que
+`Sec-Fetch-Dest` devient `empty`. Se fier à la seule destination ferait
+disparaître les confirmations dès qu'un service worker est installé.

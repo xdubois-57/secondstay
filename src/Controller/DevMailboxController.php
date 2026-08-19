@@ -9,11 +9,13 @@ use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 
 /**
- * Boîte de réception factice, réservée aux tests automatisés.
+ * Boîtes factices d'e-mail et de notification, réservées aux tests
+ * automatisés.
  *
- * Cet endpoint n'existe que lorsque le transport e-mail factice est activé par
- * la variable d'environnement `SECONDSTAY_MAIL_TRANSPORT=fake`. En production
- * il renvoie 404 : aucun contenu d'e-mail n'est jamais exposé.
+ * Ces endpoints n'existent que lorsque le transport factice correspondant est
+ * activé par variable d'environnement (`SECONDSTAY_MAIL_TRANSPORT=fake`,
+ * `SECONDSTAY_PUSH_PROVIDER=fake`). En production ils renvoient 404 : aucun
+ * contenu de message n'est jamais exposé.
  */
 final class DevMailboxController extends AbstractController
 {
@@ -24,7 +26,42 @@ final class DevMailboxController extends AbstractController
     {
         $this->assertFakeTransport();
 
-        $directory = $this->paths()->storage('temp/mail');
+        return Response::json(['messages' => $this->readSpool($this->paths()->storage('temp/mail'))]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function purge(RequestContext $context, array $params = []): Response
+    {
+        $this->assertFakeTransport();
+
+        foreach (glob($this->paths()->storage('temp/mail') . '/*.json') ?: [] as $file) {
+            unlink($file);
+        }
+
+        return Response::json(['ok' => true]);
+    }
+
+    /**
+     * Notifications réellement poussées vers le fournisseur factice.
+     *
+     * @param array<string, string> $params
+     */
+    public function notifications(RequestContext $context, array $params = []): Response
+    {
+        if ($this->config()->string('push.provider', 'webpush') !== 'fake') {
+            throw new NotFoundException('Boîte de test indisponible.');
+        }
+
+        return Response::json(['messages' => $this->readSpool($this->paths()->storage('temp/push'))]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function readSpool(string $directory): array
+    {
         $files = glob($directory . '/*.json');
         if ($files === false) {
             $files = [];
@@ -45,21 +82,7 @@ final class DevMailboxController extends AbstractController
             }
         }
 
-        return Response::json(['messages' => $messages]);
-    }
-
-    /**
-     * @param array<string, string> $params
-     */
-    public function purge(RequestContext $context, array $params = []): Response
-    {
-        $this->assertFakeTransport();
-
-        foreach (glob($this->paths()->storage('temp/mail') . '/*.json') ?: [] as $file) {
-            unlink($file);
-        }
-
-        return Response::json(['ok' => true]);
+        return $messages;
     }
 
     private function assertFakeTransport(): void

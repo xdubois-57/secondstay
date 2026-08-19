@@ -503,3 +503,71 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   fenêtre.
 - Un administrateur peut remettre les compteurs à zéro depuis
   `/admin/diagnostics` ; l'action est tracée (`security.rate_limits_cleared`).
+
+## 27. Décisions de mise en œuvre (itération 4)
+
+### 27.1 Push chiffré de bout en bout
+
+- La charge utile est chiffrée pour l'abonnement destinataire (RFC 8291) : le
+  service de push relaie un conteneur qu'il ne peut pas lire, et le serveur
+  lui-même ne peut pas relire un message déjà émis.
+- Chaque envoi utilise un sel et une paire de clés éphémères distincts : deux
+  notifications identiques produisent des octets différents.
+- La charge utile reste minimale — titre, texte court, chemin applicatif.
+  Aucune donnée sensible ne transite par le service de push, même chiffrée.
+- Les clés VAPID sont générées par l'installation ; la clé privée est chiffrée
+  au repos comme tout secret et n'est jamais réaffichée.
+- Les erreurs des services de push sont exposées en clés de traduction : ni
+  l'hôte, ni le corps de la réponse distante ne remontent à l'interface.
+- Les endpoints de push sont soumis à la garde SSRF comme toute requête
+  sortante ; une requête POST n'est jamais suivie en redirection.
+
+### 27.2 Abonnements
+
+- Un abonnement appartient toujours à un compte authentifié ; un visiteur
+  anonyme ne peut pas s'abonner.
+- L'endpoint doit être une URL HTTPS absolue de moins de 2 000 caractères, et
+  les clés doivent avoir exactement la forme attendue (point non compressé de
+  65 octets, secret de 16 octets) — la validation a lieu à la construction,
+  jamais au moment de l'envoi.
+- Un même endpoint ne peut jamais être enregistré deux fois, et un compte est
+  limité à 10 appareils.
+- Un abonnement révoqué par le navigateur (404 / 410) ou durablement en échec
+  est supprimé plutôt que réessayé indéfiniment.
+- On ne supprime que ses propres abonnements : l'endpoint d'un autre compte
+  n'est jamais touché.
+
+### 27.3 Session paresseuse et cookies
+
+- Aucun cookie de session n'est posé tant que rien n'est écrit : sitemap,
+  robots, manifeste, service worker, icônes et pages publiques anonymes n'en
+  reçoivent plus. Une installation ne crée donc plus une session par passage
+  de robot, et ces réponses restent cachables.
+- Le jeton CSRF n'est calculé que si un gabarit l'écrit réellement : afficher
+  une page sans formulaire n'ouvre pas de session.
+
+### 27.4 Cache hors ligne
+
+- Le service worker n'intercepte jamais `/admin`, `/account`, `/api/`, la
+  connexion, la déconnexion ni les médias originaux.
+- Le socle mis en cache est récupéré **sans cookie** : le cache d'un appareil
+  partagé ne peut pas contenir le nom, les messages ou la réservation d'un
+  utilisateur.
+- Le service worker embarque la version installée : une mise à jour
+  applicative invalide automatiquement les caches précédents.
+
+### 27.5 Messages flash
+
+- Un message flash n'est consommé que par une navigation de document. Une
+  requête annexe — préchargement, appel JSON, socle récupéré par un service
+  worker — ne peut plus faire disparaître une confirmation avant qu'elle
+  n'ait été lue.
+
+### 27.6 Diagnostic d'expédition
+
+- SPF, DKIM et DMARC sont vérifiés pour le domaine d'expédition. La clé
+  publique DKIM n'est jamais réaffichée : seuls les paramètres le sont.
+- Un SPF permissif (`+all`) et un DMARC en observation seule (`p=none`) sont
+  signalés comme insuffisants, pas comme conformes.
+- La sonde SMTP n'est jamais déclenchée par le simple affichage de la page :
+  elle demande une action explicite de l'administrateur.

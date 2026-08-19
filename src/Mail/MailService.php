@@ -101,13 +101,18 @@ final class MailService
         string $locale,
         array $context = [],
         ?int $userId = null,
+        ?string $subjectKey = null,
     ): array {
         $locale = Locales::isSupported($locale) ? $locale : Locales::FALLBACK;
         $previousLocale = $this->translator->locale();
         $this->translator->setLocale($locale);
 
         try {
-            $subject = $this->translator->trans('mail.' . $template . '.subject', $this->stringParameters($context), $locale);
+            $subject = $this->translator->trans(
+                $subjectKey ?? 'mail.' . $template . '.subject',
+                $this->stringParameters($context),
+                $locale
+            );
 
             $html = $this->view->render('mail/' . $template . '.html.twig', $context + [
                 'locale' => $locale,
