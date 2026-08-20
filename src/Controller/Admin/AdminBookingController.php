@@ -13,6 +13,7 @@ use SecondStay\Booking\PromoCodeRepository;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Payment\PaymentService;
 use SecondStay\Support\Money;
 
 /**
@@ -56,11 +57,23 @@ final class AdminBookingController extends AdminController
             throw new NotFoundException('Réservation introuvable.');
         }
 
+        $payments = $this->container->get(PaymentService::class)->schedule($booking);
+
+        $paid = 0;
+        $due = 0;
+        foreach ($payments as $payment) {
+            $paid += $payment->netCents();
+            $due += $payment->outstandingCents();
+        }
+
         return $this->renderAdmin('admin/booking-detail.html.twig', [
             'meta_title' => $booking->reference,
             'booking' => $booking,
             'timeline' => $this->container->get(BookingEventRepository::class)->forBooking($booking->id),
             'transitions' => $booking->status->allowedTransitions(),
+            'payments' => $payments,
+            'paid_cents' => $paid,
+            'due_cents' => $due,
         ]);
     }
 

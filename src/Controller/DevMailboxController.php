@@ -7,6 +7,9 @@ namespace SecondStay\Controller;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Payment\FakePaymentProvider;
+use SecondStay\Payment\PaymentProvider;
+use SecondStay\Payment\PaymentStatus;
 
 /**
  * Boîtes factices d'e-mail et de notification, réservées aux tests
@@ -55,6 +58,58 @@ final class DevMailboxController extends AbstractController
         }
 
         return Response::json(['messages' => $this->readSpool($this->paths()->storage('temp/push'))]);
+    }
+
+    /**
+     * État des paiements chez le fournisseur factice.
+     *
+     * Le scénario complet — acompte, notification, confirmation — n'est
+     * jouable en bout en bout que si le test peut faire évoluer l'état
+     * « côté fournisseur », comme le ferait un vrai encaissement. Rien n'est
+     * écrit dans l'application ici : seul le fournisseur factice change
+     * d'avis, et le webhook reste le seul chemin qui met à jour SecondStay.
+     *
+     * @param array<string, string> $params
+     */
+    public function payments(RequestContext $context, array $params = []): Response
+    {
+        $provider = $this->fakePaymentProvider();
+
+        $references = [];
+        foreach ($provider->references() as $reference) {
+            $state = $provider->fetch($reference);
+            $references[] = [
+                'reference' => $reference,
+                'status' => $state['status']->value,
+                'amount_cents' => $state['amount_cents'],
+            ];
+        }
+
+        return Response::json(['payments' => $references]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function settlePayment(RequestContext $context, array $params = []): Response
+    {
+        $provider = $this->fakePaymentProvider();
+
+        $reference = (string) $context->request->input('reference', '');
+        $status = PaymentStatus::fromString((string) $context->request->input('status', 'paid'));
+
+        return Response::json(['ok' => $provider->settle($reference, $status)]);
+    }
+
+    private function fakePaymentProvider(): FakePaymentProvider
+    {
+        $provider = $this->container->get(PaymentProvider::class);
+
+        if (!$provider instanceof FakePaymentProvider) {
+            throw new NotFoundException('Fournisseur de test indisponible.');
+        }
+
+        return $provider;
     }
 
     /**

@@ -70,7 +70,15 @@ use SecondStay\Security\Encryptor;
 use SecondStay\Security\RateLimiter;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
+use SecondStay\Payment\FakePaymentProvider;
+use SecondStay\Payment\MolliePaymentProvider;
+use SecondStay\Payment\NullPaymentProvider;
+use SecondStay\Payment\PaymentProvider;
+use SecondStay\Payment\PaymentRepository;
+use SecondStay\Payment\PaymentService;
+use SecondStay\Payment\WebhookRepository;
 use SecondStay\Settings\SettingsService;
+use SecondStay\Tax\TouristTaxCalculator;
 use SecondStay\Update\GitHubReleaseProvider;
 use SecondStay\Update\ReleaseProvider;
 use SecondStay\Update\UpdateService;
@@ -442,6 +450,60 @@ final class Services
             $c->get(StayRules::class),
             $c->get(AvailabilityService::class),
             $c->get(PriceCalculator::class),
+        ));
+
+        $container->set(PaymentRepository::class, static fn (Container $c): PaymentRepository
+            => new PaymentRepository($c->get(Database::class)));
+
+        $container->set(WebhookRepository::class, static fn (Container $c): WebhookRepository
+            => new WebhookRepository($c->get(Database::class)));
+
+        $container->set(TouristTaxCalculator::class, static fn (Container $c): TouristTaxCalculator
+            => new TouristTaxCalculator($c->get(SettingsService::class)));
+
+        $container->set(PaymentProvider::class, static function (Container $c): PaymentProvider {
+            // Le fournisseur factice n'est activable que par variable
+            // d'environnement, jamais depuis l'interface : sinon un visiteur
+            // pourrait confirmer un séjour sans avoir rien payé.
+            if ($c->get(Config::class)->string('payment.provider', '') === FakePaymentProvider::NAME) {
+                return new FakePaymentProvider(
+                    '/fr/payment/return',
+                    $c->get(Paths::class)->storage('temp/payments.json'),
+                );
+            }
+
+            $settings = $c->get(SettingsService::class);
+
+            if ($settings->string('payment.provider') === MolliePaymentProvider::NAME) {
+                $key = $settings->get('payment.mollie_api_key');
+                $provider = new MolliePaymentProvider(
+                    is_string($key) ? $key : '',
+                    $c->get(HttpFetcher::class),
+                );
+
+                if ($provider->isConfigured()) {
+                    return $provider;
+                }
+            }
+
+            // Sans clé utilisable : pas de paiement en ligne du tout. Le
+            // virement et l'encaissement manuel restent disponibles.
+            return new NullPaymentProvider();
+        });
+
+        $container->set(PaymentService::class, static fn (Container $c): PaymentService => new PaymentService(
+            $c->get(PaymentRepository::class),
+            $c->get(WebhookRepository::class),
+            $c->get(BookingRepository::class),
+            $c->get(BookingEventRepository::class),
+            $c->get(BookingService::class),
+            $c->get(PaymentProvider::class),
+            $c->get(SettingsService::class),
+            $c->get(TouristTaxCalculator::class),
+            $c->get(Logger::class),
+            $c->get(UserRepository::class),
+            $c->get(NotificationService::class),
+            $c->get(AuditTrail::class),
         ));
 
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository

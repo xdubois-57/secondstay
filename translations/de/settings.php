@@ -216,6 +216,9 @@ return [
         'time' => 'Ungültige Uhrzeit (erwartetes Format: HH:MM).',
         'duration' => 'Ungültige Dauer (in Minuten).',
         'json' => 'Ungültiges JSON.',
+        'iban' => 'Ungültige IBAN: Prüfziffer kontrollieren.',
+        'bic' => 'Ungültiger BIC (8 oder 11 Zeichen).',
+        'currency' => 'Ungültige Währung: dreistelliger ISO-4217-Code erwartet.',
         'too_long' => 'Wert ist zu lang.',
         'too_small' => 'Wert ist zu klein.',
         'too_large' => 'Wert ist zu groß.',
@@ -294,6 +297,54 @@ return [
         'require_email_confirmation' => [
             'label' => 'E-Mail-Bestätigung erforderlich',
             'help' => 'Das Konto bleibt inaktiv, bis die Adresse bestätigt ist.',
+        ],
+    ],
+    'payment' => [
+        'provider' => [
+            'label' => 'Zahlungsanbieter',
+            'help' => 'Mollie zieht online ein und bestätigt die Buchung automatisch. Ohne Anbieter bleibt nur die Überweisung.',
+        ],
+        'mollie_api_key' => [
+            'label' => 'Mollie-API-Schlüssel',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Ein „test_“-Schlüssel zieht nichts wirklich ein.',
+        ],
+        'balance_days_before' => [
+            'label' => 'Restbetrag fällig (Tage vor Anreise)',
+            'help' => 'Der Restbetrag wird so viele Tage vor der Anreise fällig, bei späterer Buchung sofort.',
+        ],
+        'transfer_enabled' => [
+            'label' => 'Banküberweisung erlauben',
+            'help' => 'Zeigt IBAN und EPC-QR-Code. Eine Überweisung bestätigt eine Buchung nie von allein.',
+        ],
+        'beneficiary_name' => [
+            'label' => 'Zahlungsempfänger',
+            'help' => 'Name des Kontoinhabers, so wie er in der Banking-App des Gastes erscheint.',
+        ],
+        'iban' => [
+            'label' => 'IBAN',
+            'help' => 'IBAN des zu begünstigenden Kontos. Die Prüfziffer wird vor dem Speichern geprüft.',
+        ],
+        'bic' => [
+            'label' => 'BIC',
+            'help' => 'Optional. Manche Banken verlangen ihn noch für Überweisungen außerhalb des SEPA-Raums.',
+        ],
+        'currency' => [
+            'label' => 'Währung',
+            'help' => 'Dreistelliger ISO-4217-Code, standardmäßig EUR.',
+        ],
+    ],
+    'tax' => [
+        'tourist_enabled' => [
+            'label' => 'Kurtaxe erheben',
+            'help' => 'Fügt die Kurtaxe dem Zahlungsplan jeder Buchung hinzu.',
+        ],
+        'tourist_per_adult_night' => [
+            'label' => 'Kurtaxe je Erwachsenem und Nacht',
+            'help' => 'Betrag je Erwachsenem und Nacht. Minderjährige sind befreit.',
+        ],
+        'tourist_cap_per_stay' => [
+            'label' => 'Obergrenze je Aufenthalt',
+            'help' => 'Höchstbetrag für einen Aufenthalt. Null bedeutet keine Obergrenze.',
         ],
     ],
 ];

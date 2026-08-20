@@ -145,6 +145,13 @@ return [
         'hold_expired' => 'Selection expired',
         'promo_exhausted' => 'Promo code exhausted',
         'status_request' => 'Request created',
+        'payment_deposit' => 'Deposit collected',
+        'payment_balance' => 'Balance collected',
+        'payment_security_deposit' => 'Security deposit received',
+        'payment_cleaning' => 'Cleaning paid',
+        'payment_tourist_tax' => 'Tourist tax paid',
+        'payment_adjustment' => 'Adjustment collected',
+        'payment_refund' => 'Refund issued',
     ],
     'admin' => [
         'title' => 'Bookings',

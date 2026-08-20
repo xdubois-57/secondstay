@@ -10,6 +10,7 @@ return [
         'media' => 'Médias',
         'bookings' => 'Réservations',
         'pricing' => 'Tarifs',
+        'payments' => 'Paiements',
         'settings' => 'Configuration',
         'users' => 'Comptes',
         'backups' => 'Sauvegardes',
@@ -55,6 +56,8 @@ return [
             'maintenance' => 'Maintenance',
             'backup' => 'Sauvegarde',
             'update' => 'Mise à jour',
+            'payment' => 'Paiements',
+            'tax' => 'Taxe de séjour',
             'logging' => 'Journalisation',
         ],
         'value' => [
@@ -86,6 +89,9 @@ return [
                     'starttls' => 'STARTTLS',
                     'tls' => 'TLS implicite',
                 ],
+            ],
+            'payment' => [
+                'provider' => ['none' => 'Aucun (virement uniquement)', 'mollie' => 'Mollie'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stable', 'prerelease' => 'Préversion'],

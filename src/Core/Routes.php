@@ -10,6 +10,7 @@ use SecondStay\Controller\Admin\AdminDashboardController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
+use SecondStay\Controller\Admin\AdminPaymentController;
 use SecondStay\Controller\Admin\AdminPricingController;
 use SecondStay\Controller\Admin\AdminSettingsController;
 use SecondStay\Controller\Admin\AdminUpdateController;
@@ -27,9 +28,11 @@ use SecondStay\Controller\Admin\AdminMediaController;
 use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
+use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
 use SecondStay\Controller\QuoteController;
 use SecondStay\Controller\SeoController;
+use SecondStay\Controller\WebhookController;
 
 /**
  * Table de routage de l'application.
@@ -125,6 +128,16 @@ final class Routes
             'booking.show'
         );
 
+        // --- Paiement ---------------------------------------------------------
+        $router->post('/payment/{id:\d+}/start', [PaymentController::class, 'start'], 'payment.start');
+        $router->get('/payment/{id:\d+}/return', [PaymentController::class, 'returnFromProvider'], 'payment.return');
+        $router->get('/payment/{id:\d+}/transfer', [PaymentController::class, 'transfer'], 'payment.transfer');
+        $router->get('/payment/{id:\d+}/epc.svg', [PaymentController::class, 'epcQr'], 'payment.epc');
+
+        // Notification fournisseur : hors langue, authentifiée par relecture
+        // de l'état chez le fournisseur, donc exemptée de CSRF (Kernel).
+        $router->post('/webhook/payment', [WebhookController::class, 'payment'], 'payment.webhook', false);
+
         // --- Devis en direct ------------------------------------------------
         $router->get('/api/quote', [QuoteController::class, 'quote'], 'api.quote', false);
 
@@ -206,6 +219,17 @@ final class Routes
         $router->post('/admin/media/{id:\d+}', [AdminMediaController::class, 'save'], 'admin.media.save');
         $router->post('/admin/media/{id:\d+}/delete', [AdminMediaController::class, 'delete'], 'admin.media.delete');
 
+        // --- Paiements ------------------------------------------------------
+        $router->get('/admin/payments', [AdminPaymentController::class, 'index'], 'admin.payments');
+        $router->post(
+            '/admin/bookings/{id:\d+}/schedule',
+            [AdminPaymentController::class, 'schedule'],
+            'admin.payments.schedule'
+        );
+        $router->post('/admin/payments/{id:\d+}/record', [AdminPaymentController::class, 'record'], 'admin.payments.record');
+        $router->post('/admin/payments/{id:\d+}/refund', [AdminPaymentController::class, 'refund'], 'admin.payments.refund');
+        $router->post('/admin/payments/{id:\d+}/hold', [AdminPaymentController::class, 'hold'], 'admin.payments.hold');
+
         $router->post('/admin/maintenance', [AdminMaintenanceController::class, 'toggle'], 'admin.maintenance.toggle');
 
         // --- API technique ------------------------------------------------
@@ -216,6 +240,8 @@ final class Routes
         $router->get('/api/dev/mailbox', [DevMailboxController::class, 'index'], 'dev.mailbox', false);
         $router->post('/api/dev/mailbox/purge', [DevMailboxController::class, 'purge'], 'dev.mailbox.purge', false);
         $router->get('/api/dev/notifications', [DevMailboxController::class, 'notifications'], 'dev.notifications', false);
+        $router->get('/api/dev/payments', [DevMailboxController::class, 'payments'], 'dev.payments', false);
+        $router->post('/api/dev/payments/settle', [DevMailboxController::class, 'settlePayment'], 'dev.payments.settle', false);
 
         // --- Pages éditoriales (attrape-tout, déclaré en dernier) ------------
         $router->get('/{slug:[a-z0-9][a-z0-9-]*}', [PageController::class, 'show'], 'page.show');

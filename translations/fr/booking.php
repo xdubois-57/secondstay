@@ -145,6 +145,13 @@ return [
         'hold_expired' => 'Sélection expirée',
         'promo_exhausted' => 'Code promo épuisé',
         'status_request' => 'Demande créée',
+        'payment_deposit' => 'Acompte encaissé',
+        'payment_balance' => 'Solde encaissé',
+        'payment_security_deposit' => 'Caution reçue',
+        'payment_cleaning' => 'Ménage réglé',
+        'payment_tourist_tax' => 'Taxe de séjour réglée',
+        'payment_adjustment' => 'Ajustement encaissé',
+        'payment_refund' => 'Remboursement effectué',
     ],
     'admin' => [
         'title' => 'Réservations',

@@ -1085,3 +1085,117 @@ Une inscription est unique par adresse et par période. Lorsque des nuits se
 libèrent, les inscriptions dont la période croise ces nuits reçoivent un
 e-mail dans leur propre langue. Une inscription est marquée **avant** l'envoi :
 un échec d'envoi ne produit pas une rafale de rappels.
+
+## 36. Itération 7 — paiements
+
+### 36.1 Nouveaux modules
+
+```text
+src/Payment/
+├── PaymentProvider         frontière : créer, relire, rembourser, lire un webhook
+├── MolliePaymentProvider   premier fournisseur réel
+├── FakePaymentProvider     fournisseur factice, activé par variable d'environnement
+├── NullPaymentProvider     absence de fournisseur : le paiement en ligne n'est pas proposé
+├── PaymentKind             hébergement, acompte, solde, caution, ménage, taxe, ajustement
+├── PaymentStatus           états constatés chez le fournisseur
+├── HoldStatus              cycle propre à la caution
+├── Payment                 composant financier d'un séjour
+├── PaymentRepository       persistance, échéances et historique
+├── PaymentService          échéancier, encaissements, remboursements, webhooks
+├── WebhookRepository       idempotence des notifications
+└── EpcQrBuilder            message EPC069-12 pour le virement SEPA
+
+src/Tax/
+└── TouristTaxCalculator    volet financier de la taxe de séjour
+
+src/Support/
+├── QrCode                  encodeur QR, mode octet, niveau M, versions 1 à 20
+└── ReedSolomon             correction d'erreur sur GF(256)
+```
+
+### 36.2 Un objet par composant financier
+
+Hébergement, acompte, solde, caution, ménage, taxe de séjour et ajustements
+sont des lignes distinctes de `payment`, chacune avec son montant, son
+échéance, sa méthode, son état et son historique (SPECIFICATIONS.md §29). Le
+montant remboursé est suivi séparément du montant dû : un remboursement
+partiel reste donc lisible, et le montant réellement acquis se calcule sans
+ambiguïté.
+
+L'échéancier est construit par `PaymentService::schedule()`, qui est
+**idempotent** : le rejouer ne duplique aucun composant. Il ne crée rien pour
+un séjour annulé, refusé, ou encore au stade du verrou.
+
+### 36.3 Le corps d'un webhook n'est jamais cru
+
+Une notification de paiement n'apporte qu'un identifiant. L'application y lit
+cet identifiant, puis **relit l'état chez le fournisseur** avant de changer
+quoi que ce soit. Un corps qui annoncerait « payé » sans que le fournisseur ne
+le confirme ne produit rien.
+
+Trois protections se cumulent (SPECIFICATIONS.md §34) :
+
+- **idempotence** — `UNIQUE (provider, external_id)` sur `webhook_event` : un
+  événement rejoué est reconnu comme doublon par la base, pas par une
+  vérification applicative ;
+- **désordre** — `PaymentStatus::canBeReplacedBy()` interdit à une
+  notification tardive de défaire un encaissement déjà constaté ; un paiement
+  encaissé ne se défait que par un remboursement explicite ;
+- **montant** — un montant différent de celui attendu n'est jamais accepté
+  silencieusement : il est journalisé et refusé.
+
+Le point d'entrée `/webhook/payment` est exempté de CSRF — il est authentifié
+par la relecture chez le fournisseur, pas par une session de navigateur — et
+répond 200 pour un doublon ou un identifiant inconnu, afin que le fournisseur
+cesse de réessayer, mais 503 lorsqu'un nouvel essai a du sens.
+
+### 36.4 Ce qui confirme un séjour
+
+Seul un **acompte constaté chez le fournisseur** confirme automatiquement une
+réservation (SPECIFICATIONS.md §30). Un virement ou un encaissement en espèces
+est enregistré comme payé, mais ne confirme le séjour que si un administrateur
+le demande explicitement, d'une case à cocher séparée.
+
+Corollaire de sécurité : `FakePaymentProvider` n'est atteignable que par
+`SECONDSTAY_PAYMENT_PROVIDER=fake`, jamais depuis l'interface. Sans clé
+utilisable, c'est `NullPaymentProvider` qui est en place et le paiement en
+ligne n'est simplement pas proposé — un fournisseur factice à cette place
+laisserait un visiteur confirmer un séjour sans avoir rien payé.
+
+### 36.5 Caution
+
+La caution suit son propre cycle, indépendant de l'état du paiement : à payer,
+reçue, à restituer, restituée, partiellement retenue (SPECIFICATIONS.md §32).
+Les transitions sont déclarées dans `HoldStatus` et toute autre est refusée.
+Le choix retenu est l'encaissement suivi d'un remboursement, plutôt qu'une
+préautorisation de longue durée que peu de moyens de paiement supportent.
+
+### 36.6 QR EPC
+
+Le QR code de virement SEPA est fabriqué localement : l'hébergement mutualisé
+visé n'a ni Composer ni service externe disponible, et une référence de
+virement n'a rien à faire chez un tiers.
+
+`EpcQrBuilder` produit le message EPC069-12 — douze lignes, UTF-8, 331 octets
+au maximum — et `QrCode` l'encode. Les bornes du nom et de la référence sont
+exprimées en caractères par la spécification mais en octets pour le message
+entier : un nom accentué peut donc tenir dans ses 70 caractères et faire
+déborder le tout. Dans ce cas le champ le plus long est rogné, jamais l'IBAN
+ni le montant, qui seuls conditionnent l'exécution du virement.
+
+L'IBAN est vérifié par la clé de contrôle ISO 7064 MOD 97-10 dès sa saisie
+dans la configuration : un IBAN mal recopié ne se voit sinon qu'au moment où
+le virement échoue, c'est-à-dire bien trop tard.
+
+Le QR est servi derrière l'authentification : il porte une référence de
+virement rattachée à un séjour.
+
+### 36.7 Taxe de séjour
+
+`TouristTaxCalculator` couvre le cas courant en France : un montant par adulte
+et par nuit, plafonné, les mineurs étant exonérés (article L. 2333-31 du code
+général des collectivités territoriales). Le moteur versionné complet —
+territoire, classification, exemptions, historisation du contexte de calcul
+(SPECIFICATIONS.md §63) — arrive à l'itération « France et conformité » et
+prendra la place de ce calcul sans changer les appelants : le montant reste un
+composant de paiement comme un autre.

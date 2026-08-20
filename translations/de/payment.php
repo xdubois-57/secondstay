@@ -1,0 +1,100 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Zahlungen: Zahlungsplan, Einzug, Kaution und SEPA-Überweisung.
+ */
+
+return [
+    'kind' => [
+        'deposit' => 'Anzahlung',
+        'balance' => 'Restbetrag',
+        'security_deposit' => 'Kaution',
+        'cleaning' => 'Endreinigung',
+        'tourist_tax' => 'Kurtaxe',
+        'adjustment' => 'Anpassung',
+        'refund' => 'Erstattung',
+    ],
+    'status' => [
+        'pending' => 'Ausstehend',
+        'authorized' => 'Autorisiert',
+        'paid' => 'Bezahlt',
+        'failed' => 'Fehlgeschlagen',
+        'cancelled' => 'Storniert',
+        'refunded' => 'Erstattet',
+        'partially_refunded' => 'Teilweise erstattet',
+    ],
+    'hold' => [
+        'none' => '—',
+        'to_pay' => 'Zu zahlen',
+        'received' => 'Erhalten',
+        'to_return' => 'Zurückzuzahlen',
+        'returned' => 'Zurückgezahlt',
+        'partially_retained' => 'Teilweise einbehalten',
+    ],
+    'schedule' => [
+        'title' => 'Zahlungsplan',
+        'empty' => 'Es wird noch keine Zahlung erwartet.',
+        'due_on' => 'Fällig am',
+        'amount' => 'Betrag',
+        'component' => 'Bestandteil',
+        'state' => 'Status',
+        'overdue' => 'Überfällig',
+        'total_due' => 'Noch zu zahlen',
+        'total_paid' => 'Bereits gezahlt',
+    ],
+    'action' => [
+        'pay_online' => 'Online bezahlen',
+        'pay_transfer' => 'Per Überweisung bezahlen',
+        'back_to_booking' => 'Zurück zur Buchung',
+        'record' => 'Zahlungseingang erfassen',
+        'refund' => 'Erstatten',
+        'schedule' => 'Zahlungsplan neu berechnen',
+        'mark_to_return' => 'Kaution als zurückzuzahlen markieren',
+    ],
+    'transfer' => [
+        'title' => 'Per Überweisung bezahlen',
+        'intro' => 'Scannen Sie diesen QR-Code mit Ihrer Banking-App oder übernehmen Sie die Angaben unten.',
+        'beneficiary' => 'Empfänger',
+        'iban' => 'IBAN',
+        'bic' => 'BIC',
+        'reference' => 'Anzugebender Verwendungszweck',
+        'qr_alt' => 'QR-Code für SEPA-Überweisung',
+        'notice' => 'Eine Überweisung braucht ein bis zwei Werktage. Die Buchung wird nach Prüfung bestätigt.',
+    ],
+    'return' => [
+        'title' => 'Ergebnis der Zahlung',
+        'paid' => 'Ihre Zahlung ist eingegangen.',
+        'pending' => 'Ihre Zahlung wird bearbeitet. Diese Seite wird aktualisiert, sobald sie bestätigt ist.',
+        'failed' => 'Die Zahlung ist nicht zustande gekommen. Sie können es erneut versuchen.',
+    ],
+    'admin' => [
+        'title' => 'Zahlungen',
+        'outstanding' => 'Offene Fälligkeiten',
+        'held_deposits' => 'Einbehaltene Kautionen',
+        'webhooks' => 'Empfangene Benachrichtigungen',
+        'booking' => 'Buchung',
+        'provider' => 'Anbieter',
+        'provider_ready' => 'Anbieter konfiguriert',
+        'provider_missing' => 'Kein Anbieter konfiguriert: nur Überweisungen und manueller Einzug sind möglich.',
+        'confirm_booking' => 'Buchung ebenfalls bestätigen',
+        'reason' => 'Grund',
+        'scheduled' => 'Zahlungsplan aktualisiert.',
+        'recorded' => 'Zahlungseingang erfasst.',
+        'refunded' => 'Erstattung ausgeführt.',
+        'hold_updated' => 'Kaution aktualisiert.',
+        'empty' => 'Derzeit ist nichts einzuziehen.',
+        'received_at' => 'Empfangen am',
+    ],
+    'error' => [
+        'already_settled' => 'Diese Zahlung ist bereits beglichen.',
+        'not_settled' => 'Diese Zahlung wurde nicht eingezogen.',
+        'not_configured' => 'Es ist kein Zahlungsanbieter konfiguriert.',
+        'invalid_webhook' => 'Unlesbare Benachrichtigung.',
+        'provider_unreachable' => 'Der Zahlungsanbieter ist nicht erreichbar.',
+        'refund_amount' => 'Ungültiger Erstattungsbetrag.',
+        'hold_transition' => 'Dieser Kautionsübergang ist nicht zulässig.',
+        'not_found' => 'Zahlung nicht gefunden.',
+    ],
+];

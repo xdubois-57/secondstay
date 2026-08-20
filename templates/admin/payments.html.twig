@@ -1,0 +1,106 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary" data-testid="payment-provider" data-provider="{{ provider_name }}">
+        {{ t('payment.admin.provider') }} : <code>{{ provider_name }}</code>
+        {% if provider_ready %}
+            <span class="badge text-bg-success">{{ t('payment.admin.provider_ready') }}</span>
+        {% endif %}
+    </p>
+    {% if not provider_ready %}
+        <div class="alert alert-warning" data-testid="provider-missing">{{ t('payment.admin.provider_missing') }}</div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('payment.admin.outstanding') }}</div>
+        {% if outstanding is empty %}
+            <div class="card-body text-body-secondary" data-testid="outstanding-empty">{{ t('payment.admin.empty') }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle" data-testid="outstanding-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('payment.admin.booking') }}</th>
+                            <th scope="col">{{ t('payment.schedule.component') }}</th>
+                            <th scope="col">{{ t('payment.schedule.due_on') }}</th>
+                            <th scope="col" class="text-end">{{ t('payment.schedule.amount') }}</th>
+                            <th scope="col">{{ t('payment.schedule.state') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in outstanding %}
+                            <tr data-payment="{{ row.payment.id }}">
+                                <td>
+                                    <a href="{{ path('admin.bookings.show', {'id': row.payment.bookingId}) }}">
+                                        <code>{{ row.reference }}</code>
+                                    </a>
+                                </td>
+                                <td>{{ t(row.payment.kind.labelKey) }}</td>
+                                <td>
+                                    {% if row.payment.dueOn %}{{ row.payment.dueDate|daymonth }}{% else %}—{% endif %}
+                                    {% if row.payment.dueOn and row.payment.dueOn < today %}
+                                        <span class="badge text-bg-danger">{{ t('payment.schedule.overdue') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ row.payment.amountCents|money }}</td>
+                                <td>
+                                    <span class="badge {{ row.payment.status.badgeClass }}">{{ t(row.payment.status.labelKey) }}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('payment.admin.held_deposits') }}</div>
+        {% if held_deposits is empty %}
+            <div class="card-body text-body-secondary">{{ t('payment.admin.empty') }}</div>
+        {% else %}
+            <ul class="list-group list-group-flush" data-testid="held-deposits">
+                {% for row in held_deposits %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                        data-hold="{{ row.payment.holdStatus.value }}">
+                        <a href="{{ path('admin.bookings.show', {'id': row.payment.bookingId}) }}">
+                            <code>{{ row.reference }}</code>
+                        </a>
+                        <span>{{ row.payment.amountCents|money }}</span>
+                        <span class="badge text-bg-secondary">{{ t(row.payment.holdStatus.labelKey) }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('payment.admin.webhooks') }}</div>
+        {% if webhooks is empty %}
+            <div class="card-body text-body-secondary">{{ t('payment.admin.empty') }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" data-testid="webhook-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('payment.admin.provider') }}</th>
+                            <th scope="col">{{ t('booking.journey.reference') }}</th>
+                            <th scope="col">{{ t('payment.schedule.state') }}</th>
+                            <th scope="col">{{ t('payment.admin.received_at') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in webhooks %}
+                            <tr data-webhook-status="{{ event.status }}">
+                                <td><code>{{ event.provider }}</code></td>
+                                <td><code>{{ event.external_id }}</code></td>
+                                <td>{{ event.status }}{% if event.error %} — {{ event.error }}{% endif %}</td>
+                                <td>{{ event.received_at }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

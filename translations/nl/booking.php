@@ -145,6 +145,13 @@ return [
         'hold_expired' => 'Selectie verlopen',
         'promo_exhausted' => 'Kortingscode uitgeput',
         'status_request' => 'Aanvraag aangemaakt',
+        'payment_deposit' => 'Voorschot geïnd',
+        'payment_balance' => 'Saldo geïnd',
+        'payment_security_deposit' => 'Waarborg ontvangen',
+        'payment_cleaning' => 'Schoonmaak betaald',
+        'payment_tourist_tax' => 'Toeristenbelasting betaald',
+        'payment_adjustment' => 'Correctie geïnd',
+        'payment_refund' => 'Terugbetaling uitgevoerd',
     ],
     'admin' => [
         'title' => 'Reserveringen',

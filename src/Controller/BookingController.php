@@ -6,6 +6,7 @@ namespace SecondStay\Controller;
 
 use InvalidArgumentException;
 use SecondStay\Auth\Role;
+use SecondStay\Booking\BookingEventRepository;
 use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\BookingService;
 use SecondStay\Booking\BookingStatus;
@@ -14,6 +15,8 @@ use SecondStay\Booking\StayRules;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Payment\PaymentProvider;
+use SecondStay\Payment\PaymentService;
 use SecondStay\Pricing\DateRange;
 use SecondStay\Pricing\PriceCalculator;
 
@@ -171,11 +174,30 @@ final class BookingController extends AbstractController
             throw new NotFoundException('Réservation introuvable.');
         }
 
+        // L'échéancier est construit à la volée : un séjour créé avant
+        // l'activation des paiements doit tout de même en afficher un.
+        $payments = $this->container->get(PaymentService::class)->schedule($booking);
+
+        $paid = 0;
+        $due = 0;
+        foreach ($payments as $payment) {
+            $paid += $payment->netCents();
+            $due += $payment->outstandingCents();
+        }
+
+        $settings = $this->settings();
+
         return $this->render('booking/show.html.twig', [
             'meta_title' => $this->trans('booking.journey.title'),
             'booking' => $booking,
-            'timeline' => $this->container->get(\SecondStay\Booking\BookingEventRepository::class)
+            'timeline' => $this->container->get(BookingEventRepository::class)
                 ->forBooking($booking->id),
+            'payments' => $payments,
+            'paid_cents' => $paid,
+            'due_cents' => $due,
+            'provider_ready' => $this->container->get(PaymentProvider::class)->isConfigured(),
+            'transfer_available' => $settings->bool('payment.transfer_enabled')
+                && $settings->string('payment.iban') !== '',
         ]);
     }
 

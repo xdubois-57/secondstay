@@ -1,0 +1,97 @@
+{# Suivi financier d'un séjour : encaissements manuels, remboursements, caution. #}
+<div class="card mb-4" data-testid="admin-payments">
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+        <span>{{ t('payment.schedule.title') }}</span>
+        <form method="post" action="{{ path('admin.payments.schedule', {'id': booking.id}) }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-outline-secondary" type="submit"
+                    data-testid="rebuild-schedule">{{ t('payment.action.schedule') }}</button>
+        </form>
+    </div>
+
+    {% if payments is empty %}
+        <div class="card-body text-body-secondary">{{ t('payment.schedule.empty') }}</div>
+    {% else %}
+        <ul class="list-group list-group-flush">
+            {% for payment in payments %}
+                <li class="list-group-item" data-payment="{{ payment.id }}"
+                    data-kind="{{ payment.kind.value }}" data-status="{{ payment.status.value }}"
+                    data-hold="{{ payment.holdStatus.value }}">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <strong>{{ t(payment.kind.labelKey) }}</strong>
+                            <span class="d-block small text-body-secondary">
+                                {% if payment.dueOn %}{{ t('payment.schedule.due_on') }} {{ payment.dueDate|daymonth }}{% endif %}
+                                {% if payment.isOverdue %}
+                                    <span class="badge text-bg-danger">{{ t('payment.schedule.overdue') }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            <strong data-cents="{{ payment.amountCents }}">{{ payment.amountCents|money }}</strong>
+                            <span class="d-block">
+                                <span class="badge {{ payment.status.badgeClass }}"
+                                      data-testid="payment-status">{{ t(payment.status.labelKey) }}</span>
+                            </span>
+                            {% if payment.kind.value == 'security_deposit' %}
+                                <span class="d-block small text-body-secondary">{{ t(payment.holdStatus.labelKey) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        {% if not payment.status.isSettled %}
+                            <form method="post" action="{{ path('admin.payments.record', {'id': payment.id}) }}"
+                                  class="d-flex flex-wrap align-items-center gap-2">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="confirm_booking"
+                                           id="confirm-{{ payment.id }}" value="1">
+                                    <label class="form-check-label small" for="confirm-{{ payment.id }}">
+                                        {{ t('payment.admin.confirm_booking') }}
+                                    </label>
+                                </div>
+                                <button class="btn btn-sm btn-primary" type="submit"
+                                        data-testid="record-{{ payment.kind.value }}">{{ t('payment.action.record') }}</button>
+                            </form>
+                        {% endif %}
+
+                        {% if payment.status.isSettled and payment.amountCents > payment.refundedCents %}
+                            <form method="post" action="{{ path('admin.payments.refund', {'id': payment.id}) }}"
+                                  class="d-flex flex-wrap align-items-center gap-2">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <label class="visually-hidden" for="amount-{{ payment.id }}">{{ t('payment.schedule.amount') }}</label>
+                                <input class="form-control form-control-sm" style="max-width: 8rem;"
+                                       id="amount-{{ payment.id }}" name="amount" inputmode="decimal"
+                                       value="{{ ((payment.amountCents - payment.refundedCents) / 100)|number_format(2, '.', '') }}">
+                                <label class="visually-hidden" for="reason-{{ payment.id }}">{{ t('payment.admin.reason') }}</label>
+                                <input class="form-control form-control-sm" style="max-width: 12rem;"
+                                       id="reason-{{ payment.id }}" name="reason" maxlength="190"
+                                       placeholder="{{ t('payment.admin.reason') }}">
+                                <button class="btn btn-sm btn-outline-danger" type="submit"
+                                        data-testid="refund-{{ payment.kind.value }}">{{ t('payment.action.refund') }}</button>
+                            </form>
+                        {% endif %}
+
+                        {% if payment.kind.value == 'security_deposit' and payment.holdStatus.value == 'received' %}
+                            <form method="post" action="{{ path('admin.payments.hold', {'id': payment.id}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <input type="hidden" name="hold_status" value="to_return">
+                                <button class="btn btn-sm btn-outline-secondary" type="submit"
+                                        data-testid="hold-to-return">{{ t('payment.action.mark_to_return') }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="card-footer d-flex justify-content-between">
+            <span>{{ t('payment.schedule.total_paid') }}</span>
+            <strong data-testid="admin-payment-paid">{{ paid_cents|money }}</strong>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <span>{{ t('payment.schedule.total_due') }}</span>
+            <strong data-testid="admin-payment-due">{{ due_cents|money }}</strong>
+        </div>
+    {% endif %}
+</div>
