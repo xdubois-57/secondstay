@@ -6,6 +6,7 @@ namespace SecondStay\Availability;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\StayRules;
 use SecondStay\Pricing\DateRange;
 use SecondStay\Pricing\PriceCalculator;
@@ -14,9 +15,10 @@ use SecondStay\Pricing\RateRepository;
 /**
  * Disponibilité et calendrier (ARCHITECTURE.md §12).
  *
- * La disponibilité combine aujourd'hui les indisponibilités d'exploitation ;
- * les réservations confirmées, les holds et les imports ICS s'y ajouteront par
- * la même porte, sans changer les appelants.
+ * La disponibilité combine les indisponibilités d'exploitation et les nuits
+ * réellement tenues par une réservation — verrou temporaire compris. Les
+ * imports ICS externes s'y ajouteront par la même porte, sans changer les
+ * appelants.
  */
 final class AvailabilityService
 {
@@ -25,13 +27,38 @@ final class AvailabilityService
     public const STATE_PAST = 'past';
     public const STATE_CLOSED = 'closed';
 
+    /** Motif générique d'une nuit déjà réservée : jamais l'identité du client. */
+    public const REASON_BOOKED = 'booked';
+
     public function __construct(
         private readonly AvailabilityBlockRepository $blocks,
         private readonly RateRepository $rates,
         private readonly PriceCalculator $prices,
         private readonly StayRules $rules,
         private readonly string $timezone = 'Europe/Paris',
+        private readonly ?BookingRepository $bookings = null,
     ) {
+    }
+
+    /**
+     * Nuits indisponibles d'une plage, quelle qu'en soit la raison.
+     *
+     * @return array<string, string> nuit → motif (`blocked` ou `booked`)
+     */
+    private function unavailableNights(string $from, string $to): array
+    {
+        $unavailable = [];
+
+        foreach ($this->blocks->blockedNights($from, $to) as $day => $block) {
+            $unavailable[$day] = $block['kind'];
+        }
+
+        foreach ($this->bookings?->occupiedNights($from, $to) ?? [] as $day) {
+            // Une nuit réservée reste « occupée » sans dire par qui.
+            $unavailable[$day] = self::REASON_BOOKED;
+        }
+
+        return $unavailable;
     }
 
     public function today(): DateTimeImmutable
@@ -59,9 +86,9 @@ final class AvailabilityService
             return [];
         }
 
-        $blocked = $this->blocks->blockedNights($range->arrivalKey(), $range->lastNightKey());
+        $unavailable = $this->unavailableNights($range->arrivalKey(), $range->lastNightKey());
 
-        return array_values(array_intersect($range->nightKeys(), array_keys($blocked)));
+        return array_values(array_intersect($range->nightKeys(), array_keys($unavailable)));
     }
 
     /**
@@ -78,7 +105,7 @@ final class AvailabilityService
         $from = $range->arrivalKey();
         $to = $range->lastNightKey();
 
-        $blocked = $this->blocks->blockedNights($from, $to);
+        $unavailable = $this->unavailableNights($from, $to);
         $overrides = $this->rates->forRange($from, $to);
 
         $today = $this->today();
@@ -94,10 +121,10 @@ final class AvailabilityService
 
             if ($night < $today) {
                 $state = self::STATE_PAST;
-            } elseif (isset($blocked[$day])) {
+            } elseif (isset($unavailable[$day])) {
                 $state = self::STATE_BLOCKED;
-                // Le motif d'un blocage n'est pas public : seul le type l'est.
-                $label = $blocked[$day]['kind'];
+                // Le motif détaillé n'est pas public : seul le type l'est.
+                $label = $unavailable[$day];
             } elseif ($night < $earliest || $night >= $latest) {
                 $state = self::STATE_CLOSED;
             }

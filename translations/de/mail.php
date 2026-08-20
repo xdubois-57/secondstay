@@ -40,4 +40,11 @@ return [
         'rejected' => 'Der SMTP-Server hat die Nachricht abgelehnt.',
         'unexpected_response' => 'Unerwartete SMTP-Antwort.',
     ],
+    'waitlist_available' => [
+        'subject' => 'Termine sind frei geworden',
+        'heading' => 'Termine sind frei geworden',
+        'intro' => 'Die Termine vom {arrival} bis {departure} sind soeben frei geworden.',
+        'button' => 'Verfügbarkeit ansehen',
+        'first_come' => 'Buchungen werden in der Reihenfolge des Eingangs bearbeitet: Diese Termine können jederzeit wieder belegt sein.',
+    ],
 ];

@@ -113,8 +113,18 @@
                         <dd class="col-5 text-end fw-bold mb-0" data-quote-total></dd>
                     </dl>
                     <p class="small text-body-secondary mt-3 mb-0" data-quote-errors role="status"></p>
-                    <button class="btn btn-sm btn-outline-secondary mt-3" type="button"
-                            data-quote-reset>{{ t('booking.quote.reset') }}</button>
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        <form method="post" action="{{ path('booking.summary.submit') }}" data-quote-book>
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <input type="hidden" name="arrival" value="" data-quote-arrival>
+                            <input type="hidden" name="departure" value="" data-quote-departure>
+                            <input type="hidden" name="adults" value="2">
+                            <button class="btn btn-primary" type="submit"
+                                    data-testid="book-selection">{{ t('booking.journey.title') }}</button>
+                        </form>
+                        <button class="btn btn-outline-secondary" type="button"
+                                data-quote-reset>{{ t('booking.quote.reset') }}</button>
+                    </div>
                 </div>
             </div>
 

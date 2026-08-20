@@ -1,0 +1,70 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 40rem;" data-testid="booking-finalise"
+             data-reference="{{ booking.reference }}">
+            <h1 class="h3 mb-2">{{ t('booking.journey.confirm') }}</h1>
+            <p class="text-body-secondary">{{ t('booking.journey.hold_notice', {'minutes': hold_minutes}) }}</p>
+
+            {% if errors %}
+                <div class="alert alert-danger" role="alert" data-testid="finalise-errors">
+                    <ul class="mb-0">
+                        {% for message in errors %}<li>{{ message }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-header">{{ t('booking.journey.summary') }}</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.journey.dates') }}</span>
+                        <strong>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.journey.guests') }}</span>
+                        <strong>{{ booking.adults }} + {{ booking.children }}</strong>
+                    </li>
+                    {% if booking.discountCents > 0 %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ t('booking.promo.discount') }} ({{ booking.promoCode }})</span>
+                            <strong>−{{ booking.discountCents|money }}</strong>
+                        </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.quote.total') }}</span>
+                        <strong data-booking-total data-cents="{{ booking.totalCents }}">{{ booking.totalCents|money }}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <form method="post" action="{{ path('booking.submit') }}" data-testid="finalise-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+                <div class="mb-3">
+                    <label class="form-label" for="phone">{{ t('auth.field.phone') }}</label>
+                    <input class="form-control" id="phone" name="phone" type="tel"
+                           value="{{ current_user ? booking.guestPhone : '' }}" autocomplete="tel">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="message">{{ t('booking.journey.message') }}</label>
+                    <textarea class="form-control" id="message" name="message" rows="3" maxlength="2000"></textarea>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="accept_rules" name="accept_rules" value="1" required>
+                    <label class="form-check-label" for="accept_rules">
+                        {{ t('booking.journey.accept_rules') }}
+                        —
+                        <a href="{{ path('page.show', {'slug': 'terms'}) }}" target="_blank" rel="noopener">{{ t('nav.terms') }}</a>
+                    </label>
+                </div>
+
+                <button class="btn btn-primary w-100" type="submit"
+                        data-testid="submit-booking">{{ t('booking.journey.confirm') }}</button>
+            </form>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 44rem;" data-testid="booking-detail"
+             data-reference="{{ booking.reference }}" data-status="{{ booking.status.value }}">
+            <h1 class="h3 mb-1">{{ t('booking.journey.title') }}</h1>
+            <p class="text-body-secondary">
+                {{ t('booking.journey.reference') }} :
+                <code data-testid="booking-reference">{{ booking.reference }}</code>
+                <span class="badge {{ booking.status.badgeClass }} ms-2"
+                      data-testid="booking-status">{{ t(booking.status.labelKey) }}</span>
+            </p>
+
+            <div class="card mb-4">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.journey.dates') }}</span>
+                        <strong>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ tc('booking.quote.nights', booking.nights, {'count': booking.nights}) }}</span>
+                        <strong>{{ booking.accommodationCents|money }}</strong>
+                    </li>
+                    {% if booking.cleaningCents > 0 %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ t('booking.quote.cleaning') }}</span>
+                            <strong>{{ booking.cleaningCents|money }}</strong>
+                        </li>
+                    {% endif %}
+                    {% if booking.discountCents > 0 %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ t('booking.promo.discount') }} ({{ booking.promoCode }})</span>
+                            <strong>−{{ booking.discountCents|money }}</strong>
+                        </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.quote.total') }}</span>
+                        <strong data-booking-total data-cents="{{ booking.totalCents }}">{{ booking.totalCents|money }}</strong>
+                    </li>
+                    {% if booking.depositCents > 0 %}
+                        <li class="list-group-item d-flex justify-content-between text-body-secondary">
+                            <span>{{ t('booking.journey.deposit') }}</span>
+                            <span>{{ booking.depositCents|money }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between text-body-secondary">
+                            <span>{{ t('booking.journey.balance') }}</span>
+                            <span>{{ booking.balanceCents|money }}</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">{{ t('booking.journey.timeline') }}</div>
+                <ul class="list-group list-group-flush" data-testid="booking-timeline">
+                    {% for event in timeline %}
+                        <li class="list-group-item" data-event="{{ event.type }}">
+                            <span class="d-block">{{ t('booking.event.' ~ event.type) }}</span>
+                            <span class="small text-body-secondary">{{ event.created_at }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <p class="mt-4 mb-0">
+                <a href="{{ path('account.profile') }}">{{ t('booking.journey.my_bookings') }}</a>
+            </p>
+        </div>
+    </section>
+{% endblock %}

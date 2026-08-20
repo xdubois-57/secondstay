@@ -131,6 +131,10 @@ final class SettingRegistry
             ),
             new SettingDefinition('booking.advance_days', SettingType::Integer, 0, 'booking', min: 0, max: 365),
             new SettingDefinition('booking.horizon_days', SettingType::Integer, 540, 'booking', min: 30, max: 1095),
+            // Par défaut le propriétaire valide chaque demande : une
+            // confirmation automatique se choisit explicitement.
+            new SettingDefinition('booking.requires_approval', SettingType::Bool, true, 'booking'),
+            new SettingDefinition('booking.allow_waitlist', SettingType::Bool, true, 'booking'),
 
             // --- Tarifs ---------------------------------------------------
             new SettingDefinition('pricing.default_night_price', SettingType::Money, 12000, 'pricing', min: 0),

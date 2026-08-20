@@ -136,7 +136,9 @@ export function initCalendar(root, scope) {
         cleaning: root.querySelector('[data-quote-cleaning]'),
         cleaningLabel: root.querySelector('[data-quote-cleaning-label]'),
         total: root.querySelector('[data-quote-total]'),
-        errors: root.querySelector('[data-quote-errors]')
+        errors: root.querySelector('[data-quote-errors]'),
+        arrival: root.querySelector('[data-quote-arrival]'),
+        departure: root.querySelector('[data-quote-departure]')
     };
 
     let selection = createSelection();
@@ -193,6 +195,18 @@ export function initCalendar(root, scope) {
         if (fields.errors) {
             fields.errors.textContent = (result.errors || []).join(' ');
             fields.errors.className = 'small mt-3 mb-0 ' + (result.ok ? 'text-body-secondary' : 'text-danger');
+        }
+
+        // Le formulaire de réservation reprend la sélection : le parcours
+        // repart des mêmes dates que le devis affiché.
+        if (fields.arrival && fields.departure && quote) {
+            fields.arrival.value = quote.arrival;
+            fields.departure.value = quote.departure;
+        }
+
+        const book = root.querySelector('[data-quote-book]');
+        if (book) {
+            book.hidden = !result.ok;
         }
 
         panel.dataset.ok = result.ok ? '1' : '0';

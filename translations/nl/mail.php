@@ -40,4 +40,11 @@ return [
         'rejected' => 'De SMTP-server heeft het bericht geweigerd.',
         'unexpected_response' => 'Onverwacht SMTP-antwoord.',
     ],
+    'waitlist_available' => [
+        'subject' => 'Er zijn data vrijgekomen',
+        'heading' => 'Er zijn data vrijgekomen',
+        'intro' => 'De data van {arrival} tot {departure} zijn zojuist vrijgekomen.',
+        'button' => 'Beschikbaarheid bekijken',
+        'first_come' => 'Reserveringen worden op volgorde van binnenkomst behandeld: deze data kunnen op elk moment opnieuw bezet raken.',
+    ],
 ];

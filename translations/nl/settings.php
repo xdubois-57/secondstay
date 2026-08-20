@@ -95,6 +95,46 @@ return [
             'label' => 'Duur van tijdelijke reservering',
             'help' => 'Minuten dat data geblokkeerd blijven vóór bevestiging.',
         ],
+        'requires_approval' => [
+            'label' => 'Goedkeuring door de eigenaar',
+            'help' => 'Elke reserveringsaanvraag wacht op uw akkoord. Schakel dit uit om beschikbare verblijven automatisch te bevestigen.',
+        ],
+        'allow_waitlist' => [
+            'label' => 'Wachtlijst',
+            'help' => 'Een bezoeker kan vragen om verwittigd te worden als onbeschikbare data vrijkomen.',
+        ],
+        'min_adults' => [
+            'label' => 'Minimum volwassenen',
+            'help' => 'Minimumaantal volwassenen per verblijf.',
+        ],
+        'max_children' => [
+            'label' => 'Maximum kinderen',
+            'help' => 'Maximumaantal kinderen bovenop de volwassenen.',
+        ],
+        'max_infants' => [
+            'label' => 'Maximum baby’s',
+            'help' => 'Baby’s tellen niet mee voor de slaapcapaciteit.',
+        ],
+        'night_multiple' => [
+            'label' => 'Blokken van nachten',
+            'help' => 'Legt een duur op die een veelvoud is van dit getal. 0 schakelt de regel uit, 7 legt hele weken op.',
+        ],
+        'max_nights' => [
+            'label' => 'Maximale duur',
+            'help' => 'Maximumaantal nachten per verblijf.',
+        ],
+        'arrival_weekday' => [
+            'label' => 'Vaste aankomstdag',
+            'help' => 'Beperkt aankomsten tot één weekdag. De instelling zaterdag-zaterdag heeft voorrang.',
+        ],
+        'advance_days' => [
+            'label' => 'Opzegtermijn',
+            'help' => 'Minimumaantal dagen tussen vandaag en een aankomst.',
+        ],
+        'horizon_days' => [
+            'label' => 'Reserveringshorizon',
+            'help' => 'Aantal dagen waarna de kalender nog niet geopend is.',
+        ],
     ],
     'pricing' => [
         'default_night_price' => [

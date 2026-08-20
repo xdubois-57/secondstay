@@ -31,7 +31,7 @@ Une itération est terminée seulement si :
 | 3 | Comptes et auth | ✅ livrée |
 | 4 | Notifications et PWA | ✅ livrée |
 | 5 | Disponibilités et prix | ✅ livrée |
-| 6 | Réservation sans paiement | ⏳ à venir |
+| 6 | Réservation sans paiement | ✅ livrée |
 | 7 | Paiements | ⏳ à venir |
 | 8 | Contrats, documents, IMAP | ⏳ à venir |
 | 9 | Responsable local et opérations | ⏳ à venir |
@@ -236,6 +236,22 @@ Livrer :
 - anti-double-booking.
 
 E2E : deux clients concurrents → un seul succès.
+
+### Livré (0.7.0)
+
+- anti-double-réservation garanti par la clé primaire de `booking_night`,
+  vérifié par deux transactions réellement concurrentes ;
+- verrou temporaire posé avant la finalisation, expirant seul ;
+- parcours complet : dates → voyageurs → prix → authentification →
+  informations → règles → confirmation ;
+- workflow à transitions déclarées et six sous-états indépendants ;
+- montants figés à la réservation, insensibles à un changement de tarif ;
+- codes promotionnels (montant fixe ou pourcentage, dates, limite d'usage) ;
+- timeline horodatée et attribuée ;
+- liste d'attente avec alerte par e-mail dans la langue de l'inscription ;
+- suivi des réservations en administration ;
+- E2E `booking.spec.js` avec deux navigateurs concurrents, tests PHP
+  `BookingServiceTest`.
 
 ## Itération 7 — Paiements
 

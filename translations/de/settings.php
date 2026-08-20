@@ -95,6 +95,46 @@ return [
             'label' => 'Dauer der vorläufigen Reservierung',
             'help' => 'Minuten, in denen Termine bis zur Bestätigung blockiert bleiben.',
         ],
+        'requires_approval' => [
+            'label' => 'Freigabe durch die Eigentümer',
+            'help' => 'Jede Buchungsanfrage wartet auf Ihre Zustimmung. Deaktivieren Sie dies, um verfügbare Aufenthalte automatisch zu bestätigen.',
+        ],
+        'allow_waitlist' => [
+            'label' => 'Warteliste',
+            'help' => 'Ein Besucher kann darum bitten, benachrichtigt zu werden, wenn belegte Termine frei werden.',
+        ],
+        'min_adults' => [
+            'label' => 'Mindestanzahl Erwachsene',
+            'help' => 'Mindestanzahl Erwachsener pro Aufenthalt.',
+        ],
+        'max_children' => [
+            'label' => 'Höchstzahl Kinder',
+            'help' => 'Höchstzahl der Kinder zusätzlich zu den Erwachsenen.',
+        ],
+        'max_infants' => [
+            'label' => 'Höchstzahl Kleinkinder',
+            'help' => 'Kleinkinder zählen nicht zur Schlafkapazität.',
+        ],
+        'night_multiple' => [
+            'label' => 'Nächteblöcke',
+            'help' => 'Erzwingt eine Dauer als Vielfaches dieser Zahl. 0 deaktiviert die Regel, 7 erzwingt ganze Wochen.',
+        ],
+        'max_nights' => [
+            'label' => 'Maximale Dauer',
+            'help' => 'Höchstzahl der Nächte pro Aufenthalt.',
+        ],
+        'arrival_weekday' => [
+            'label' => 'Fester Anreisetag',
+            'help' => 'Beschränkt Anreisen auf einen Wochentag. Die Einstellung Samstag-Samstag hat Vorrang.',
+        ],
+        'advance_days' => [
+            'label' => 'Vorlaufzeit',
+            'help' => 'Mindestanzahl Tage zwischen heute und einer Anreise.',
+        ],
+        'horizon_days' => [
+            'label' => 'Buchungshorizont',
+            'help' => 'Anzahl Tage, ab denen der Kalender noch nicht geöffnet ist.',
+        ],
     ],
     'pricing' => [
         'default_night_price' => [
