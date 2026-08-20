@@ -14,6 +14,8 @@ enum PageKind: string
     case Gallery = 'gallery';
     case Legal = 'legal';
     case Contact = 'contact';
+    case Availability = 'availability';
+    case Rates = 'rates';
 
     public static function fromString(string $value): self
     {
@@ -31,6 +33,8 @@ enum PageKind: string
             self::Home => 'public/home.html.twig',
             self::Gallery => 'public/gallery.html.twig',
             self::Contact => 'public/contact.html.twig',
+            self::Availability => 'public/availability.html.twig',
+            self::Rates => 'public/rates.html.twig',
             default => 'public/page.html.twig',
         };
     }

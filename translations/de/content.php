@@ -89,6 +89,8 @@ return [
         'gallery' => 'Galerie',
         'legal' => 'Rechtliche Seite',
         'contact' => 'Kontakt',
+        'availability' => 'Verfügbarkeit',
+        'rates' => 'Preise',
     ],
     'error' => [
         'slug_required' => 'Die URL-Kennung ist erforderlich.',

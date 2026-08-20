@@ -174,3 +174,45 @@
         overscroll-behavior: contain;
     }
 }
+
+/* --- Calendrier de disponibilités ---------------------------------------
+   Les états sont portés par des attributs de données : la couleur n'est
+   jamais le seul indice, chaque case reste lisible au clavier et par un
+   lecteur d'écran grâce à son libellé. */
+.ss-calendar td {
+    width: 14.28%;
+}
+
+.ss-calendar__day {
+    cursor: pointer;
+    border-radius: .25rem;
+}
+
+.ss-calendar__day[disabled] {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+.ss-calendar__day[data-state="blocked"] {
+    text-decoration: line-through;
+}
+
+.ss-calendar__day[data-selected="1"] {
+    background-color: var(--bs-primary-bg-subtle);
+}
+
+.ss-calendar__day[data-edge="1"] {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    font-weight: 600;
+}
+
+.ss-calendar__day[data-edge="1"] .text-body-secondary {
+    color: inherit !important;
+}
+
+@media (max-width: 575.98px) {
+    .ss-calendar {
+        font-size: .8rem;
+    }
+}

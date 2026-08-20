@@ -13,6 +13,7 @@ return [
     'yes' => 'Yes',
     'no' => 'No',
     'save' => 'Save',
+    'delete' => 'Delete',
     'cancel' => 'Cancel',
     'back' => 'Back',
     'continue' => 'Continue',

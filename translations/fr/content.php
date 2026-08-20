@@ -89,6 +89,8 @@ return [
         'gallery' => 'Galerie',
         'legal' => 'Page légale',
         'contact' => 'Contact',
+        'availability' => 'Disponibilités',
+        'rates' => 'Tarifs',
     ],
     'error' => [
         'slug_required' => 'L’identifiant d’URL est obligatoire.',

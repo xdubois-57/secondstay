@@ -30,7 +30,7 @@ Une itération est terminée seulement si :
 | 2 | Site public et contenu | ✅ livrée |
 | 3 | Comptes et auth | ✅ livrée |
 | 4 | Notifications et PWA | ✅ livrée |
-| 5 | Disponibilités et prix | ⏳ à venir |
+| 5 | Disponibilités et prix | ✅ livrée |
 | 6 | Réservation sans paiement | ⏳ à venir |
 | 7 | Paiements | ⏳ à venir |
 | 8 | Contrats, documents, IMAP | ⏳ à venir |
@@ -200,6 +200,25 @@ Livrer :
 - formatage localisé dates/montants.
 
 E2E : séjour traversant plusieurs tarifs → total exact dans quatre locales.
+
+### Livré (0.6.0)
+
+- `DateRange` : convention « arrivée incluse, départ exclu », insensible aux
+  fuseaux et aux changements d'heure ;
+- tarifs par nuit avec exceptions par plage, calcul nuit par nuit, ménage
+  selon le mode configuré, acompte arrondi au centime supérieur ;
+- indisponibilités d'exploitation (propriétaire, entretien, calendrier
+  externe) et états de nuit ;
+- règles de séjour : durée, multiples, jour d'arrivée, samedi-samedi,
+  capacité, délai de prévenance et horizon ;
+- calendrier public avec prix réel de chaque nuit et total en direct issu de
+  l'API de devis ;
+- écran d'administration des tarifs et des blocages ;
+- pages « disponibilités » et « tarifs » devenues fonctionnelles sans perdre
+  leur contenu éditorial ;
+- formatage localisé des mois, jours et montants dans les quatre langues ;
+- E2E `pricing.spec.js`, tests PHP `DateRangeTest` et `PricingTest`, suite
+  Vitest `calendar.test.js`.
 
 ## Itération 6 — Réservation sans paiement
 

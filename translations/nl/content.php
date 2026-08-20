@@ -89,6 +89,8 @@ return [
         'gallery' => 'Galerij',
         'legal' => 'Juridische pagina',
         'contact' => 'Contact',
+        'availability' => 'Beschikbaarheid',
+        'rates' => 'Tarieven',
     ],
     'error' => [
         'slug_required' => 'De URL-identificatie is verplicht.',

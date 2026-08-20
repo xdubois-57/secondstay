@@ -116,6 +116,21 @@ final class SettingRegistry
             new SettingDefinition('booking.checkout_time', SettingType::Time, '10:00', 'booking'),
             new SettingDefinition('booking.saturday_to_saturday', SettingType::Bool, false, 'booking'),
             new SettingDefinition('booking.hold_minutes', SettingType::Duration, 30, 'booking', min: 5, max: 1440),
+            new SettingDefinition('booking.min_adults', SettingType::Integer, 1, 'booking', min: 1, max: 40),
+            new SettingDefinition('booking.max_children', SettingType::Integer, 4, 'booking', min: 0, max: 40),
+            new SettingDefinition('booking.max_infants', SettingType::Integer, 2, 'booking', min: 0, max: 40),
+            // 0 = pas de contrainte de multiple ; 7 = séjours en semaines entières.
+            new SettingDefinition('booking.night_multiple', SettingType::Integer, 0, 'booking', min: 0, max: 30),
+            new SettingDefinition('booking.max_nights', SettingType::Integer, 60, 'booking', min: 1, max: 365),
+            new SettingDefinition(
+                'booking.arrival_weekday',
+                SettingType::Enum,
+                'any',
+                'booking',
+                enumValues: ['any', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+            ),
+            new SettingDefinition('booking.advance_days', SettingType::Integer, 0, 'booking', min: 0, max: 365),
+            new SettingDefinition('booking.horizon_days', SettingType::Integer, 540, 'booking', min: 30, max: 1095),
 
             // --- Tarifs ---------------------------------------------------
             new SettingDefinition('pricing.default_night_price', SettingType::Money, 12000, 'pricing', min: 0),

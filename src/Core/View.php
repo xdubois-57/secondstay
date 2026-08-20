@@ -122,6 +122,19 @@ final class View
             fn (\DateTimeInterface $date, string $width = 'medium'): string => $this->formatter->date($date, $width)
         ));
         $this->twig->addFilter(new TwigFilter(
+            'monthname',
+            fn (\DateTimeInterface $date): string => $this->formatter->monthName($date)
+        ));
+        $this->twig->addFilter(new TwigFilter(
+            'daymonth',
+            fn (\DateTimeInterface $date): string => $this->formatter->dayAndMonth($date)
+        ));
+        $this->twig->addFunction(new TwigFunction(
+            'weekday_names',
+            /** @return list<string> */
+            fn (): array => $this->formatter->weekdayNames()
+        ));
+        $this->twig->addFilter(new TwigFilter(
             'localdatetime',
             fn (\DateTimeInterface $date, string $width = 'medium'): string => $this->formatter->dateTime($date, $width)
         ));

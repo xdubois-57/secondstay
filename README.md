@@ -108,7 +108,26 @@ Calendrier avec prix journalier, règles configurables, capacité, blocages admi
 
 Abstraction `PaymentProvider`, Mollie en premier fournisseur, acompte, solde, caution, ménage, taxe de séjour, remboursements, QR EPC SEPA et webhooks idempotents. Aucune donnée carte n’est stockée.
 
-### Notifications
+### Disponibilités et tarifs
+
+Le calendrier public affiche le **prix réel de chaque nuit** et l'état de
+chacune. Sélectionner une arrivée puis un départ affiche le total en direct,
+calculé par le serveur : c'est exactement le montant qui sera facturé.
+
+Le calcul est fait nuit par nuit. Un séjour à cheval sur deux saisons
+additionne les tarifs réels, jamais une moyenne.
+
+```text
+/fr/availability    calendrier, règles de séjour, total en direct
+/fr/rates           tarif de référence, ménage, acompte, caution, règles
+/fr/admin/pricing   tarifs par plage de nuits et indisponibilités
+```
+
+Les règles de séjour — durée minimale et maximale, tranches de nuits, jour
+d'arrivée imposé ou samedi-samedi, capacité, délai de prévenance, horizon de
+réservation — sont configurables et **vérifiées côté serveur**.
+
+## Notifications
 
 SMTP + Web Push. Si le push est actif, **e-mail et push sont tous deux tentés**, avec journal séparé par canal.
 
@@ -243,6 +262,25 @@ d'expédition. La signature DKIM reste à la charge du fournisseur SMTP.
 En développement et en CI, `SECONDSTAY_MAIL_TRANSPORT=fake` remplace l'envoi
 réel par un dépôt de messages inspectable : aucun réseau sortant n'est requis
 pour tester les parcours de compte.
+
+## Disponibilités et tarifs
+
+Le calendrier public affiche le **prix réel de chaque nuit** et l'état de
+chacune. Sélectionner une arrivée puis un départ affiche le total en direct,
+calculé par le serveur : c'est exactement le montant qui sera facturé.
+
+Le calcul est fait nuit par nuit. Un séjour à cheval sur deux saisons
+additionne les tarifs réels, jamais une moyenne.
+
+```text
+/fr/availability    calendrier, règles de séjour, total en direct
+/fr/rates           tarif de référence, ménage, acompte, caution, règles
+/fr/admin/pricing   tarifs par plage de nuits et indisponibilités
+```
+
+Les règles de séjour — durée minimale et maximale, tranches de nuits, jour
+d'arrivée imposé ou samedi-samedi, capacité, délai de prévenance, horizon de
+réservation — sont configurables et **vérifiées côté serveur**.
 
 ## Notifications
 

@@ -12,7 +12,10 @@ report() {
     STATUS=1
 }
 
-TRACKED="$(git ls-files 2>/dev/null || true)"
+# Les fichiers non encore commités comptent : sinon un secret ne serait
+# détecté qu'une fois déjà versionné, c'est-à-dire trop tard. `--others
+# --exclude-standard` ajoute exactement ce que `git add .` prendrait.
+TRACKED="$(git ls-files --cached --others --exclude-standard 2>/dev/null || true)"
 if [ -z "$TRACKED" ]; then
     printf 'Dépôt git introuvable : contrôle des secrets ignoré.\n'
     exit 0
@@ -42,7 +45,7 @@ PATTERNS=(
     'gh[pousr]_[A-Za-z0-9]{30,}'
 )
 for pattern in "${PATTERNS[@]}"; do
-    matches="$(git grep -nIE "$pattern" -- . ':(exclude)scripts/check-secrets.sh' 2>/dev/null || true)"
+    matches="$(git grep --untracked -nIE "$pattern" -- . ':(exclude)scripts/check-secrets.sh' 2>/dev/null || true)"
     if [ -n "$matches" ]; then
         report "Motif de secret détecté ($pattern) :"
         printf '%s\n' "$matches" | sed 's/^/      /'
