@@ -14,6 +14,7 @@ return [
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Operations',
+        'stay' => 'Welcome book',
         'settings' => 'Configuration',
         'users' => 'Accounts',
         'backups' => 'Backups',

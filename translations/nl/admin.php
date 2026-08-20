@@ -14,6 +14,7 @@ return [
         'documents' => 'Documenten',
         'mailbox' => 'Berichten',
         'operations' => 'Exploitatie',
+        'stay' => 'Welkomstboek',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
         'backups' => 'Back-ups',

@@ -707,3 +707,43 @@ Deux points sont attaqués explicitement :
 - qu'un jeton de calendrier soit stocké en clair ;
 - qu'un jeton révoqué ou inventé donne encore accès à un flux ;
 - qu'un séjour annulé apparaisse dans un calendrier ou dans la préparation.
+
+## 27. Itération 10 — mon séjour et invités
+
+### 27.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 13 — guest link | `tests/e2e/stay.spec.js`, `tests/php/Database/StayServiceTest.php` |
+
+Le scénario demandé — « mobile offline → informations utiles dans langue
+choisie » — est joué en entier : le livret est rempli en français et en
+allemand, le voyageur ouvre « Mon séjour », un lien invité est délivré, puis
+`context.setOffline(true)` coupe **réellement** le réseau du navigateur et la
+page est rechargée.
+
+### 27.2 Ce que le test vérifie hors ligne
+
+- le livret reste lisible, dans la langue choisie ;
+- le contact sur place reste affiché ;
+- **rien** de la réservation n'a été mis en cache : le test énumère toutes les
+  entrées de tous les caches et vérifie qu'aucune ne contient `/booking/`,
+  `/payment/` ni `/document/`, mais qu'une entrée `/guest/` existe bien ;
+- la fiche de réservation, faute de cache, ne se charge pas du tout — la
+  navigation échoue, ce qui est la bonne réponse plutôt qu'une page de secours
+  trompeuse.
+
+### 27.3 Ce que les tests interdisent
+
+- qu'un code d'accès sorte avant l'arrivée ou après le départ ;
+- qu'un code d'accès soit stocké en clair, ou réaffiché par l'administration ;
+- qu'un code inconnu soit accepté par le dépôt des secrets ;
+- qu'un bloc non publié ou vide s'affiche ;
+- qu'un bloc d'arrivée s'affiche en plein séjour ;
+- qu'une traduction manquante fasse disparaître l'information ;
+- qu'un lien invité survive à sa révocation, à son expiration, ou à
+  l'annulation du séjour ;
+- qu'un jeton invité soit stocké en clair ;
+- qu'un invité voie la référence, les finances ou la réservation ;
+- que la fiche de réservation, les paiements ou les documents entrent dans un
+  cache d'appareil.

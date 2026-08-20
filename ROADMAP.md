@@ -35,7 +35,7 @@ Une itération est terminée seulement si :
 | 7 | Paiements | ✅ livrée |
 | 8 | Contrats, documents, IMAP | ✅ livrée |
 | 9 | Responsable local et opérations | ✅ livrée |
-| 10 | Mon séjour et invités | ⏳ à venir |
+| 10 | Mon séjour et invités | ✅ livrée |
 | 11 | États des lieux et incidents | ⏳ à venir |
 | 12 | France et conformité | ⏳ à venir |
 | 13 | Contenu local IA | ⏳ à venir |
@@ -384,6 +384,25 @@ Livrer :
 - contenu FR/EN/NL/DE.
 
 E2E : mobile offline → informations utiles dans langue choisie.
+
+### Livré (0.11.0)
+
+- « Mon séjour aujourd'hui » : phase déduite des dates et du fuseau du
+  logement, jamais stockée ;
+- livret d'accueil réellement traduit — un enregistrement par bloc et par
+  langue — avec état de complétude et repli sur la langue par défaut ;
+- codes d'accès chiffrés au repos, publiés uniquement pendant la fenêtre du
+  séjour, jamais réaffichés par l'administration ;
+- liens invité expirants, révocables, à jeton haché, ouvrant les informations
+  pratiques et rien d'autre, avec QR rendu en ligne pour l'affichage dans le
+  logement ;
+- hors ligne conforme à la spécification : livret, Wi-Fi, règles, déchets,
+  sécurité et contact mis en cache ; réservation, paiements et documents
+  définitivement exclus ;
+- stratégie réseau d'abord avec délai court sur les pages de séjour, pour ne
+  jamais afficher une page périmée après une action ;
+- E2E `stay.spec.js` avec coupure réseau réelle et inspection des caches,
+  tests PHP `StayServiceTest`.
 
 ## Itération 11 — États des lieux et incidents
 

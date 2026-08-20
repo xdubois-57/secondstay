@@ -6,6 +6,10 @@
     <title>{% block title %}{{ meta_title|default(t('common.app_name')) }}{% endblock %} — {{ app_name }}</title>
     <meta name="description" content="{{ meta_description|default(t('common.tagline')) }}">
     <meta name="generator" content="SecondStay">
+    {% if meta_robots is defined and meta_robots %}
+        {# Pages propres à un séjour : jamais indexées. #}
+        <meta name="robots" content="{{ meta_robots }}">
+    {% endif %}
     <meta property="og:site_name" content="{{ app_name }}">
     <meta property="og:title" content="{{ meta_title|default(t('common.app_name')) }}">
     <meta property="og:description" content="{{ meta_description|default(t('common.tagline')) }}">

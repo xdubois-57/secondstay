@@ -90,6 +90,10 @@ use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TaskRepository;
 use SecondStay\Operations\TodoService;
 use SecondStay\Payment\FakePaymentProvider;
+use SecondStay\Stay\GuestLinkRepository;
+use SecondStay\Stay\StayInfoRepository;
+use SecondStay\Stay\StaySecretRepository;
+use SecondStay\Stay\StayService;
 use SecondStay\Payment\MolliePaymentProvider;
 use SecondStay\Payment\NullPaymentProvider;
 use SecondStay\Payment\PaymentProvider;
@@ -634,6 +638,27 @@ final class Services
             $c->get(InboundMailRepository::class),
             $c->get(ChecklistService::class),
             $c->get(Migrator::class),
+        ));
+
+        // --- Mon séjour et liens invité ------------------------------------
+        $container->set(StayInfoRepository::class, static fn (Container $c): StayInfoRepository
+            => new StayInfoRepository($c->get(Database::class)));
+
+        $container->set(StaySecretRepository::class, static fn (Container $c): StaySecretRepository
+            => new StaySecretRepository($c->get(Database::class), $c->get(Encryptor::class)));
+
+        $container->set(GuestLinkRepository::class, static fn (Container $c): GuestLinkRepository
+            => new GuestLinkRepository($c->get(Database::class)));
+
+        $container->set(StayService::class, static fn (Container $c): StayService => new StayService(
+            $c->get(StayInfoRepository::class),
+            $c->get(StaySecretRepository::class),
+            $c->get(GuestLinkRepository::class),
+            $c->get(BookingRepository::class),
+            $c->get(CalendarService::class),
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
         ));
 
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository

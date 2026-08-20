@@ -13,6 +13,7 @@ use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminDocumentController;
 use SecondStay\Controller\Admin\AdminMailboxController;
 use SecondStay\Controller\Admin\AdminOperationsController;
+use SecondStay\Controller\Admin\AdminStayController;
 use SecondStay\Controller\Admin\AdminPaymentController;
 use SecondStay\Controller\Admin\AdminPricingController;
 use SecondStay\Controller\Admin\AdminSettingsController;
@@ -32,6 +33,7 @@ use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
 use SecondStay\Controller\CalendarController;
+use SecondStay\Controller\StayController;
 use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
@@ -132,6 +134,28 @@ final class Routes
             [BookingController::class, 'show'],
             'booking.show'
         );
+
+        // --- Mon séjour -----------------------------------------------------------
+        // Ces pages sont les seules conçues pour fonctionner hors ligne : elles
+        // ne portent ni montant, ni document, ni écriture.
+        $router->get(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}',
+            [StayController::class, 'show'],
+            'stay.show'
+        );
+        $router->post(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}/guest',
+            [StayController::class, 'issueGuestLink'],
+            'stay.guest.issue'
+        );
+        $router->post(
+            '/stay/guest/{id:\d+}/revoke',
+            [StayController::class, 'revokeGuestLink'],
+            'stay.guest.revoke'
+        );
+        // Lien invité : localisé, sans compte, adresse stable pour un QR collé
+        // dans le logement (SPECIFICATIONS.md §47).
+        $router->get('/guest/{token:[a-f0-9]{64}}', [StayController::class, 'guest'], 'stay.guest');
 
         // --- Calendriers privés -------------------------------------------------
         // Hors langue et hors session : un agenda tiers ne présente qu'un
@@ -247,6 +271,11 @@ final class Routes
         $router->get('/admin/media/{id:\d+}', [AdminMediaController::class, 'edit'], 'admin.media.edit');
         $router->post('/admin/media/{id:\d+}', [AdminMediaController::class, 'save'], 'admin.media.save');
         $router->post('/admin/media/{id:\d+}/delete', [AdminMediaController::class, 'delete'], 'admin.media.delete');
+
+        // --- Livret d'accueil -----------------------------------------------
+        $router->get('/admin/stay', [AdminStayController::class, 'index'], 'admin.stay');
+        $router->post('/admin/stay', [AdminStayController::class, 'save'], 'admin.stay.save');
+        $router->post('/admin/stay/secrets', [AdminStayController::class, 'saveSecrets'], 'admin.stay.secrets');
 
         // --- Exploitation ---------------------------------------------------
         $router->get('/admin/operations', [AdminOperationsController::class, 'index'], 'admin.operations');
