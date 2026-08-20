@@ -1,0 +1,101 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('incident.admin.intro') }}</p>
+
+    <ul class="nav nav-pills mb-4" data-testid="incident-filters">
+        <li class="nav-item">
+            <a class="nav-link{{ current_status is null ? ' active' : '' }}"
+               href="{{ path('admin.incidents') }}" data-incident-filter="all">{{ t('incident.filter.all') }}</a>
+        </li>
+        {% for status in statuses %}
+            <li class="nav-item">
+                <a class="nav-link{{ current_status is not null and current_status.value == status.value ? ' active' : '' }}"
+                   href="{{ path('admin.incidents') }}?status={{ status.value }}"
+                   data-incident-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle" data-testid="incident-list">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('incident.field.title') }}</th>
+                    <th scope="col">{{ t('incident.field.severity') }}</th>
+                    <th scope="col">{{ t('incident.field.status') }}</th>
+                    <th scope="col">{{ t('incident.field.booking') }}</th>
+                    <th scope="col">{{ t('incident.field.created') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for incident in incidents %}
+                    <tr data-incident-id="{{ incident.id }}"
+                        data-incident-status="{{ incident.status.value }}"
+                        data-incident-severity="{{ incident.severity.value }}">
+                        <td>
+                            <a href="{{ path('admin.incidents.show', {'id': incident.id}) }}">{{ incident.title }}</a>
+                            {% if incident.zoneCode %}
+                                <span class="d-block small text-body-secondary">{{ incident.zoneName ?: t(incident.zoneLabelKey) }}</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge {{ incident.severity.badgeClass }}">{{ t(incident.severity.labelKey) }}</span></td>
+                        <td><span class="badge {{ incident.status.badgeClass }}">{{ t(incident.status.labelKey) }}</span></td>
+                        <td>{{ incident.bookingReference ? incident.bookingReference : '—' }}</td>
+                        <td>{{ incident.createdDate|localdatetime('short') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" data-testid="incident-empty">{{ t('incident.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('incident.admin.new') }}</div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.incidents.create') }}" data-testid="incident-create">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="incident_title">{{ t('incident.field.title') }}</label>
+                        <input class="form-control" id="incident_title" name="title" maxlength="190" required>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="incident_severity">{{ t('incident.field.severity') }}</label>
+                        <select class="form-select" id="incident_severity" name="severity">
+                            {% for severity in severities %}
+                                <option value="{{ severity.value }}"
+                                        {{ severity.value == 'normal' ? 'selected' : '' }}>{{ t(severity.labelKey) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="incident_zone">{{ t('incident.field.zone') }}</label>
+                        <select class="form-select" id="incident_zone" name="zone">
+                            <option value="0">{{ t('incident.field.no_zone') }}</option>
+                            {% for zone in zones %}
+                                <option value="{{ zone.id }}">{{ zone.label ?: t(zone.labelKey) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="incident_booking">{{ t('incident.field.booking') }}</label>
+                        <select class="form-select" id="incident_booking" name="booking">
+                            <option value="0">{{ t('incident.field.no_booking') }}</option>
+                            {% for booking in bookings %}
+                                <option value="{{ booking.id }}">{{ booking.reference }} — {{ booking.guestName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="incident_description">{{ t('incident.description') }}</label>
+                        <textarea class="form-control" rows="3" id="incident_description" name="description"></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-3" type="submit"
+                        data-testid="incident-create-submit">{{ t('common.create') }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

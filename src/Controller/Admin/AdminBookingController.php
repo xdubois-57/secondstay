@@ -17,6 +17,8 @@ use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\Document\DocumentKind;
+use SecondStay\Incident\IncidentRepository;
+use SecondStay\Inspection\InspectionService;
 use SecondStay\Document\DocumentRepository;
 use SecondStay\Operations\ChecklistService;
 use SecondStay\Payment\PaymentService;
@@ -92,6 +94,8 @@ final class AdminBookingController extends AdminController
             'effective_manager' => $this->container->get(CalendarService::class)->managerOf($booking),
             'checklist' => $checklists->forBooking($booking),
             'checklist_progress' => $checklists->progress($booking),
+            'inspections' => $this->container->get(InspectionService::class)->forBooking($booking, $context->locale),
+            'incidents' => $this->container->get(IncidentRepository::class)->forBooking($booking->id, $context->locale),
         ]);
     }
 

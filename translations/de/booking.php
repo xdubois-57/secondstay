@@ -156,6 +156,9 @@ return [
         'contract_accepted' => 'Vertrag angenommen',
         'mail_received' => 'Nachricht empfangen',
         'mail_linked' => 'Nachricht zugeordnet',
+        'inspection_checkin' => 'Übergabeprotokoll bei Anreise abgeschlossen',
+        'inspection_checkout' => 'Übergabeprotokoll bei Abreise abgeschlossen',
+        'incident_reported' => 'Vorfall gemeldet',
     ],
     'admin' => [
         'title' => 'Buchungen',

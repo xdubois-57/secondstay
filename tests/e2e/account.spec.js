@@ -234,6 +234,10 @@ test.describe('comptes', () => {
         await page.fill('#email', email);
         await page.fill('#password', PASSWORD);
         await page.click('[data-testid="login-form"] button[type="submit"]');
+        // La navigation doit être terminée avant d'interroger l'API : le
+        // contexte de requête partage le pot à cookies de la page, et WebKit
+        // rend la main sur le clic avant la fin de la redirection.
+        await expect(page).toHaveURL(/\/fr\/account$/);
 
         const response = await page.request.get('/fr/account/export');
 

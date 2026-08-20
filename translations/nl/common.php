@@ -13,6 +13,8 @@ return [
     'yes' => 'Ja',
     'no' => 'Nee',
     'save' => 'Opslaan',
+    'create' => 'Aanmaken',
+    'send' => 'Versturen',
     'delete' => 'Verwijderen',
     'cancel' => 'Annuleren',
     'back' => 'Terug',

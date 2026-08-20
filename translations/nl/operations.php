@@ -16,6 +16,7 @@ return [
         'deposits_to_return' => 'Terug te storten waarborgen',
         'mail_unlinked' => 'Niet-gekoppelde berichten',
         'stays_to_prepare' => 'Voor te bereiden verblijven',
+        'incidents_open' => 'Openstaande incidenten',
         'migrations_pending' => 'Openstaande migraties',
     ],
     'phase' => [

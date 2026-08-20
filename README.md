@@ -379,6 +379,38 @@ Un lien invité donne accès à ces informations pratiques — et à rien d'autr
 Il expire peu après le départ, se révoque, et s'accompagne d'un QR à imprimer
 pour l'afficher dans le logement.
 
+## États des lieux et incidents
+
+Le propriétaire décrit son logement zone par zone : l'ordre du parcours, les
+consignes, celles qui exigent une photo au départ, et les photos de référence
+qui montrent l'état attendu. Rien n'est figé dans le code — une installation
+neuve part d'un parcours courant, que l'on modifie entièrement.
+
+```text
+/fr/stay/<réf>/inspection/checkin    état des lieux d'arrivée
+/fr/stay/<réf>/inspection/checkout   état des lieux de départ
+/fr/admin/inspections                zones et photos de référence
+/fr/admin/incidents                  suivi des incidents
+```
+
+Les deux moments n'ont pas les mêmes exigences :
+
+- **à l'arrivée**, le voyageur signale ce qui ne va pas dans le délai
+  configuré. S'il ne signale rien, tout est réputé conforme : personne n'est
+  bloqué à 23 h par une photo ;
+- **au départ**, les photos des zones requises sont obligatoires. C'est la
+  seule preuve dont disposeront les deux parties au moment de discuter de la
+  caution, et le serveur refuse de clore tant qu'il en manque une.
+
+Les formulaires sont pensés pour un téléphone tenu d'une main : une carte par
+zone, un bouton par état, l'appareil photo directement accessible.
+
+Une anomalie constatée devient un incident en un geste. Un incident porte le
+séjour, la zone, l'urgence, la description, des photos, un statut et un
+historique en ajout seul : signalé, pris en charge, résolu. Seuls les
+incidents **urgents** préviennent immédiatement ; les autres apparaissent dans
+« À faire ».
+
 ## Responsable local et exploitation
 
 Plusieurs comptes peuvent être responsables locaux. Un séjour reçoit un
@@ -394,7 +426,7 @@ cochent.
 
 Le tableau « À faire » ne montre que ce qui réclame une décision : demandes à
 valider, échéances dépassées, cautions à restituer, courriers non rattachés,
-séjours proches encore à préparer.
+séjours proches encore à préparer, incidents ouverts.
 
 ## Calendriers privés
 

@@ -36,7 +36,7 @@ Une itération est terminée seulement si :
 | 8 | Contrats, documents, IMAP | ✅ livrée |
 | 9 | Responsable local et opérations | ✅ livrée |
 | 10 | Mon séjour et invités | ✅ livrée |
-| 11 | États des lieux et incidents | ⏳ à venir |
+| 11 | États des lieux et incidents | ✅ livrée |
 | 12 | France et conformité | ⏳ à venir |
 | 13 | Contenu local IA | ⏳ à venir |
 | 14 | ICS externes, reporting, consolidation | ⏳ à venir |
@@ -417,6 +417,35 @@ Livrer :
 - formulaires localisés.
 
 E2E : workflow mobile arrivée/départ.
+
+### Livré (0.12.0)
+
+- zones du logement définies par le propriétaire — ordre du parcours,
+  consignes, activation, obligation de photo au départ — jamais figées dans le
+  code, et amorcées à l'installation avec un parcours réel ;
+- libellés de zone traduisibles par langue, avec repli sur le libellé intégré
+  FR/EN/NL/DE quand aucun nom propre n'est saisi ;
+- photos de référence par zone, stockées comme documents ordinaires hors
+  document root, refusant tout ce qui n'est pas une image ;
+- état des lieux d'arrivée : signalement facultatif dans le délai configuré,
+  clôture possible sans aucune photo ;
+- état des lieux de départ : photos obligatoires pour chaque zone requise, la
+  clôture étant refusée **par le serveur** tant qu'il en manque une ;
+- unicité (séjour, type) portée par la base : deux ouvertures simultanées ne
+  produisent qu'un état des lieux, et une zone ajoutée après coup apparaît
+  tant qu'il reste ouvert ;
+- un état des lieux clos ne se modifie plus, et fait avancer le sous-état
+  d'arrivée ou de départ du séjour ;
+- incidents : réservation, zone, urgence, description, photos, statut et
+  historique en ajout seul, avec transitions explicites signalé → pris en
+  charge → résolu et réouverture nommée ;
+- une anomalie constatée devient un incident en un geste ; un incident urgent
+  prévient immédiatement les rôles opérationnels, les autres attendent le
+  tableau « À faire », qui les compte ;
+- formulaires pensés pour un téléphone, jamais mis en cache : un constat et
+  une photo s'écrivent, ils ne se relisent pas depuis le disque ;
+- E2E `inspection.spec.js` (workflow mobile arrivée/départ sur les deux
+  moteurs), tests PHP `InspectionServiceTest` et `InspectionTest`.
 
 ## Itération 12 — France et conformité
 

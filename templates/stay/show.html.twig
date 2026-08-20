@@ -50,6 +50,24 @@
                 </ul>
             </div>
 
+            {% if inspection_enabled %}
+                {# L'état des lieux se remplit en ligne : le lien mène vers une
+                   page qui écrit, jamais mise en cache. #}
+                <div class="card mb-4" data-testid="stay-inspections">
+                    <div class="card-header">{{ t('inspection.title') }}</div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ path('inspection.show', {'reference': booking.reference, 'kind': 'checkin'}) }}"
+                               data-testid="stay-inspection-checkin">{{ t('inspection.kind.checkin') }}</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ path('inspection.show', {'reference': booking.reference, 'kind': 'checkout'}) }}"
+                               data-testid="stay-inspection-checkout">{{ t('inspection.kind.checkout') }}</a>
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
+
             {# Codes d'accès : uniquement pendant le séjour. #}
             <div class="card mb-4" data-testid="stay-secrets" data-visible="{{ stay.hasSecrets ? 'true' : 'false' }}">
                 <div class="card-header">{{ t('stay.secret.title') }}</div>

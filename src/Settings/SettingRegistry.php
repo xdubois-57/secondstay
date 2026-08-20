@@ -156,6 +156,19 @@ final class SettingRegistry
             new SettingDefinition('operations.default_manager', SettingType::Integer, 0, 'operations', min: 0),
             new SettingDefinition('operations.prepare_days', SettingType::Integer, 14, 'operations', min: 1, max: 120),
             new SettingDefinition('operations.calendar_enabled', SettingType::Bool, true, 'operations'),
+            // Délai laissé au voyageur pour signaler une non-conformité après
+            // son arrivée (SPECIFICATIONS.md §53).
+            new SettingDefinition(
+                'inspection.report_window_hours',
+                SettingType::Integer,
+                24,
+                'operations',
+                min: 1,
+                max: 168
+            ),
+            // Le voyageur remplit-il lui-même l'état des lieux depuis « Mon
+            // séjour » ? Certains propriétaires préfèrent le faire seuls.
+            new SettingDefinition('inspection.guest_enabled', SettingType::Bool, true, 'operations'),
 
             // --- Mentions légales -------------------------------------------
             // La version des conditions est figée dans chaque contrat : elle

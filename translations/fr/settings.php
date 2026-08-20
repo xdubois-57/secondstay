@@ -421,4 +421,14 @@ return [
             'help' => 'Active les flux ICS pour l’administration, les responsables et les voyageurs.',
         ],
     ],
+    'inspection' => [
+        'report_window_hours' => [
+            'label' => 'Délai de signalement à l’arrivée (heures)',
+            'help' => 'Temps laissé au voyageur pour signaler une non-conformité après son arrivée.',
+        ],
+        'guest_enabled' => [
+            'label' => 'État des lieux rempli par le voyageur',
+            'help' => 'Ouvre les formulaires d’arrivée et de départ depuis « Mon séjour ».',
+        ],
+    ],
 ];

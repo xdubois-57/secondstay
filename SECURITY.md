@@ -806,3 +806,48 @@ penser : chaque portée ne montre donc que ce dont son destinataire a besoin.
 - Seules les pages de séjour et de lien invité sont conçues pour le cache, et
   elles ne portent par construction ni montant ni document.
 - Les pages propres à un séjour sont servies avec `noindex, nofollow`.
+
+## 34. États des lieux et incidents
+
+**Le refus de clôture est une règle serveur.** `InspectionService::complete()`
+recalcule les zones bloquantes à partir de la base et refuse tant qu'il en
+reste. Le gabarit affiche ce qui manque mais laisse le bouton actif : une
+règle appliquée par l'interface n'est pas une règle, c'est une suggestion.
+
+**Un état des lieux clos est une preuve.** Aucune écriture n'est acceptée
+après la clôture — ni constat, ni photo, ni seconde clôture. Sans cela, la
+photo produite au moment de discuter d'une caution ne vaudrait rien.
+
+**Une photo est une photo.** Le type est déduit du **contenu** par
+`DocumentService::detectMime()`, jamais de l'extension ni de ce que le
+navigateur annonce, et seuls les types `image/*` sont acceptés là où la
+spécification exige une photo — constat comme photo de référence.
+
+**Les photos restent hors document root.** Elles suivent le circuit ordinaire
+des documents : nommées par leur empreinte, servies par l'application après
+contrôle d'accès, jamais par le serveur web. Une photo de constat
+(`inventory`) est visible de son voyageur ; une photo d'incident (`incident`)
+ne l'est pas.
+
+**Le code de zone est normalisé, pas cru.** `AdminInspectionController` réduit
+le code saisi à `[a-z0-9_]`, borné à 32 caractères : c'est un identifiant
+technique, pas du texte libre, et il finit dans des clés de traduction.
+
+**Les transitions d'incident sont fermées.** `IncidentStatus::canMoveTo()`
+décide, et un statut arrivé par formulaire qui ne correspond à aucune
+transition permise est refusé sans rien écrire. L'historique est en ajout
+seul : ni modification, ni suppression.
+
+**Un incident ne se confie qu'à un rôle opérationnel.** Confier un incident à
+un client lui donnerait une responsabilité sans lui donner l'accès qui va
+avec ; `IncidentService::assign()` le refuse.
+
+**L'état des lieux du voyageur peut être coupé.** `inspection.guest_enabled`
+est vérifié côté serveur à chaque requête, pas seulement au moment d'afficher
+un lien : un propriétaire qui préfère remplir lui-même les constats n'est pas
+protégé par un lien caché.
+
+**Ces pages ne sont jamais mises en cache.** `/inspection/` et `/incident/`
+ont rejoint la liste `NEVER_CACHED` du service worker : elles écrivent, et une
+version servie depuis le disque ferait croire à un constat enregistré ou à une
+photo partie.

@@ -421,4 +421,14 @@ return [
             'help' => 'Enables the ICS feeds for administration, managers and travellers.',
         ],
     ],
+    'inspection' => [
+        'report_window_hours' => [
+            'label' => 'Arrival reporting window (hours)',
+            'help' => 'How long the traveller has to report a discrepancy after arriving.',
+        ],
+        'guest_enabled' => [
+            'label' => 'Inspection filled in by the traveller',
+            'help' => 'Opens the arrival and departure forms from “My stay”.',
+        ],
+    ],
 ];

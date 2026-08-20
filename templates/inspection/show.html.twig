@@ -1,0 +1,189 @@
+{% extends 'layout/base.html.twig' %}
+
+{#
+   État des lieux rempli sur place, au téléphone.
+
+   La mise en page suit le parcours réel : une carte par zone, dans l'ordre du
+   logement, avec l'appareil photo à portée de pouce. Rien n'y est masqué
+   derrière un onglet : sur un écran de six pouces, un onglet est une étape
+   oubliée.
+#}
+
+{% block content %}
+    <section class="py-4">
+        <div class="container" style="max-width: 44rem;"
+             data-testid="inspection-page"
+             data-kind="{{ kind.value }}"
+             data-status="{{ inspection.status.value }}"
+             data-reference="{{ booking.reference }}">
+
+            <h1 class="h4 mb-1">{{ t(kind.labelKey) }}</h1>
+            <p class="text-body-secondary">
+                <a href="{{ path('stay.show', {'reference': booking.reference}) }}">{{ t('stay.today') }}</a>
+                — <code>{{ booking.reference }}</code>
+            </p>
+
+            {% if kind.value == 'checkin' %}
+                <p class="alert alert-secondary" data-testid="inspection-intro">
+                    {{ t('inspection.checkin_intro', {'hours': report_window_hours}) }}
+                </p>
+            {% else %}
+                <p class="alert alert-warning" data-testid="inspection-intro">
+                    {{ t('inspection.checkout_intro') }}
+                </p>
+            {% endif %}
+
+            {% set progress = inspection.progress %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge {{ inspection.status.badgeClass }}"
+                      data-testid="inspection-status">{{ t(inspection.status.labelKey) }}</span>
+                <span class="text-body-secondary" data-testid="inspection-progress"
+                      data-done="{{ progress.done }}" data-total="{{ progress.total }}">
+                    {{ progress.done }} / {{ progress.total }}
+                </span>
+            </div>
+
+            {% for entry in inspection.entries %}
+                <div class="card mb-3" data-zone="{{ entry.zone.code }}"
+                     data-state="{{ entry.state.value }}"
+                     data-photos="{{ entry.photoIds|length }}"
+                     data-photo-required="{{ entry.zone.photoRequired ? 'true' : 'false' }}">
+                    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+                        <span>{{ entry.zone.label ?: t(entry.zone.labelKey) }}</span>
+                        <span class="badge {{ entry.state.badgeClass }}"
+                              data-testid="zone-state">{{ t(entry.state.labelKey) }}</span>
+                    </div>
+                    <div class="card-body">
+                        {% if entry.zone.instructions %}
+                            <p class="small text-body-secondary" style="white-space: pre-line;">{{ entry.zone.instructions }}</p>
+                        {% endif %}
+
+                        {% if inspection.status.isCompleted %}
+                            {% if entry.note %}
+                                <p class="mb-0" style="white-space: pre-line;">{{ entry.note }}</p>
+                            {% endif %}
+                        {% else %}
+                            <form method="post"
+                                  action="{{ path('inspection.entry', {'reference': booking.reference, 'kind': kind.value}) }}"
+                                  enctype="multipart/form-data"
+                                  data-testid="zone-form-{{ entry.zone.code }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <input type="hidden" name="zone" value="{{ entry.zone.id }}">
+
+                                <div class="btn-group w-100 mb-3" role="group"
+                                     aria-label="{{ t('inspection.state.legend') }}">
+                                    <input type="radio" class="btn-check" name="state" value="ok"
+                                           id="state_ok_{{ entry.zone.code }}"
+                                           {{ entry.state.value == 'ok' ? 'checked' : '' }}>
+                                    <label class="btn btn-outline-success"
+                                           for="state_ok_{{ entry.zone.code }}">{{ t('inspection.state.ok') }}</label>
+
+                                    <input type="radio" class="btn-check" name="state" value="anomaly"
+                                           id="state_anomaly_{{ entry.zone.code }}"
+                                           {{ entry.state.value == 'anomaly' ? 'checked' : '' }}>
+                                    <label class="btn btn-outline-danger"
+                                           for="state_anomaly_{{ entry.zone.code }}">{{ t('inspection.state.anomaly') }}</label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label"
+                                           for="note_{{ entry.zone.code }}">{{ t('inspection.note') }}</label>
+                                    <textarea class="form-control" rows="2" name="note"
+                                              id="note_{{ entry.zone.code }}">{{ entry.note }}</textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="photo_{{ entry.zone.code }}">
+                                        {{ t('inspection.photo') }}
+                                        {% if entry.zone.photoRequired %}
+                                            <span class="badge text-bg-warning">{{ t('inspection.photo_required') }}</span>
+                                        {% endif %}
+                                    </label>
+                                    {# `capture` ouvre directement l'appareil photo sur un téléphone. #}
+                                    <input class="form-control" type="file" name="photo" accept="image/*"
+                                           capture="environment" id="photo_{{ entry.zone.code }}">
+                                </div>
+
+                                <button class="btn btn-primary w-100" type="submit"
+                                        data-testid="save-{{ entry.zone.code }}">{{ t('inspection.save') }}</button>
+                            </form>
+                        {% endif %}
+
+                        {% if entry.photoIds is not empty %}
+                            <ul class="list-inline mt-3 mb-0" data-testid="photos-{{ entry.zone.code }}">
+                                {% for photoId in entry.photoIds %}
+                                    <li class="list-inline-item">
+                                        <a href="{{ path('document.download', {'id': photoId}) }}"
+                                           data-photo="{{ photoId }}">{{ t('inspection.photo_n', {'index': loop.index}) }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                        {% if entry.state.isAnomaly and not inspection.status.isCompleted %}
+                            <form method="post" class="mt-3 border-top pt-3"
+                                  action="{{ path('inspection.incident', {'reference': booking.reference, 'kind': kind.value}) }}"
+                                  data-testid="incident-form-{{ entry.zone.code }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <input type="hidden" name="zone" value="{{ entry.zone.id }}">
+
+                                <div class="mb-2">
+                                    <label class="form-label"
+                                           for="severity_{{ entry.zone.code }}">{{ t('incident.severity.legend') }}</label>
+                                    <select class="form-select" name="severity" id="severity_{{ entry.zone.code }}">
+                                        {% for severity in severities %}
+                                            <option value="{{ severity.value }}"
+                                                    {{ severity.value == 'normal' ? 'selected' : '' }}>{{ t(severity.labelKey) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label"
+                                           for="description_{{ entry.zone.code }}">{{ t('incident.description') }}</label>
+                                    <textarea class="form-control" rows="2" name="description"
+                                              id="description_{{ entry.zone.code }}"></textarea>
+                                </div>
+                                <button class="btn btn-outline-danger w-100" type="submit"
+                                        data-testid="incident-{{ entry.zone.code }}">{{ t('inspection.open_incident') }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p class="alert alert-warning" data-testid="inspection-no-zone">{{ t('inspection.no_zone') }}</p>
+            {% endfor %}
+
+            {% if inspection.status.isCompleted %}
+                <p class="alert alert-success" data-testid="inspection-done">
+                    {{ t('inspection.done_on', {'date': inspection.completedDate|localdatetime}) }}
+                </p>
+            {% elseif inspection.entries is not empty %}
+                {% set blocking = inspection.blocking %}
+                {% if blocking is not empty %}
+                    <p class="alert alert-warning" data-testid="inspection-blocking">
+                        {{ kind.requiresPhotos ? t('inspection.error.photos_required') : t('inspection.error.incomplete') }}
+                        <span class="d-block small">
+                            {% for entry in blocking %}{{ entry.zone.label ?: t(entry.zone.labelKey) }}{{ not loop.last ? ', ' : '' }}{% endfor %}
+                        </span>
+                    </p>
+                {% endif %}
+
+                {# Le bouton reste actif : c'est le serveur qui décide si
+                   l'état des lieux peut être clos, jamais l'affichage. Un
+                   bouton grisé cacherait la règle au lieu de l'appliquer. #}
+                <form method="post"
+                      action="{{ path('inspection.complete', {'reference': booking.reference, 'kind': kind.value}) }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button class="btn {{ blocking is empty ? 'btn-success' : 'btn-outline-success' }} w-100"
+                            type="submit"
+                            data-testid="inspection-complete">{{ t('inspection.complete') }}</button>
+                </form>
+            {% endif %}
+
+            <p class="mt-4">
+                <a href="{{ path('inspection.show', {'reference': booking.reference, 'kind': other.value}) }}"
+                   data-testid="inspection-other">{{ t(other.labelKey) }}</a>
+            </p>
+        </div>
+    </section>
+{% endblock %}
