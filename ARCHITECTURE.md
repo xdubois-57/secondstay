@@ -1011,3 +1011,77 @@ Le `Formatter` gagne le nom de mois, le couple jour-mois et les noms abrégés
 des sept jours, tous produits par ICU. La logique financière reste canonique :
 seules les vues formatent. Côté navigateur, `Intl` fait le même travail sur
 les entiers de centimes renvoyés par l'API.
+
+## 35. Itération 6 — réservation sans paiement
+
+### 35.1 Nouveaux modules
+
+```text
+src/Booking/
+├── BookingStatus          états principaux et transitions autorisées
+├── SubStatus              sous-états partagés par les six dimensions
+├── Booking                séjour enregistré, montants figés
+├── BookingReference       référence dictable, sans caractère ambigu
+├── BookingRepository      persistance et garantie anti-double-réservation
+├── BookingEventRepository timeline
+├── BookingService         parcours complet et workflow
+├── PromoCode / PromoCodeRepository
+└── WaitlistRepository     liste d'attente
+```
+
+### 35.2 Anti-double-réservation
+
+La garantie ne repose pas sur « vérifier puis écrire » — deux requêtes
+concurrentes passeraient toutes deux la vérification — mais sur la **clé
+primaire** de `booking_night` : une nuit occupée y existe une fois et une
+seule.
+
+```text
+booking_night   day (clé primaire), booking_id
+```
+
+L'insertion des nuits se fait dans la même transaction que la réservation. La
+seconde transaction échoue sur la contrainte, quel que soit l'ordre
+d'exécution, et l'échec est traduit en « ces dates ne sont plus disponibles »
+plutôt qu'en erreur technique.
+
+Annuler, refuser ou laisser expirer un séjour supprime ses lignes : les nuits
+redeviennent réservables immédiatement.
+
+### 35.3 Verrou temporaire
+
+Le parcours pose un verrou (`BookingStatus::Hold`) **avant** le formulaire de
+finalisation : sans lui, deux visiteurs rempliraient le même formulaire en
+parallèle et n'apprendraient qu'à la fin qu'un seul obtient le séjour. Le
+verrou occupe réellement les nuits et expire seul au bout de
+`booking.hold_minutes`.
+
+### 35.4 Workflow
+
+`BookingStatus` porte ses transitions autorisées : toute autre transition est
+refusée par le service, quoi qu'un formulaire envoie. Les six sous-états —
+contrat, paiements, caution, ménage, arrivée, départ — vivent dans leurs
+propres colonnes et progressent indépendamment de l'état principal.
+
+### 35.5 Montants figés
+
+Les montants sont calculés par le serveur au moment du verrou et **stockés**.
+Un changement de tarif ultérieur ne réécrit jamais un séjour engagé, et un
+formulaire qui tenterait d'imposer son propre total est ignoré.
+
+La remise d'un code promotionnel porte sur l'hébergement seul et est bornée à
+celui-ci : le ménage et la caution ne sont pas des marges commerciales, et un
+total ne peut pas devenir négatif.
+
+### 35.6 Timeline
+
+Chaque étape importante laisse une trace horodatée et attribuée dans
+`booking_event` : c'est ce que le client et le propriétaire lisent, sans
+ouvrir le journal technique.
+
+### 35.7 Liste d'attente
+
+Une inscription est unique par adresse et par période. Lorsque des nuits se
+libèrent, les inscriptions dont la période croise ces nuits reçoivent un
+e-mail dans leur propre langue. Une inscription est marquée **avant** l'envoi :
+un échec d'envoi ne produit pas une rafale de rappels.

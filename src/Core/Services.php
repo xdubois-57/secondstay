@@ -7,7 +7,12 @@ namespace SecondStay\Core;
 use SecondStay\Audit\AuditTrail;
 use SecondStay\Availability\AvailabilityBlockRepository;
 use SecondStay\Availability\AvailabilityService;
+use SecondStay\Booking\BookingEventRepository;
+use SecondStay\Booking\BookingRepository;
+use SecondStay\Booking\BookingService;
+use SecondStay\Booking\PromoCodeRepository;
 use SecondStay\Booking\QuoteService;
+use SecondStay\Booking\WaitlistRepository;
 use SecondStay\Booking\StayRules;
 use SecondStay\Pricing\PriceCalculator;
 use SecondStay\Pricing\RateRepository;
@@ -396,6 +401,18 @@ final class Services
             self::propertyTimezone($c),
         ));
 
+        $container->set(BookingRepository::class, static fn (Container $c): BookingRepository
+            => new BookingRepository($c->get(Database::class)));
+
+        $container->set(BookingEventRepository::class, static fn (Container $c): BookingEventRepository
+            => new BookingEventRepository($c->get(Database::class)));
+
+        $container->set(PromoCodeRepository::class, static fn (Container $c): PromoCodeRepository
+            => new PromoCodeRepository($c->get(Database::class)));
+
+        $container->set(WaitlistRepository::class, static fn (Container $c): WaitlistRepository
+            => new WaitlistRepository($c->get(Database::class)));
+
         $container->set(AvailabilityService::class, static fn (Container $c): AvailabilityService
             => new AvailabilityService(
                 $c->get(AvailabilityBlockRepository::class),
@@ -403,7 +420,23 @@ final class Services
                 $c->get(PriceCalculator::class),
                 $c->get(StayRules::class),
                 self::propertyTimezone($c),
+                $c->get(BookingRepository::class),
             ));
+
+        $container->set(BookingService::class, static fn (Container $c): BookingService => new BookingService(
+            $c->get(BookingRepository::class),
+            $c->get(BookingEventRepository::class),
+            $c->get(PromoCodeRepository::class),
+            $c->get(WaitlistRepository::class),
+            $c->get(StayRules::class),
+            $c->get(AvailabilityService::class),
+            $c->get(PriceCalculator::class),
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(NotificationService::class),
+            $c->get(MailService::class),
+            $c->get(AuditTrail::class),
+        ));
 
         $container->set(QuoteService::class, static fn (Container $c): QuoteService => new QuoteService(
             $c->get(StayRules::class),

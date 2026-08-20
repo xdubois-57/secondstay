@@ -528,3 +528,34 @@ restent rejouables sans remise à zéro.
 `/api/quote` : la page et l'API doivent donner exactement le même montant en
 centimes, sinon le total affiché pendant la sélection cesserait d'être celui
 qui sera facturé.
+
+## 23. Itération 6 — réservation sans paiement
+
+### 23.1 Couverture des scénarios critiques
+
+| Scénario critique | Fichier |
+|---|---|
+| 7 — réservation | `tests/e2e/booking.spec.js` |
+| 8 — double booking concurrent | `tests/e2e/booking.spec.js`, `tests/php/Database/BookingServiceTest.php` |
+
+### 23.2 Concurrence réellement exercée
+
+Le scénario E2E ouvre **deux navigateurs** et poste les deux verrous en
+parallèle, sans attendre la réponse de l'autre : `Promise.all` sur les deux
+clics. Il vérifie ensuite qu'il y a exactement un gagnant et un perdant, et
+que le perdant se voit proposer la liste d'attente plutôt qu'une erreur brute.
+
+Côté PHP, `BookingServiceTest` va plus loin : il ouvre **deux connexions et
+deux transactions distinctes**, insère les nuits de la première, valide, puis
+constate que la seconde échoue sur la contrainte d'unicité avec le SQLSTATE
+attendu. Deux appels successifs ne prouveraient rien ; deux transactions
+entrelacées prouvent la garantie.
+
+### 23.3 Ce que les tests interdisent
+
+- qu'un formulaire impose son propre total, son acompte ou sa remise ;
+- qu'une transition non déclarée soit acceptée ;
+- qu'un verrou expiré soit finalisé ;
+- qu'une remise rende un total négatif ;
+- qu'un code promotionnel dépasse sa limite d'usage ;
+- qu'une nuit réservée révèle l'identité de son occupant.

@@ -1,0 +1,101 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <h1 class="h4 mb-4">{{ t('booking.admin.title') }}</h1>
+
+    <ul class="nav nav-pills mb-3" data-testid="booking-filters">
+        <li class="nav-item">
+            <a class="nav-link{{ filter == '' ? ' active' : '' }}" href="{{ path('admin.bookings') }}"
+               data-status-filter="all">{{ t('booking.admin.all') }}</a>
+        </li>
+        {% for status in statuses %}
+            <li class="nav-item">
+                <a class="nav-link{{ filter == status.value ? ' active' : '' }}"
+                   href="{{ path('admin.bookings') }}?status={{ status.value }}"
+                   data-status-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table align-middle" data-testid="booking-list">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('booking.journey.reference') }}</th>
+                    <th scope="col">{{ t('booking.admin.guest') }}</th>
+                    <th scope="col">{{ t('booking.admin.dates') }}</th>
+                    <th scope="col" class="text-end">{{ t('booking.admin.total') }}</th>
+                    <th scope="col">{{ t('booking.admin.status') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                    <tr data-booking-reference="{{ booking.reference }}" data-status="{{ booking.status.value }}">
+                        <td><a href="{{ path('admin.bookings.show', {'id': booking.id}) }}"><code>{{ booking.reference }}</code></a></td>
+                        <td>{{ booking.guestName ?: booking.guestEmail }}</td>
+                        <td>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</td>
+                        <td class="text-end">{{ booking.totalCents|money }}</td>
+                        <td><span class="badge {{ booking.status.badgeClass }}">{{ t(booking.status.labelKey) }}</span></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="text-body-secondary" data-testid="no-booking">{{ t('booking.admin.none') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# --- Codes promo --------------------------------------------------- #}
+    <div class="card mt-4">
+        <div class="card-header">{{ t('booking.promo.label') }}</div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.promos.create') }}" class="mb-4" data-testid="promo-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="code">{{ t('booking.promo.label') }}</label>
+                        <input class="form-control" id="code" name="code" maxlength="32" required>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="kind">{{ t('admin.pricing.kind') }}</label>
+                        <select class="form-select" id="kind" name="kind">
+                            <option value="percent">%</option>
+                            <option value="fixed">{{ t('booking.promo.discount') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="value">{{ t('admin.pricing.price') }}</label>
+                        <input class="form-control" id="value" name="value" inputmode="decimal" required>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label" for="max_uses">{{ t('admin.pricing.min_nights') }}</label>
+                        <input class="form-control" id="max_uses" name="max_uses" type="number" min="0" value="0">
+                    </div>
+                    <div class="col-6 col-md-3 d-grid">
+                        <button class="btn btn-primary" type="submit" data-testid="create-promo">{{ t('booking.promo.apply') }}</button>
+                    </div>
+                </div>
+            </form>
+
+            <ul class="list-group" data-testid="promo-list">
+                {% for promo in promos %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        data-promo-code="{{ promo.code }}">
+                        <span>
+                            <code>{{ promo.code }}</code>
+                            <span class="badge text-bg-secondary ms-2">{{ promo.describe }}</span>
+                            <span class="small text-body-secondary d-block">
+                                {{ promo.usedCount }}{% if promo.maxUses %} / {{ promo.maxUses }}{% endif %}
+                            </span>
+                        </span>
+                        <form method="post" action="{{ path('admin.promos.delete', {'id': promo.id}) }}">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('common.delete') }}</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="list-group-item text-body-secondary" data-testid="no-promo">{{ t('booking.admin.none') }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

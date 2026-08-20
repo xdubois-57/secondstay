@@ -8,6 +8,7 @@ return [
         'dashboard' => 'Dashboard',
         'content' => 'Inhoud',
         'media' => 'Media',
+        'bookings' => 'Reserveringen',
         'pricing' => 'Tarieven',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
@@ -59,6 +60,18 @@ return [
         'value' => [
             'property' => [
                 'country' => ['FR' => 'Frankrijk'],
+            ],
+            'booking' => [
+                'arrival_weekday' => [
+                    'any' => 'Maakt niet uit',
+                    'monday' => 'Maandag',
+                    'tuesday' => 'Dinsdag',
+                    'wednesday' => 'Woensdag',
+                    'thursday' => 'Donderdag',
+                    'friday' => 'Vrijdag',
+                    'saturday' => 'Zaterdag',
+                    'sunday' => 'Zondag',
+                ],
             ],
             'site' => [
                 'default_locale' => ['fr' => 'Français', 'en' => 'English', 'nl' => 'Nederlands', 'de' => 'Deutsch'],

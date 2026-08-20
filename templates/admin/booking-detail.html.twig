@@ -1,0 +1,81 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <h1 class="h4 mb-1">
+        <code data-testid="booking-reference">{{ booking.reference }}</code>
+        <span class="badge {{ booking.status.badgeClass }}" data-testid="booking-status">{{ t(booking.status.labelKey) }}</span>
+    </h1>
+    <p class="text-body-secondary">{{ booking.guestName }} — {{ booking.guestEmail }}</p>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header">{{ t('booking.journey.summary') }}</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.admin.dates') }}</span>
+                        <strong>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.journey.guests') }}</span>
+                        <strong>{{ booking.adults }} / {{ booking.children }} / {{ booking.infants }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ t('booking.quote.total') }}</span>
+                        <strong data-cents="{{ booking.totalCents }}">{{ booking.totalCents|money }}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">{{ t('booking.admin.status') }}</div>
+                <div class="card-body">
+                    {% if transitions %}
+                        <form method="post" action="{{ path('admin.bookings.status', {'id': booking.id}) }}"
+                              data-testid="transition-form">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label" for="status">{{ t('booking.admin.status') }}</label>
+                                    <select class="form-select" id="status" name="status">
+                                        {% for target in transitions %}
+                                            <option value="{{ target.value }}">{{ t(target.labelKey) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label" for="reason">{{ t('admin.pricing.note') }}</label>
+                                    <input class="form-control" id="reason" name="reason" maxlength="190">
+                                </div>
+                                <div class="col-12 col-md-3 d-grid">
+                                    <button class="btn btn-primary" type="submit"
+                                            data-testid="apply-transition">{{ t('common.save') }}</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <p class="mb-0 text-body-secondary" data-testid="no-transition">{{ t('booking.substatus.not_applicable') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            <div class="card">
+                <div class="card-header">{{ t('booking.journey.timeline') }}</div>
+                <ul class="list-group list-group-flush" data-testid="booking-timeline">
+                    {% for event in timeline %}
+                        <li class="list-group-item" data-event="{{ event.type }}">
+                            <span class="d-block">{{ t('booking.event.' ~ event.type) }}</span>
+                            <span class="small text-body-secondary">
+                                {{ event.created_at }}{% if event.actor_label %} — {{ event.actor_label }}{% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <p class="mt-4 mb-0"><a href="{{ path('admin.bookings') }}">{{ t('common.back') }}</a></p>
+{% endblock %}

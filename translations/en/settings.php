@@ -95,6 +95,46 @@ return [
             'label' => 'Temporary hold duration',
             'help' => 'Minutes during which dates stay blocked before confirmation.',
         ],
+        'requires_approval' => [
+            'label' => 'Owner approval',
+            'help' => 'Every booking request waits for your agreement. Turn this off to confirm available stays automatically.',
+        ],
+        'allow_waitlist' => [
+            'label' => 'Waiting list',
+            'help' => 'A visitor can ask to be told if unavailable dates are freed.',
+        ],
+        'min_adults' => [
+            'label' => 'Minimum adults',
+            'help' => 'Minimum number of adults per stay.',
+        ],
+        'max_children' => [
+            'label' => 'Maximum children',
+            'help' => 'Maximum number of children accepted on top of the adults.',
+        ],
+        'max_infants' => [
+            'label' => 'Maximum infants',
+            'help' => 'Infants do not count towards the sleeping capacity.',
+        ],
+        'night_multiple' => [
+            'label' => 'Night blocks',
+            'help' => 'Forces a length that is a multiple of this number. 0 disables the rule, 7 forces whole weeks.',
+        ],
+        'max_nights' => [
+            'label' => 'Maximum length',
+            'help' => 'Maximum number of nights per stay.',
+        ],
+        'arrival_weekday' => [
+            'label' => 'Fixed arrival day',
+            'help' => 'Restricts arrivals to a single weekday. The Saturday-to-Saturday setting takes precedence.',
+        ],
+        'advance_days' => [
+            'label' => 'Notice period',
+            'help' => 'Minimum number of days between today and an arrival.',
+        ],
+        'horizon_days' => [
+            'label' => 'Booking horizon',
+            'help' => 'Number of days beyond which the calendar is not open yet.',
+        ],
     ],
     'pricing' => [
         'default_night_price' => [

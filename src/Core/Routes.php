@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SecondStay\Core;
 
 use SecondStay\Controller\Admin\AdminBackupController;
+use SecondStay\Controller\Admin\AdminBookingController;
 use SecondStay\Controller\Admin\AdminDashboardController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminLogController;
@@ -19,6 +20,7 @@ use SecondStay\Controller\Account\ProfileController;
 use SecondStay\Controller\AccountController;
 use SecondStay\Controller\ApiController;
 use SecondStay\Controller\AuthController;
+use SecondStay\Controller\BookingController;
 use SecondStay\Controller\DevMailboxController;
 use SecondStay\Controller\Admin\AdminContentController;
 use SecondStay\Controller\Admin\AdminMediaController;
@@ -110,6 +112,19 @@ final class Routes
         $router->post('/api/passkeys/login/options', [PasskeyController::class, 'authenticationOptions'], 'api.passkeys.login_options', false);
         $router->post('/api/passkeys/login', [PasskeyController::class, 'authenticate'], 'api.passkeys.login', false);
 
+        // --- Réservation ------------------------------------------------------
+        $router->get('/booking', [BookingController::class, 'summary'], 'booking.summary');
+        $router->post('/booking', [BookingController::class, 'summary'], 'booking.summary.submit');
+        $router->post('/booking/hold', [BookingController::class, 'hold'], 'booking.hold');
+        $router->get('/booking/finalise', [BookingController::class, 'finalise'], 'booking.finalise');
+        $router->post('/booking/finalise', [BookingController::class, 'submit'], 'booking.submit');
+        $router->post('/booking/waitlist', [BookingController::class, 'joinWaitlist'], 'booking.waitlist');
+        $router->get(
+            '/booking/{reference:[A-Za-z0-9-]{8,9}}',
+            [BookingController::class, 'show'],
+            'booking.show'
+        );
+
         // --- Devis en direct ------------------------------------------------
         $router->get('/api/quote', [QuoteController::class, 'quote'], 'api.quote', false);
 
@@ -128,6 +143,20 @@ final class Routes
         $router->post('/admin/users', [AdminUserController::class, 'create'], 'admin.users.create');
         $router->post('/admin/users/{id:\d+}/role', [AdminUserController::class, 'changeRole'], 'admin.users.role');
         $router->post('/admin/users/{id:\d+}/delete', [AdminUserController::class, 'delete'], 'admin.users.delete');
+
+        $router->get('/admin/bookings', [AdminBookingController::class, 'index'], 'admin.bookings');
+        $router->get('/admin/bookings/{id:\d+}', [AdminBookingController::class, 'show'], 'admin.bookings.show');
+        $router->post(
+            '/admin/bookings/{id:\d+}/status',
+            [AdminBookingController::class, 'transition'],
+            'admin.bookings.status'
+        );
+        $router->post('/admin/promos', [AdminBookingController::class, 'createPromo'], 'admin.promos.create');
+        $router->post(
+            '/admin/promos/{id:\d+}/delete',
+            [AdminBookingController::class, 'deletePromo'],
+            'admin.promos.delete'
+        );
 
         $router->get('/admin/pricing', [AdminPricingController::class, 'index'], 'admin.pricing');
         $router->post('/admin/pricing/rates', [AdminPricingController::class, 'saveRates'], 'admin.pricing.rates');

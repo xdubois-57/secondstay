@@ -1,0 +1,152 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 44rem;" data-testid="booking-summary">
+            <h1 class="h3 mb-4">{{ t('booking.journey.title') }}</h1>
+
+            {% if errors %}
+                <div class="alert alert-danger" role="alert" data-testid="booking-errors">
+                    <ul class="mb-0">
+                        {% for message in errors %}<li>{{ message }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post" action="{{ path('booking.summary.submit') }}" data-testid="summary-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+
+                <div class="card mb-4">
+                    <div class="card-header">{{ t('booking.journey.dates') }}</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="arrival">{{ t('booking.journey.dates') }}</label>
+                                <input class="form-control" type="date" id="arrival" name="arrival"
+                                       value="{{ input.arrival }}" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="departure">{{ t('booking.calendar.state_free') }}</label>
+                                <input class="form-control" type="date" id="departure" name="departure"
+                                       value="{{ input.departure }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">{{ t('booking.journey.guests') }}</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <label class="form-label" for="adults">{{ t('booking.journey.adults') }}</label>
+                                <input class="form-control" type="number" id="adults" name="adults" min="1"
+                                       max="{{ rules.max_guests }}" value="{{ input.adults }}" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label" for="children">{{ t('booking.journey.children') }}</label>
+                                <input class="form-control" type="number" id="children" name="children" min="0"
+                                       max="{{ rules.max_children }}" value="{{ input.children }}">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label" for="infants">{{ t('booking.journey.infants') }}</label>
+                                <input class="form-control" type="number" id="infants" name="infants" min="0"
+                                       max="{{ rules.max_infants }}" value="{{ input.infants }}">
+                            </div>
+                        </div>
+
+                        {% if cleaning_optional %}
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="cleaning" name="cleaning" value="1"
+                                       {{ input.cleaning|default(false) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="cleaning">{{ t('booking.journey.cleaning_option') }}</label>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label" for="promo_code">{{ t('booking.promo.label') }}</label>
+                                <input class="form-control" id="promo_code" name="promo_code"
+                                       value="{{ input.promo_code }}" maxlength="32">
+                            </div>
+                            <div class="col-12 col-md-4 d-grid align-self-end">
+                                <button class="btn btn-outline-secondary" type="submit"
+                                        data-testid="recalculate">{{ t('booking.promo.apply') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if quote %}
+                    <div class="card mb-4" data-testid="booking-quote">
+                        <div class="card-header">{{ t('booking.journey.summary') }}</div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-7 fw-normal">
+                                    {{ tc('booking.quote.nights', quote.night_count, {'count': quote.night_count}) }}
+                                </dt>
+                                <dd class="col-5 text-end" data-quote-accommodation
+                                    data-cents="{{ quote.accommodation_cents }}">{{ quote.accommodation_cents|money }}</dd>
+
+                                {% if quote.cleaning_cents > 0 %}
+                                    <dt class="col-7 fw-normal">{{ t('booking.quote.cleaning') }}</dt>
+                                    <dd class="col-5 text-end">{{ quote.cleaning_cents|money }}</dd>
+                                {% endif %}
+
+                                <dt class="col-7">{{ t('booking.quote.total') }}</dt>
+                                <dd class="col-5 text-end fw-bold" data-quote-total
+                                    data-cents="{{ quote.total_cents }}">{{ quote.total_cents|money }}</dd>
+
+                                {% if quote.deposit_cents > 0 %}
+                                    <dt class="col-7 fw-normal small text-body-secondary">{{ t('booking.journey.deposit') }}</dt>
+                                    <dd class="col-5 text-end small text-body-secondary">{{ quote.deposit_cents|money }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+
+            {% if available %}
+                <form method="post" action="{{ path('booking.hold') }}" data-testid="hold-form">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <input type="hidden" name="arrival" value="{{ input.arrival }}">
+                    <input type="hidden" name="departure" value="{{ input.departure }}">
+                    <input type="hidden" name="adults" value="{{ input.adults }}">
+                    <input type="hidden" name="children" value="{{ input.children }}">
+                    <input type="hidden" name="infants" value="{{ input.infants }}">
+                    <input type="hidden" name="promo_code" value="{{ input.promo_code }}">
+                    {% if cleaning_optional and input.cleaning|default(false) %}
+                        <input type="hidden" name="cleaning" value="1">
+                    {% endif %}
+                    <button class="btn btn-primary w-100" type="submit"
+                            data-testid="start-booking">{{ t('booking.journey.continue') }}</button>
+                </form>
+                <p class="small text-body-secondary mt-2">{{ t('booking.journey.hold_notice', {'minutes': hold_minutes}) }}</p>
+            {% elseif conflicts and waitlist_enabled %}
+                <div class="card border-warning-subtle" data-testid="waitlist">
+                    <div class="card-header">{{ t('booking.waitlist.title') }}</div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('booking.waitlist') }}" data-testid="waitlist-form">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <input type="hidden" name="arrival" value="{{ input.arrival }}">
+                            <input type="hidden" name="departure" value="{{ input.departure }}">
+                            {% if not is_authenticated %}
+                                <div class="mb-3">
+                                    <label class="form-label" for="email">{{ t('booking.waitlist.email') }}</label>
+                                    <input class="form-control" type="email" id="email" name="email" required>
+                                </div>
+                            {% endif %}
+                            <button class="btn btn-outline-primary" type="submit"
+                                    data-testid="join-waitlist">{{ t('booking.waitlist.action') }}</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+
+            <p class="mt-4 mb-0">
+                <a href="{{ path('page.show', {'slug': 'availability'}) }}">{{ t('booking.journey.back_to_calendar') }}</a>
+            </p>
+        </div>
+    </section>
+{% endblock %}

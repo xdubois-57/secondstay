@@ -604,3 +604,37 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
 - Le contrôle porte désormais sur les fichiers **suivis et non encore
   commités** : un secret est détecté avant d'entrer dans l'historique, pas
   après.
+
+## 29. Décisions de mise en œuvre (itération 6)
+
+### 29.1 Intégrité des réservations
+
+- La non-superposition des séjours est garantie par une contrainte de base de
+  données, pas par une vérification applicative : deux transactions
+  concurrentes ne peuvent pas obtenir les mêmes nuits, quel que soit l'ordre
+  d'exécution.
+- Les montants enregistrés sont ceux calculés par le serveur. Un formulaire
+  qui envoie son propre total, son acompte ou sa remise est ignoré.
+- Les transitions d'état sont déclarées dans le modèle : une transition non
+  prévue est refusée, même demandée par un administrateur.
+- Le compteur d'usage d'un code promotionnel est incrémenté sous condition :
+  deux réservations simultanées ne peuvent pas dépasser ensemble la limite.
+
+### 29.2 Confidentialité
+
+- Une référence de réservation n'est **pas un secret** : le détail d'un séjour
+  exige d'être authentifié et d'en être le titulaire, ou d'avoir un rôle
+  opérationnel.
+- La référence évite les caractères que l'on confond en la dictant, ce qui
+  évite de multiplier les tentatives de lecture.
+- Le calendrier public affiche une nuit réservée comme « occupée » sans jamais
+  dire par qui : ni nom, ni adresse, ni référence.
+- Le message laissé au propriétaire et les coordonnées ne sortent pas de
+  l'espace client et de l'administration.
+
+### 29.3 Verrou temporaire
+
+- Un verrou expire seul : une session abandonnée ne bloque pas les dates
+  indéfiniment.
+- Un verrou expiré ne peut pas être finalisé : le parcours redémarre plutôt
+  que de confirmer un séjour dont les nuits ont pu être reprises.

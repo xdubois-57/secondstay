@@ -40,4 +40,11 @@ return [
         'rejected' => 'Le serveur SMTP a rejeté le message.',
         'unexpected_response' => 'Réponse SMTP inattendue.',
     ],
+    'waitlist_available' => [
+        'subject' => 'Des dates se sont libérées',
+        'heading' => 'Des dates se sont libérées',
+        'intro' => 'Les dates du {arrival} au {departure} viennent de se libérer.',
+        'button' => 'Voir les disponibilités',
+        'first_come' => 'Les réservations sont traitées dans l’ordre d’arrivée : ces dates peuvent être reprises à tout moment.',
+    ],
 ];

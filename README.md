@@ -127,6 +127,28 @@ Les règles de séjour — durée minimale et maximale, tranches de nuits, jour
 d'arrivée imposé ou samedi-samedi, capacité, délai de prévenance, horizon de
 réservation — sont configurables et **vérifiées côté serveur**.
 
+## Réservation
+
+Le parcours suit les dates, les voyageurs, le prix, l'authentification, les
+informations, les règles puis la confirmation. Dès le récapitulatif, les nuits
+sont **réellement tenues** par un verrou temporaire : deux visiteurs ne
+peuvent pas remplir le même formulaire pour n'apprendre qu'à la fin qu'un seul
+obtient le séjour.
+
+La non-superposition est garantie par la base de données, pas par une
+vérification applicative : deux clients simultanés ne peuvent pas obtenir les
+mêmes nuits.
+
+```text
+/fr/booking            récapitulatif : dates, voyageurs, code promo, total
+/fr/booking/finalise   informations et acceptation des règles
+/fr/booking/<réf>      détail du séjour et historique
+/fr/admin/bookings     suivi, validation et codes promotionnels
+```
+
+Si les dates sont déjà prises, le visiteur peut demander à être prévenu
+lorsqu'elles se libèrent.
+
 ## Notifications
 
 SMTP + Web Push. Si le push est actif, **e-mail et push sont tous deux tentés**, avec journal séparé par canal.
@@ -281,6 +303,28 @@ additionne les tarifs réels, jamais une moyenne.
 Les règles de séjour — durée minimale et maximale, tranches de nuits, jour
 d'arrivée imposé ou samedi-samedi, capacité, délai de prévenance, horizon de
 réservation — sont configurables et **vérifiées côté serveur**.
+
+## Réservation
+
+Le parcours suit les dates, les voyageurs, le prix, l'authentification, les
+informations, les règles puis la confirmation. Dès le récapitulatif, les nuits
+sont **réellement tenues** par un verrou temporaire : deux visiteurs ne
+peuvent pas remplir le même formulaire pour n'apprendre qu'à la fin qu'un seul
+obtient le séjour.
+
+La non-superposition est garantie par la base de données, pas par une
+vérification applicative : deux clients simultanés ne peuvent pas obtenir les
+mêmes nuits.
+
+```text
+/fr/booking            récapitulatif : dates, voyageurs, code promo, total
+/fr/booking/finalise   informations et acceptation des règles
+/fr/booking/<réf>      détail du séjour et historique
+/fr/admin/bookings     suivi, validation et codes promotionnels
+```
+
+Si les dates sont déjà prises, le visiteur peut demander à être prévenu
+lorsqu'elles se libèrent.
 
 ## Notifications
 

@@ -132,6 +132,30 @@
                 </div>
             {% endif %}
 
+            {# --- Séjours -------------------------------------------------------- #}
+            <div class="card mb-4" data-testid="my-bookings">
+                <div class="card-header">{{ t('booking.journey.my_bookings') }}</div>
+                <ul class="list-group list-group-flush">
+                    {% for booking in bookings %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center"
+                            data-booking-reference="{{ booking.reference }}" data-status="{{ booking.status.value }}">
+                            <span>
+                                <a href="{{ path('booking.show', {'reference': booking.reference}) }}">
+                                    <code>{{ booking.reference }}</code>
+                                </a>
+                                <span class="small text-body-secondary d-block">
+                                    {{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}
+                                    — {{ booking.totalCents|money }}
+                                </span>
+                            </span>
+                            <span class="badge {{ booking.status.badgeClass }}">{{ t(booking.status.labelKey) }}</span>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item text-body-secondary" data-testid="no-booking">{{ t('booking.journey.no_booking') }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
             {# --- Notifications ----------------------------------------------- #}
             <div class="card mb-4" data-testid="notifications">
                 <div class="card-header">{{ t('notification.title') }}</div>

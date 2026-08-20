@@ -6,6 +6,7 @@ namespace SecondStay\Controller\Account;
 
 use SecondStay\Auth\AccountService;
 use SecondStay\Auth\ConsentRepository;
+use SecondStay\Booking\BookingRepository;
 use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\WebAuthn\WebAuthnService;
@@ -252,6 +253,7 @@ final class ProfileController extends AbstractController
             'passkeys' => $this->container->get(WebAuthnService::class)->listCredentials($user),
             'passkeys_enabled' => $this->passkeysUsable(),
             'consents' => $this->container->get(ConsentRepository::class)->forUser($user->id),
+            'bookings' => $this->container->get(BookingRepository::class)->forUser($user->id),
             'notification_preferences' => $this->container->get(NotificationPreferenceRepository::class)->forUser($user->id),
             'push_enabled' => $this->container->get(NotificationService::class)->isPushEnabled(),
             'push_devices' => count($this->container->get(PushSubscriptionRepository::class)->forUser($user->id)),
