@@ -11,6 +11,8 @@ return [
         'bookings' => 'Bookings',
         'pricing' => 'Rates',
         'payments' => 'Payments',
+        'inspections' => 'Inspections',
+        'incidents' => 'Incidents',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Operations',

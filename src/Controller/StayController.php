@@ -136,6 +136,9 @@ final class StayController extends AbstractController
         $token = is_string($extra['guest_token'] ?? null) ? $extra['guest_token'] : '';
 
         return $this->render('stay/show.html.twig', $extra + [
+            // L'état des lieux demande un compte : un invité n'y a pas accès,
+            // et le propriétaire peut préférer le remplir lui-même.
+            'inspection_enabled' => !$view->isGuest && $this->settings()->bool('inspection.guest_enabled'),
             'meta_title' => $this->trans('stay.title'),
             'stay' => $view,
             'booking' => $view->booking,

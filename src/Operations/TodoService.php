@@ -9,6 +9,7 @@ use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Database\Migrator;
 use SecondStay\Imap\InboundMailRepository;
+use SecondStay\Incident\IncidentRepository;
 use SecondStay\Payment\PaymentRepository;
 
 /**
@@ -30,6 +31,7 @@ final class TodoService
         private readonly InboundMailRepository $mails,
         private readonly ChecklistService $checklists,
         private readonly ?Migrator $migrator = null,
+        private readonly ?IncidentRepository $incidents = null,
     ) {
     }
 
@@ -67,6 +69,13 @@ final class TodoService
         $unprepared = $this->unpreparedStays($today);
         if ($unprepared !== []) {
             $items[] = $this->item('stays_to_prepare', 'warning', count($unprepared), 'admin.operations');
+        }
+
+        // Un incident ouvert réclame une décision : c'est exactement ce que
+        // ce tableau doit montrer (SPECIFICATIONS.md §50).
+        $openIncidents = $this->incidents?->countOpen() ?? 0;
+        if ($openIncidents > 0) {
+            $items[] = $this->item('incidents_open', 'danger', $openIncidents, 'admin.incidents');
         }
 
         if ($this->migrator !== null && $this->migrator->pending() !== []) {

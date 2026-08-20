@@ -156,6 +156,9 @@ return [
         'contract_accepted' => 'Contrat accepté',
         'mail_received' => 'Message reçu',
         'mail_linked' => 'Message rattaché',
+        'inspection_checkin' => 'État des lieux d’arrivée terminé',
+        'inspection_checkout' => 'État des lieux de départ terminé',
+        'incident_reported' => 'Incident signalé',
     ],
     'admin' => [
         'title' => 'Réservations',

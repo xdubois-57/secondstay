@@ -13,6 +13,8 @@ return [
     'yes' => 'Yes',
     'no' => 'No',
     'save' => 'Save',
+    'create' => 'Create',
+    'send' => 'Send',
     'delete' => 'Delete',
     'cancel' => 'Cancel',
     'back' => 'Back',

@@ -377,6 +377,10 @@ Configuration de zones/items et photos référence.
 
 Check-out : completion impossible si les photos obligatoires manquent.
 
+Le refus est prononcé par `InspectionService::complete()`, c'est-à-dire par le
+serveur. L'interface montre ce qui manque, elle ne l'impose pas : un bouton
+grisé cacherait la règle au lieu de l'appliquer.
+
 ## 20. Conformité France
 
 Données structurées séparées des settings opérationnels :
@@ -1501,3 +1505,98 @@ action — créer un lien invité et ne pas le voir apparaître. Attendre
 l'expiration complète d'une requête serait tout aussi mauvais pour le voyageur
 qui cherche le code de la boîte à clés avec une barre de réseau. Trois
 secondes tranchent les deux cas.
+
+## 40. Itération 11 — états des lieux et incidents
+
+### 40.1 Nouveaux modules
+
+```text
+src/Inspection/
+├── InspectionKind          arrivée ou départ, et ce que chacun exige
+├── InspectionStatus        en cours, terminé
+├── EntryState              à vérifier, conforme, anomalie
+├── Zone                    une zone du logement, dans une langue
+├── ZoneRepository          zones, libellés localisés, photos de référence
+├── InspectionEntry         constat d'une zone, avec ses photos
+├── Inspection              état des lieux d'un séjour
+├── InspectionRepository    persistance, ouverture idempotente
+└── InspectionService       ouverture, constats, photos, clôture, incidents
+
+src/Incident/
+├── IncidentSeverity        mineur, normal, urgent
+├── IncidentStatus          signalé, pris en charge, résolu
+├── IncidentEvent           une ligne d'historique
+├── Incident                le ticket
+├── IncidentRepository      persistance et historique en ajout seul
+└── IncidentService         cycle de vie, affectation, photos, alertes
+```
+
+### 40.2 Deux moments, deux exigences
+
+La spécification (§53) distingue nettement l'arrivée du départ, et le code
+suit cette distinction plutôt que de la diluer :
+
+| | Arrivée | Départ |
+|---|---|---|
+| Ce que fait le voyageur | il **signale** | il **prouve** |
+| Photos | facultatives partout | obligatoires sur les zones requises |
+| Clôture | dès que chaque zone est tranchée | seulement une fois les photos là |
+
+`InspectionKind::requiresPhotos()` porte cette différence à elle seule ;
+`Inspection::blocking()` en déduit ce qui reste à faire, et
+`InspectionService::complete()` refuse tant que la liste n'est pas vide.
+
+Un voyageur qui arrive à 23 h ne doit pas être bloqué par une photo : à
+l'arrivée, ne rien signaler vaut « conforme ». Au départ, la photo est la
+seule preuve dont disposeront les deux parties au moment de discuter de la
+caution : elle n'est donc pas négociable.
+
+### 40.3 Les zones décrivent **ce** logement
+
+Rien de ce qui décrit le logement n'est figé dans le code : les zones, leur
+ordre, leurs consignes, leur activation et l'obligation de photo vivent en
+base. `ZoneRepository::DEFAULTS` n'est qu'un point de départ — un parcours
+réel plutôt qu'une page vide — amorcé une seule fois à l'installation et
+jamais réappliqué par-dessus une configuration existante.
+
+Le **code** d'une zone est un identifiant technique stable, indépendant de la
+langue ; le **nom** est traduisible, une ligne par langue. Une zone sans nom
+propre retombe sur le libellé intégré, déjà disponible en FR/EN/NL/DE : une
+installation neuve est donc immédiatement utilisable dans les quatre langues.
+
+L'unicité `(booking_id, kind)` est portée par la base. Deux ouvertures
+simultanées — le voyageur sur son téléphone, le responsable sur le sien — ne
+peuvent pas produire deux états des lieux. Une zone ajoutée après l'ouverture
+apparaît au passage suivant, tant que l'état des lieux est ouvert ; un état
+des lieux clos, lui, ne bouge plus : c'est une preuve.
+
+### 40.4 De l'anomalie à l'incident
+
+Une anomalie constatée peut devenir un incident en un geste. Le lien est fait
+une fois, dans `InspectionService::raiseIncident()`, et il refuse d'ouvrir un
+incident sur une zone déclarée conforme : les deux informations se
+contrediraient.
+
+Un incident (§54) porte réservation, zone, urgence, description, photos,
+statut et historique. Les transitions sont nommées — signalé → pris en charge
+→ résolu, et une réouverture explicite — plutôt que libres : un champ de
+formulaire ne doit pas pouvoir renvoyer un incident résolu à l'état « jamais
+lu ». L'historique est en **ajout seul** ; il ne prouverait plus rien
+autrement.
+
+Seul un incident **urgent** prévient immédiatement les rôles opérationnels.
+Les autres attendent le tableau « À faire », qui les compte : une alerte qui
+sonne pour tout ne fait plus réagir à rien.
+
+### 40.5 Photos et cache
+
+Une photo d'état des lieux ou d'incident est un document ordinaire : même
+stockage hors document root, même type déduit du contenu, même contrôle
+d'accès au téléchargement. Seule la nature change — `inventory` pour un
+constat, visible par le voyageur ; `incident` pour un ticket, qui ne l'est
+pas.
+
+Les pages d'état des lieux et d'incident **écrivent**. Elles ont donc rejoint
+la liste des chemins jamais mis en cache : servir une version en cache y
+afficherait un constat périmé, ou ferait croire qu'une photo est partie alors
+qu'elle est restée sur le téléphone.

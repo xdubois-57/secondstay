@@ -10,6 +10,7 @@ use RuntimeException;
 use SecondStay\Audit\AuditTrail;
 use SecondStay\Content\ContentRepository;
 use SecondStay\Content\ContentSeeder;
+use SecondStay\Inspection\ZoneRepository;
 use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
@@ -168,6 +169,10 @@ final class Installer
             new Translator($this->paths->translations(), $locale, Locales::FALLBACK),
             $database,
         ))->seed();
+
+        // Les zones d'état des lieux proposées : le propriétaire part d'un
+        // parcours réel plutôt que d'une page vide (SPECIFICATIONS.md §53).
+        (new ZoneRepository($database))->seedDefaults();
 
         (new AuditTrail($database))->record(
             'install.completed',

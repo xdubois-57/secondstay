@@ -421,4 +421,14 @@ return [
             'help' => 'Aktiviert die ICS-Feeds für Verwaltung, Ansprechpartner und Gäste.',
         ],
     ],
+    'inspection' => [
+        'report_window_hours' => [
+            'label' => 'Meldefrist bei Anreise (Stunden)',
+            'help' => 'Wie lange der Gast nach der Anreise Zeit hat, eine Abweichung zu melden.',
+        ],
+        'guest_enabled' => [
+            'label' => 'Übergabeprotokoll durch den Gast',
+            'help' => 'Öffnet die Formulare für Anreise und Abreise in „Mein Aufenthalt“.',
+        ],
+    ],
 ];

@@ -16,6 +16,7 @@ return [
         'deposits_to_return' => 'Security deposits to return',
         'mail_unlinked' => 'Unattached messages',
         'stays_to_prepare' => 'Stays to prepare',
+        'incidents_open' => 'Open incidents',
         'migrations_pending' => 'Pending migrations',
     ],
     'phase' => [

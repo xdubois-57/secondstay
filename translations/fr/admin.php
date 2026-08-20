@@ -11,6 +11,8 @@ return [
         'bookings' => 'Réservations',
         'pricing' => 'Tarifs',
         'payments' => 'Paiements',
+        'inspections' => 'États des lieux',
+        'incidents' => 'Incidents',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Exploitation',

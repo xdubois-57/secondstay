@@ -28,7 +28,16 @@ final class BackupService
 {
     public const SQL_ENTRY = 'database.sql';
 
-    /** @var list<string> répertoires persistants inclus */
+    /**
+     * Répertoires persistants inclus.
+     *
+     * Les photos d'état des lieux et d'incident sont des documents ordinaires
+     * (SPECIFICATIONS.md §53) : elles vivent sous `documents/`, et sont donc
+     * déjà couvertes. `inspections/` reste listé pour les sauvegardes
+     * produites par une version antérieure, où le répertoire pouvait exister.
+     *
+     * @var list<string>
+     */
     public const DATA_DIRECTORIES = ['media', 'documents', 'inspections', 'mail-attachments'];
 
     public function __construct(

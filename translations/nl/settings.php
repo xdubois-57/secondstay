@@ -421,4 +421,14 @@ return [
             'help' => 'Schakelt de ICS-feeds in voor beheer, beheerders en reizigers.',
         ],
     ],
+    'inspection' => [
+        'report_window_hours' => [
+            'label' => 'Meldtermijn bij aankomst (uren)',
+            'help' => 'Hoelang de reiziger de tijd heeft om na aankomst een afwijking te melden.',
+        ],
+        'guest_enabled' => [
+            'label' => 'Plaatsbeschrijving door de reiziger',
+            'help' => 'Opent de formulieren voor aankomst en vertrek vanuit „Mijn verblijf”.',
+        ],
+    ],
 ];

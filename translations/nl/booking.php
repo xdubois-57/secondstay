@@ -156,6 +156,9 @@ return [
         'contract_accepted' => 'Overeenkomst aanvaard',
         'mail_received' => 'Bericht ontvangen',
         'mail_linked' => 'Bericht gekoppeld',
+        'inspection_checkin' => 'Plaatsbeschrijving bij aankomst afgerond',
+        'inspection_checkout' => 'Plaatsbeschrijving bij vertrek afgerond',
+        'incident_reported' => 'Incident gemeld',
     ],
     'admin' => [
         'title' => 'Reserveringen',

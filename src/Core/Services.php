@@ -36,6 +36,11 @@ use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Diagnostics\MailDnsChecker;
 use SecondStay\Diagnostics\MailboxDiagnostics;
 use SecondStay\Diagnostics\NotificationDiagnostics;
+use SecondStay\Incident\IncidentRepository;
+use SecondStay\Incident\IncidentService;
+use SecondStay\Inspection\InspectionRepository;
+use SecondStay\Inspection\InspectionService;
+use SecondStay\Inspection\ZoneRepository;
 use SecondStay\Http\CurlHttpFetcher;
 use SecondStay\Http\HttpFetcher;
 use SecondStay\Installer\InstallationState;
@@ -638,6 +643,7 @@ final class Services
             $c->get(InboundMailRepository::class),
             $c->get(ChecklistService::class),
             $c->get(Migrator::class),
+            $c->get(IncidentRepository::class),
         ));
 
         // --- Mon séjour et liens invité ------------------------------------
@@ -658,6 +664,39 @@ final class Services
             $c->get(CalendarService::class),
             $c->get(SettingsService::class),
             $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        // --- États des lieux et incidents -----------------------------------
+        $container->set(ZoneRepository::class, static fn (Container $c): ZoneRepository
+            => new ZoneRepository($c->get(Database::class)));
+
+        $container->set(InspectionRepository::class, static fn (Container $c): InspectionRepository
+            => new InspectionRepository($c->get(Database::class), $c->get(ZoneRepository::class)));
+
+        $container->set(IncidentRepository::class, static fn (Container $c): IncidentRepository
+            => new IncidentRepository($c->get(Database::class)));
+
+        $container->set(IncidentService::class, static fn (Container $c): IncidentService => new IncidentService(
+            $c->get(IncidentRepository::class),
+            $c->get(DocumentService::class),
+            $c->get(UserRepository::class),
+            $c->get(NotificationService::class),
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(BookingEventRepository::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(InspectionService::class, static fn (Container $c): InspectionService => new InspectionService(
+            $c->get(InspectionRepository::class),
+            $c->get(ZoneRepository::class),
+            $c->get(DocumentService::class),
+            $c->get(BookingRepository::class),
+            $c->get(IncidentService::class),
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(BookingEventRepository::class),
             $c->get(AuditTrail::class),
         ));
 

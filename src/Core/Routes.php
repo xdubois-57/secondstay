@@ -11,6 +11,8 @@ use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminDocumentController;
+use SecondStay\Controller\Admin\AdminIncidentController;
+use SecondStay\Controller\Admin\AdminInspectionController;
 use SecondStay\Controller\Admin\AdminMailboxController;
 use SecondStay\Controller\Admin\AdminOperationsController;
 use SecondStay\Controller\Admin\AdminStayController;
@@ -29,6 +31,7 @@ use SecondStay\Controller\BookingController;
 use SecondStay\Controller\DevMailboxController;
 use SecondStay\Controller\Admin\AdminContentController;
 use SecondStay\Controller\Admin\AdminMediaController;
+use SecondStay\Controller\InspectionController;
 use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
@@ -156,6 +159,30 @@ final class Routes
         // Lien invité : localisé, sans compte, adresse stable pour un QR collé
         // dans le logement (SPECIFICATIONS.md §47).
         $router->get('/guest/{token:[a-f0-9]{64}}', [StayController::class, 'guest'], 'stay.guest');
+
+        // --- États des lieux --------------------------------------------------
+        // Ces pages écrivent — un constat, une photo : elles ne sont donc
+        // jamais servies depuis le cache (SPECIFICATIONS.md §53).
+        $router->get(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}/inspection/{kind:checkin|checkout}',
+            [InspectionController::class, 'show'],
+            'inspection.show'
+        );
+        $router->post(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}/inspection/{kind:checkin|checkout}/zone',
+            [InspectionController::class, 'saveEntry'],
+            'inspection.entry'
+        );
+        $router->post(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}/inspection/{kind:checkin|checkout}/complete',
+            [InspectionController::class, 'complete'],
+            'inspection.complete'
+        );
+        $router->post(
+            '/stay/{reference:[A-Za-z0-9-]{8,9}}/inspection/{kind:checkin|checkout}/incident',
+            [InspectionController::class, 'raiseIncident'],
+            'inspection.incident'
+        );
 
         // --- Calendriers privés -------------------------------------------------
         // Hors langue et hors session : un agenda tiers ne présente qu'un
@@ -298,6 +325,45 @@ final class Routes
             '/admin/calendars/{id:\d+}/revoke',
             [AdminOperationsController::class, 'revokeCalendar'],
             'admin.calendars.revoke'
+        );
+
+        // --- États des lieux et incidents -----------------------------------
+        $router->get('/admin/inspections', [AdminInspectionController::class, 'index'], 'admin.inspections');
+        $router->post('/admin/inspections', [AdminInspectionController::class, 'saveZone'], 'admin.inspections.zone');
+        $router->post('/admin/inspections/seed', [AdminInspectionController::class, 'seed'], 'admin.inspections.seed');
+        $router->post(
+            '/admin/inspections/{id:\d+}/reference',
+            [AdminInspectionController::class, 'uploadReference'],
+            'admin.inspections.reference'
+        );
+        $router->get(
+            '/admin/bookings/{id:\d+}/inspections',
+            [AdminInspectionController::class, 'forBooking'],
+            'admin.bookings.inspections'
+        );
+
+        $router->get('/admin/incidents', [AdminIncidentController::class, 'index'], 'admin.incidents');
+        $router->post('/admin/incidents', [AdminIncidentController::class, 'create'], 'admin.incidents.create');
+        $router->get('/admin/incidents/{id:\d+}', [AdminIncidentController::class, 'show'], 'admin.incidents.show');
+        $router->post(
+            '/admin/incidents/{id:\d+}/status',
+            [AdminIncidentController::class, 'transition'],
+            'admin.incidents.status'
+        );
+        $router->post(
+            '/admin/incidents/{id:\d+}/assign',
+            [AdminIncidentController::class, 'assign'],
+            'admin.incidents.assign'
+        );
+        $router->post(
+            '/admin/incidents/{id:\d+}/comment',
+            [AdminIncidentController::class, 'comment'],
+            'admin.incidents.comment'
+        );
+        $router->post(
+            '/admin/incidents/{id:\d+}/photo',
+            [AdminIncidentController::class, 'uploadPhoto'],
+            'admin.incidents.photo'
         );
 
         // --- Documents ------------------------------------------------------

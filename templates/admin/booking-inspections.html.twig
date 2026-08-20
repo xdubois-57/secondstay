@@ -1,0 +1,51 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p><a href="{{ path('admin.bookings.show', {'id': booking.id}) }}">← {{ booking.reference }}</a></p>
+
+    {% for row in inspections %}
+        <div class="card mb-4" data-inspection-kind="{{ row.kind.value }}">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+                <span>{{ t(row.kind.labelKey) }}</span>
+                {% if row.inspection %}
+                    <span class="badge {{ row.inspection.status.badgeClass }}"
+                          data-testid="inspection-status-{{ row.kind.value }}">{{ t(row.inspection.status.labelKey) }}</span>
+                {% else %}
+                    <span class="badge text-bg-secondary"
+                          data-testid="inspection-status-{{ row.kind.value }}">{{ t('inspection.not_started') }}</span>
+                {% endif %}
+            </div>
+            {% if row.inspection %}
+                <ul class="list-group list-group-flush">
+                    {% for entry in row.inspection.entries %}
+                        <li class="list-group-item" data-zone="{{ entry.zone.code }}"
+                            data-state="{{ entry.state.value }}">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span>{{ entry.zone.label ?: t(entry.zone.labelKey) }}</span>
+                                <span class="badge {{ entry.state.badgeClass }}">{{ t(entry.state.labelKey) }}</span>
+                            </div>
+                            {% if entry.note %}<div class="small" style="white-space: pre-line;">{{ entry.note }}</div>{% endif %}
+                            {% if entry.photoIds is not empty %}
+                                <ul class="list-inline small mb-0 mt-1">
+                                    {% for documentId in entry.photoIds %}
+                                        <li class="list-inline-item">
+                                            <a href="{{ path('document.download', {'id': documentId}) }}"
+                                               data-photo="{{ documentId }}">{{ t('inspection.photo_n', {'index': loop.index}) }}</a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if row.inspection.completedDate %}
+                    <div class="card-footer small text-body-secondary">
+                        {{ t('inspection.done_on', {'date': row.inspection.completedDate|localdatetime}) }}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="card-body text-body-secondary">{{ t('inspection.not_started_help') }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endblock %}

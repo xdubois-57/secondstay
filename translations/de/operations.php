@@ -16,6 +16,7 @@ return [
         'deposits_to_return' => 'Zurückzuzahlende Kautionen',
         'mail_unlinked' => 'Nicht zugeordnete Nachrichten',
         'stays_to_prepare' => 'Vorzubereitende Aufenthalte',
+        'incidents_open' => 'Offene Vorfälle',
         'migrations_pending' => 'Ausstehende Migrationen',
     ],
     'phase' => [

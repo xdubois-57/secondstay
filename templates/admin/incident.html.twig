@@ -1,0 +1,143 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p><a href="{{ path('admin.incidents') }}">← {{ t('incident.title') }}</a></p>
+
+    <div class="card mb-4" data-testid="incident-detail" data-incident-id="{{ incident.id }}"
+         data-incident-status="{{ incident.status.value }}">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <span>{{ incident.title }}</span>
+            <span>
+                <span class="badge {{ incident.severity.badgeClass }}">{{ t(incident.severity.labelKey) }}</span>
+                <span class="badge {{ incident.status.badgeClass }}"
+                      data-testid="incident-status">{{ t(incident.status.labelKey) }}</span>
+            </span>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% if incident.description %}
+                <li class="list-group-item" style="white-space: pre-line;">{{ incident.description }}</li>
+            {% endif %}
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('incident.field.zone') }}</span>
+                <strong>{{ incident.zoneCode ? (incident.zoneName ?: t(incident.zoneLabelKey)) : '—' }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('incident.field.booking') }}</span>
+                <strong>
+                    {% if booking %}
+                        <a href="{{ path('admin.bookings.show', {'id': booking.id}) }}">{{ booking.reference }}</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('incident.field.created') }}</span>
+                <strong>{{ incident.createdDate|localdatetime }}</strong>
+            </li>
+            {% if incident.resolvedDate %}
+                <li class="list-group-item d-flex justify-content-between gap-2">
+                    <span>{{ t('incident.field.resolved') }}</span>
+                    <strong>{{ incident.resolvedDate|localdatetime }}</strong>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">{{ t('incident.admin.actions') }}</div>
+                <div class="card-body">
+                    {% if transitions is empty %}
+                        <p class="text-body-secondary mb-0">{{ t('incident.admin.no_transition') }}</p>
+                    {% else %}
+                        {% for target in transitions %}
+                            <form method="post" class="mb-3"
+                                  action="{{ path('admin.incidents.status', {'id': incident.id}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <input type="hidden" name="status" value="{{ target.value }}">
+                                <div class="input-group">
+                                    <input class="form-control" name="note" maxlength="255"
+                                           placeholder="{{ t('incident.field.note') }}">
+                                    <button class="btn btn-outline-primary" type="submit"
+                                            data-testid="incident-to-{{ target.value }}">{{ t('incident.action.' ~ target.value) }}</button>
+                                </div>
+                            </form>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" action="{{ path('admin.incidents.assign', {'id': incident.id}) }}"
+                          class="mb-3">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <label class="form-label" for="incident_assignee">{{ t('incident.field.assignee') }}</label>
+                        <div class="input-group">
+                            <select class="form-select" id="incident_assignee" name="assignee">
+                                <option value="0">{{ t('incident.field.unassigned') }}</option>
+                                {% for candidate in assignees %}
+                                    <option value="{{ candidate.id }}"
+                                            {{ incident.assignedTo == candidate.id ? 'selected' : '' }}>{{ candidate.displayName }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-primary" type="submit"
+                                    data-testid="incident-assign">{{ t('common.save') }}</button>
+                        </div>
+                    </form>
+
+                    <form method="post" action="{{ path('admin.incidents.comment', {'id': incident.id}) }}"
+                          class="mb-3">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <label class="form-label" for="incident_note">{{ t('incident.field.note') }}</label>
+                        <div class="input-group">
+                            <input class="form-control" id="incident_note" name="note" maxlength="255">
+                            <button class="btn btn-outline-secondary" type="submit"
+                                    data-testid="incident-comment">{{ t('common.send') }}</button>
+                        </div>
+                    </form>
+
+                    <form method="post" enctype="multipart/form-data"
+                          action="{{ path('admin.incidents.photo', {'id': incident.id}) }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <label class="form-label" for="incident_photo">{{ t('incident.field.photo') }}</label>
+                        <div class="input-group">
+                            <input class="form-control" type="file" accept="image/*" name="photo" id="incident_photo">
+                            <button class="btn btn-outline-secondary" type="submit"
+                                    data-testid="incident-photo">{{ t('common.send') }}</button>
+                        </div>
+                    </form>
+
+                    {% if incident.photoIds is not empty %}
+                        <ul class="list-inline mt-3 mb-0" data-testid="incident-photos">
+                            {% for documentId in incident.photoIds %}
+                                <li class="list-inline-item">
+                                    <a href="{{ path('document.download', {'id': documentId}) }}"
+                                       data-photo="{{ documentId }}">{{ t('inspection.photo_n', {'index': loop.index}) }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card">
+                <div class="card-header">{{ t('incident.admin.history') }}</div>
+                <ul class="list-group list-group-flush" data-testid="incident-history">
+                    {% for event in incident.events %}
+                        <li class="list-group-item" data-incident-event="{{ event.type }}">
+                            <div class="d-flex justify-content-between gap-2">
+                                <strong>{{ t(event.labelKey) }}</strong>
+                                <span class="small text-body-secondary">{{ event.createdDate|localdatetime('short') }}</span>
+                            </div>
+                            {% if event.note %}<div class="small">{{ event.note }}</div>{% endif %}
+                            {% if event.actorLabel %}
+                                <div class="small text-body-secondary">{{ event.actorLabel }}</div>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

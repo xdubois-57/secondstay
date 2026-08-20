@@ -16,6 +16,7 @@ return [
         'deposits_to_return' => 'Cautions à restituer',
         'mail_unlinked' => 'Messages non rattachés',
         'stays_to_prepare' => 'Séjours à préparer',
+        'incidents_open' => 'Incidents ouverts',
         'migrations_pending' => 'Migrations en attente',
     ],
     'phase' => [

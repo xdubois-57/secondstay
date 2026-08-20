@@ -156,6 +156,9 @@ return [
         'contract_accepted' => 'Agreement accepted',
         'mail_received' => 'Message received',
         'mail_linked' => 'Message attached',
+        'inspection_checkin' => 'Arrival inspection completed',
+        'inspection_checkout' => 'Departure inspection completed',
+        'incident_reported' => 'Incident reported',
     ],
     'admin' => [
         'title' => 'Bookings',

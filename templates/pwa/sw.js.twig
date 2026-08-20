@@ -41,7 +41,12 @@ const NEVER_CACHED = [
     /\/booking(\/|$)/,
     /\/payment\//,
     /\/document\//,
-    /\/calendar\//
+    /\/calendar\//,
+    // Un état des lieux et un incident s'écrivent : servir une version en
+    // cache y afficherait un constat périmé, ou ferait croire qu'une photo est
+    // partie alors qu'elle est restée sur le téléphone.
+    /\/inspection(\/|$)/,
+    /\/incident(\/|$)/
 ];
 
 /** Pages dont la version hors ligne a un sens. */

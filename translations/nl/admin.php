@@ -11,6 +11,8 @@ return [
         'bookings' => 'Reserveringen',
         'pricing' => 'Tarieven',
         'payments' => 'Betalingen',
+        'inspections' => 'Plaatsbeschrijvingen',
+        'incidents' => 'Incidenten',
         'documents' => 'Documenten',
         'mailbox' => 'Berichten',
         'operations' => 'Exploitatie',

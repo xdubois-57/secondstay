@@ -747,3 +747,46 @@ page est rechargée.
 - qu'un invité voie la référence, les finances ou la réservation ;
 - que la fiche de réservation, les paiements ou les documents entrent dans un
   cache d'appareil.
+
+## 28. Itération 11 — états des lieux et incidents
+
+### 28.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 14 — état des lieux mobile | `tests/e2e/inspection.spec.js`, `tests/php/Database/InspectionServiceTest.php`, `tests/php/Unit/InspectionTest.php` |
+
+Le scénario demandé — « workflow mobile arrivée/départ » — est joué en entier
+sur les deux moteurs : le propriétaire configure les zones et celles qui
+exigent une photo, dépose une photo de référence, puis un voyageur réserve,
+remplit son état des lieux d'arrivée depuis la page « Mon séjour », transforme
+une anomalie en incident urgent, et enfin clôt son départ.
+
+### 28.2 Le refus vient du serveur
+
+Le test ne se contente pas de constater qu'un bouton est grisé : il **clique**
+sur « Terminer » alors que deux photos manquent, et vérifie que la réponse est
+un refus. C'est la seule façon de tester la règle plutôt que son affichage.
+Le gabarit garde donc le bouton actif, et c'est
+`InspectionService::complete()` qui tranche.
+
+### 28.3 Ce que les tests interdisent
+
+- qu'un état des lieux de départ se clôture alors qu'une zone requise n'a pas
+  sa photo ;
+- qu'une zone déclarée conforme bloque une clôture parce qu'une autre zone
+  exige une photo ;
+- qu'un PDF passe pour une photo, que ce soit sur un constat ou sur une photo
+  de référence ;
+- qu'un état des lieux clos soit encore modifiable, ou clos deux fois ;
+- qu'une deuxième ouverture crée un second état des lieux pour le même moment
+  du séjour ;
+- qu'un incident s'ouvre sur une zone déclarée conforme ;
+- qu'un incident change d'état par une transition non prévue, ou qu'une
+  réouverture laisse une date de résolution derrière elle ;
+- qu'un incident soit confié à un client ;
+- qu'un incident non urgent réveille qui que ce soit, ou qu'une alerte
+  d'exploitation parte au voyageur ;
+- qu'une photo d'état des lieux soit servie à un anonyme ;
+- qu'une photo d'incident devienne visible du voyageur ;
+- qu'un état des lieux s'ouvre sans compte, ou pour un type inventé.
