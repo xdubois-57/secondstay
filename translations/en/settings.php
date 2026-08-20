@@ -216,6 +216,9 @@ return [
         'time' => 'Invalid time (expected format: HH:MM).',
         'duration' => 'Invalid duration (in minutes).',
         'json' => 'Invalid JSON.',
+        'iban' => 'Invalid IBAN: check the check digits.',
+        'bic' => 'Invalid BIC (8 or 11 characters).',
+        'currency' => 'Invalid currency: a three-letter ISO 4217 code is expected.',
         'too_long' => 'Value is too long.',
         'too_small' => 'Value is too small.',
         'too_large' => 'Value is too large.',
@@ -294,6 +297,54 @@ return [
         'require_email_confirmation' => [
             'label' => 'Require email confirmation',
             'help' => 'The account stays inactive until the address is confirmed.',
+        ],
+    ],
+    'payment' => [
+        'provider' => [
+            'label' => 'Payment provider',
+            'help' => 'Mollie collects online and confirms the booking automatically. Without a provider, only bank transfer remains available.',
+        ],
+        'mollie_api_key' => [
+            'label' => 'Mollie API key',
+            'help' => 'Encrypted at rest and never shown again. A “test_” key never collects real money.',
+        ],
+        'balance_days_before' => [
+            'label' => 'Balance due (days before arrival)',
+            'help' => 'The balance falls due this many days before arrival, or immediately for a later booking.',
+        ],
+        'transfer_enabled' => [
+            'label' => 'Allow bank transfer',
+            'help' => 'Shows the IBAN and the EPC QR code. A transfer never confirms a booking on its own.',
+        ],
+        'beneficiary_name' => [
+            'label' => 'Transfer beneficiary',
+            'help' => 'Account holder name, as it will appear in the traveller’s banking app.',
+        ],
+        'iban' => [
+            'label' => 'IBAN',
+            'help' => 'IBAN of the account to credit. The check digits are verified before saving.',
+        ],
+        'bic' => [
+            'label' => 'BIC',
+            'help' => 'Optional. Some banks still ask for it on transfers outside the SEPA area.',
+        ],
+        'currency' => [
+            'label' => 'Currency',
+            'help' => 'Three-letter ISO 4217 code, EUR by default.',
+        ],
+    ],
+    'tax' => [
+        'tourist_enabled' => [
+            'label' => 'Collect tourist tax',
+            'help' => 'Adds the tourist tax to every booking schedule.',
+        ],
+        'tourist_per_adult_night' => [
+            'label' => 'Tax per adult per night',
+            'help' => 'Amount collected for each adult and each night. Minors are exempt.',
+        ],
+        'tourist_cap_per_stay' => [
+            'label' => 'Cap per stay',
+            'help' => 'Maximum amount collected for one stay. Zero means no cap.',
         ],
     ],
 ];

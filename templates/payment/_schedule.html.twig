@@ -1,0 +1,82 @@
+{# Échéancier d'un séjour, partagé entre l'espace client et l'administration. #}
+<div class="card mb-4" data-testid="payment-schedule">
+    <div class="card-header">{{ t('payment.schedule.title') }}</div>
+    {% if payments is empty %}
+        <div class="card-body text-body-secondary">{{ t('payment.schedule.empty') }}</div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ t('payment.schedule.component') }}</th>
+                        <th scope="col">{{ t('payment.schedule.due_on') }}</th>
+                        <th scope="col" class="text-end">{{ t('payment.schedule.amount') }}</th>
+                        <th scope="col">{{ t('payment.schedule.state') }}</th>
+                        {% if show_actions|default(false) %}<th scope="col"></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr data-payment="{{ payment.id }}"
+                            data-kind="{{ payment.kind.value }}"
+                            data-status="{{ payment.status.value }}">
+                            <td>{{ t(payment.kind.labelKey) }}</td>
+                            <td>
+                                {% if payment.dueOn %}{{ payment.dueDate|daymonth }}{% else %}—{% endif %}
+                                {% if payment.isOverdue %}
+                                    <span class="badge text-bg-danger ms-1">{{ t('payment.schedule.overdue') }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end" data-cents="{{ payment.amountCents }}">
+                                {{ payment.amountCents|money }}
+                                {% if payment.refundedCents > 0 %}
+                                    <span class="d-block small text-body-secondary">
+                                        −{{ payment.refundedCents|money }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {{ payment.status.badgeClass }}"
+                                      data-testid="payment-status">{{ t(payment.status.labelKey) }}</span>
+                                {% if payment.kind.value == 'security_deposit' and payment.holdStatus.value != 'none' %}
+                                    <span class="d-block small text-body-secondary"
+                                          data-hold="{{ payment.holdStatus.value }}">{{ t(payment.holdStatus.labelKey) }}</span>
+                                {% endif %}
+                            </td>
+                            {% if show_actions|default(false) %}
+                                <td class="text-end">
+                                    {% if not payment.status.isSettled %}
+                                        {% if provider_ready|default(false) %}
+                                            <form method="post" action="{{ path('payment.start', {'id': payment.id}) }}" class="d-inline">
+                                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                                <button type="submit" class="btn btn-sm btn-primary"
+                                                        data-testid="pay-online-{{ payment.kind.value }}">{{ t('payment.action.pay_online') }}</button>
+                                            </form>
+                                        {% endif %}
+                                        {% if transfer_available|default(false) %}
+                                            <a class="btn btn-sm btn-outline-secondary"
+                                               href="{{ path('payment.transfer', {'id': payment.id}) }}"
+                                               data-testid="pay-transfer-{{ payment.kind.value }}">{{ t('payment.action.pay_transfer') }}</a>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="2">{{ t('payment.schedule.total_paid') }}</th>
+                        <td class="text-end" data-testid="payment-total-paid">{{ paid_cents|default(0)|money }}</td>
+                        <td{% if show_actions|default(false) %} colspan="2"{% endif %}></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" colspan="2">{{ t('payment.schedule.total_due') }}</th>
+                        <td class="text-end" data-testid="payment-total-due">{{ due_cents|default(0)|money }}</td>
+                        <td{% if show_actions|default(false) %} colspan="2"{% endif %}></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    {% endif %}
+</div>

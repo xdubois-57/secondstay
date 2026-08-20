@@ -216,6 +216,9 @@ return [
         'time' => 'Ongeldige tijd (verwacht formaat: UU:MM).',
         'duration' => 'Ongeldige duur (in minuten).',
         'json' => 'Ongeldige JSON.',
+        'iban' => 'Ongeldig IBAN: controleer het controlegetal.',
+        'bic' => 'Ongeldige BIC (8 of 11 tekens).',
+        'currency' => 'Ongeldige valuta: een ISO 4217-code van drie letters wordt verwacht.',
         'too_long' => 'Waarde is te lang.',
         'too_small' => 'Waarde is te klein.',
         'too_large' => 'Waarde is te groot.',
@@ -294,6 +297,54 @@ return [
         'require_email_confirmation' => [
             'label' => 'E-mailbevestiging verplicht',
             'help' => 'Het account blijft inactief tot het adres is bevestigd.',
+        ],
+    ],
+    'payment' => [
+        'provider' => [
+            'label' => 'Betaalprovider',
+            'help' => 'Mollie int online en bevestigt de reservering automatisch. Zonder provider blijft alleen de overschrijving over.',
+        ],
+        'mollie_api_key' => [
+            'label' => 'Mollie API-sleutel',
+            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Een „test_”-sleutel int niets echt.',
+        ],
+        'balance_days_before' => [
+            'label' => 'Saldo verschuldigd (dagen voor aankomst)',
+            'help' => 'Het saldo vervalt zoveel dagen voor aankomst, of onmiddellijk bij een latere reservering.',
+        ],
+        'transfer_enabled' => [
+            'label' => 'Bankoverschrijving toestaan',
+            'help' => 'Toont het IBAN en de EPC-QR-code. Een overschrijving bevestigt een reservering nooit vanzelf.',
+        ],
+        'beneficiary_name' => [
+            'label' => 'Begunstigde van de overschrijving',
+            'help' => 'Naam van de rekeninghouder, zoals die in de bankapp van de reiziger verschijnt.',
+        ],
+        'iban' => [
+            'label' => 'IBAN',
+            'help' => 'IBAN van de te crediteren rekening. Het controlegetal wordt vóór het opslaan gecontroleerd.',
+        ],
+        'bic' => [
+            'label' => 'BIC',
+            'help' => 'Optioneel. Sommige banken vragen er nog om voor overschrijvingen buiten de SEPA-zone.',
+        ],
+        'currency' => [
+            'label' => 'Valuta',
+            'help' => 'ISO 4217-code van drie letters, standaard EUR.',
+        ],
+    ],
+    'tax' => [
+        'tourist_enabled' => [
+            'label' => 'Toeristenbelasting innen',
+            'help' => 'Voegt de toeristenbelasting toe aan het betaalschema van elke reservering.',
+        ],
+        'tourist_per_adult_night' => [
+            'label' => 'Belasting per volwassene per nacht',
+            'help' => 'Bedrag per volwassene en per nacht. Minderjarigen zijn vrijgesteld.',
+        ],
+        'tourist_cap_per_stay' => [
+            'label' => 'Maximum per verblijf',
+            'help' => 'Maximaal bedrag voor één verblijf. Nul betekent geen maximum.',
         ],
     ],
 ];

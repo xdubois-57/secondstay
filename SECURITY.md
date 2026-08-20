@@ -638,3 +638,48 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   indéfiniment.
 - Un verrou expiré ne peut pas être finalisé : le parcours redémarre plutôt
   que de confirmer un séjour dont les nuits ont pu être reprises.
+
+## 30. Paiements
+
+### 30.1 Ce qui fait autorité
+
+- Une notification de paiement n'apporte qu'un **identifiant**. L'état est
+  ensuite relu chez le fournisseur : le corps reçu n'est jamais cru, quel que
+  soit ce qu'il annonce.
+- Un montant différent de celui attendu est journalisé et refusé, jamais
+  accepté silencieusement.
+- Une notification tardive ne défait pas un encaissement déjà constaté : un
+  paiement encaissé ne change d'état que par un remboursement explicite.
+- L'idempotence repose sur une contrainte d'unicité en base
+  (`webhook_event(provider, external_id)`), pas sur une vérification
+  applicative qui se laisserait doubler par deux notifications simultanées.
+
+### 30.2 Fournisseur factice
+
+- `FakePaymentProvider` n'est activable que par
+  `SECONDSTAY_PAYMENT_PROVIDER=fake`, jamais depuis l'interface
+  d'administration.
+- Sans clé utilisable, c'est `NullPaymentProvider` qui est en place : le
+  paiement en ligne n'est pas proposé du tout. Un fournisseur factice à cette
+  place permettrait de confirmer un séjour sans avoir rien payé.
+- Une clé Mollie est reconnue par son préfixe de mode : une clé de test n'est
+  jamais confondue avec une clé de production.
+
+### 30.3 CSRF et point d'entrée webhook
+
+- `/webhook/payment` est exempté de CSRF : il est authentifié par la relecture
+  de l'état chez le fournisseur, pas par une session de navigateur. C'est la
+  seule exemption, et elle est portée par le préfixe `/webhook/`.
+- Toutes les actions de paiement du navigateur — ouvrir un paiement,
+  enregistrer un encaissement, rembourser, faire avancer une caution — passent
+  par POST avec jeton CSRF et contrôle de rôle serveur.
+
+### 30.4 Confidentialité
+
+- Un identifiant de paiement n'est pas un secret : l'appartenance du séjour est
+  vérifiée à chaque accès, y compris pour l'image du QR code.
+- Le QR code EPC et les coordonnées de virement sont servis derrière
+  l'authentification et avec `Cache-Control: private, no-store`.
+- L'IBAN et le BIC de l'installation sont des réglages de l'installation, pas
+  des valeurs du dépôt. La clé d'API du fournisseur est un secret chiffré au
+  repos et jamais réaffiché.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SecondStay\Settings;
 
+use SecondStay\Payment\EpcQrBuilder;
 use SecondStay\Support\Money;
 
 /**
@@ -27,6 +28,11 @@ final class SettingValidator
             return ['ok' => true, 'value' => $definition->type === SettingType::Bool ? false : null];
         }
 
+        $specific = $this->validateKnownKey($definition->key, $raw);
+        if ($specific !== null) {
+            return $specific;
+        }
+
         return match ($definition->type) {
             SettingType::Bool => ['ok' => true, 'value' => $this->toBool($raw)],
             SettingType::Integer => $this->validateInteger($definition, $raw),
@@ -41,6 +47,44 @@ final class SettingValidator
             SettingType::Json => $this->validateJson($raw),
             default => $this->validateString($definition, $raw),
         };
+    }
+
+    /**
+     * Réglages dont la forme compte davantage que le type.
+     *
+     * Un IBAN mal recopié ne se voit qu'au moment où le virement échoue,
+     * c'est-à-dire bien trop tard : sa clé de contrôle est donc vérifiée ici.
+     *
+     * @return array{ok: true, value: mixed}|array{ok: false, error: string}|null
+     */
+    private function validateKnownKey(string $key, mixed $raw): ?array
+    {
+        $string = is_scalar($raw) ? trim((string) $raw) : '';
+
+        return match ($key) {
+            'payment.iban' => EpcQrBuilder::isValidIban($string)
+                ? ['ok' => true, 'value' => EpcQrBuilder::normaliseIban($string)]
+                : ['ok' => false, 'error' => 'settings.error.iban'],
+            'payment.bic' => $this->validateBic($string),
+            'payment.currency' => preg_match('/^[A-Za-z]{3}$/', $string) === 1
+                ? ['ok' => true, 'value' => strtoupper($string)]
+                : ['ok' => false, 'error' => 'settings.error.currency'],
+            default => null,
+        };
+    }
+
+    /**
+     * @return array{ok: true, value: mixed}|array{ok: false, error: string}
+     */
+    private function validateBic(string $raw): array
+    {
+        $bic = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $raw));
+
+        if (preg_match('/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/', $bic) !== 1) {
+            return ['ok' => false, 'error' => 'settings.error.bic'];
+        }
+
+        return ['ok' => true, 'value' => $bic];
     }
 
     private function toBool(mixed $raw): bool

@@ -149,6 +149,27 @@ final class SettingRegistry
             new SettingDefinition('pricing.deposit_percent', SettingType::Integer, 30, 'pricing', min: 0, max: 100),
             new SettingDefinition('pricing.security_deposit', SettingType::Money, 50000, 'pricing', min: 0),
 
+            // --- Paiements --------------------------------------------------
+            new SettingDefinition(
+                'payment.provider',
+                SettingType::Enum,
+                'none',
+                'payment',
+                enumValues: ['none', 'mollie']
+            ),
+            new SettingDefinition('payment.mollie_api_key', SettingType::Secret, null, 'payment'),
+            new SettingDefinition('payment.balance_days_before', SettingType::Integer, 30, 'payment', min: 0, max: 365),
+            new SettingDefinition('payment.transfer_enabled', SettingType::Bool, true, 'payment'),
+            new SettingDefinition('payment.beneficiary_name', SettingType::String, '', 'payment', max: 70),
+            new SettingDefinition('payment.iban', SettingType::String, '', 'payment', max: 34),
+            new SettingDefinition('payment.bic', SettingType::String, '', 'payment', max: 11),
+            new SettingDefinition('payment.currency', SettingType::String, 'EUR', 'payment', max: 3),
+
+            // --- Taxe de séjour ---------------------------------------------
+            new SettingDefinition('tax.tourist_enabled', SettingType::Bool, false, 'tax'),
+            new SettingDefinition('tax.tourist_per_adult_night', SettingType::Money, 0, 'tax', min: 0),
+            new SettingDefinition('tax.tourist_cap_per_stay', SettingType::Money, 0, 'tax', min: 0),
+
             // --- E-mail -----------------------------------------------------
             new SettingDefinition('mail.from_address', SettingType::Email, '', 'mail'),
             new SettingDefinition('mail.from_name', SettingType::String, '', 'mail', max: 120),

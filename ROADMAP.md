@@ -32,7 +32,7 @@ Une itération est terminée seulement si :
 | 4 | Notifications et PWA | ✅ livrée |
 | 5 | Disponibilités et prix | ✅ livrée |
 | 6 | Réservation sans paiement | ✅ livrée |
-| 7 | Paiements | ⏳ à venir |
+| 7 | Paiements | ✅ livrée |
 | 8 | Contrats, documents, IMAP | ⏳ à venir |
 | 9 | Responsable local et opérations | ⏳ à venir |
 | 10 | Mon séjour et invités | ⏳ à venir |
@@ -271,6 +271,26 @@ Livrer :
 - UI et notifications localisées.
 
 E2E : acompte → webhook confirmé → réservation confirmée.
+
+### Livré (0.8.0)
+
+- échéancier par composant : acompte, solde, caution, ménage, taxe de séjour
+  et ajustements, chacun avec son montant, son échéance et son historique ;
+- abstraction `PaymentProvider` et premier fournisseur réel (Mollie), doublé
+  d'un fournisseur factice activable par variable d'environnement seulement,
+  et d'un fournisseur nul lorsqu'aucune clé n'est utilisable ;
+- webhooks idempotents par contrainte d'unicité, robustes aux rejeux et au
+  désordre, ne croyant jamais le corps reçu ;
+- acompte confirmé par le fournisseur qui confirme le séjour ; virement et
+  encaissement manuel qui ne le confirment que sur décision explicite ;
+- cycle complet de la caution et remboursements totaux ou partiels ;
+- QR code EPC produit sans dépendance ni service externe, avec encodeur QR et
+  correction Reed-Solomon maison, IBAN vérifié par sa clé de contrôle ;
+- taxe de séjour par adulte et par nuit, plafonnée, mineurs exonérés ;
+- suivi financier en administration et échéancier dans l'espace client ;
+- E2E `payment.spec.js` (acompte → webhook → confirmation, rejeu, virement,
+  caution), tests PHP `PaymentServiceTest`, `PaymentProviderTest`,
+  `TouristTaxTest`, `QrCodeTest` et `EpcQrBuilderTest`.
 
 ## Itération 8 — Contrats, documents, IMAP
 

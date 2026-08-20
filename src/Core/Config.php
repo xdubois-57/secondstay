@@ -69,6 +69,7 @@ final class Config
             'SECONDSTAY_DEFAULT_LOCALE' => 'i18n.default_locale',
             'SECONDSTAY_MAIL_TRANSPORT' => 'mail.transport',
             'SECONDSTAY_PUSH_PROVIDER' => 'push.provider',
+            'SECONDSTAY_PAYMENT_PROVIDER' => 'payment.provider',
         ];
 
         foreach ($map as $env => $key) {

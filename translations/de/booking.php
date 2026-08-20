@@ -145,6 +145,13 @@ return [
         'hold_expired' => 'Auswahl abgelaufen',
         'promo_exhausted' => 'Aktionscode aufgebraucht',
         'status_request' => 'Anfrage erstellt',
+        'payment_deposit' => 'Anzahlung eingezogen',
+        'payment_balance' => 'Restbetrag eingezogen',
+        'payment_security_deposit' => 'Kaution erhalten',
+        'payment_cleaning' => 'Endreinigung bezahlt',
+        'payment_tourist_tax' => 'Kurtaxe bezahlt',
+        'payment_adjustment' => 'Anpassung eingezogen',
+        'payment_refund' => 'Erstattung ausgeführt',
     ],
     'admin' => [
         'title' => 'Buchungen',

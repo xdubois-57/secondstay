@@ -53,6 +53,13 @@ return [
         // d'environnement SECONDSTAY_PUSH_PROVIDER, pour les tests.
         'provider' => 'webpush',
     ],
+    'payment' => [
+        // Le fournisseur réel est choisi dans la configuration de
+        // l'installation. 'fake' n'est activable que par la variable
+        // d'environnement SECONDSTAY_PAYMENT_PROVIDER, pour les tests : sans
+        // cela, un visiteur pourrait confirmer un séjour sans jamais payer.
+        'provider' => '',
+    ],
     'logging' => [
         'level' => 'info',
         'retention_days' => 90,

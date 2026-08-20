@@ -1,0 +1,32 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 36rem;" data-testid="payment-return"
+             data-status="{{ payment.status.value }}">
+            <h1 class="h3 mb-3">{{ t('payment.return.title') }}</h1>
+
+            {% if payment.status.isSettled %}
+                <div class="alert alert-success" data-testid="payment-return-paid">{{ t('payment.return.paid') }}</div>
+            {% elseif payment.status.value in ['failed', 'cancelled'] %}
+                <div class="alert alert-danger" data-testid="payment-return-failed">{{ t('payment.return.failed') }}</div>
+            {% else %}
+                <div class="alert alert-info" data-testid="payment-return-pending">{{ t('payment.return.pending') }}</div>
+            {% endif %}
+
+            <ul class="list-group mb-4">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>{{ t('booking.journey.reference') }}</span>
+                    <code>{{ booking.reference }}</code>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>{{ t(payment.kind.labelKey) }}</span>
+                    <strong>{{ payment.amountCents|money }}</strong>
+                </li>
+            </ul>
+
+            <a class="btn btn-primary"
+               href="{{ path('booking.show', {'reference': booking.reference}) }}">{{ t('payment.action.back_to_booking') }}</a>
+        </div>
+    </section>
+{% endblock %}

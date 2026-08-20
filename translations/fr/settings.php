@@ -216,6 +216,9 @@ return [
         'time' => 'Heure invalide (format attendu : HH:MM).',
         'duration' => 'Durée invalide (en minutes).',
         'json' => 'JSON invalide.',
+        'iban' => 'IBAN invalide : vérifiez la clé de contrôle.',
+        'bic' => 'BIC invalide (8 ou 11 caractères).',
+        'currency' => 'Devise invalide : code ISO 4217 à trois lettres attendu.',
         'too_long' => 'Valeur trop longue.',
         'too_small' => 'Valeur trop petite.',
         'too_large' => 'Valeur trop grande.',
@@ -294,6 +297,54 @@ return [
         'require_email_confirmation' => [
             'label' => 'Confirmation d’e-mail obligatoire',
             'help' => 'Le compte reste inactif tant que l’adresse n’est pas confirmée.',
+        ],
+    ],
+    'payment' => [
+        'provider' => [
+            'label' => 'Fournisseur de paiement',
+            'help' => 'Mollie encaisse en ligne et confirme automatiquement la réservation. Sans fournisseur, seul le virement reste possible.',
+        ],
+        'mollie_api_key' => [
+            'label' => 'Clé d’API Mollie',
+            'help' => 'Chiffrée au repos et jamais réaffichée. Une clé « test_ » n’encaisse rien réellement.',
+        ],
+        'balance_days_before' => [
+            'label' => 'Solde dû (jours avant l’arrivée)',
+            'help' => 'Le solde est exigible ce nombre de jours avant l’arrivée, ou immédiatement pour une réservation plus tardive.',
+        ],
+        'transfer_enabled' => [
+            'label' => 'Autoriser le virement bancaire',
+            'help' => 'Affiche l’IBAN et le QR code EPC. Un virement ne confirme jamais seul la réservation.',
+        ],
+        'beneficiary_name' => [
+            'label' => 'Bénéficiaire du virement',
+            'help' => 'Nom du titulaire du compte, tel qu’il apparaîtra dans l’application bancaire du voyageur.',
+        ],
+        'iban' => [
+            'label' => 'IBAN',
+            'help' => 'IBAN du compte à créditer. La clé de contrôle est vérifiée avant enregistrement.',
+        ],
+        'bic' => [
+            'label' => 'BIC',
+            'help' => 'Facultatif. Certaines banques le réclament encore pour les virements hors zone SEPA.',
+        ],
+        'currency' => [
+            'label' => 'Devise',
+            'help' => 'Code ISO 4217 à trois lettres, EUR par défaut.',
+        ],
+    ],
+    'tax' => [
+        'tourist_enabled' => [
+            'label' => 'Percevoir la taxe de séjour',
+            'help' => 'Ajoute la taxe de séjour à l’échéancier de chaque réservation.',
+        ],
+        'tourist_per_adult_night' => [
+            'label' => 'Taxe par adulte et par nuit',
+            'help' => 'Montant perçu pour chaque adulte et chaque nuit. Les mineurs en sont exonérés.',
+        ],
+        'tourist_cap_per_stay' => [
+            'label' => 'Plafond par séjour',
+            'help' => 'Montant maximal perçu pour un séjour. Zéro signifie aucun plafond.',
         ],
     ],
 ];

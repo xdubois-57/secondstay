@@ -326,6 +326,36 @@ mêmes nuits.
 Si les dates sont déjà prises, le visiteur peut demander à être prévenu
 lorsqu'elles se libèrent.
 
+## Paiements
+
+Chaque séjour porte un échéancier explicite : acompte, solde, caution, ménage,
+taxe de séjour et ajustements sont des lignes distinctes, avec leur montant,
+leur échéance et leur état.
+
+Deux moyens de paiement coexistent :
+
+- **en ligne**, via un fournisseur (Mollie en premier). Un acompte constaté
+  chez le fournisseur confirme automatiquement la réservation ;
+- **par virement SEPA**, avec un QR code EPC que la banque du voyageur lit
+  pour préremplir IBAN, montant et référence. Un virement ne confirme jamais
+  seul un séjour : c'est une validation manuelle explicite.
+
+Le QR code est fabriqué localement, sans dépendance supplémentaire ni service
+externe : l'hébergement mutualisé visé n'a ni l'un ni l'autre, et une
+référence de virement n'a rien à faire chez un tiers.
+
+```text
+/fr/payment/<id>/transfer   coordonnées de virement et QR code EPC
+/fr/admin/payments          échéances, cautions détenues, notifications reçues
+```
+
+Les notifications de paiement sont idempotentes et ne sont jamais crues sur
+parole : SecondStay y lit un identifiant, puis relit l'état chez le
+fournisseur avant de changer quoi que ce soit.
+
+Sans clé de fournisseur configurée, le paiement en ligne n'est simplement pas
+proposé ; le virement et l'encaissement manuel restent disponibles.
+
 ## Notifications
 
 Les événements du séjour sont notifiés par **e-mail et notification push**,

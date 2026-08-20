@@ -56,9 +56,15 @@ export default defineConfig({
     ],
     webServer: {
         command: './scripts/dev-server.sh start',
-        // Transports factices : les parcours de compte et de notification sont
-        // vérifiables sans SMTP, sans service de push et sans réseau sortant.
-        env: { ...process.env, SECONDSTAY_MAIL_TRANSPORT: 'fake', SECONDSTAY_PUSH_PROVIDER: 'fake' },
+        // Transports factices : les parcours de compte, de notification et de
+        // paiement sont vérifiables sans SMTP, sans service de push, sans
+        // compte marchand et sans réseau sortant.
+        env: {
+            ...process.env,
+            SECONDSTAY_MAIL_TRANSPORT: 'fake',
+            SECONDSTAY_PUSH_PROVIDER: 'fake',
+            SECONDSTAY_PAYMENT_PROVIDER: 'fake'
+        },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,
         timeout: 60000

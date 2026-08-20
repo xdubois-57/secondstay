@@ -1,0 +1,52 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-5">
+        <div class="container" style="max-width: 36rem;" data-testid="payment-transfer">
+            <h1 class="h3 mb-3">{{ t('payment.transfer.title') }}</h1>
+            <p class="text-body-secondary">{{ t('payment.transfer.intro') }}</p>
+
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <img src="{{ path('payment.epc', {'id': payment.id}) }}"
+                         alt="{{ t('payment.transfer.qr_alt') }}"
+                         width="200" height="200"
+                         data-testid="payment-epc-qr">
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span>{{ t('payment.schedule.component') }}</span>
+                        <strong>{{ t(payment.kind.labelKey) }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span>{{ t('payment.schedule.amount') }}</span>
+                        <strong data-testid="transfer-amount">{{ payment.amountCents|money }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span>{{ t('payment.transfer.beneficiary') }}</span>
+                        <strong>{{ transfer.beneficiary }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span>{{ t('payment.transfer.iban') }}</span>
+                        <code data-testid="transfer-iban">{{ transfer.iban }}</code>
+                    </li>
+                    {% if transfer.bic %}
+                        <li class="list-group-item d-flex justify-content-between gap-3">
+                            <span>{{ t('payment.transfer.bic') }}</span>
+                            <code>{{ transfer.bic }}</code>
+                        </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <span>{{ t('payment.transfer.reference') }}</span>
+                        <code data-testid="transfer-reference">{{ transfer.reference }}</code>
+                    </li>
+                </ul>
+            </div>
+
+            <p class="small text-body-secondary">{{ t('payment.transfer.notice') }}</p>
+
+            <a class="btn btn-outline-secondary"
+               href="{{ path('booking.show', {'reference': booking.reference}) }}">{{ t('payment.action.back_to_booking') }}</a>
+        </div>
+    </section>
+{% endblock %}

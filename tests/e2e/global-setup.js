@@ -20,7 +20,12 @@ export default async function globalSetup(config) {
     // (`reuseExistingServer`). On le relance systématiquement avec, puis on
     // vérifie que la boîte de test répond : un scénario de compte qui échoue
     // doit signaler un vrai défaut, jamais une mauvaise configuration locale.
-    const env = { ...process.env, SECONDSTAY_MAIL_TRANSPORT: 'fake', SECONDSTAY_PUSH_PROVIDER: 'fake' };
+    const env = {
+        ...process.env,
+        SECONDSTAY_MAIL_TRANSPORT: 'fake',
+        SECONDSTAY_PUSH_PROVIDER: 'fake',
+        SECONDSTAY_PAYMENT_PROVIDER: 'fake'
+    };
     execFileSync(resolve(root, 'scripts/dev-server.sh'), ['restart'], {
         cwd: root,
         stdio: 'inherit',
@@ -33,7 +38,8 @@ export default async function globalSetup(config) {
 
     for (const [path, variable] of [
         ['/api/dev/mailbox', 'SECONDSTAY_MAIL_TRANSPORT=fake'],
-        ['/api/dev/notifications', 'SECONDSTAY_PUSH_PROVIDER=fake']
+        ['/api/dev/notifications', 'SECONDSTAY_PUSH_PROVIDER=fake'],
+        ['/api/dev/payments', 'SECONDSTAY_PAYMENT_PROVIDER=fake']
     ]) {
         const response = await fetch(`${baseURL}${path}`);
         if (!response.ok) {

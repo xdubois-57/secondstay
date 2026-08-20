@@ -559,3 +559,58 @@ entrelacées prouvent la garantie.
 - qu'une remise rende un total négatif ;
 - qu'un code promotionnel dépasse sa limite d'usage ;
 - qu'une nuit réservée révèle l'identité de son occupant.
+
+## 24. Itération 7 — paiements
+
+### 24.1 Couverture des scénarios critiques
+
+| Scénario critique | Fichier |
+|---|---|
+| 9 — paiement fake + webhook | `tests/e2e/payment.spec.js`, `tests/php/Database/PaymentServiceTest.php` |
+
+Le scénario 9 est couvert dans les deux sens : l'aller-retour complet
+« acompte → webhook confirmé → réservation confirmée » en E2E, et les cas
+limites — rejeu, désordre, montant inattendu, cycle de la caution — dans
+`PaymentServiceTest`.
+
+### 24.2 Le parcours de paiement joué en entier, sans compte marchand
+
+`FakePaymentProvider` reproduit le déroulé réel — création, redirection,
+encaissement, notification, relecture, remboursement — sans réseau ni clé. Il
+n'est atteignable que par `SECONDSTAY_PAYMENT_PROVIDER=fake` : c'est la même
+règle que pour le transport e-mail et le push factices, et elle interdit
+qu'un visiteur puisse confirmer un séjour sans avoir payé.
+
+Le scénario E2E suit exactement le chemin réel :
+
+1. le voyageur réserve, puis ouvre le paiement de l'acompte ;
+2. la page de retour n'affirme rien — elle affiche « en cours » ;
+3. le test fait évoluer l'état **chez le fournisseur**, et vérifie que
+   l'application ne l'a pas encore constaté ;
+4. la notification arrive sur `/webhook/payment`, sans jeton CSRF et avec le
+   seul identifiant, comme le ferait Mollie ;
+5. le séjour passe alors à « confirmé » et l'acompte à « payé » ;
+6. la même notification rejouée renvoie `duplicate` et ne change rien.
+
+### 24.3 L'encodeur QR vérifié par un décodeur indépendant
+
+`tests/php/Support/QrDecoder.php` ne partage aucune ligne avec l'encodeur : il
+relit la matrice comme le ferait un lecteur — informations de format,
+démasquage, parcours en zigzag, désentrelacement, décodage du mode octet. Un
+aller-retour réussi prouve donc que la matrice est réellement lisible, et pas
+seulement bien formée. Les vingt versions supportées sont parcourues, et la
+correction d'erreur est comparée au vecteur de référence publié en annexe I de
+l'ISO/IEC 18004.
+
+### 24.4 Ce que les tests interdisent
+
+- qu'un corps de webhook fasse changer un paiement sans relecture chez le
+  fournisseur ;
+- qu'un webhook rejoué produise un second effet ;
+- qu'une notification tardive défasse un encaissement déjà constaté ;
+- qu'un montant différent de celui attendu soit accepté ;
+- qu'un virement ou un encaissement manuel confirme seul une réservation ;
+- qu'un remboursement dépasse le montant encaissé ;
+- qu'une caution non reçue passe à « à restituer » ;
+- qu'un IBAN dont la clé de contrôle est fausse soit enregistré ;
+- qu'un QR code de virement soit lisible sans être authentifié.

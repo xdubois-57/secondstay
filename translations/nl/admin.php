@@ -10,6 +10,7 @@ return [
         'media' => 'Media',
         'bookings' => 'Reserveringen',
         'pricing' => 'Tarieven',
+        'payments' => 'Betalingen',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
         'backups' => 'Back-ups',
@@ -55,6 +56,8 @@ return [
             'maintenance' => 'Onderhoud',
             'backup' => 'Back-up',
             'update' => 'Update',
+            'payment' => 'Betalingen',
+            'tax' => 'Toeristenbelasting',
             'logging' => 'Logboek',
         ],
         'value' => [
@@ -86,6 +89,9 @@ return [
                     'starttls' => 'STARTTLS',
                     'tls' => 'Impliciete TLS',
                 ],
+            ],
+            'payment' => [
+                'provider' => ['none' => 'Geen (alleen overschrijving)', 'mollie' => 'Mollie'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stabiel', 'prerelease' => 'Pre-release'],

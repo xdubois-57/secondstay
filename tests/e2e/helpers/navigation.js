@@ -15,7 +15,39 @@ export async function openNavigation(page) {
             await toggler.click();
             await collapse.waitFor({ state: 'visible' });
         }
+        await settled(collapse);
     }
+}
+
+/**
+ * Attend la fin de l'animation Bootstrap.
+ *
+ * Le menu est « visible » dès le premier pixel déplié, mais il bouge encore :
+ * un clic posé à ce moment-là peut atterrir à côté de sa cible, et le test
+ * échouerait sans qu'aucun défaut du produit soit en cause. Bootstrap marque
+ * la transition par la classe `collapsing`, qu'il retire à la fin.
+ */
+async function settled(collapse) {
+    await collapse.evaluate((element) => new Promise((resolve) => {
+        const done = () => {
+            if (!element.classList.contains('collapsing')) {
+                resolve();
+                return true;
+            }
+            return false;
+        };
+
+        if (done()) {
+            return;
+        }
+
+        const observer = new MutationObserver(() => {
+            if (done()) {
+                observer.disconnect();
+            }
+        });
+        observer.observe(element, { attributes: true, attributeFilter: ['class'] });
+    }));
 }
 
 /**
