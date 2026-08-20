@@ -13,6 +13,7 @@ return [
         'payments' => 'Payments',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
+        'operations' => 'Operations',
         'settings' => 'Configuration',
         'users' => 'Accounts',
         'backups' => 'Backups',
@@ -62,6 +63,7 @@ return [
             'tax' => 'Tourist tax',
             'imap' => 'Incoming mail',
             'legal' => 'Legal notices',
+            'operations' => 'Operations',
             'logging' => 'Logging',
         ],
         'value' => [

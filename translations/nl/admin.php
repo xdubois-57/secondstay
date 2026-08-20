@@ -13,6 +13,7 @@ return [
         'payments' => 'Betalingen',
         'documents' => 'Documenten',
         'mailbox' => 'Berichten',
+        'operations' => 'Exploitatie',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
         'backups' => 'Back-ups',
@@ -62,6 +63,7 @@ return [
             'tax' => 'Toeristenbelasting',
             'imap' => 'Inkomende post',
             'legal' => 'Juridische vermeldingen',
+            'operations' => 'Exploitatie',
             'logging' => 'Logboek',
         ],
         'value' => [

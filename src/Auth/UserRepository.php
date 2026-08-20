@@ -111,6 +111,29 @@ final class UserRepository
         return array_map(static fn (array $row): User => User::fromRow($row), $rows);
     }
 
+    /**
+     * Comptes pouvant être responsables d'un séjour.
+     *
+     * Un administrateur hérite du rôle opérationnel (SPECIFICATIONS.md §4) :
+     * il peut donc être responsable, mais un client ne le peut jamais.
+     *
+     * @return list<User>
+     */
+    public function operational(): array
+    {
+        $rows = $this->database->fetchAll(
+            'SELECT * FROM `user` WHERE `role` IN (:manager, :admin) AND `status` = :status '
+            . 'ORDER BY `last_name`, `first_name`, `email` LIMIT 200',
+            [
+                'manager' => Role::LocalManager->value,
+                'admin' => Role::Administrator->value,
+                'status' => UserStatus::Active->value,
+            ]
+        );
+
+        return array_map(static fn (array $row): User => User::fromRow($row), $rows);
+    }
+
     public function countAdministrators(): int
     {
         return (int) $this->database->fetchValue(

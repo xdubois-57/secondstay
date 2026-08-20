@@ -407,4 +407,18 @@ return [
             'help' => 'Wo der Gast eine Streitigkeit vorlegen kann.',
         ],
     ],
+    'operations' => [
+        'default_manager' => [
+            'label' => 'Standard-Ansprechpartner vor Ort',
+            'help' => 'Konto-ID des Ansprechpartners für Aufenthalte ohne ausdrückliche Zuweisung. Null bedeutet keiner.',
+        ],
+        'prepare_days' => [
+            'label' => 'Vorbereitungsfenster (Tage)',
+            'help' => 'Wie viele Tage vor der Anreise ein Aufenthalt in „Zu erledigen“ erscheint.',
+        ],
+        'calendar_enabled' => [
+            'label' => 'Private Kalender veröffentlichen',
+            'help' => 'Aktiviert die ICS-Feeds für Verwaltung, Ansprechpartner und Gäste.',
+        ],
+    ],
 ];

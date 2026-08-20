@@ -1,0 +1,229 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SecondStay\Controller\Admin;
+
+use SecondStay\Auth\Role;
+use SecondStay\Auth\UserRepository;
+use SecondStay\Booking\BookingRepository;
+use SecondStay\Calendar\CalendarScope;
+use SecondStay\Calendar\CalendarService;
+use SecondStay\Calendar\CalendarTokenRepository;
+use SecondStay\Core\Exception\NotFoundException;
+use SecondStay\Core\Http\Response;
+use SecondStay\Core\RequestContext;
+use SecondStay\Operations\ChecklistService;
+use SecondStay\Operations\TodoService;
+
+/**
+ * Exploitation : « À faire », séjours à préparer, affectation du responsable,
+ * checklists et calendriers privés (SPECIFICATIONS.md §48 à §51).
+ */
+final class AdminOperationsController extends AdminController
+{
+    protected function section(): string
+    {
+        return 'operations';
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function index(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $todo = $this->container->get(TodoService::class);
+        $checklists = $this->container->get(ChecklistService::class);
+        $bookings = $this->container->get(BookingRepository::class);
+
+        // Un responsable local voit ses propres séjours ; un administrateur
+        // voit toute la préparation.
+        $mine = $user->role === Role::LocalManager
+            ? $bookings->forManager($user->id)
+            : [];
+
+        $issued = $this->takeIssuedToken();
+
+        return $this->renderAdmin('admin/operations.html.twig', [
+            'meta_title' => $this->trans('operations.title'),
+            'todo' => $user->role === Role::LocalManager ? [] : $todo->items(),
+            'stays' => $todo->unpreparedStays(null, max(1, $this->settings()->int('operations.prepare_days'))),
+            'my_stays' => $mine,
+            'is_manager_only' => $user->role === Role::LocalManager,
+            'tokens' => $this->container->get(CalendarTokenRepository::class)->all(),
+            'issued_token' => $issued,
+            'issued_url' => $issued === '' ? '' : $this->feedUrl($context, $issued),
+            'scopes' => [CalendarScope::Admin, CalendarScope::Manager],
+            'progress' => array_map(
+                static fn (array $row): array => $checklists->progress($row['booking']),
+                $todo->unpreparedStays(null, max(1, $this->settings()->int('operations.prepare_days')))
+            ),
+        ]);
+    }
+
+    /**
+     * Adresse complète du flux : c'est elle que l'on colle dans un agenda,
+     * pas un chemin relatif.
+     */
+    private function feedUrl(RequestContext $context, string $token): string
+    {
+        $base = rtrim($this->settings()->string('site.public_url'), '/');
+        if ($base === '') {
+            $base = rtrim($context->request->baseUrl(), '/');
+        }
+
+        return $base . $this->router()->path('calendar.feed', ['token' => $token]);
+    }
+
+    /**
+     * Récupère le jeton fraîchement délivré, puis l'oublie.
+     *
+     * Il ne doit être affiché qu'une fois : le laisser en session le
+     * réafficherait à chaque visite de la page.
+     */
+    private function takeIssuedToken(): string
+    {
+        $token = $this->session()->string('calendar_token');
+        if ($token !== '') {
+            $this->session()->remove('calendar_token');
+        }
+
+        return $token;
+    }
+
+    /**
+     * Affecte un responsable local à un séjour (SPECIFICATIONS.md §48).
+     *
+     * @param array<string, string> $params
+     */
+    public function assignManager(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireAdministrator();
+
+        $bookings = $this->container->get(BookingRepository::class);
+        $booking = $bookings->find((int) ($params['id'] ?? 0));
+        if ($booking === null) {
+            throw new NotFoundException('Réservation introuvable.');
+        }
+
+        $managerId = (int) $context->request->input('manager_id', '0');
+
+        if ($managerId !== 0) {
+            $manager = $this->container->get(UserRepository::class)->findById($managerId);
+
+            // Seul un compte réellement opérationnel peut être responsable :
+            // affecter un client lui donnerait une visibilité qu'il n'a pas.
+            if ($manager === null || !$manager->isOperational()) {
+                $this->flashError('operations.error.manager_invalid');
+
+                return $this->redirectToRoute($context, 'admin.bookings.show', ['id' => $booking->id]);
+            }
+        }
+
+        $bookings->update($booking->id, ['manager_id' => $managerId === 0 ? null : $managerId]);
+
+        $this->audit()->record('booking.manager_assigned', 'booking', (string) $booking->id, [
+            'manager_id' => $booking->managerId,
+        ], ['manager_id' => $managerId === 0 ? null : $managerId], $user->id, $user->email);
+
+        $this->flashSuccess('operations.manager.assigned');
+
+        return $this->redirectToRoute($context, 'admin.bookings.show', ['id' => $booking->id]);
+    }
+
+    /**
+     * Coche ou décoche une ligne de checklist.
+     *
+     * @param array<string, string> $params
+     */
+    public function toggleTask(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $booking = $this->container->get(BookingRepository::class)->find((int) ($params['id'] ?? 0));
+        if ($booking === null) {
+            throw new NotFoundException('Réservation introuvable.');
+        }
+
+        $result = $this->container->get(ChecklistService::class)->toggle(
+            $booking,
+            (string) $context->request->input('code', ''),
+            $context->request->input('done') !== null,
+            $user->id,
+            (string) $context->request->input('note', ''),
+        );
+
+        $result['ok'] ? $this->flashSuccess('operations.checklist.updated') : $this->flashError($result['error']);
+
+        return $this->redirectToRoute($context, 'admin.bookings.show', ['id' => $booking->id]);
+    }
+
+    /**
+     * Délivre un lien de calendrier.
+     *
+     * @param array<string, string> $params
+     */
+    public function issueCalendar(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $scope = CalendarScope::fromString((string) $context->request->input('scope', ''));
+        if ($scope === CalendarScope::Customer) {
+            // Le flux d'un voyageur se délivre depuis son espace, jamais ici.
+            $this->flashError('calendar.error.not_found');
+
+            return $this->redirectToRoute($context, 'admin.operations');
+        }
+
+        if ($scope === CalendarScope::Admin && !$user->role->isAdministrator()) {
+            throw new NotFoundException('Portée non autorisée.');
+        }
+
+        $token = $this->container->get(CalendarService::class)->tokenFor($scope, $user);
+
+        // Le jeton n'est montré qu'une fois : il transite par un message
+        // éphémère plutôt que par l'URL, où il resterait dans l'historique.
+        $this->session()->set('calendar_token', $token);
+        $this->flashSuccess('calendar.created');
+
+        $this->audit()->record('calendar.token_issued', 'calendar_token', $scope->value, null, [
+            'scope' => $scope->value,
+        ], $user->id, $user->email);
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function revokeCalendar(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $tokens = $this->container->get(CalendarTokenRepository::class);
+        $token = $tokens->find((int) ($params['id'] ?? 0));
+
+        if ($token === null || $token->isRevoked()) {
+            $this->flashError('calendar.error.not_found');
+
+            return $this->redirectToRoute($context, 'admin.operations');
+        }
+
+        // Un responsable local ne révoque que ses propres liens.
+        if (!$user->role->isAdministrator() && $token->userId !== $user->id) {
+            throw new NotFoundException('Lien introuvable.');
+        }
+
+        $tokens->revoke($token->id);
+
+        $this->audit()->record('calendar.token_revoked', 'calendar_token', (string) $token->id, [
+            'scope' => $token->scope->value,
+        ], null, $user->id, $user->email);
+
+        $this->flashSuccess('calendar.revoked');
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+}

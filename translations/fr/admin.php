@@ -13,6 +13,7 @@ return [
         'payments' => 'Paiements',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
+        'operations' => 'Exploitation',
         'settings' => 'Configuration',
         'users' => 'Comptes',
         'backups' => 'Sauvegardes',
@@ -62,6 +63,7 @@ return [
             'tax' => 'Taxe de séjour',
             'imap' => 'Courrier entrant',
             'legal' => 'Mentions légales',
+            'operations' => 'Exploitation',
             'logging' => 'Journalisation',
         ],
         'value' => [

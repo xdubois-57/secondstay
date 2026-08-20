@@ -12,6 +12,8 @@ use SecondStay\Booking\BookingService;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Booking\QuoteService;
 use SecondStay\Booking\StayRules;
+use SecondStay\Calendar\CalendarScope;
+use SecondStay\Calendar\CalendarService;
 use SecondStay\Contract\ContractService;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
@@ -189,6 +191,7 @@ final class BookingController extends AbstractController
         }
 
         $settings = $this->settings();
+        $calendarToken = $this->takeIssuedToken();
 
         // Le contrat est produit dès la première consultation : le voyageur
         // doit pouvoir le lire sans attendre une action de l'administration.
@@ -208,10 +211,49 @@ final class BookingController extends AbstractController
             'reply_address' => $settings->bool('imap.enabled')
                 ? $this->container->get(InboundMailService::class)->replyAddressFor($booking)
                 : '',
+            'calendar_enabled' => $settings->bool('operations.calendar_enabled'),
+            'calendar_token' => $calendarToken,
+            'calendar_url' => $calendarToken === '' ? '' : $this->feedUrl($context, $calendarToken),
+            'manager' => $this->container->get(CalendarService::class)->managerOf($booking),
             'provider_ready' => $this->container->get(PaymentProvider::class)->isConfigured(),
             'transfer_available' => $settings->bool('payment.transfer_enabled')
                 && $settings->string('payment.iban') !== '',
         ]);
+    }
+
+    /**
+     * Délivre au voyageur un lien de calendrier pour son séjour.
+     *
+     * Le jeton n'est montré qu'une fois : le régénérer révoque le précédent,
+     * ce qui est exactement ce qu'on attend d'un lien partagé par erreur
+     * (SPECIFICATIONS.md §51).
+     *
+     * @param array<string, string> $params
+     */
+    public function calendarLink(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireRole(Role::Customer);
+
+        $booking = $this->container->get(BookingRepository::class)
+            ->findByReference((string) ($params['reference'] ?? ''));
+
+        if ($booking === null || $booking->userId !== $user->id) {
+            throw new NotFoundException('Réservation introuvable.');
+        }
+
+        if (!$this->settings()->bool('operations.calendar_enabled')) {
+            $this->flashError('calendar.error.disabled');
+
+            return $this->redirectToRoute($context, 'booking.show', ['reference' => $booking->reference]);
+        }
+
+        $token = $this->container->get(CalendarService::class)
+            ->tokenFor(CalendarScope::Customer, $user, $booking);
+
+        $this->session()->set('calendar_token', $token);
+        $this->flashSuccess('calendar.created');
+
+        return $this->redirectToRoute($context, 'booking.show', ['reference' => $booking->reference]);
     }
 
     /**
@@ -245,6 +287,32 @@ final class BookingController extends AbstractController
         $result['ok'] ? $this->flashSuccess('booking.waitlist.joined') : $this->flashError($result['error']);
 
         return $this->redirectToRoute($context, 'page.show', ['slug' => 'availability']);
+    }
+
+    /**
+     * Adresse complète du flux, telle qu'on la colle dans un agenda.
+     */
+    private function feedUrl(RequestContext $context, string $token): string
+    {
+        $base = rtrim($this->settings()->string('site.public_url'), '/');
+        if ($base === '') {
+            $base = rtrim($context->request->baseUrl(), '/');
+        }
+
+        return $base . $this->router()->path('calendar.feed', ['token' => $token]);
+    }
+
+    /**
+     * Jeton de calendrier fraîchement délivré, affiché une seule fois.
+     */
+    private function takeIssuedToken(): string
+    {
+        $token = $this->session()->string('calendar_token');
+        if ($token !== '') {
+            $this->session()->remove('calendar_token');
+        }
+
+        return $token;
     }
 
     // --- Rendu ---------------------------------------------------------------

@@ -34,7 +34,7 @@ Une itération est terminée seulement si :
 | 6 | Réservation sans paiement | ✅ livrée |
 | 7 | Paiements | ✅ livrée |
 | 8 | Contrats, documents, IMAP | ✅ livrée |
-| 9 | Responsable local et opérations | ⏳ à venir |
+| 9 | Responsable local et opérations | ✅ livrée |
 | 10 | Mon séjour et invités | ⏳ à venir |
 | 11 | États des lieux et incidents | ⏳ à venir |
 | 12 | France et conformité | ⏳ à venir |
@@ -347,6 +347,26 @@ Livrer :
 - libellés localisés.
 
 E2E : affectation → ICS → révocation token.
+
+### Livré (0.10.0)
+
+- plusieurs responsables locaux, responsable par défaut de l'installation et
+  affectation par séjour, modifiable par un administrateur ;
+- seul un compte opérationnel peut être responsable ; supprimer un compte
+  n'emporte jamais un séjour, seulement son affectation ;
+- checklists d'avant-séjour et de départ, mêlant lignes dérivées de l'état du
+  séjour — jamais recopiées — et lignes cochées par un humain ;
+- tableau « À faire » unique, partagé par le tableau de bord et la page
+  d'exploitation ;
+- générateur iCalendar maison : pliage à 75 octets, échappement des
+  séparateurs, date de fin exclusive alignée sur la convention `DateRange` ;
+- flux privés par portée — administration, responsable, voyageur — chacun
+  limité à ce que son destinataire doit voir, le flux du voyageur portant le
+  contact du responsable ;
+- jetons de 32 octets stockés hachés, affichés une seule fois, régénérables et
+  révocables avec effet immédiat ;
+- E2E `operations.spec.js` (affectation → checklist → ICS → révocation), tests
+  PHP `IcsCalendarTest` et `OperationsServiceTest`.
 
 ## Itération 10 — Mon séjour et invités
 

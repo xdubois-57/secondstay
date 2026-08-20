@@ -1,0 +1,135 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    {% if issued_token %}
+        {# Affiché une seule fois : le jeton n'est pas conservé en clair. #}
+        <div class="alert alert-success" data-testid="issued-calendar">
+            <p class="mb-1">{{ t('calendar.once') }}</p>
+            <code class="d-block text-break" data-testid="calendar-url">{{ issued_url }}</code>
+        </div>
+    {% endif %}
+
+    {% if not is_manager_only %}
+        <div class="card mb-4">
+            <div class="card-header">{{ t('operations.todo.title') }}</div>
+            {% if todo is empty %}
+                <div class="card-body text-body-secondary" data-testid="todo-empty">{{ t('operations.todo.empty') }}</div>
+            {% else %}
+                <ul class="list-group list-group-flush" data-testid="todo-list">
+                    {% for item in todo %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center"
+                            data-todo="{{ item.code }}">
+                            <a href="{{ path(item.route, item.params) }}">{{ t(item.key, {'count': item.count}) }}</a>
+                            <span class="badge text-bg-{{ item.severity }}">{{ item.count }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if is_manager_only %}
+        <div class="card mb-4">
+            <div class="card-header">{{ t('operations.manager.my_stays') }}</div>
+            {% if my_stays is empty %}
+                <div class="card-body text-body-secondary" data-testid="my-stays-empty">{{ t('operations.manager.empty') }}</div>
+            {% else %}
+                <ul class="list-group list-group-flush" data-testid="my-stays">
+                    {% for booking in my_stays %}
+                        <li class="list-group-item d-flex justify-content-between gap-2"
+                            data-booking-reference="{{ booking.reference }}">
+                            <a href="{{ path('admin.bookings.show', {'id': booking.id}) }}">
+                                <code>{{ booking.reference }}</code>
+                            </a>
+                            <span>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('operations.prepare.title') }}</div>
+        {% if stays is empty %}
+            <div class="card-body text-body-secondary" data-testid="prepare-empty">{{ t('operations.prepare.empty') }}</div>
+        {% else %}
+            <ul class="list-group list-group-flush" data-testid="prepare-list">
+                {% for row in stays %}
+                    <li class="list-group-item" data-booking-reference="{{ row.booking.reference }}">
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="{{ path('admin.bookings.show', {'id': row.booking.id}) }}">
+                                <code>{{ row.booking.reference }}</code>
+                            </a>
+                            <span class="small text-body-secondary">
+                                {{ t('operations.prepare.arrival') }} {{ row.booking.range.arrival|daymonth }}
+                            </span>
+                        </div>
+                        <ul class="small text-body-secondary mb-0 mt-1">
+                            {% for item in row.outstanding %}
+                                <li data-outstanding="{{ item.code }}">{{ t(item.labelKey) }}</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('calendar.title') }}</div>
+        <div class="card-body">
+            <p class="text-body-secondary">{{ t('calendar.intro') }}</p>
+            <form method="post" action="{{ path('admin.calendars.issue') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="scope">{{ t('calendar.scope.admin') }}</label>
+                    <select class="form-select" id="scope" name="scope">
+                        {% for scope in scopes %}
+                            <option value="{{ scope.value }}">{{ t(scope.labelKey) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 d-grid">
+                    <button class="btn btn-primary" type="submit"
+                            data-testid="issue-calendar">{{ t('calendar.action.create') }}</button>
+                </div>
+            </form>
+        </div>
+
+        {% if tokens is empty %}
+            <div class="card-body text-body-secondary pt-0" data-testid="calendars-empty">{{ t('calendar.empty') }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle" data-testid="calendar-tokens">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('calendar.scope.admin') }}</th>
+                            <th scope="col">{{ t('calendar.label') }}</th>
+                            <th scope="col">{{ t('calendar.last_used') }}</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for token in tokens %}
+                            <tr data-calendar-token="{{ token.id }}" data-scope="{{ token.scope.value }}">
+                                <td>{{ t(token.scope.labelKey) }}</td>
+                                <td>{{ token.label }}</td>
+                                <td class="text-nowrap">
+                                    {{ token.lastUsedAt ?: t('calendar.never_used') }}
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ path('admin.calendars.revoke', {'id': token.id}) }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                data-testid="revoke-{{ token.id }}">{{ t('calendar.action.revoke') }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

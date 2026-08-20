@@ -407,4 +407,18 @@ return [
             'help' => 'Adresse à laquelle le voyageur peut saisir le médiateur.',
         ],
     ],
+    'operations' => [
+        'default_manager' => [
+            'label' => 'Responsable local par défaut',
+            'help' => 'Identifiant du compte responsable appliqué aux séjours sans affectation explicite. Zéro signifie aucun.',
+        ],
+        'prepare_days' => [
+            'label' => 'Fenêtre de préparation (jours)',
+            'help' => 'Nombre de jours avant l’arrivée au-delà duquel un séjour apparaît dans « À faire ».',
+        ],
+        'calendar_enabled' => [
+            'label' => 'Publier les calendriers privés',
+            'help' => 'Active les flux ICS pour l’administration, les responsables et les voyageurs.',
+        ],
+    ],
 ];

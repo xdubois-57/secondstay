@@ -12,6 +12,7 @@ use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminDocumentController;
 use SecondStay\Controller\Admin\AdminMailboxController;
+use SecondStay\Controller\Admin\AdminOperationsController;
 use SecondStay\Controller\Admin\AdminPaymentController;
 use SecondStay\Controller\Admin\AdminPricingController;
 use SecondStay\Controller\Admin\AdminSettingsController;
@@ -30,6 +31,7 @@ use SecondStay\Controller\Admin\AdminMediaController;
 use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
+use SecondStay\Controller\CalendarController;
 use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
@@ -129,6 +131,17 @@ final class Routes
             '/booking/{reference:[A-Za-z0-9-]{8,9}}',
             [BookingController::class, 'show'],
             'booking.show'
+        );
+
+        // --- Calendriers privés -------------------------------------------------
+        // Hors langue et hors session : un agenda tiers ne présente qu'un
+        // jeton, et l'adresse doit rester stable une fois abonnée.
+        $router->get('/calendar/{token:[a-f0-9]{64}}.ics', [CalendarController::class, 'feed'], 'calendar.feed', false);
+
+        $router->post(
+            '/booking/{reference:[A-Za-z0-9-]{8,9}}/calendar',
+            [BookingController::class, 'calendarLink'],
+            'booking.calendar'
         );
 
         // --- Documents et contrat ---------------------------------------------
@@ -234,6 +247,29 @@ final class Routes
         $router->get('/admin/media/{id:\d+}', [AdminMediaController::class, 'edit'], 'admin.media.edit');
         $router->post('/admin/media/{id:\d+}', [AdminMediaController::class, 'save'], 'admin.media.save');
         $router->post('/admin/media/{id:\d+}/delete', [AdminMediaController::class, 'delete'], 'admin.media.delete');
+
+        // --- Exploitation ---------------------------------------------------
+        $router->get('/admin/operations', [AdminOperationsController::class, 'index'], 'admin.operations');
+        $router->post(
+            '/admin/bookings/{id:\d+}/manager',
+            [AdminOperationsController::class, 'assignManager'],
+            'admin.operations.manager'
+        );
+        $router->post(
+            '/admin/bookings/{id:\d+}/task',
+            [AdminOperationsController::class, 'toggleTask'],
+            'admin.operations.task'
+        );
+        $router->post(
+            '/admin/calendars',
+            [AdminOperationsController::class, 'issueCalendar'],
+            'admin.calendars.issue'
+        );
+        $router->post(
+            '/admin/calendars/{id:\d+}/revoke',
+            [AdminOperationsController::class, 'revokeCalendar'],
+            'admin.calendars.revoke'
+        );
 
         // --- Documents ------------------------------------------------------
         $router->get('/admin/documents', [AdminDocumentController::class, 'index'], 'admin.documents');

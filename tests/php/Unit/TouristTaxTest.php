@@ -128,6 +128,7 @@ final class TouristTaxTest extends TestCase
             $infants,
             'fr',
             null,
+            null,
             'claire@example.test',
             'Claire Dubois',
             '',

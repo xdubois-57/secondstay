@@ -1,0 +1,82 @@
+{# Responsable local et checklists d'un séjour. #}
+<div class="card mb-4" data-testid="admin-operations">
+    <div class="card-header">{{ t('operations.manager.title') }}</div>
+    <div class="card-body">
+        <form method="post" action="{{ path('admin.operations.manager', {'id': booking.id}) }}"
+              class="row g-2 align-items-end">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <div class="col-12 col-md-8">
+                <label class="form-label" for="manager_id">{{ t('operations.manager.contact') }}</label>
+                <select class="form-select form-select-sm" id="manager_id" name="manager_id">
+                    <option value="0">{{ t('operations.manager.none') }}</option>
+                    {% for candidate in managers %}
+                        {# L'adresse lève l'ambiguïté entre deux homonymes. #}
+                        <option value="{{ candidate.id }}"
+                                {{ booking.managerId == candidate.id ? 'selected' : '' }}>
+                            {{ candidate.displayName }} — {{ candidate.email }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-4 d-grid">
+                <button class="btn btn-sm btn-primary" type="submit"
+                        data-testid="assign-manager">{{ t('operations.manager.assign') }}</button>
+            </div>
+        </form>
+
+        <p class="small text-body-secondary mt-2 mb-0" data-testid="effective-manager"
+           data-manager="{{ effective_manager ? effective_manager.id : '' }}">
+            {% if effective_manager %}
+                {{ effective_manager.displayName }} — {{ effective_manager.email }}
+                {% if booking.managerId is null %}
+                    <span class="badge text-bg-secondary">{{ t('operations.manager.default') }}</span>
+                {% endif %}
+            {% else %}
+                {{ t('operations.manager.unassigned') }}
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{{ t('operations.checklist.title') }}</span>
+        <span class="small text-body-secondary" data-testid="checklist-progress">
+            {{ t('operations.checklist.progress', {'done': checklist_progress.done, 'total': checklist_progress.total}) }}
+        </span>
+    </div>
+
+    {% for phase in ['before', 'departure'] %}
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item bg-body-secondary small fw-semibold">{{ t('operations.phase.' ~ phase) }}</li>
+            {% for item in checklist|filter(line => line.phase.value == phase) %}
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                    data-item="{{ item.code }}"
+                    data-status="{{ item.status.value }}"
+                    data-manual="{{ item.manual ? 'true' : 'false' }}">
+                    <span>
+                        {{ t(item.labelKey) }}
+                        {% if not item.manual %}
+                            <span class="d-block small text-body-secondary">{{ t('operations.checklist.derived') }}</span>
+                        {% endif %}
+                    </span>
+                    {% if item.manual %}
+                        <form method="post" action="{{ path('admin.operations.task', {'id': booking.id}) }}"
+                              class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <input type="hidden" name="code" value="{{ item.code }}">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       name="done" value="1" id="task-{{ item.code }}"
+                                       {{ item.isDone ? 'checked' : '' }}>
+                                <label class="visually-hidden" for="task-{{ item.code }}">{{ t(item.labelKey) }}</label>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" type="submit"
+                                    data-testid="task-{{ item.code }}">{{ t('operations.checklist.save') }}</button>
+                        </form>
+                    {% else %}
+                        <span class="badge {{ item.status.badgeClass }}">{{ t(item.status.labelKey) }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</div>

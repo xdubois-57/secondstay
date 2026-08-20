@@ -13,6 +13,7 @@ return [
         'payments' => 'Zahlungen',
         'documents' => 'Dokumente',
         'mailbox' => 'Nachrichten',
+        'operations' => 'Betrieb',
         'settings' => 'Konfiguration',
         'users' => 'Konten',
         'backups' => 'Sicherungen',
@@ -62,6 +63,7 @@ return [
             'tax' => 'Kurtaxe',
             'imap' => 'Eingehende Post',
             'legal' => 'Rechtliche Hinweise',
+            'operations' => 'Betrieb',
             'logging' => 'Protokollierung',
         ],
         'value' => [

@@ -150,6 +150,13 @@ final class SettingRegistry
             new SettingDefinition('pricing.deposit_percent', SettingType::Integer, 30, 'pricing', min: 0, max: 100),
             new SettingDefinition('pricing.security_deposit', SettingType::Money, 50000, 'pricing', min: 0),
 
+            // --- Exploitation -------------------------------------------------
+            // Responsable appliqué à un séjour qui n'en a pas reçu un
+            // explicitement (SPECIFICATIONS.md §48).
+            new SettingDefinition('operations.default_manager', SettingType::Integer, 0, 'operations', min: 0),
+            new SettingDefinition('operations.prepare_days', SettingType::Integer, 14, 'operations', min: 1, max: 120),
+            new SettingDefinition('operations.calendar_enabled', SettingType::Bool, true, 'operations'),
+
             // --- Mentions légales -------------------------------------------
             // La version des conditions est figée dans chaque contrat : elle
             // doit donc être une valeur explicite, pas une date implicite.

@@ -57,6 +57,45 @@
 
             {% include 'document/_list.html.twig' %}
 
+            {% if manager %}
+                <div class="card mb-4" data-testid="stay-manager">
+                    <div class="card-header">{{ t('operations.manager.contact') }}</div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between gap-2">
+                            <span>{{ manager.displayName }}</span>
+                            <a href="mailto:{{ manager.email }}">{{ manager.email }}</a>
+                        </li>
+                        {% if manager.phone %}
+                            <li class="list-group-item d-flex justify-content-between gap-2">
+                                <span>{{ t('contract.field.guest_phone') }}</span>
+                                <a href="tel:{{ manager.phone }}">{{ manager.phone }}</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if calendar_enabled %}
+                <div class="card mb-4" data-testid="stay-calendar">
+                    <div class="card-header">{{ t('calendar.scope.customer') }}</div>
+                    <div class="card-body">
+                        {% if calendar_token %}
+                            {# Affiché une seule fois : le jeton n'est pas conservé en clair. #}
+                            <p class="mb-1">{{ t('calendar.once') }}</p>
+                            <code class="d-block text-break"
+                                  data-testid="calendar-url">{{ calendar_url }}</code>
+                        {% else %}
+                            <p class="text-body-secondary">{{ t('calendar.intro') }}</p>
+                            <form method="post" action="{{ path('booking.calendar', {'reference': booking.reference}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <button class="btn btn-outline-secondary" type="submit"
+                                        data-testid="calendar-link">{{ t('calendar.action.subscribe') }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
             {% if reply_address %}
                 <p class="small text-body-secondary" data-testid="reply-hint">
                     {{ t('mailbox.reply_hint') }}

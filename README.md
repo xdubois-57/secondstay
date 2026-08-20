@@ -356,6 +356,40 @@ fournisseur avant de changer quoi que ce soit.
 Sans clé de fournisseur configurée, le paiement en ligne n'est simplement pas
 proposé ; le virement et l'encaissement manuel restent disponibles.
 
+## Responsable local et exploitation
+
+Plusieurs comptes peuvent être responsables locaux. Un séjour reçoit un
+responsable, ou hérite de celui par défaut de l'installation. Le voyageur voit
+alors ses coordonnées, et le responsable voit les séjours qui le concernent —
+sans jamais accéder aux montants.
+
+Chaque séjour porte deux checklists : avant l'arrivée (contrat, acompte,
+solde, caution, responsable, ménage, accès) et au départ (état des lieux,
+incidents, ménage, caution). Les lignes qui découlent de l'état du séjour sont
+suivies automatiquement ; seules celles qui demandent une action humaine se
+cochent.
+
+Le tableau « À faire » ne montre que ce qui réclame une décision : demandes à
+valider, échéances dépassées, cautions à restituer, courriers non rattachés,
+séjours proches encore à préparer.
+
+## Calendriers privés
+
+SecondStay publie des flux iCalendar privés, à abonner dans n'importe quel
+agenda :
+
+```text
+/calendar/<jeton>.ics   flux privé, sans mot de passe
+/fr/admin/operations    délivrance et révocation des liens
+```
+
+Chaque flux montre exactement ce dont son destinataire a besoin :
+l'administration voit tout, le responsable local voit les séjours sans les
+montants, le voyageur voit le sien avec le contact du responsable.
+
+Les liens sont longs, uniques et révocables. Un lien n'est affiché qu'une fois,
+n'est jamais stocké en clair, et le révoquer coupe l'accès immédiatement.
+
 ## Contrats et documents
 
 Chaque séjour reçoit un **contrat PDF** dans sa langue, produit par
