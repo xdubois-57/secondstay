@@ -10,9 +10,12 @@ use SecondStay\Booking\BookingService;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Booking\PromoCode;
 use SecondStay\Booking\PromoCodeRepository;
+use SecondStay\Contract\ContractService;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Document\DocumentKind;
+use SecondStay\Document\DocumentRepository;
 use SecondStay\Payment\PaymentService;
 use SecondStay\Support\Money;
 
@@ -59,6 +62,9 @@ final class AdminBookingController extends AdminController
 
         $payments = $this->container->get(PaymentService::class)->schedule($booking);
 
+        $contracts = $this->container->get(ContractService::class);
+        $acceptance = $contracts->acceptanceFor($booking);
+
         $paid = 0;
         $due = 0;
         foreach ($payments as $payment) {
@@ -74,6 +80,10 @@ final class AdminBookingController extends AdminController
             'payments' => $payments,
             'paid_cents' => $paid,
             'due_cents' => $due,
+            'documents' => $this->container->get(DocumentRepository::class)->forBooking($booking->id),
+            'document_kinds' => DocumentKind::cases(),
+            'contract_acceptance' => $acceptance,
+            'contract_intact' => $acceptance !== null && $contracts->acceptanceIsIntact($acceptance),
         ]);
     }
 

@@ -683,3 +683,49 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
 - L'IBAN et le BIC de l'installation sont des réglages de l'installation, pas
   des valeurs du dépôt. La clé d'API du fournisseur est un secret chiffré au
   repos et jamais réaffiché.
+
+## 31. Contrats, documents et courrier entrant
+
+### 31.1 Documents
+
+- Aucun document n'est écrit sous le document root. Chaque octet est servi par
+  l'application, après contrôle de rôle **et** d'appartenance du séjour.
+- Un identifiant de document n'est pas un secret : l'appartenance est vérifiée
+  à chaque accès, et une absence de droit se présente comme une absence de
+  document.
+- Le nom sur disque est dérivé de l'empreinte SHA-256, jamais du nom fourni :
+  un nom venu d'un e-mail n'a aucune raison d'être sûr.
+- Le chemin lu en base est confronté à la racine du stockage avant toute
+  lecture : une valeur corrompue ne peut pas faire lire un fichier arbitraire.
+- Le type est déduit du **contenu**, pas de l'extension : un script renommé en
+  `.pdf` est refusé. La liste des types acceptés est fermée, et la taille est
+  bornée.
+- Les réponses portent `Cache-Control: private, no-store` et
+  `X-Content-Type-Options: nosniff` : un document de séjour ne doit finir ni
+  dans un cache partagé, ni interprété comme autre chose que ce qu'il est.
+
+### 31.2 Acceptation du contrat
+
+- L'acceptation fige la version, la langue et l'**empreinte du PDF accepté** :
+  remplacer le fichier ensuite se voit immédiatement, et l'administration
+  affiche l'état de cette vérification.
+- L'adresse IP du client n'est conservée que sous forme d'empreinte : elle
+  suffit à recouper deux traces sans conserver la donnée personnelle.
+- Seul le titulaire du séjour peut accepter son contrat, et une seule fois.
+
+### 31.3 Courrier entrant
+
+- Un message reçu vient d'Internet : l'analyse MIME borne la profondeur
+  d'imbrication et le nombre de parties, et ne croit aucun jeu de caractères
+  annoncé.
+- Le HTML est **nettoyé avant d'être stocké**, pas au moment de l'affichage :
+  le contenu hostile ne dort jamais en base sous sa forme d'origine.
+- Le rattachement automatique le plus fort repose sur un HMAC : une adresse de
+  réponse forgée, ou signée par une autre installation, ne rattache rien.
+- Une référence citée dans un corps de message ne fait pas autorité : elle
+  rattache, mais l'administration voit par quelle règle et peut corriger.
+- Le mot de passe IMAP est un secret chiffré au repos et jamais réaffiché ; le
+  nom de boîte est échappé avant d'entrer dans une commande IMAP, de sorte
+  qu'un nom contenant un guillemet ne puisse pas en injecter une seconde.
+- La boîte factice n'est activable que par `SECONDSTAY_IMAP_PROVIDER=fake`,
+  jamais depuis l'interface.

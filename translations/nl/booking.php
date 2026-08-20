@@ -152,6 +152,10 @@ return [
         'payment_tourist_tax' => 'Toeristenbelasting betaald',
         'payment_adjustment' => 'Correctie geïnd',
         'payment_refund' => 'Terugbetaling uitgevoerd',
+        'contract_generated' => 'Overeenkomst opgemaakt',
+        'contract_accepted' => 'Overeenkomst aanvaard',
+        'mail_received' => 'Bericht ontvangen',
+        'mail_linked' => 'Bericht gekoppeld',
     ],
     'admin' => [
         'title' => 'Reserveringen',

@@ -15,6 +15,7 @@ return [
         'database' => 'Base de données',
         'security' => 'Sécurité',
         'operations' => 'Exploitation',
+        'mailbox' => 'Courrier entrant',
     ],
     'ok' => 'Conforme',
     'missing' => 'Manquant',
@@ -92,5 +93,13 @@ return [
         'disabled' => 'Notifications push désactivées',
         'keys_missing' => 'Clés VAPID manquantes',
         'ready' => 'Notifications push opérationnelles',
+    ],
+    'mailbox' => [
+        'disabled' => 'Relève de la boîte désactivée',
+        'configured' => 'Boîte de réception configurée',
+        'not_configured' => 'Boîte de réception incomplète',
+        'reachable' => 'Connexion IMAP réussie',
+        'reply_ok' => 'Adresse de réponse configurée',
+        'reply_missing' => 'Adresse de réponse non configurée : les réponses seront rattachées au mieux',
     ],
 ];

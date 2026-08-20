@@ -111,6 +111,8 @@ final class NotificationService
                 ],
                 $user->id,
                 $event->subjectKey(),
+                is_int($context['booking_id'] ?? null) ? $context['booking_id'] : null,
+                is_string($context['reference'] ?? null) ? $context['reference'] : '',
             );
         } catch (Throwable $throwable) {
             $this->notifications->record(

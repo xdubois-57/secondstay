@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN_STATE_FILE, anonymousContext } from './helpers/fixtures.js';
+import { fillDate } from './helpers/forms.js';
 
 /**
  * Scénario critique « séjour traversant plusieurs tarifs → total exact dans
@@ -62,8 +63,8 @@ test.describe('disponibilités et tarifs', () => {
             await page.goto(`/fr/admin/pricing?month=${month}`);
             await expect(page.locator('[data-testid="pricing-month"]')).not.toBeEmpty();
 
-            await page.fill('#from', highNights[0]);
-            await page.fill('#to', highNights[2]);
+            await fillDate(page, '#from', highNights[0]);
+            await fillDate(page, '#to', highNights[2]);
             await page.fill('#price', '250,00');
             await page.fill('#note', 'Haute saison');
             await page.click('[data-testid="apply-rates"]');
@@ -84,8 +85,8 @@ test.describe('disponibilités et tarifs', () => {
             await page.goto(`/fr/admin/pricing?month=${month}`);
             const before = await page.locator('[data-block-id]').count();
 
-            await page.fill('#start', `${month}-20`);
-            await page.fill('#end', `${month}-21`);
+            await fillDate(page, '#start', `${month}-20`);
+            await fillDate(page, '#end', `${month}-21`);
             await page.selectOption('#kind', 'owner');
             await page.fill('#label', 'Séjour propriétaire');
             await page.click('[data-testid="create-block"]');

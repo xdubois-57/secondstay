@@ -10,6 +10,8 @@ use SecondStay\Controller\Admin\AdminDashboardController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
+use SecondStay\Controller\Admin\AdminDocumentController;
+use SecondStay\Controller\Admin\AdminMailboxController;
 use SecondStay\Controller\Admin\AdminPaymentController;
 use SecondStay\Controller\Admin\AdminPricingController;
 use SecondStay\Controller\Admin\AdminSettingsController;
@@ -28,6 +30,7 @@ use SecondStay\Controller\Admin\AdminMediaController;
 use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
+use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
 use SecondStay\Controller\QuoteController;
@@ -128,6 +131,19 @@ final class Routes
             'booking.show'
         );
 
+        // --- Documents et contrat ---------------------------------------------
+        $router->get('/document/{id:\d+}', [DocumentController::class, 'download'], 'document.download');
+        $router->get(
+            '/booking/{reference:[A-Za-z0-9-]{8,9}}/contract',
+            [DocumentController::class, 'contract'],
+            'contract.show'
+        );
+        $router->post(
+            '/booking/{reference:[A-Za-z0-9-]{8,9}}/contract',
+            [DocumentController::class, 'acceptContract'],
+            'contract.accept'
+        );
+
         // --- Paiement ---------------------------------------------------------
         $router->post('/payment/{id:\d+}/start', [PaymentController::class, 'start'], 'payment.start');
         $router->get('/payment/{id:\d+}/return', [PaymentController::class, 'returnFromProvider'], 'payment.return');
@@ -219,6 +235,35 @@ final class Routes
         $router->post('/admin/media/{id:\d+}', [AdminMediaController::class, 'save'], 'admin.media.save');
         $router->post('/admin/media/{id:\d+}/delete', [AdminMediaController::class, 'delete'], 'admin.media.delete');
 
+        // --- Documents ------------------------------------------------------
+        $router->get('/admin/documents', [AdminDocumentController::class, 'index'], 'admin.documents');
+        $router->post(
+            '/admin/bookings/{id:\d+}/documents',
+            [AdminDocumentController::class, 'upload'],
+            'admin.documents.upload'
+        );
+        $router->post(
+            '/admin/bookings/{id:\d+}/contract',
+            [AdminDocumentController::class, 'generateContract'],
+            'admin.contract.generate'
+        );
+        $router->post(
+            '/admin/documents/{id:\d+}/kind',
+            [AdminDocumentController::class, 'reclassify'],
+            'admin.documents.reclassify'
+        );
+        $router->post(
+            '/admin/documents/{id:\d+}/delete',
+            [AdminDocumentController::class, 'delete'],
+            'admin.documents.delete'
+        );
+
+        // --- Courrier entrant -------------------------------------------------
+        $router->get('/admin/mailbox', [AdminMailboxController::class, 'index'], 'admin.mailbox');
+        $router->get('/admin/mailbox/{id:\d+}', [AdminMailboxController::class, 'show'], 'admin.mailbox.show');
+        $router->post('/admin/mailbox/sync', [AdminMailboxController::class, 'synchronise'], 'admin.mailbox.sync');
+        $router->post('/admin/mailbox/{id:\d+}/link', [AdminMailboxController::class, 'link'], 'admin.mailbox.link');
+
         // --- Paiements ------------------------------------------------------
         $router->get('/admin/payments', [AdminPaymentController::class, 'index'], 'admin.payments');
         $router->post(
@@ -242,6 +287,9 @@ final class Routes
         $router->get('/api/dev/notifications', [DevMailboxController::class, 'notifications'], 'dev.notifications', false);
         $router->get('/api/dev/payments', [DevMailboxController::class, 'payments'], 'dev.payments', false);
         $router->post('/api/dev/payments/settle', [DevMailboxController::class, 'settlePayment'], 'dev.payments.settle', false);
+        // Dépôt d'un message dans la boîte factice : authentifié par le
+        // fournisseur de test lui-même, donc exempté de CSRF comme un webhook.
+        $router->post('/webhook/dev/inbox', [DevMailboxController::class, 'deliver'], 'dev.inbox.deliver', false);
 
         // --- Pages éditoriales (attrape-tout, déclaré en dernier) ------------
         $router->get('/{slug:[a-z0-9][a-z0-9-]*}', [PageController::class, 'show'], 'page.show');

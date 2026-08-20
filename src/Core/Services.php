@@ -34,6 +34,7 @@ use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Diagnostics\MailDnsChecker;
+use SecondStay\Diagnostics\MailboxDiagnostics;
 use SecondStay\Diagnostics\NotificationDiagnostics;
 use SecondStay\Http\CurlHttpFetcher;
 use SecondStay\Http\HttpFetcher;
@@ -70,6 +71,19 @@ use SecondStay\Security\Encryptor;
 use SecondStay\Security\RateLimiter;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
+use SecondStay\Contract\ContractBuilder;
+use SecondStay\Contract\ContractRepository;
+use SecondStay\Contract\ContractService;
+use SecondStay\Document\DocumentRepository;
+use SecondStay\Document\DocumentService;
+use SecondStay\Imap\FakeImapProvider;
+use SecondStay\Imap\ImapClient;
+use SecondStay\Imap\ImapProvider;
+use SecondStay\Imap\InboundMailRepository;
+use SecondStay\Imap\InboundMailService;
+use SecondStay\Imap\MimeParser;
+use SecondStay\I18n\Formatter;
+use SecondStay\Imap\ReplyToken;
 use SecondStay\Payment\FakePaymentProvider;
 use SecondStay\Payment\MolliePaymentProvider;
 use SecondStay\Payment\NullPaymentProvider;
@@ -193,6 +207,13 @@ final class Services
 
             return new Encryptor($keys, $active);
         });
+
+        // Le jeton d'adresse de réponse est dérivé de la clé de chiffrement
+        // de l'installation : il n'ajoute donc aucun secret à gérer, et deux
+        // installations ne signent jamais pareil.
+        $container->set(ReplyToken::class, static fn (Container $c): ReplyToken => new ReplyToken(
+            hash_hmac('sha256', 'reply-token', $c->get(Config::class)->string('security.encryption_key'))
+        ));
 
         $container->set(SettingsRepository::class, static fn (Container $c): SettingsRepository
             => new SettingsRepository($c->get(Database::class)));
@@ -332,6 +353,7 @@ final class Services
             $c->get(SettingsService::class),
             $c->get(MailRepository::class),
             $c->get(Logger::class),
+            $c->get(ReplyToken::class),
         ));
 
         // --- Notifications et push ---------------------------------------
@@ -506,6 +528,78 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
+        // --- Documents, contrats et courrier entrant ---------------------
+        $container->set(DocumentRepository::class, static fn (Container $c): DocumentRepository
+            => new DocumentRepository($c->get(Database::class)));
+
+        $container->set(DocumentService::class, static fn (Container $c): DocumentService => new DocumentService(
+            $c->get(DocumentRepository::class),
+            $c->get(Paths::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(ContractBuilder::class, static fn (Container $c): ContractBuilder => new ContractBuilder(
+            $c->get(Translator::class),
+            $c->get(Formatter::class),
+            $c->get(SettingsService::class),
+        ));
+
+        $container->set(ContractRepository::class, static fn (Container $c): ContractRepository
+            => new ContractRepository($c->get(Database::class)));
+
+        $container->set(ContractService::class, static fn (Container $c): ContractService => new ContractService(
+            $c->get(ContractBuilder::class),
+            $c->get(ContractRepository::class),
+            $c->get(DocumentService::class),
+            $c->get(DocumentRepository::class),
+            $c->get(PaymentRepository::class),
+            $c->get(BookingRepository::class),
+            $c->get(BookingEventRepository::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(InboundMailRepository::class, static fn (Container $c): InboundMailRepository
+            => new InboundMailRepository($c->get(Database::class)));
+
+        $container->set(MimeParser::class, static fn (): MimeParser => new MimeParser());
+
+        // La boîte factice n'est activable que par variable d'environnement,
+        // comme les autres fournisseurs de test.
+        $container->set(ImapProvider::class, static function (Container $c): ImapProvider {
+            if ($c->get(Config::class)->string('imap.provider', '') === FakeImapProvider::NAME) {
+                return new FakeImapProvider($c->get(Paths::class)->storage('temp/imap'));
+            }
+
+            $settings = $c->get(SettingsService::class);
+            $password = $settings->get('imap.password');
+
+            return new ImapClient(
+                $settings->string('imap.host'),
+                $settings->int('imap.port'),
+                $settings->string('imap.username'),
+                is_string($password) ? $password : '',
+                $settings->string('imap.mailbox'),
+                $settings->string('imap.encryption'),
+            );
+        });
+
+        $container->set(InboundMailService::class, static fn (Container $c): InboundMailService
+            => new InboundMailService(
+                $c->get(ImapProvider::class),
+                $c->get(InboundMailRepository::class),
+                $c->get(BookingRepository::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(DocumentService::class),
+                $c->get(MimeParser::class),
+                $c->get(HtmlSanitizer::class),
+                $c->get(ReplyToken::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            ));
+
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
             => new TokenRepository($c->get(Database::class)));
 
@@ -589,6 +683,15 @@ final class Services
                     $c->get(PushProvider::class),
                     $c->get(PushSubscriptionRepository::class),
                     $probe,
+                ));
+
+                // Comme la sonde SMTP, la connexion IMAP n'est ouverte que
+                // sur demande explicite.
+                $runner->register(new MailboxDiagnostics(
+                    $settings,
+                    $c->get(ImapProvider::class),
+                    $c->has(RequestContext::class)
+                        && $c->get(RequestContext::class)->request->query('probe') === 'imap',
                 ));
             }
 

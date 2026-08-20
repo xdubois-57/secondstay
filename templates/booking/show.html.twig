@@ -51,7 +51,19 @@
                 </ul>
             </div>
 
+            {% include 'document/_contract.html.twig' %}
+
             {% include 'payment/_schedule.html.twig' with {'show_actions': true} %}
+
+            {% include 'document/_list.html.twig' %}
+
+            {% if reply_address %}
+                <p class="small text-body-secondary" data-testid="reply-hint">
+                    {{ t('mailbox.reply_hint') }}
+                    <span class="d-block">{{ t('mailbox.reply_address') }} :
+                        <code data-testid="reply-address">{{ reply_address }}</code></span>
+                </p>
+            {% endif %}
 
             <div class="card">
                 <div class="card-header">{{ t('booking.journey.timeline') }}</div>

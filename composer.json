@@ -11,6 +11,7 @@
         "ext-openssl": "*",
         "ext-zip": "*",
         "ext-dom": "*",
+        "ext-fileinfo": "*",
         "twig/twig": "^3.11"
     },
     "require-dev": {

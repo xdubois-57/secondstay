@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 return [
     'property' => [
+        'siret' => [
+            'label' => 'SIRET',
+            'help' => 'Registratienummer, op het contract vermeld wanneer het is ingevuld.',
+        ],
         'name' => [
             'label' => 'Naam van de woning',
             'help' => 'Naam die publiek wordt getoond voor uw vakantiewoning.',
@@ -345,6 +349,62 @@ return [
         'tourist_cap_per_stay' => [
             'label' => 'Maximum per verblijf',
             'help' => 'Maximaal bedrag voor één verblijf. Nul betekent geen maximum.',
+        ],
+    ],
+    'imap' => [
+        'enabled' => [
+            'label' => 'Postbus ophalen',
+            'help' => 'Haalt periodiek de antwoorden van reizigers en hun bijlagen op.',
+        ],
+        'host' => [
+            'label' => 'IMAP-server',
+            'help' => 'Hostnaam van de postbus van de woning.',
+        ],
+        'port' => [
+            'label' => 'IMAP-poort',
+            'help' => '993 voor een versleutelde verbinding, 143 met STARTTLS.',
+        ],
+        'encryption' => [
+            'label' => 'IMAP-versleuteling',
+            'help' => 'Impliciete TLS wordt aanbevolen. Geen versleuteling is af te raden.',
+        ],
+        'username' => [
+            'label' => 'IMAP-gebruikersnaam',
+            'help' => 'Account van de opgehaalde postbus.',
+        ],
+        'password' => [
+            'label' => 'IMAP-wachtwoord',
+            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond.',
+        ],
+        'mailbox' => [
+            'label' => 'Opgehaalde map',
+            'help' => 'INBOX, tenzij antwoorden in een aparte map aankomen.',
+        ],
+        'reply_address' => [
+            'label' => 'Antwoordadres',
+            'help' => 'Adres dat aan reizigers wordt getoond. Het krijgt per reservering een label zodat antwoorden zichzelf koppelen.',
+        ],
+        'uid_validity' => [
+            'label' => 'Geldigheidskenmerk',
+            'help' => 'Ingevuld door de synchronisatie. Verandert het, dan is de postbus hernummerd en begint het ophalen opnieuw.',
+        ],
+        'batch_size' => [
+            'label' => 'Berichten per ophaalronde',
+            'help' => 'Aantal berichten per ronde. Een ophaalronde moet altijd eindigen.',
+        ],
+    ],
+    'legal' => [
+        'terms_version' => [
+            'label' => 'Versie van de voorwaarden',
+            'help' => 'Vastgelegd in elk aanvaard contract. Wijzig ze wanneer de tekst verandert.',
+        ],
+        'mediator_name' => [
+            'label' => 'Consumentenbemiddelaar',
+            'help' => 'Naam van de bemiddelaar die in het contract wordt vermeld.',
+        ],
+        'mediator_url' => [
+            'label' => 'Website van de bemiddelaar',
+            'help' => 'Waar de reiziger een geschil kan voorleggen.',
         ],
     ],
 ];

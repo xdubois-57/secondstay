@@ -11,6 +11,8 @@ return [
         'bookings' => 'Bookings',
         'pricing' => 'Rates',
         'payments' => 'Payments',
+        'documents' => 'Documents',
+        'mailbox' => 'Messages',
         'settings' => 'Configuration',
         'users' => 'Accounts',
         'backups' => 'Backups',
@@ -58,6 +60,8 @@ return [
             'update' => 'Update',
             'payment' => 'Payments',
             'tax' => 'Tourist tax',
+            'imap' => 'Incoming mail',
+            'legal' => 'Legal notices',
             'logging' => 'Logging',
         ],
         'value' => [
@@ -92,6 +96,9 @@ return [
             ],
             'payment' => [
                 'provider' => ['none' => 'None (bank transfer only)', 'mollie' => 'Mollie'],
+            ],
+            'imap' => [
+                'encryption' => ['none' => 'None', 'starttls' => 'STARTTLS', 'tls' => 'Implicit TLS'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stable', 'prerelease' => 'Pre-release'],
@@ -202,6 +209,7 @@ return [
         'title' => 'Diagnostics',
         'notification_help' => 'Check the sending and notification setup. The SMTP probe opens a real connection to your sending server.',
         'probe_smtp' => 'Test the SMTP connection',
+        'probe_imap' => 'Test the IMAP connection',
         'push_keys_generate' => 'Generate push keys',
         'push_keys_renew' => 'Renew push keys',
         'push_keys_confirm' => 'Renewing the keys invalidates every existing subscription. Continue?',

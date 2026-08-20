@@ -12,9 +12,12 @@ use SecondStay\Booking\BookingService;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Booking\QuoteService;
 use SecondStay\Booking\StayRules;
+use SecondStay\Contract\ContractService;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Document\DocumentRepository;
+use SecondStay\Imap\InboundMailService;
 use SecondStay\Payment\PaymentProvider;
 use SecondStay\Payment\PaymentService;
 use SecondStay\Pricing\DateRange;
@@ -187,6 +190,11 @@ final class BookingController extends AbstractController
 
         $settings = $this->settings();
 
+        // Le contrat est produit dès la première consultation : le voyageur
+        // doit pouvoir le lire sans attendre une action de l'administration.
+        $contracts = $this->container->get(ContractService::class);
+        $contracts->contractFor($booking);
+
         return $this->render('booking/show.html.twig', [
             'meta_title' => $this->trans('booking.journey.title'),
             'booking' => $booking,
@@ -195,6 +203,11 @@ final class BookingController extends AbstractController
             'payments' => $payments,
             'paid_cents' => $paid,
             'due_cents' => $due,
+            'contract_acceptance' => $contracts->acceptanceFor($booking),
+            'documents' => $this->container->get(DocumentRepository::class)->forBooking($booking->id),
+            'reply_address' => $settings->bool('imap.enabled')
+                ? $this->container->get(InboundMailService::class)->replyAddressFor($booking)
+                : '',
             'provider_ready' => $this->container->get(PaymentProvider::class)->isConfigured(),
             'transfer_available' => $settings->bool('payment.transfer_enabled')
                 && $settings->string('payment.iban') !== '',

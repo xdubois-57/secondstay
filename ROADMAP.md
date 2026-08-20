@@ -33,7 +33,7 @@ Une itération est terminée seulement si :
 | 5 | Disponibilités et prix | ✅ livrée |
 | 6 | Réservation sans paiement | ✅ livrée |
 | 7 | Paiements | ✅ livrée |
-| 8 | Contrats, documents, IMAP | ⏳ à venir |
+| 8 | Contrats, documents, IMAP | ✅ livrée |
 | 9 | Responsable local et opérations | ⏳ à venir |
 | 10 | Mon séjour et invités | ⏳ à venir |
 | 11 | États des lieux et incidents | ⏳ à venir |
@@ -306,6 +306,33 @@ Livrer :
 - classement.
 
 E2E : réponse mail avec contrat signé → document réservation.
+
+### Livré (0.9.0)
+
+- générateur PDF maison, sans dépendance ni binaire externe, aux polices
+  standard du format et couvrant les quatre langues ;
+- contrat rendu en FR/EN/NL/DE depuis les catalogues de traduction, avec
+  parties, logement, séjour, montants, échéancier et clauses ;
+- instantané immuable : un contrat établi n'est jamais réécrit, une
+  régénération explicite produit un nouveau document ;
+- acceptation traçable — version, langue, horodatage, empreinte du PDF et
+  empreinte de l'adresse — avec contrôle d'intégrité affiché ;
+- documents de séjour stockés hors document root, typés d'après leur contenu
+  réel, nommés par leur empreinte et servis uniquement à leur titulaire ;
+- client IMAP écrit sur socket, sans `ext-imap`, avec relève périodique
+  reprenant au dernier UID et repartant de zéro après renumérotation ;
+- analyse MIME défensive : profondeur et nombre de parties bornés, jeux de
+  caractères convertis, HTML nettoyé avant stockage ;
+- rattachement au séjour par jeton de réponse signé, en-têtes de fil,
+  référence citée ou adresse d'expéditeur, dans cet ordre de confiance ;
+- pièces jointes versées automatiquement dans les documents du séjour, avec
+  classement proposé ;
+- timeline de communication unique, entrants et sortants mêlés ;
+- diagnostics de la boîte de réception, sonde IMAP sur demande explicite ;
+- E2E `documents.spec.js` (contrat lu, accepté, réponse avec contrat signé →
+  document du séjour), tests PHP `PdfDocumentTest`, `MimeParserTest`,
+  `ImapClientTest`, `ReplyTokenTest`, `DocumentServiceTest`,
+  `ContractServiceTest` et `InboundMailServiceTest`.
 
 ## Itération 9 — Responsable local et opérations
 

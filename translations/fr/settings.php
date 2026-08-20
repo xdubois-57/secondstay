@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 return [
     'property' => [
+        'siret' => [
+            'label' => 'SIRET',
+            'help' => 'Numéro d’identification, reporté sur le contrat lorsqu’il est renseigné.',
+        ],
         'name' => [
             'label' => 'Nom du logement',
             'help' => 'Nom affiché publiquement pour votre résidence secondaire.',
@@ -345,6 +349,62 @@ return [
         'tourist_cap_per_stay' => [
             'label' => 'Plafond par séjour',
             'help' => 'Montant maximal perçu pour un séjour. Zéro signifie aucun plafond.',
+        ],
+    ],
+    'imap' => [
+        'enabled' => [
+            'label' => 'Relever la boîte de réception',
+            'help' => 'Importe périodiquement les réponses des voyageurs et leurs pièces jointes.',
+        ],
+        'host' => [
+            'label' => 'Serveur IMAP',
+            'help' => 'Nom du serveur de la boîte dédiée au logement.',
+        ],
+        'port' => [
+            'label' => 'Port IMAP',
+            'help' => '993 pour une connexion chiffrée, 143 avec STARTTLS.',
+        ],
+        'encryption' => [
+            'label' => 'Chiffrement IMAP',
+            'help' => 'TLS implicite recommandé. Aucun chiffrement n’est à éviter.',
+        ],
+        'username' => [
+            'label' => 'Identifiant IMAP',
+            'help' => 'Compte de la boîte relevée.',
+        ],
+        'password' => [
+            'label' => 'Mot de passe IMAP',
+            'help' => 'Chiffré au repos et jamais réaffiché.',
+        ],
+        'mailbox' => [
+            'label' => 'Dossier relevé',
+            'help' => 'INBOX sauf si les réponses arrivent dans un dossier dédié.',
+        ],
+        'reply_address' => [
+            'label' => 'Adresse de réponse',
+            'help' => 'Adresse annoncée aux voyageurs. Elle est étiquetée par séjour pour rattacher automatiquement les réponses.',
+        ],
+        'uid_validity' => [
+            'label' => 'Identifiant de validité',
+            'help' => 'Renseigné par la synchronisation. S’il change, la boîte a été renumérotée et la relève repart du début.',
+        ],
+        'batch_size' => [
+            'label' => 'Messages par relève',
+            'help' => 'Nombre de messages traités à chaque passage. Une relève doit toujours se terminer.',
+        ],
+    ],
+    'legal' => [
+        'terms_version' => [
+            'label' => 'Version des conditions',
+            'help' => 'Figée dans chaque contrat accepté. Changez-la lorsque le texte des conditions change.',
+        ],
+        'mediator_name' => [
+            'label' => 'Médiateur de la consommation',
+            'help' => 'Nom du médiateur mentionné dans le contrat.',
+        ],
+        'mediator_url' => [
+            'label' => 'Site du médiateur',
+            'help' => 'Adresse à laquelle le voyageur peut saisir le médiateur.',
         ],
     ],
 ];

@@ -60,6 +60,12 @@ return [
         // cela, un visiteur pourrait confirmer un séjour sans jamais payer.
         'provider' => '',
     ],
+    'imap' => [
+        // Boîte réelle configurée dans l'installation. 'fake' n'est activable
+        // que par la variable d'environnement SECONDSTAY_IMAP_PROVIDER, pour
+        // les tests : une boîte factice ne doit jamais servir en production.
+        'provider' => '',
+    ],
     'logging' => [
         'level' => 'info',
         'retention_days' => 90,

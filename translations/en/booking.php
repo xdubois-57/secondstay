@@ -152,6 +152,10 @@ return [
         'payment_tourist_tax' => 'Tourist tax paid',
         'payment_adjustment' => 'Adjustment collected',
         'payment_refund' => 'Refund issued',
+        'contract_generated' => 'Agreement drawn up',
+        'contract_accepted' => 'Agreement accepted',
+        'mail_received' => 'Message received',
+        'mail_linked' => 'Message attached',
     ],
     'admin' => [
         'title' => 'Bookings',

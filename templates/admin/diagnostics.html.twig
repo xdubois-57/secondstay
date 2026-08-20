@@ -13,6 +13,8 @@
             <p class="mb-0 text-body-secondary flex-grow-1">{{ t('admin.diagnostics.notification_help') }}</p>
             <a class="btn btn-outline-secondary" href="{{ path('admin.diagnostics') }}?probe=smtp"
                data-testid="probe-smtp">{{ t('admin.diagnostics.probe_smtp') }}</a>
+            <a class="btn btn-outline-secondary" href="{{ path('admin.diagnostics') }}?probe=imap"
+               data-testid="probe-imap">{{ t('admin.diagnostics.probe_imap') }}</a>
             <form method="post" action="{{ path('admin.diagnostics.push_keys') }}"
                   onsubmit="return confirm('{{ t('admin.diagnostics.push_keys_confirm')|e('js') }}');">
                 <input type="hidden" name="_csrf" value="{{ csrf_token }}">

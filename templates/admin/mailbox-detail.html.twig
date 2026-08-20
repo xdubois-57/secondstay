@@ -1,0 +1,61 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="card mb-4" data-testid="mail-detail" data-mail="{{ mail.id }}"
+         data-linked-by="{{ mail.linked_by }}">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between gap-3">
+                <span>{{ t('mailbox.from') }}</span>
+                <strong>{{ mail.from_name ? mail.from_name ~ ' <' ~ mail.from_address ~ '>' : mail.from_address }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-3">
+                <span>{{ t('mailbox.to') }}</span>
+                <code>{{ mail.to_address }}</code>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-3">
+                <span>{{ t('mailbox.received') }}</span>
+                <span>{{ mail.received_at }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-3">
+                <span>{{ t('mailbox.link.title') }}</span>
+                <span>
+                    {{ t('mailbox.link.' ~ (mail.linked_by ?: 'none')) }}
+                    {% if booking %}
+                        — <a href="{{ path('admin.bookings.show', {'id': booking.id}) }}"><code>{{ booking.reference }}</code></a>
+                    {% endif %}
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ mail.subject }}</div>
+        <div class="card-body">
+            {% if mail.body_html %}
+                {# Nettoyé à la réception : un e-mail est un contenu hostile. #}
+                <div data-testid="mail-html">{{ mail.body_html|raw }}</div>
+            {% else %}
+                <pre class="mb-0" style="white-space: pre-wrap;" data-testid="mail-text">{{ mail.body_text }}</pre>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if documents is not empty %}
+        <div class="card">
+            <div class="card-header">{{ t('mailbox.attachments') }}</div>
+            <ul class="list-group list-group-flush" data-testid="mail-attachments">
+                {% for document in documents %}
+                    <li class="list-group-item d-flex justify-content-between gap-2"
+                        data-document="{{ document.id }}" data-kind="{{ document.kind.value }}">
+                        <a href="{{ path('document.download', {'id': document.id}) }}">{{ document.filename }}</a>
+                        <span class="small text-body-secondary">
+                            {{ t(document.kind.labelKey) }} — {{ document.humanSize }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <p class="mt-4 mb-0"><a href="{{ path('admin.mailbox') }}">{{ t('common.back') }}</a></p>
+{% endblock %}

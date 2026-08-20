@@ -424,6 +424,7 @@ final class BookingService
     {
         $this->notifications?->notify($event, $user, [
             'reference' => $booking->reference,
+            'booking_id' => $booking->id,
             'action_path' => '/' . $booking->locale . '/account',
         ], 'booking:' . $booking->id);
     }

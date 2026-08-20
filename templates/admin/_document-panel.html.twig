@@ -1,0 +1,71 @@
+{# Documents et contrat d'un séjour, côté administration. #}
+<div class="card mb-4" data-testid="admin-documents">
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+        <span>{{ t('document.title') }}</span>
+        <form method="post" action="{{ path('admin.contract.generate', {'id': booking.id}) }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-outline-secondary" type="submit"
+                    data-testid="generate-contract">{{ t('contract.accept.title') }}</button>
+        </form>
+    </div>
+
+    {% if contract_acceptance %}
+        <div class="card-body pb-0">
+            <p class="mb-1">
+                <span class="badge text-bg-success" data-testid="contract-accepted">{{ t('contract.accept.accepted') }}</span>
+                <span class="small text-body-secondary">
+                    {{ t('contract.accept.accepted_version', {
+                        'version': contract_acceptance.version,
+                        'locale': contract_acceptance.locale|upper
+                    }) }} — {{ contract_acceptance.acceptedAt }}
+                </span>
+            </p>
+            <p class="small mb-3" data-testid="contract-integrity" data-intact="{{ contract_intact ? 'true' : 'false' }}">
+                {{ contract_intact ? t('contract.accept.intact') : t('contract.accept.altered') }}
+            </p>
+        </div>
+    {% endif %}
+
+    {% if documents is empty %}
+        <div class="card-body text-body-secondary">{{ t('document.empty') }}</div>
+    {% else %}
+        <ul class="list-group list-group-flush">
+            {% for document in documents %}
+                <li class="list-group-item d-flex justify-content-between align-items-start gap-2"
+                    data-document="{{ document.id }}" data-kind="{{ document.kind.value }}">
+                    <div>
+                        <a href="{{ path('document.download', {'id': document.id}) }}">{{ document.filename }}</a>
+                        <span class="d-block small text-body-secondary">
+                            {{ t(document.kind.labelKey) }} — {{ t(document.source.labelKey) }}
+                            {% if document.sender %} — {{ document.sender }}{% endif %}
+                        </span>
+                    </div>
+                    <span class="text-nowrap small text-body-secondary">{{ document.humanSize }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end"
+              action="{{ path('admin.documents.upload', {'id': booking.id}) }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <div class="col-12 col-md-5">
+                <label class="form-label" for="document">{{ t('document.file') }}</label>
+                <input class="form-control form-control-sm" type="file" id="document" name="document" required>
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="document_kind">{{ t('document.column_kind') }}</label>
+                <select class="form-select form-select-sm" id="document_kind" name="kind">
+                    {% for kind in document_kinds %}
+                        <option value="{{ kind.value }}">{{ t(kind.labelKey) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-3 d-grid">
+                <button class="btn btn-sm btn-primary" type="submit"
+                        data-testid="upload-document">{{ t('document.upload') }}</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -95,6 +95,7 @@ final class SettingRegistry
             new SettingDefinition('property.longitude', SettingType::Decimal, null, 'property', min: -180, max: 180),
             new SettingDefinition('property.contact_email', SettingType::Email, '', 'property'),
             new SettingDefinition('property.contact_phone', SettingType::String, '', 'property', max: 40),
+            new SettingDefinition('property.siret', SettingType::String, '', 'property', max: 20),
 
             // --- Site -----------------------------------------------------
             new SettingDefinition(
@@ -149,6 +150,13 @@ final class SettingRegistry
             new SettingDefinition('pricing.deposit_percent', SettingType::Integer, 30, 'pricing', min: 0, max: 100),
             new SettingDefinition('pricing.security_deposit', SettingType::Money, 50000, 'pricing', min: 0),
 
+            // --- Mentions légales -------------------------------------------
+            // La version des conditions est figée dans chaque contrat : elle
+            // doit donc être une valeur explicite, pas une date implicite.
+            new SettingDefinition('legal.terms_version', SettingType::String, '', 'legal', max: 24),
+            new SettingDefinition('legal.mediator_name', SettingType::String, '', 'legal', max: 190),
+            new SettingDefinition('legal.mediator_url', SettingType::Url, '', 'legal'),
+
             // --- Paiements --------------------------------------------------
             new SettingDefinition(
                 'payment.provider',
@@ -186,6 +194,26 @@ final class SettingRegistry
             new SettingDefinition('mail.smtp_username', SettingType::String, '', 'mail', max: 190),
             new SettingDefinition('mail.smtp_password', SettingType::Secret, null, 'mail'),
             new SettingDefinition('mail.dkim_selector', SettingType::String, '', 'mail', max: 64),
+
+            // --- Courrier entrant (IMAP) ------------------------------------
+            new SettingDefinition('imap.enabled', SettingType::Bool, false, 'imap'),
+            new SettingDefinition('imap.host', SettingType::String, '', 'imap', max: 190),
+            new SettingDefinition('imap.port', SettingType::Integer, 993, 'imap', min: 1, max: 65535),
+            new SettingDefinition(
+                'imap.encryption',
+                SettingType::Enum,
+                'tls',
+                'imap',
+                enumValues: ['none', 'starttls', 'tls']
+            ),
+            new SettingDefinition('imap.username', SettingType::String, '', 'imap', max: 190),
+            new SettingDefinition('imap.password', SettingType::Secret, null, 'imap'),
+            new SettingDefinition('imap.mailbox', SettingType::String, 'INBOX', 'imap', max: 64),
+            // Adresse annoncée en `Reply-To`, étiquetée par séjour.
+            new SettingDefinition('imap.reply_address', SettingType::Email, '', 'imap'),
+            // Renseignés par la synchronisation elle-même, pas par l'humain.
+            new SettingDefinition('imap.uid_validity', SettingType::Integer, 0, 'imap', min: 0),
+            new SettingDefinition('imap.batch_size', SettingType::Integer, 25, 'imap', min: 1, max: 200),
 
             // --- Notifications ----------------------------------------------
             new SettingDefinition('notification.push_enabled', SettingType::Bool, false, 'notification'),

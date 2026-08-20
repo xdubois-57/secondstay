@@ -438,6 +438,7 @@ final class PaymentService
 
         $this->notifications->notify(NotificationEvent::PaymentReceived, $user, [
             'reference' => $booking->reference,
+            'booking_id' => $booking->id,
             'action_path' => '/' . $booking->locale . '/booking/' . $booking->reference,
         ], 'payment:' . $payment->id);
     }

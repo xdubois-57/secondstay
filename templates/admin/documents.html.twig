@@ -1,0 +1,64 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    {% if documents is empty %}
+        <p class="text-body-secondary" data-testid="documents-empty">{{ t('document.empty') }}</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table align-middle" data-testid="documents-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ t('document.name') }}</th>
+                        <th scope="col">{{ t('document.booking') }}</th>
+                        <th scope="col">{{ t('document.column_kind') }}</th>
+                        <th scope="col">{{ t('document.column_source') }}</th>
+                        <th scope="col">{{ t('document.size') }}</th>
+                        <th scope="col">{{ t('document.added') }}</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in documents %}
+                        {% set document = row.document %}
+                        <tr data-document="{{ document.id }}" data-kind="{{ document.kind.value }}">
+                            <td>
+                                <a href="{{ path('document.download', {'id': document.id}) }}">{{ document.filename }}</a>
+                                {% if document.sender %}
+                                    <span class="d-block small text-body-secondary">{{ document.sender }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.reference %}
+                                    <a href="{{ path('admin.bookings.show', {'id': document.bookingId}) }}">
+                                        <code>{{ row.reference }}</code>
+                                    </a>
+                                {% else %}
+                                    <span class="text-body-secondary">{{ t('document.unassigned') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ t(document.kind.labelKey) }}</td>
+                            <td>{{ t(document.source.labelKey) }}</td>
+                            <td class="text-nowrap">{{ document.humanSize }}</td>
+                            <td class="text-nowrap">{{ document.createdAt }}</td>
+                            <td>
+                                <form method="post" class="d-flex gap-2"
+                                      action="{{ path('admin.documents.reclassify', {'id': document.id}) }}">
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                    <label class="visually-hidden" for="kind-{{ document.id }}">{{ t('document.column_kind') }}</label>
+                                    <select class="form-select form-select-sm" id="kind-{{ document.id }}" name="kind">
+                                        {% for kind in kinds %}
+                                            <option value="{{ kind.value }}"
+                                                    {{ kind.value == document.kind.value ? 'selected' : '' }}>{{ t(kind.labelKey) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit"
+                                            data-testid="reclassify-{{ document.id }}">{{ t('document.reclassify') }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

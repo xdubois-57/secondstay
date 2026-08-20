@@ -1199,3 +1199,129 @@ territoire, classification, exemptions, historisation du contexte de calcul
 (SPECIFICATIONS.md §63) — arrive à l'itération « France et conformité » et
 prendra la place de ce calcul sans changer les appelants : le montant reste un
 composant de paiement comme un autre.
+
+## 37. Itération 8 — contrats, documents, courrier entrant
+
+### 37.1 Nouveaux modules
+
+```text
+src/Pdf/
+├── PdfDocument            générateur PDF : pages, titres, paires, tableaux
+├── PdfFont                polices standard et métriques de largeur
+└── WinAnsi                conversion UTF-8 → WinAnsiEncoding
+
+src/Contract/
+├── ContractBuilder        rend le contrat depuis le séjour et les réglages
+├── ContractService        instantané, acceptation, contrôle d'intégrité
+├── ContractAcceptance     trace d'acceptation
+└── ContractRepository     persistance des acceptations
+
+src/Document/
+├── DocumentKind           contrat, contrat signé, reçu, justificatif…
+├── DocumentSource         généré, déposé, reçu par e-mail
+├── Document               document rattaché à un séjour
+├── DocumentRepository     persistance et recherche par empreinte
+└── DocumentService        stockage hors document root, type réel, suppression
+
+src/Imap/
+├── ImapProvider           frontière de récupération du courrier
+├── ImapClient             client IMAP sur socket, sans ext-imap
+├── FakeImapProvider       boîte factice, activée par variable d'environnement
+├── MimeParser             analyse défensive des messages reçus
+├── MimeMessage            message analysé
+├── ReplyToken             adresse de réponse signée, étiquetée par séjour
+├── LinkMethod             comment un message a été rattaché
+├── InboundMailRepository  persistance du courrier entrant
+└── InboundMailService     relève, rattachement, pièces jointes → documents
+
+src/Diagnostics/
+└── MailboxDiagnostics     contrôles de la boîte de réception
+```
+
+### 37.2 Un PDF écrit sur place
+
+Le contrat est un PDF produit par l'application : l'hébergement mutualisé visé
+n'a ni Composer ni binaire externe, et le contenu d'un contrat n'a rien à
+faire chez un tiers.
+
+`PdfDocument` s'en tient aux polices **standard** du format, en
+`WinAnsiEncoding` : rien n'est embarqué, les fichiers pèsent quelques
+kilo-octets, et le codage couvre l'intégralité des lettres du français, du
+néerlandais, de l'allemand et de l'anglais, plus l'euro et les guillemets. Un
+caractère hors table est translittéré plutôt que perdu : un contrat où « œ »
+deviendrait un carré vide serait pire qu'un contrat où il devient « oe ».
+
+La sortie est déterministe : deux générations des mêmes données donnent le
+même fichier, sans quoi aucune empreinte ne serait stable.
+
+### 37.3 Le contrat est un instantané
+
+`ContractService::contractFor()` génère le contrat au premier appel puis
+renvoie toujours le même document. Un changement de tarif, de nom du logement
+ou de modèle ne réécrit jamais un contrat existant (SPECIFICATIONS.md §39).
+Une régénération explicite produit un **nouveau** document et laisse
+l'ancien lisible tel quel.
+
+L'acceptation enregistre la version du modèle, la langue, l'utilisateur, la
+date et l'**empreinte du PDF accepté** (SPECIFICATIONS.md §40). Rejouer
+l'historique d'un séjour redonne donc ce que le client a lu, et une
+substitution du fichier se voit immédiatement. L'adresse IP n'est conservée
+que sous forme d'empreinte : elle suffit à recouper deux traces sans conserver
+la donnée elle-même.
+
+### 37.4 Documents
+
+Aucun document ne vit sous le document root : chaque octet est servi par
+l'application, après vérification que le demandeur est bien le titulaire du
+séjour. Trois règles complètent cela :
+
+- le **nom d'origine** est conservé pour l'affichage mais jamais utilisé comme
+  nom de fichier ; le chemin sur disque est dérivé de l'empreinte SHA-256 et
+  réparti en sous-répertoires ;
+- le **type MIME** est déduit du contenu réel, jamais de l'extension ni de ce
+  que l'expéditeur annonce ; la liste des types acceptés est fermée ;
+- le chemin lu en base est **confronté à la racine du stockage** avant toute
+  lecture, de sorte qu'une valeur corrompue ne fasse jamais lire un fichier
+  arbitraire.
+
+Un même fichier reçu deux fois ne crée qu'un document : l'empreinte le
+reconnaît.
+
+### 37.5 Courrier entrant
+
+`ext-imap` est absente de la plupart des hébergements mutualisés visés et
+n'est plus maintenue dans le cœur de PHP : le protocole est parlé directement
+sur socket, comme l'est déjà SMTP. Pas d'IDLE : la relève est périodique
+(SPECIFICATIONS.md §36), reprend au dernier UID importé, et repart de zéro si
+le serveur a changé d'`UIDVALIDITY`.
+
+Un point mérite l'attention : `UID n:*` renvoie toujours au moins un message,
+même quand tous sont plus anciens que la borne. Le client filtre donc
+lui-même, sans quoi il réimporterait le dernier message à chaque passage.
+
+L'analyse MIME est défensive — profondeur d'imbrication bornée, nombre de
+parties borné, jeu de caractères jamais cru sur parole — parce qu'un message
+reçu vient d'Internet. Le HTML est nettoyé **avant** d'être stocké.
+
+### 37.6 Rattachement au séjour
+
+Quatre règles, appliquées dans l'ordre de leur solidité
+(SPECIFICATIONS.md §36) :
+
+| Rang | Règle | Ce qu'elle vaut |
+|---|---|---|
+| 1 | jeton signé dans l'adresse de réponse | signature HMAC : infalsifiable |
+| 2 | en-têtes de fil citant un `Message-ID` émis | difficile à forger de bout en bout |
+| 3 | référence citée dans le sujet ou le corps | n'importe qui peut l'écrire |
+| 4 | adresse de l'expéditeur, si elle ne désigne qu'un séjour | ambiguë par nature |
+
+Les e-mails sortants liés à un séjour annoncent un `Reply-To` de la forme
+`boite+SS-2026-0001.a1b2c3d4@domaine`. Le suffixe est un HMAC tronqué de la
+référence : sans lui, connaître ou deviner une référence suffirait à faire
+rattacher n'importe quel courrier au séjour de quelqu'un d'autre. La clé est
+dérivée de la clé de chiffrement de l'installation : aucun secret
+supplémentaire à gérer, et deux installations ne signent jamais pareil.
+
+Toute pièce jointe d'un message rattaché devient un document du séjour, avec
+un classement proposé d'après son nom et le sujet (SPECIFICATIONS.md §38). Une
+image intégrée au corps HTML n'en est pas une : elle est écartée.

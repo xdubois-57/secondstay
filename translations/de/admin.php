@@ -11,6 +11,8 @@ return [
         'bookings' => 'Buchungen',
         'pricing' => 'Preise',
         'payments' => 'Zahlungen',
+        'documents' => 'Dokumente',
+        'mailbox' => 'Nachrichten',
         'settings' => 'Konfiguration',
         'users' => 'Konten',
         'backups' => 'Sicherungen',
@@ -58,6 +60,8 @@ return [
             'update' => 'Aktualisierung',
             'payment' => 'Zahlungen',
             'tax' => 'Kurtaxe',
+            'imap' => 'Eingehende Post',
+            'legal' => 'Rechtliche Hinweise',
             'logging' => 'Protokollierung',
         ],
         'value' => [
@@ -92,6 +96,9 @@ return [
             ],
             'payment' => [
                 'provider' => ['none' => 'Keiner (nur Überweisung)', 'mollie' => 'Mollie'],
+            ],
+            'imap' => [
+                'encryption' => ['none' => 'Keine', 'starttls' => 'STARTTLS', 'tls' => 'Implizites TLS'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stabil', 'prerelease' => 'Vorabversion'],
@@ -202,6 +209,7 @@ return [
         'title' => 'Diagnose',
         'notification_help' => 'Prüfen Sie die Versand- und Benachrichtigungseinstellungen. Die SMTP-Sonde öffnet eine echte Verbindung zu Ihrem Versandserver.',
         'probe_smtp' => 'SMTP-Verbindung testen',
+        'probe_imap' => 'IMAP-Verbindung testen',
         'push_keys_generate' => 'Push-Schlüssel erzeugen',
         'push_keys_renew' => 'Push-Schlüssel erneuern',
         'push_keys_confirm' => 'Das Erneuern der Schlüssel macht alle bestehenden Abonnements ungültig. Fortfahren?',

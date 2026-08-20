@@ -15,6 +15,7 @@ return [
         'database' => 'Datenbank',
         'security' => 'Sicherheit',
         'operations' => 'Betrieb',
+        'mailbox' => 'Eingehende Post',
     ],
     'ok' => 'In Ordnung',
     'missing' => 'Fehlt',
@@ -92,5 +93,13 @@ return [
         'disabled' => 'Push-Benachrichtigungen deaktiviert',
         'keys_missing' => 'VAPID-Schlüssel fehlen',
         'ready' => 'Push-Benachrichtigungen betriebsbereit',
+    ],
+    'mailbox' => [
+        'disabled' => 'Postfachabruf deaktiviert',
+        'configured' => 'Postfach konfiguriert',
+        'not_configured' => 'Postfachkonfiguration unvollständig',
+        'reachable' => 'IMAP-Verbindung erfolgreich',
+        'reply_ok' => 'Antwortadresse konfiguriert',
+        'reply_missing' => 'Keine Antwortadresse konfiguriert: Antworten werden bestmöglich zugeordnet',
     ],
 ];

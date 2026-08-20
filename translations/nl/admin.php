@@ -11,6 +11,8 @@ return [
         'bookings' => 'Reserveringen',
         'pricing' => 'Tarieven',
         'payments' => 'Betalingen',
+        'documents' => 'Documenten',
+        'mailbox' => 'Berichten',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
         'backups' => 'Back-ups',
@@ -58,6 +60,8 @@ return [
             'update' => 'Update',
             'payment' => 'Betalingen',
             'tax' => 'Toeristenbelasting',
+            'imap' => 'Inkomende post',
+            'legal' => 'Juridische vermeldingen',
             'logging' => 'Logboek',
         ],
         'value' => [
@@ -92,6 +96,9 @@ return [
             ],
             'payment' => [
                 'provider' => ['none' => 'Geen (alleen overschrijving)', 'mollie' => 'Mollie'],
+            ],
+            'imap' => [
+                'encryption' => ['none' => 'Geen', 'starttls' => 'STARTTLS', 'tls' => 'Impliciete TLS'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stabiel', 'prerelease' => 'Pre-release'],
@@ -202,6 +209,7 @@ return [
         'title' => 'Diagnostiek',
         'notification_help' => 'Controleer de verzend- en meldingsinstellingen. De SMTP-sonde opent een echte verbinding met uw verzendserver.',
         'probe_smtp' => 'SMTP-verbinding testen',
+        'probe_imap' => 'IMAP-verbinding testen',
         'push_keys_generate' => 'Pushsleutels genereren',
         'push_keys_renew' => 'Pushsleutels vernieuwen',
         'push_keys_confirm' => 'Het vernieuwen van de sleutels maakt alle bestaande abonnementen ongeldig. Doorgaan?',

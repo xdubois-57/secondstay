@@ -1,0 +1,87 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-4">
+        <p class="mb-0 text-body-secondary" data-testid="mailbox-state"
+           data-enabled="{{ enabled ? 'true' : 'false' }}"
+           data-configured="{{ configured ? 'true' : 'false' }}">
+            {{ enabled ? t('mailbox.inbound') : t('mailbox.sync.disabled') }}
+        </p>
+        <form method="post" action="{{ path('admin.mailbox.sync') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <button class="btn btn-outline-secondary" type="submit"
+                    data-testid="mailbox-sync">{{ t('mailbox.action.sync') }}</button>
+        </form>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('mailbox.unlinked') }}</div>
+        {% if unlinked is empty %}
+            <div class="card-body text-body-secondary"
+                 data-testid="unlinked-empty">{{ t('mailbox.unlinked_empty') }}</div>
+        {% else %}
+            <ul class="list-group list-group-flush" data-testid="unlinked-list">
+                {% for message in unlinked %}
+                    <li class="list-group-item" data-mail="{{ message.id }}">
+                        <div class="d-flex justify-content-between gap-2">
+                            <div>
+                                <a href="{{ path('admin.mailbox.show', {'id': message.id}) }}">{{ message.subject }}</a>
+                                <span class="d-block small text-body-secondary">
+                                    {{ message.from_address }} — {{ message.received_at }}
+                                </span>
+                            </div>
+                        </div>
+                        <form method="post" class="d-flex flex-wrap gap-2 mt-2"
+                              action="{{ path('admin.mailbox.link', {'id': message.id}) }}">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                            <label class="visually-hidden" for="reference-{{ message.id }}">
+                                {{ t('mailbox.action.reference') }}
+                            </label>
+                            <input class="form-control form-control-sm" style="max-width: 12rem;"
+                                   id="reference-{{ message.id }}" name="reference"
+                                   placeholder="{{ t('mailbox.action.reference') }}" required>
+                            <button class="btn btn-sm btn-primary" type="submit"
+                                    data-testid="link-{{ message.id }}">{{ t('mailbox.action.link') }}</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('mailbox.inbound') }}</div>
+        {% if messages is empty %}
+            <div class="card-body text-body-secondary" data-testid="mailbox-empty">{{ t('mailbox.empty') }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle" data-testid="mailbox-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('mailbox.from') }}</th>
+                            <th scope="col">{{ t('mailbox.subject') }}</th>
+                            <th scope="col">{{ t('mailbox.link.title') }}</th>
+                            <th scope="col">{{ t('mailbox.received') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message in messages %}
+                            <tr data-mail="{{ message.id }}" data-linked-by="{{ message.linked_by }}">
+                                <td>{{ message.from_address }}</td>
+                                <td><a href="{{ path('admin.mailbox.show', {'id': message.id}) }}">{{ message.subject }}</a></td>
+                                <td>
+                                    {% if message.booking_id %}
+                                        <span class="badge text-bg-success">{{ t('mailbox.link.' ~ (message.linked_by ?: 'none')) }}</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">{{ t('mailbox.link.none') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap">{{ message.received_at }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
