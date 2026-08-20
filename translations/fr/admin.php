@@ -14,6 +14,7 @@ return [
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Exploitation',
+        'stay' => 'Livret d’accueil',
         'settings' => 'Configuration',
         'users' => 'Comptes',
         'backups' => 'Sauvegardes',

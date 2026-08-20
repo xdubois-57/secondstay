@@ -22,8 +22,37 @@ const SHELL = [
     BASE + '/assets/vendor/bootstrap/js/bootstrap.bundle.min.js'
 ].concat(LOCALES.map((locale) => BASE + '/' + locale + '/offline'));
 
-/** Chemins qui ne doivent jamais quitter le réseau. */
-const NEVER_CACHED = [/\/admin(\/|$)/, /\/account(\/|$)/, /\/api\//, /\/login$/, /\/logout$/, /\/media\/original\//];
+/**
+ * Chemins qui ne doivent jamais quitter le réseau.
+ *
+ * La règle vient de la spécification : le livret d'accueil, le Wi-Fi, les
+ * règles, les déchets, la sécurité et le contact local peuvent vivre hors
+ * ligne ; les paiements, les documents et l'écriture d'une réservation, non.
+ * La fiche de réservation porte l'échéancier et les documents : elle est donc
+ * exclue, et c'est la page « Mon séjour » qui sert de version hors ligne.
+ */
+const NEVER_CACHED = [
+    /\/admin(\/|$)/,
+    /\/account(\/|$)/,
+    /\/api\//,
+    /\/login$/,
+    /\/logout$/,
+    /\/media\/original\//,
+    /\/booking(\/|$)/,
+    /\/payment\//,
+    /\/document\//,
+    /\/calendar\//
+];
+
+/** Pages dont la version hors ligne a un sens. */
+const OFFLINE_FIRST = [/\/stay\/[A-Z0-9-]+$/i, /\/guest\/[a-f0-9]{64}$/];
+
+/** Au-delà, on considère que le réseau ne répondra pas à temps. */
+const NETWORK_TIMEOUT_MS = 3000;
+
+function isOfflineFirst(pathname) {
+    return OFFLINE_FIRST.some((pattern) => pattern.test(pathname));
+}
 
 function pageCacheName(locale) {
     return PAGE_PREFIX + locale + '-' + VERSION;
@@ -88,20 +117,44 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Les pages : réseau d'abord, cache localisé en secours.
     const locale = localeOf(url.pathname);
-    event.respondWith(
-        fetch(event.request)
-            .then((response) => {
-                if (response.ok) {
-                    const copy = response.clone();
-                    caches.open(pageCacheName(locale)).then((cache) => cache.put(event.request, copy));
-                }
-                return response;
-            })
-            .catch(() => caches.match(event.request)
-                .then((cached) => cached || caches.match(BASE + '/' + locale + '/offline')))
-    );
+
+    const store = (response) => {
+        if (response.ok) {
+            const copy = response.clone();
+            caches.open(pageCacheName(locale)).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+    };
+
+    const fallback = () => caches.match(event.request)
+        .then((cached) => cached || caches.match(BASE + '/' + locale + '/offline'));
+
+    // « Mon séjour » : réseau d'abord, mais sans attendre indéfiniment.
+    //
+    // Le voyageur qui cherche le code de la boîte à clés est souvent devant la
+    // porte, avec une barre de réseau : attendre l'expiration complète d'une
+    // requête serait le mauvais comportement. Servir le cache d'emblée le
+    // serait tout autant — il afficherait une page périmée juste après une
+    // action. Un délai court tranche les deux : le réseau gagne quand il
+    // répond, le cache prend le relais quand il ne répond pas.
+    if (isOfflineFirst(url.pathname)) {
+        // Aucune des deux promesses ne rejette : une promesse perdante qui
+        // rejetterait après la course produirait un rejet non traité dans le
+        // service worker, ce qui est une bonne façon de le faire tomber.
+        const fromNetwork = fetch(event.request).then(store).catch(() => null);
+        const afterDelay = new Promise((resolve) => {
+            setTimeout(() => resolve(null), NETWORK_TIMEOUT_MS);
+        });
+
+        event.respondWith(
+            Promise.race([fromNetwork, afterDelay]).then((response) => response || fallback())
+        );
+        return;
+    }
+
+    // Les autres pages : réseau d'abord, cache localisé en secours.
+    event.respondWith(fetch(event.request).then(store).catch(fallback));
 });
 
 self.addEventListener('push', (event) => {

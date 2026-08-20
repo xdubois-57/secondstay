@@ -1,0 +1,97 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('stay.admin.intro') }}</p>
+
+    <ul class="nav nav-tabs mb-4" data-testid="stay-locales">
+        {% for available in locales %}
+            <li class="nav-item">
+                <a class="nav-link{{ available == current_locale ? ' active' : '' }}"
+                   href="{{ path('admin.stay') }}?locale={{ available }}"
+                   data-stay-locale="{{ available }}">{{ locale_name(available) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="card mb-4">
+        <div class="card-header">{{ t('stay.admin.completeness') }}</div>
+        <ul class="list-group list-group-flush" data-testid="stay-completeness">
+            {% for code, filled in completeness %}
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    data-block="{{ code }}">
+                    <span>{{ t('stay.block.' ~ code) }}</span>
+                    <span>
+                        {% for available in locales %}
+                            <span class="badge {{ available in filled ? 'text-bg-success' : 'text-bg-secondary' }}"
+                                  data-locale="{{ available }}"
+                                  data-filled="{{ available in filled ? 'true' : 'false' }}">{{ available|upper }}</span>
+                        {% endfor %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" action="{{ path('admin.stay.save') }}" data-testid="stay-form">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <input type="hidden" name="locale" value="{{ current_locale }}">
+
+        {% for field in fields %}
+            <div class="card mb-3" data-block-editor="{{ field.code }}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>{{ t('stay.block.' ~ field.code) }}</span>
+                    <span class="badge text-bg-secondary">{{ t('stay.phase.' ~ (field.phase == 'any' ? 'during' : field.phase)) }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="title_{{ field.code }}">{{ t('stay.admin.block_title') }}</label>
+                        <input class="form-control" id="title_{{ field.code }}" name="title_{{ field.code }}"
+                               maxlength="190" value="{{ field.title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="body_{{ field.code }}">{{ t('stay.admin.block_body') }}</label>
+                        <textarea class="form-control" id="body_{{ field.code }}" name="body_{{ field.code }}"
+                                  rows="4">{{ field.body }}</textarea>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="published_{{ field.code }}" name="published_{{ field.code }}" value="1"
+                               {{ field.published ? 'checked' : '' }}>
+                        <label class="form-check-label" for="published_{{ field.code }}">{{ t('stay.admin.published') }}</label>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <button class="btn btn-primary" type="submit" data-testid="stay-save">{{ t('stay.admin.save') }}</button>
+    </form>
+
+    <div class="card mt-4">
+        <div class="card-header">{{ t('stay.admin.secrets') }}</div>
+        <div class="card-body">
+            <p class="text-body-secondary">{{ t('stay.admin.secrets_intro') }}</p>
+            <form method="post" action="{{ path('admin.stay.secrets') }}" data-testid="stay-secrets-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                {% for secret in secrets %}
+                    <div class="row g-2 align-items-end mb-3" data-secret="{{ secret.code }}">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="secret_{{ secret.code }}">{{ t('stay.secret.' ~ secret.code) }}</label>
+                            <input class="form-control" type="password" autocomplete="new-password"
+                                   id="secret_{{ secret.code }}" name="secret_{{ secret.code }}"
+                                   placeholder="{{ secret.defined ? secret.preview : t('stay.admin.not_set') }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       id="clear_{{ secret.code }}" name="clear_{{ secret.code }}" value="1">
+                                <label class="form-check-label" for="clear_{{ secret.code }}">{{ t('stay.admin.clear') }}</label>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                <button class="btn btn-primary" type="submit"
+                        data-testid="stay-secrets-save">{{ t('stay.admin.save') }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

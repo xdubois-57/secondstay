@@ -769,3 +769,40 @@ penser : chaque portée ne montre donc que ce dont son destinataire a besoin.
 - Une ligne de checklist n'accepte que les codes déclarés : un code arbitraire
   est refusé plutôt qu'écrit en base.
 - Supprimer un compte n'emporte aucun séjour : seule l'affectation disparaît.
+
+## 33. Mon séjour, invités et hors ligne
+
+### 33.1 Codes d'accès
+
+- Les codes — Wi-Fi, boîte à clés, alarme, portail — sont chiffrés au repos
+  avec le mécanisme des secrets de l'installation. Un code d'alarme en clair
+  dans une sauvegarde serait un incident.
+- Ils ne sortent que pendant la fenêtre du séjour : arrivée, séjour, départ.
+  Hors de cette fenêtre le modèle d'affichage ne les porte pas du tout, de
+  sorte qu'aucun gabarit ne puisse les révéler.
+- L'administration n'en affiche qu'un aperçu masqué ; un champ laissé vide
+  conserve la valeur existante, l'interface ne peut donc pas renvoyer un
+  secret qu'elle n'a jamais montré.
+- Le journal d'audit enregistre **quels** codes ont changé, jamais leur valeur.
+
+### 33.2 Liens invité
+
+- Le jeton fait 32 octets et n'est stocké que haché ; il n'est affiché qu'une
+  fois et transite par la session, pas par l'URL.
+- Le lien expire deux jours après le départ, et l'expiration est évaluée en
+  base : une horloge d'appareil faussée ne prolonge rien.
+- Un lien révoqué, expiré ou inconnu donne la même réponse : une adresse qui
+  n'existe pas.
+- Un invité ne voit ni référence de séjour, ni montants, ni documents, ni
+  partage, et ne peut pas remonter à la réservation.
+- Un séjour annulé ne délivre plus de lien.
+
+### 33.3 Hors ligne
+
+- La liste des chemins jamais mis en cache s'est étendue à `/booking/`,
+  `/payment/`, `/document/` et `/calendar/` : la fiche de réservation porte
+  désormais l'échéancier et les documents, elle n'a plus sa place sur le
+  disque d'un appareil.
+- Seules les pages de séjour et de lien invité sont conçues pour le cache, et
+  elles ne portent par construction ni montant ni document.
+- Les pages propres à un séjour sont servies avec `noindex, nofollow`.

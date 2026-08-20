@@ -356,6 +356,29 @@ fournisseur avant de changer quoi que ce soit.
 Sans clé de fournisseur configurée, le paiement en ligne n'est simplement pas
 proposé ; le virement et l'encaissement manuel restent disponibles.
 
+## Mon séjour
+
+Chaque séjour a sa page, adaptée au moment : avant l'arrivée, le jour J,
+pendant, au départ, après. On y trouve le livret d'accueil, le Wi-Fi, les
+accès, le tri des déchets, les règles, la sécurité et le contact sur place.
+
+```text
+/fr/stay/<réf>     mon séjour, pour le voyageur
+/guest/<jeton>     lien invité, sans compte
+```
+
+Les codes d'accès — Wi-Fi, boîte à clés, alarme — sont chiffrés au repos et
+n'apparaissent que **pendant** le séjour : un code publié un mois à l'avance
+ou resté lisible après le départ n'est plus un code d'accès.
+
+Cette page est la seule conçue pour fonctionner **hors ligne** : elle ne porte
+ni montant, ni document, ni action d'écriture. Le voyageur qui cherche le code
+de la boîte à clés devant la porte, sans réseau, le trouve quand même.
+
+Un lien invité donne accès à ces informations pratiques — et à rien d'autre.
+Il expire peu après le départ, se révoque, et s'accompagne d'un QR à imprimer
+pour l'afficher dans le logement.
+
 ## Responsable local et exploitation
 
 Plusieurs comptes peuvent être responsables locaux. Un séjour reçoit un

@@ -57,6 +57,12 @@
 
             {% include 'document/_list.html.twig' %}
 
+            <p class="mb-4">
+                <a class="btn btn-primary"
+                   href="{{ path('stay.show', {'reference': booking.reference}) }}"
+                   data-testid="stay-link">{{ t('stay.today') }}</a>
+            </p>
+
             {% if manager %}
                 <div class="card mb-4" data-testid="stay-manager">
                     <div class="card-header">{{ t('operations.manager.contact') }}</div>

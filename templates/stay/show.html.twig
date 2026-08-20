@@ -1,0 +1,166 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <section class="py-4">
+        <div class="container" style="max-width: 44rem;"
+             data-testid="stay-page"
+             data-phase="{{ stay.phase.value }}"
+             data-guest="{{ stay.isGuest ? 'true' : 'false' }}"
+             data-locale="{{ stay.locale }}">
+
+            {% if stay.isGuest %}
+                <p class="alert alert-secondary" data-testid="guest-banner">{{ t('stay.guest.banner') }}</p>
+            {% endif %}
+
+            <h1 class="h3 mb-1">{{ t('stay.today') }}</h1>
+            <p class="text-body-secondary mb-4" data-testid="stay-phase">
+                {{ t(stay.phase.labelKey) }}
+                {% if stay.phase.value == 'before' %}
+                    —
+                    {% if stay.nightsUntilArrival == 0 %}
+                        {{ t('stay.countdown.today') }}
+                    {% elseif stay.nightsUntilArrival == 1 %}
+                        {{ t('stay.countdown.tomorrow') }}
+                    {% else %}
+                        {{ tc('stay.countdown.days', stay.nightsUntilArrival, {'count': stay.nightsUntilArrival}) }}
+                    {% endif %}
+                {% endif %}
+            </p>
+
+            <div class="card mb-4">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between gap-2">
+                        <span>{{ t('stay.dates') }}</span>
+                        <strong>{{ booking.range.arrival|daymonth }} → {{ booking.range.departure|daymonth }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-2">
+                        <span>{{ t('stay.checkin') }}</span>
+                        <strong>{{ stay.checkinTime }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between gap-2">
+                        <span>{{ t('stay.checkout') }}</span>
+                        <strong>{{ stay.checkoutTime }}</strong>
+                    </li>
+                    {% if not stay.isGuest %}
+                        <li class="list-group-item d-flex justify-content-between gap-2">
+                            <span>{{ t('stay.reference') }}</span>
+                            <code data-testid="stay-reference">{{ booking.reference }}</code>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {# Codes d'accès : uniquement pendant le séjour. #}
+            <div class="card mb-4" data-testid="stay-secrets" data-visible="{{ stay.hasSecrets ? 'true' : 'false' }}">
+                <div class="card-header">{{ t('stay.secret.title') }}</div>
+                {% if stay.hasSecrets %}
+                    <ul class="list-group list-group-flush">
+                        {% for code, value in stay.secrets %}
+                            <li class="list-group-item d-flex justify-content-between gap-2" data-secret="{{ code }}">
+                                <span>{{ t('stay.secret.' ~ code) }}</span>
+                                <code class="user-select-all">{{ value }}</code>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="card-footer small text-body-secondary">{{ t('stay.secret.shown_during') }}</div>
+                {% else %}
+                    <div class="card-body text-body-secondary" data-testid="secrets-hidden">
+                        {{ stay.phase.value == 'after' ? t('stay.countdown.past') : t('stay.secret.hidden') }}
+                    </div>
+                {% endif %}
+            </div>
+
+            {% for block in stay.visibleBlocks %}
+                <div class="card mb-3" data-block="{{ block.code }}">
+                    <div class="card-header">{{ block.title ?: t(block.labelKey) }}</div>
+                    <div class="card-body">
+                        {# Le texte du livret est saisi par le propriétaire et
+                           échappé : aucun HTML n'y est interprété. #}
+                        <p class="mb-0" style="white-space: pre-line;">{{ block.body }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="card mb-4" data-testid="stay-contact">
+                <div class="card-header">{{ t('stay.manager.title') }}</div>
+                {% if stay.manager %}
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between gap-2">
+                            <span>{{ stay.manager.displayName }}</span>
+                            <a href="mailto:{{ stay.manager.email }}">{{ stay.manager.email }}</a>
+                        </li>
+                        {% if stay.manager.phone %}
+                            <li class="list-group-item d-flex justify-content-between gap-2">
+                                <span>{{ t('contract.field.guest_phone') }}</span>
+                                <a href="tel:{{ stay.manager.phone }}">{{ stay.manager.phone }}</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                {% else %}
+                    <div class="card-body text-body-secondary">{{ t('stay.manager.none') }}</div>
+                {% endif %}
+            </div>
+
+            {% if not stay.isGuest %}
+                <div class="card mb-4" data-testid="guest-links">
+                    <div class="card-header">{{ t('stay.guest.title') }}</div>
+                    <div class="card-body">
+                        <p class="text-body-secondary">{{ t('stay.guest.intro') }}</p>
+
+                        {% if guest_url %}
+                            <p class="mb-1">{{ t('stay.guest.created') }}</p>
+                            <code class="d-block text-break mb-3" data-testid="guest-url">{{ guest_url }}</code>
+                            <figure class="text-center mb-0">
+                                {# QR rendu en ligne : le jeton n'apparaît dans aucune URL. #}
+                                <div data-testid="guest-qr" role="img"
+                                     aria-label="{{ t('stay.guest.qr_alt') }}">{{ guest_qr|raw }}</div>
+                                <figcaption class="small text-body-secondary">{{ t('stay.guest.qr') }}</figcaption>
+                            </figure>
+                        {% else %}
+                            <form method="post" action="{{ path('stay.guest.issue', {'reference': booking.reference}) }}"
+                                  class="row g-2 align-items-end">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <div class="col-12 col-sm-7">
+                                    <label class="form-label" for="label">{{ t('stay.guest.label') }}</label>
+                                    <input class="form-control" id="label" name="label" maxlength="120">
+                                </div>
+                                <div class="col-12 col-sm-5 d-grid">
+                                    <button class="btn btn-outline-secondary" type="submit"
+                                            data-testid="create-guest-link">{{ t('stay.guest.create') }}</button>
+                                </div>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if guest_links is not empty %}
+                        <ul class="list-group list-group-flush" data-testid="guest-link-list">
+                            {% for link in guest_links %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                                    data-guest-link="{{ link.id }}">
+                                    <span>
+                                        {{ link.label ?: t('stay.guest.title') }}
+                                        <span class="d-block small text-body-secondary">
+                                            {{ t('stay.guest.expires') }} {{ link.expiresAt }}
+                                            — {{ link.lastUsedAt ?: t('stay.guest.never_used') }}
+                                        </span>
+                                    </span>
+                                    <form method="post" action="{{ path('stay.guest.revoke', {'id': link.id}) }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                data-testid="revoke-guest-{{ link.id }}">{{ t('stay.guest.revoke') }}</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <p class="mb-0">
+                    <a href="{{ path('booking.show', {'reference': booking.reference}) }}">{{ t('payment.action.back_to_booking') }}</a>
+                </p>
+            {% endif %}
+
+            <p class="small text-body-secondary mt-4 mb-0" data-testid="offline-note">{{ t('stay.offline.ready') }}</p>
+        </div>
+    </section>
+{% endblock %}

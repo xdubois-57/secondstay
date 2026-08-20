@@ -1423,3 +1423,81 @@ plus lu.
 Le tableau de bord et la page d'exploitation affichent la **même** liste,
 produite par le même service : deux listes concurrentes auraient fini par se
 contredire.
+
+## 39. Itération 10 — mon séjour et invités
+
+### 39.1 Nouveaux modules
+
+```text
+src/Stay/
+├── StayPhase             avant, arrivée, pendant, départ, après
+├── StayInfoBlock         un bloc du livret, dans une langue
+├── StayInfoRepository    livret d'accueil, un enregistrement par bloc et langue
+├── StaySecretRepository  codes d'accès, chiffrés au repos
+├── GuestLink             lien invité
+├── GuestLinkRepository   délivrance, expiration, révocation
+├── StayView              modèle d'affichage, limité à ce qui a le droit de sortir
+└── StayService           « Mon séjour aujourd'hui » et liens invité
+```
+
+### 39.2 La phase n'est pas stockée
+
+`StayPhase::of()` déduit la phase des dates du séjour et du jour courant, dans
+le fuseau du logement. Une phase recopiée en base serait fausse dès le
+lendemain, et il faudrait une tâche planifiée pour la corriger — pour une
+information que deux comparaisons de chaînes donnent exactement.
+
+Le jour d'arrivée et le jour de départ ont leur propre phase : ce sont les
+deux moments où le voyageur a besoin d'autre chose que pendant le séjour.
+
+### 39.3 Les codes d'accès ont une fenêtre
+
+Un code de boîte à clés publié un mois à l'avance, ou resté lisible après le
+départ, n'est plus un code d'accès. `StayService` ne les fait donc sortir que
+si `StayPhase::isOnSite()` — arrivée, séjour, départ. Hors de cette fenêtre, la
+page affiche qu'ils apparaîtront le jour de l'arrivée, et le modèle
+d'affichage ne les porte tout simplement pas : un gabarit ne peut pas les
+révéler par inadvertance.
+
+Ils sont chiffrés au repos avec le même mécanisme que les secrets de
+l'installation. Une valeur devenue illisible — clé rotée sans re-chiffrement —
+ne fait pas tomber la page : elle est simplement absente.
+
+### 39.4 Ce que porte le modèle d'affichage
+
+`StayView` ne transporte que le séjour, sa phase, les blocs du livret, les
+codes autorisés, le contact du responsable et les horaires. Aucun montant,
+aucun document, aucune coordonnée d'un autre voyageur. C'est la raison pour
+laquelle cette page — et elle seule — peut vivre hors ligne.
+
+### 39.5 Liens invité
+
+Un lien invité (SPECIFICATIONS.md §46) ouvre exactement la même page, en mode
+invité : sans référence de séjour, sans partage, et sans aucun accès au reste
+du produit. Il expire deux jours après le départ, se révoque, et son jeton
+n'est stocké que haché. L'expiration est évaluée **en base** : une horloge
+d'appareil faussée ne peut pas prolonger un lien.
+
+Le QR code du lien est rendu **en ligne** dans la page, pas servi par une
+seconde requête : le jeton n'apparaît ainsi dans aucune URL d'image, et il n'y
+a rien à mettre en cache par erreur (SPECIFICATIONS.md §47).
+
+### 39.6 Hors ligne : ce qui est permis, ce qui ne l'est pas
+
+La spécification (§44) est explicite, et le service worker l'applique :
+
+| Autorisé hors ligne | Interdit hors ligne |
+|---|---|
+| livret d'accueil, Wi-Fi, règles, déchets, sécurité, contact local | paiements, écriture de réservation, documents |
+
+Concrètement, `/booking/`, `/payment/`, `/document/` et `/calendar/` ont
+rejoint la liste des chemins jamais mis en cache — la fiche de réservation
+porte désormais l'échéancier et les documents, elle n'a donc plus sa place
+dans un cache d'appareil. C'est « Mon séjour » qui joue ce rôle.
+
+Les pages de séjour suivent une stratégie **réseau d'abord, avec un délai
+court**. Servir le cache d'emblée afficherait une page périmée juste après une
+action — créer un lien invité et ne pas le voir apparaître. Attendre
+l'expiration complète d'une requête serait tout aussi mauvais pour le voyageur
+qui cherche le code de la boîte à clés avec une barre de réseau. Trois
+secondes tranchent les deux cas.
