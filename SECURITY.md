@@ -729,3 +729,43 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   qu'un nom contenant un guillemet ne puisse pas en injecter une seconde.
 - La boîte factice n'est activable que par `SECONDSTAY_IMAP_PROVIDER=fake`,
   jamais depuis l'interface.
+
+## 32. Exploitation et calendriers privés
+
+### 32.1 Jetons de calendrier
+
+- Un flux ICS est accessible **sans session** : c'est la nature d'un abonnement
+  d'agenda. Le jeton est donc long (32 octets), unique, et n'est stocké que
+  sous forme d'empreinte SHA-256 — une fuite de la base ne donne accès à aucun
+  calendrier.
+- Le jeton en clair n'est affiché qu'une fois, à sa création, et transite par
+  la session plutôt que par l'URL, où il resterait dans l'historique.
+- Régénérer un lien **révoque** le précédent : c'est exactement ce qu'on
+  attend après un partage par erreur.
+- Une révocation prend effet immédiatement. Un jeton inconnu et un jeton
+  révoqué donnent la même réponse : une adresse qui n'existe pas, ce qui
+  n'apprend rien d'utile à qui essaie.
+- Les réponses portent `Cache-Control: private, no-store`,
+  `X-Robots-Tag: noindex, nofollow` et `X-Content-Type-Options: nosniff`.
+
+### 32.2 Ce que chaque portée expose
+
+| Portée | Séjours | Voyageur | Montants | Responsable |
+|---|---|---|---|---|
+| Administration | tous | oui | oui | — |
+| Responsable local | tous | oui | **non** | — |
+| Voyageur | le sien seul | — | **non** | oui |
+
+Un flux abonné dans un agenda tiers finit souvent par être partagé sans y
+penser : chaque portée ne montre donc que ce dont son destinataire a besoin.
+
+### 32.3 Responsable local et checklists
+
+- Seul un compte opérationnel peut être responsable d'un séjour : affecter un
+  client lui donnerait une visibilité qu'il n'a pas. La vérification est faite
+  côté serveur, jamais par la seule liste déroulante.
+- Un responsable local ne révoque que ses propres liens de calendrier ; la
+  portée « administration » n'est délivrable qu'à un administrateur.
+- Une ligne de checklist n'accepte que les codes déclarés : un code arbitraire
+  est refusé plutôt qu'écrit en base.
+- Supprimer un compte n'emporte aucun séjour : seule l'affectation disparaît.

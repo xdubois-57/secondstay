@@ -71,6 +71,8 @@ use SecondStay\Security\Encryptor;
 use SecondStay\Security\RateLimiter;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
+use SecondStay\Calendar\CalendarService;
+use SecondStay\Calendar\CalendarTokenRepository;
 use SecondStay\Contract\ContractBuilder;
 use SecondStay\Contract\ContractRepository;
 use SecondStay\Contract\ContractService;
@@ -84,6 +86,9 @@ use SecondStay\Imap\InboundMailService;
 use SecondStay\Imap\MimeParser;
 use SecondStay\I18n\Formatter;
 use SecondStay\Imap\ReplyToken;
+use SecondStay\Operations\ChecklistService;
+use SecondStay\Operations\TaskRepository;
+use SecondStay\Operations\TodoService;
 use SecondStay\Payment\FakePaymentProvider;
 use SecondStay\Payment\MolliePaymentProvider;
 use SecondStay\Payment\NullPaymentProvider;
@@ -599,6 +604,37 @@ final class Services
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
             ));
+
+        // --- Exploitation et calendriers ----------------------------------
+        $container->set(CalendarTokenRepository::class, static fn (Container $c): CalendarTokenRepository
+            => new CalendarTokenRepository($c->get(Database::class)));
+
+        $container->set(CalendarService::class, static fn (Container $c): CalendarService => new CalendarService(
+            $c->get(CalendarTokenRepository::class),
+            $c->get(BookingRepository::class),
+            $c->get(UserRepository::class),
+            $c->get(SettingsService::class),
+            $c->get(Translator::class),
+            $c->get(Formatter::class),
+        ));
+
+        $container->set(TaskRepository::class, static fn (Container $c): TaskRepository
+            => new TaskRepository($c->get(Database::class)));
+
+        $container->set(ChecklistService::class, static fn (Container $c): ChecklistService => new ChecklistService(
+            $c->get(PaymentRepository::class),
+            $c->get(ContractRepository::class),
+            $c->get(TaskRepository::class),
+            $c->get(CalendarService::class),
+        ));
+
+        $container->set(TodoService::class, static fn (Container $c): TodoService => new TodoService(
+            $c->get(BookingRepository::class),
+            $c->get(PaymentRepository::class),
+            $c->get(InboundMailRepository::class),
+            $c->get(ChecklistService::class),
+            $c->get(Migrator::class),
+        ));
 
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
             => new TokenRepository($c->get(Database::class)));

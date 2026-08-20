@@ -407,4 +407,18 @@ return [
             'help' => 'Where the traveller can refer a dispute to the mediator.',
         ],
     ],
+    'operations' => [
+        'default_manager' => [
+            'label' => 'Default local manager',
+            'help' => 'Account id of the manager applied to stays without an explicit assignment. Zero means none.',
+        ],
+        'prepare_days' => [
+            'label' => 'Preparation window (days)',
+            'help' => 'How many days before arrival a stay starts appearing in the “To do” board.',
+        ],
+        'calendar_enabled' => [
+            'label' => 'Publish private calendars',
+            'help' => 'Enables the ICS feeds for administration, managers and travellers.',
+        ],
+    ],
 ];

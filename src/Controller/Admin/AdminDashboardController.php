@@ -8,6 +8,7 @@ use SecondStay\Auth\UserRepository;
 use SecondStay\Backup\BackupService;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Operations\TodoService;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Maintenance\MaintenanceMode;
@@ -65,6 +66,17 @@ final class AdminDashboardController extends AdminController
 
         if ($updateState['available']) {
             $todo[] = ['key' => 'admin.todo.update_available', 'count' => 0, 'route' => 'admin.updates'];
+        }
+
+        // Les éléments d'exploitation — demandes à valider, échéances
+        // dépassées, cautions à restituer — viennent du même service que la
+        // page d'exploitation : une seule liste, une seule vérité.
+        foreach ($this->container->get(TodoService::class)->items() as $operational) {
+            $todo[] = [
+                'key' => $operational['key'],
+                'count' => $operational['count'],
+                'route' => $operational['route'],
+            ];
         }
 
         return $this->renderAdmin('admin/dashboard.html.twig', [

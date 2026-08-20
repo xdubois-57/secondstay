@@ -1325,3 +1325,101 @@ supplémentaire à gérer, et deux installations ne signent jamais pareil.
 Toute pièce jointe d'un message rattaché devient un document du séjour, avec
 un classement proposé d'après son nom et le sujet (SPECIFICATIONS.md §38). Une
 image intégrée au corps HTML n'en est pas une : elle est écartée.
+
+## 38. Itération 9 — responsable local et opérations
+
+### 38.1 Nouveaux modules
+
+```text
+src/Calendar/
+├── IcsCalendar             génération iCalendar : pliage, échappement, dates
+├── CalendarScope           administration, responsable, voyageur
+├── CalendarToken           jeton d'accès à un flux
+├── CalendarTokenRepository délivrance, révocation, dernière utilisation
+└── CalendarService         construction des flux et résolution du responsable
+
+src/Operations/
+├── TaskPhase               avant le séjour, au départ
+├── ChecklistItem           une ligne, dérivée ou cochée
+├── ChecklistService        checklists d'un séjour
+├── TaskRepository          tâches cochées par un humain
+└── TodoService             tableau « À faire »
+```
+
+### 38.2 Une checklist lit, elle ne recopie pas
+
+Les lignes de checklist sont de deux natures (SPECIFICATIONS.md §49) :
+
+- les **dérivées** — contrat accepté, acompte encaissé, solde encaissé,
+  caution reçue, responsable affecté — sont lues là où elles vivent : dans
+  l'acceptation du contrat, dans l'échéancier, dans l'affectation. Elles ne
+  sont jamais stockées : deux copies d'une même vérité finissent toujours par
+  diverger, et une checklist qui prétendrait qu'un acompte est encaissé alors
+  qu'il ne l'est pas serait pire que pas de checklist du tout ;
+- les **manuelles** — ménage planifié, accès transmis, état des lieux réalisé —
+  n'existent nulle part ailleurs et vivent dans `booking_task`, cochées par un
+  humain, avec l'auteur et l'horodatage.
+
+Une ligne sans objet — pas de caution demandée — n'est pas « en retard » : elle
+ne concerne simplement pas ce séjour, et ne compte donc pas dans la
+progression.
+
+Seuls les codes déclarés sont acceptés : `ChecklistService::toggle()` refuse un
+code inventé plutôt que d'écrire n'importe quoi en base.
+
+### 38.3 Responsable local
+
+Un séjour porte un `manager_id` facultatif ; à défaut, le responsable par
+défaut de l'installation s'applique (SPECIFICATIONS.md §48). La résolution est
+faite en un seul endroit, `CalendarService::managerOf()`, de sorte que la
+fiche du séjour, la checklist et le flux ICS du voyageur donnent tous la même
+réponse.
+
+Seul un compte **opérationnel** peut être responsable : affecter un client lui
+donnerait une visibilité qu'il n'a pas. Supprimer un compte n'emporte pas les
+séjours, seulement l'affectation (`ON DELETE SET NULL`), et le responsable par
+défaut reprend la main.
+
+### 38.4 Flux ICS et jetons
+
+Un agenda tiers ne présentera jamais de session : l'accès repose entièrement
+sur un jeton porté par l'URL. Trois conséquences :
+
+- le jeton fait 32 octets, n'est stocké que **haché**, et n'est montré qu'une
+  fois — le régénérer révoque le précédent, ce qui est exactement ce qu'on
+  attend d'un lien partagé par erreur ;
+- une révocation coupe l'accès **immédiatement**, sans période de grâce ; un
+  jeton inconnu et un jeton révoqué se présentent tous deux comme une adresse
+  qui n'existe pas ;
+- la réponse porte `Cache-Control: private, no-store` et
+  `X-Robots-Tag: noindex, nofollow` : une adresse porteuse de jeton n'a rien à
+  faire dans un cache partagé ni dans un index.
+
+Chaque portée montre exactement ce dont son destinataire a besoin : le flux du
+responsable nomme le voyageur mais ne porte aucun montant, celui du voyageur
+se limite à son séjour et porte le contact du responsable
+(SPECIFICATIONS.md §51).
+
+### 38.5 La convention de date qui compte
+
+`DTEND` d'un événement « toute la journée » est **exclusif**. Un départ le
+11 juillet se déclare `DTEND;VALUE=DATE:20260711` : le 11 reste libre, et une
+arrivée le même jour ne paraît pas impossible. C'est la même convention que
+`DateRange` applique depuis l'itération 5 — arrivée incluse, départ exclu —
+et l'aligner évite qu'un agenda et un calendrier de disponibilités se
+contredisent.
+
+Le pliage des lignes à 75 **octets** se fait caractère par caractère : couper
+au milieu d'un caractère UTF-8 produirait un flux illisible.
+
+### 38.6 Tableau « À faire »
+
+`TodoService` ne liste que ce qui réclame une décision humaine : une demande à
+valider, une échéance dépassée, une caution à restituer, un courrier qu'aucune
+règle n'a su rattacher, un séjour proche dont la préparation traîne, une
+migration en attente. Un tableau qui listerait tout ce qui existe ne serait
+plus lu.
+
+Le tableau de bord et la page d'exploitation affichent la **même** liste,
+produite par le même service : deux listes concurrentes auraient fini par se
+contredire.

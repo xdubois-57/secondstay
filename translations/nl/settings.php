@@ -407,4 +407,18 @@ return [
             'help' => 'Waar de reiziger een geschil kan voorleggen.',
         ],
     ],
+    'operations' => [
+        'default_manager' => [
+            'label' => 'Standaard lokale beheerder',
+            'help' => 'Account-id van de beheerder voor verblijven zonder expliciete toewijzing. Nul betekent geen.',
+        ],
+        'prepare_days' => [
+            'label' => 'Voorbereidingsvenster (dagen)',
+            'help' => 'Hoeveel dagen voor aankomst een verblijf in het „Te doen”-overzicht verschijnt.',
+        ],
+        'calendar_enabled' => [
+            'label' => 'Privékalenders publiceren',
+            'help' => 'Schakelt de ICS-feeds in voor beheer, beheerders en reizigers.',
+        ],
+    ],
 ];

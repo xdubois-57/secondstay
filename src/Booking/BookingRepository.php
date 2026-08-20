@@ -107,6 +107,55 @@ final class BookingRepository
     }
 
     /**
+     * Séjours dont l'arrivée tombe dans une fenêtre, du plus proche au plus
+     * lointain.
+     *
+     * Sert à la préparation des séjours : seuls ceux qui occupent réellement
+     * des nuits sont concernés.
+     *
+     * @return list<Booking>
+     */
+    public function arrivingBetween(string $from, string $to): array
+    {
+        return array_map(
+            static fn (array $row): Booking => Booking::fromRow($row),
+            $this->database->fetchAll(
+                'SELECT * FROM `booking` WHERE `arrival` BETWEEN :from AND :to '
+                . 'AND `status` NOT IN (:cancelled, :refused, :hold) ORDER BY `arrival` LIMIT 200',
+                [
+                    'from' => $from,
+                    'to' => $to,
+                    'cancelled' => BookingStatus::Cancelled->value,
+                    'refused' => BookingStatus::Refused->value,
+                    'hold' => BookingStatus::Hold->value,
+                ]
+            )
+        );
+    }
+
+    /**
+     * Séjours affectés à un responsable, à venir.
+     *
+     * @return list<Booking>
+     */
+    public function forManager(int $managerId, ?string $from = null): array
+    {
+        return array_map(
+            static fn (array $row): Booking => Booking::fromRow($row),
+            $this->database->fetchAll(
+                'SELECT * FROM `booking` WHERE `manager_id` = :manager AND `departure` >= :from '
+                . 'AND `status` NOT IN (:cancelled, :refused) ORDER BY `arrival` LIMIT 200',
+                [
+                    'manager' => $managerId,
+                    'from' => $from ?? gmdate('Y-m-d'),
+                    'cancelled' => BookingStatus::Cancelled->value,
+                    'refused' => BookingStatus::Refused->value,
+                ]
+            )
+        );
+    }
+
+    /**
      * Séjours en cours associés à une adresse.
      *
      * Sert de dernier recours au rattachement du courrier entrant : si

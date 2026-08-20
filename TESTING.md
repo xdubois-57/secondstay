@@ -670,3 +670,40 @@ voyageur.
 - qu'un même message soit importé deux fois ;
 - qu'un message imbriqué sans fin épuise l'analyseur ;
 - qu'un HTML reçu conserve ses scripts ou ses attributs d'événement.
+
+## 26. Itération 9 — responsable local et opérations
+
+### 26.1 Couverture du scénario critique
+
+Le scénario demandé par la feuille de route — « affectation → ICS → révocation
+token » — est joué en entier par `tests/e2e/operations.spec.js` : un
+responsable local est créé, un séjour lui est affecté, une ligne de checklist
+est cochée, un lien de calendrier est délivré, le flux est relu, puis le lien
+est révoqué et l'accès coupe aussitôt.
+
+### 26.2 Le flux relu par un lecteur indépendant
+
+`tests/php/Support/IcsReader.php` ne partage aucune ligne avec le générateur :
+il déplie les lignes, sépare nom, paramètres et valeur, et déséchappe. Un
+`BEGIN` sans `END`, une ligne sans séparateur ou une version inattendue font
+échouer la lecture — la seule relecture valide donc toute la structure.
+
+Deux points sont attaqués explicitement :
+
+- **la date de fin exclusive.** Un départ le 11 juillet doit produire
+  `DTEND;VALUE=DATE:20260711`, sans quoi l'agenda occuperait une nuit de trop ;
+- **le pliage à 75 octets.** Une valeur longue et accentuée doit rester de
+  l'UTF-8 valide sur chaque ligne, et revenir intacte après dépliage.
+
+### 26.3 Ce que les tests interdisent
+
+- qu'une checklist affirme un état que le séjour dément ;
+- qu'une ligne sans objet compte comme en retard ;
+- qu'un code de checklist inventé soit écrit en base ;
+- qu'un client soit affecté comme responsable local ;
+- que la suppression d'un compte emporte un séjour ;
+- qu'un flux de responsable porte un montant ;
+- qu'un flux de voyageur montre un autre séjour que le sien ;
+- qu'un jeton de calendrier soit stocké en clair ;
+- qu'un jeton révoqué ou inventé donne encore accès à un flux ;
+- qu'un séjour annulé apparaisse dans un calendrier ou dans la préparation.
