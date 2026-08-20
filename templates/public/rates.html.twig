@@ -1,0 +1,89 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <article class="py-5" data-testid="content-page" data-page-slug="{{ page.slug }}" data-season="{{ season }}">
+        <div class="container">
+            <h1 class="h2 mb-3">{{ translation ? translation.title : page.slug }}</h1>
+
+            {% if is_fallback_translation %}
+                <p class="alert alert-warning" data-testid="fallback-notice">{{ t('content.fallback_notice') }}</p>
+            {% endif %}
+
+            {% if translation and translation.lead %}
+                <p class="lead" data-testid="page-lead">{{ translation.lead }}</p>
+            {% endif %}
+
+            <div class="ss-rich-text mb-4" data-testid="page-body">{{ translation ? translation.body|raw : '' }}</div>
+
+            <div class="row g-4">
+                <div class="col-12 col-lg-6">
+                    <div class="card h-100" data-testid="rate-summary">
+                        <div class="card-header">{{ t('booking.rates.title') }}</div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between" data-rate="night">
+                                <span>{{ t('booking.rates.night') }}</span>
+                                <strong>{{ default_night_price|money }}</strong>
+                            </li>
+                            {% if cleaning_mode != 'none' %}
+                                <li class="list-group-item d-flex justify-content-between" data-rate="cleaning">
+                                    <span>
+                                        {{ t('booking.rates.cleaning') }}
+                                        <span class="small text-body-secondary d-block">{{ t('booking.rates.cleaning_' ~ cleaning_mode) }}</span>
+                                    </span>
+                                    <strong>{{ cleaning_price|money }}</strong>
+                                </li>
+                            {% endif %}
+                            {% if deposit_percent > 0 %}
+                                <li class="list-group-item d-flex justify-content-between" data-rate="deposit">
+                                    <span>{{ t('booking.rates.deposit') }}</span>
+                                    <strong>{{ deposit_percent }} %</strong>
+                                </li>
+                            {% endif %}
+                            {% if security_deposit > 0 %}
+                                <li class="list-group-item d-flex justify-content-between" data-rate="security-deposit">
+                                    <span>{{ t('booking.rates.security_deposit') }}</span>
+                                    <strong>{{ security_deposit|money }}</strong>
+                                </li>
+                            {% endif %}
+                        </ul>
+                        <div class="card-footer small text-body-secondary">{{ t('booking.rates.note') }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card h-100" data-testid="stay-rules">
+                        <div class="card-header">{{ t('booking.rules.title') }}</div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item" data-rule="min-nights">
+                                {{ tc('booking.rule.min_nights', rules.min_nights, {'count': rules.min_nights}) }}
+                            </li>
+                            <li class="list-group-item" data-rule="max-guests">
+                                {{ tc('booking.rule.max_guests', rules.max_guests, {'count': rules.max_guests}) }}
+                            </li>
+                            <li class="list-group-item" data-rule="times">
+                                {{ t('booking.rule.times', {'checkin': rules.checkin_time, 'checkout': rules.checkout_time}) }}
+                            </li>
+                            {% if rules.fixed_week %}
+                                <li class="list-group-item" data-rule="fixed-week">{{ t('booking.rule.fixed_week') }}</li>
+                            {% elseif rules.arrival_weekday %}
+                                <li class="list-group-item" data-rule="arrival-weekday">
+                                    {{ t('booking.rule.arrival_weekday', {'weekday': weekday_names()[rules.arrival_weekday - 1]}) }}
+                                </li>
+                            {% endif %}
+                            {% if rules.night_multiple > 1 %}
+                                <li class="list-group-item" data-rule="night-multiple">
+                                    {{ t('booking.rule.night_multiple', {'count': rules.night_multiple}) }}
+                                </li>
+                            {% endif %}
+                        </ul>
+                        <div class="card-footer">
+                            <a class="btn btn-primary" href="{{ path('page.show', {'slug': 'availability'}) }}">
+                                {{ t('booking.rates.see_availability') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+{% endblock %}

@@ -9,6 +9,7 @@ use SecondStay\Controller\Admin\AdminDashboardController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
+use SecondStay\Controller\Admin\AdminPricingController;
 use SecondStay\Controller\Admin\AdminSettingsController;
 use SecondStay\Controller\Admin\AdminUpdateController;
 use SecondStay\Controller\Admin\AdminUserController;
@@ -25,6 +26,7 @@ use SecondStay\Controller\InstallController;
 use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
 use SecondStay\Controller\PwaController;
+use SecondStay\Controller\QuoteController;
 use SecondStay\Controller\SeoController;
 
 /**
@@ -108,6 +110,9 @@ final class Routes
         $router->post('/api/passkeys/login/options', [PasskeyController::class, 'authenticationOptions'], 'api.passkeys.login_options', false);
         $router->post('/api/passkeys/login', [PasskeyController::class, 'authenticate'], 'api.passkeys.login', false);
 
+        // --- Devis en direct ------------------------------------------------
+        $router->get('/api/quote', [QuoteController::class, 'quote'], 'api.quote', false);
+
         // --- Notifications push ------------------------------------------
         $router->get('/api/push/key', [PushController::class, 'publicKey'], 'api.push.key', false);
         $router->post('/api/push/subscribe', [PushController::class, 'subscribe'], 'api.push.subscribe', false);
@@ -123,6 +128,15 @@ final class Routes
         $router->post('/admin/users', [AdminUserController::class, 'create'], 'admin.users.create');
         $router->post('/admin/users/{id:\d+}/role', [AdminUserController::class, 'changeRole'], 'admin.users.role');
         $router->post('/admin/users/{id:\d+}/delete', [AdminUserController::class, 'delete'], 'admin.users.delete');
+
+        $router->get('/admin/pricing', [AdminPricingController::class, 'index'], 'admin.pricing');
+        $router->post('/admin/pricing/rates', [AdminPricingController::class, 'saveRates'], 'admin.pricing.rates');
+        $router->post('/admin/pricing/blocks', [AdminPricingController::class, 'createBlock'], 'admin.pricing.block_create');
+        $router->post(
+            '/admin/pricing/blocks/{id:\d+}/delete',
+            [AdminPricingController::class, 'deleteBlock'],
+            'admin.pricing.block_delete'
+        );
 
         $router->get('/admin/logs', [AdminLogController::class, 'index'], 'admin.logs');
         $router->post('/admin/logs/purge', [AdminLogController::class, 'purge'], 'admin.logs.purge');

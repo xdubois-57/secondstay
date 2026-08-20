@@ -89,6 +89,8 @@ return [
         'gallery' => 'Gallery',
         'legal' => 'Legal page',
         'contact' => 'Contact',
+        'availability' => 'Availability',
+        'rates' => 'Rates',
     ],
     'error' => [
         'slug_required' => 'The URL identifier is required.',

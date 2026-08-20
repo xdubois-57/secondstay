@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SecondStay\Settings;
 
+use SecondStay\Support\Money;
+
 /**
  * Validation et normalisation des valeurs de réglages.
  *
@@ -94,12 +96,10 @@ final class SettingValidator
      */
     private function validateMoney(SettingDefinition $definition, mixed $raw): array
     {
-        $string = is_scalar($raw) ? str_replace([' ', "\u{00A0}", ','], ['', '', '.'], trim((string) $raw)) : '';
-        if (preg_match('/^-?\d+(\.\d{1,2})?$/', $string) !== 1) {
+        $cents = is_scalar($raw) ? Money::parse((string) $raw) : null;
+        if ($cents === null) {
             return ['ok' => false, 'error' => 'settings.error.money'];
         }
-
-        $cents = (int) round((float) $string * 100);
 
         return $this->checkRange($definition, (float) $cents, $cents);
     }

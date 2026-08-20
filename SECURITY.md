@@ -571,3 +571,36 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   signalés comme insuffisants, pas comme conformes.
 - La sonde SMTP n'est jamais déclenchée par le simple affichage de la page :
   elle demande une action explicite de l'administrateur.
+
+## 28. Décisions de mise en œuvre (itération 5)
+
+### 28.1 Règles appliquées côté serveur
+
+- Durée, jour d'arrivée, multiples, capacité, horizon et délai de prévenance
+  sont vérifiés par `StayRules` à chaque devis. Le calendrier guide la saisie
+  mais ne fait autorité sur rien.
+- Une date malformée produit une erreur traduite, jamais une exception
+  visible : l'API de devis répond toujours en 200 avec un verdict explicite.
+- Une plage est bornée à un an : une saisie aberrante ne peut pas déclencher
+  le parcours de centaines de milliers de nuits.
+
+### 28.2 Informations internes
+
+- Le motif d'une indisponibilité (« séjour propriétaire », note interne d'un
+  tarif) n'est jamais publié : le calendrier public n'expose que le **type**
+  de blocage.
+- Les notes internes de tarif restent en administration.
+
+### 28.3 Montants
+
+- Les montants sont des entiers de centimes de bout en bout ; la saisie
+  tolérante (virgule, espace fine) est normalisée par un seul point d'entrée,
+  `Money::parse()`, partagé par les réglages et l'écran des tarifs.
+- L'acompte est arrondi au centime supérieur : le solde restant ne peut
+  jamais dépasser le total.
+
+### 28.4 Analyse de secrets
+
+- Le contrôle porte désormais sur les fichiers **suivis et non encore
+  commités** : un secret est détecté avant d'entrer dans l'historique, pas
+  après.

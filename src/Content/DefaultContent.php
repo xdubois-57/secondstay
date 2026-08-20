@@ -29,8 +29,8 @@ final class DefaultContent
         return [
             self::page('home', PageKind::Home, 'home', showInMenu: true, system: true),
             self::page('property', PageKind::Page, 'property', system: true),
-            self::page('availability', PageKind::Page, 'availability', system: true),
-            self::page('rates', PageKind::Page, 'rates', system: true),
+            self::page('availability', PageKind::Availability, 'availability', system: true),
+            self::page('rates', PageKind::Rates, 'rates', system: true),
             self::page('gallery', PageKind::Gallery, 'gallery', system: true),
             self::page('activities', PageKind::Page, 'activities'),
             self::page('access', PageKind::Page, 'access'),

@@ -932,3 +932,82 @@ La détection s'appuie sur `Sec-Fetch-Mode: navigate` en priorité : lorsqu'un
 service worker relaie une navigation, le mode reste `navigate` alors que
 `Sec-Fetch-Dest` devient `empty`. Se fier à la seule destination ferait
 disparaître les confirmations dès qu'un service worker est installé.
+
+## 34. Itération 5 — disponibilités et prix
+
+### 34.1 Nouveaux modules
+
+```text
+src/
+├── Pricing/
+│   ├── DateRange        plage de séjour : arrivée incluse, départ exclu
+│   ├── RateRepository   tarifs par nuit, exceptions uniquement
+│   ├── PriceCalculator  calcul nuit par nuit, ménage, acompte
+│   └── Quote            devis en centimes entiers
+├── Availability/
+│   ├── AvailabilityBlockRepository  indisponibilités d'exploitation
+│   └── AvailabilityService          états de nuit et grilles de mois
+├── Booking/
+│   ├── StayRules        durées, jours d'arrivée, capacité, horizon
+│   └── QuoteService     règles + disponibilité + prix en une réponse
+└── Support/
+    └── Money            saisie tolérante → centimes entiers
+```
+
+### 34.2 Convention de nuits
+
+`DateRange` porte une convention unique : **arrivée incluse, départ exclu**.
+Un séjour du 12 au 19 compte sept nuits, du 12 au 18. Deux séjours ne se
+chevauchent donc pas lorsque l'un part le jour où l'autre arrive — c'est
+exactement le cas d'un enchaînement.
+
+Les indisponibilités sont stockées par première et **dernière nuit**
+(`fromNights()`), ce qui évite d'écrire « fin + 1 jour » à chaque usage.
+
+Les dates sont des jours civils sans heure ni fuseau : un changement d'heure
+d'été ne peut pas décaler un calcul de prix.
+
+### 34.3 Modèle de données (`0005_pricing.sql`)
+
+```text
+rate_override       day (unique), price_cents, min_nights, note
+availability_block  start_day, end_day (dernière nuit), kind, label
+```
+
+La table de tarifs ne contient que les **exceptions** : l'absence de ligne
+signifie « tarif de référence ». Un calendrier de plusieurs années reste donc
+peu coûteux à stocker comme à lire.
+
+### 34.4 Calcul nuit par nuit
+
+Chaque nuit porte son propre tarif. Un séjour à cheval sur deux saisons
+additionne les tarifs réels et **jamais une moyenne** : le devis expose le
+détail nuit par nuit, et le prix moyen n'est qu'un indicateur d'affichage.
+
+Tous les montants sont des entiers de centimes ; aucun flottant n'intervient
+dans un montant facturé. L'acompte est arrondi au centime supérieur, de sorte
+que le solde ne dépasse jamais le total.
+
+### 34.5 Un seul calcul, deux usages
+
+`QuoteService` combine règles, disponibilité et prix. La page publique
+l'appelle par `/api/quote`, et le parcours de réservation l'appellera
+directement : le total affiché pendant la sélection et le total facturé
+proviennent du même code.
+
+Les règles sont vérifiées **côté serveur**. Le calendrier les applique pour
+guider la saisie, mais rien ne dépend du navigateur.
+
+### 34.6 Pages fonctionnelles
+
+`PageKind` gagne `availability` et `rates`. Les deux pages système gardent
+leur contenu éditorial — le propriétaire écrit son texte — et le gabarit y
+ajoute le calendrier ou le tableau des tarifs. La migration aligne les
+installations existantes.
+
+### 34.7 Formatage localisé
+
+Le `Formatter` gagne le nom de mois, le couple jour-mois et les noms abrégés
+des sept jours, tous produits par ICU. La logique financière reste canonique :
+seules les vues formatent. Côté navigateur, `Intl` fait le même travail sur
+les entiers de centimes renvoyés par l'API.

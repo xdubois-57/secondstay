@@ -3,6 +3,7 @@
  */
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
 import { evaluatePassword, levelClass } from './modules/password.js';
+import { initCalendar } from './modules/calendar.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
 import { initPasskeyRegistration, initPasskeySignIn } from './modules/passkey.js';
 import { initPushControls, registerServiceWorker } from './modules/push.js';
@@ -75,6 +76,7 @@ ready(() => {
     initTheme();
     initPasswordStrength();
     initGalleryLightbox(document, document);
+    initCalendar(document, window);
     initPasskeyRegistration(document, window);
     initPasskeySignIn(document, window);
     initPushControls(document, window);

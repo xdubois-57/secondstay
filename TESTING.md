@@ -495,3 +495,36 @@ production.
 
 Le menu replié recouvre le contenu. Les scénarios qui l'ouvrent le referment
 avec `closeNavigation()` avant de saisir un formulaire situé en dessous.
+
+## 22. Itération 5 — disponibilités et prix
+
+### 22.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 6 — calendrier et tarifs | `tests/e2e/pricing.spec.js` |
+
+`pricing.spec.js` joue le scénario demandé par la feuille de route : un séjour
+de sept nuits dont trois en haute saison, dont le total exact est vérifié
+**dans les quatre langues**. Le test contrôle aussi que le total n'est pas une
+moyenne : sept fois le prix moyen ne tombe pas sur le même montant.
+
+### 22.2 Convention de nuits
+
+`DateRangeTest` vérifie explicitement la convention « arrivée incluse, départ
+exclu » : un départ le jour d'une arrivée n'est pas un chevauchement, un séjour
+d'une nuit est valide, et un changement d'heure d'été, une fin d'année ou un
+29 février ne décalent jamais le compte de nuits.
+
+### 22.3 Déterminisme sur une installation partagée
+
+Chaque projet Playwright travaille sur un **mois différent** : les tarifs et
+les blocages posés par l'un ne perturbent pas l'autre, et les scénarios
+restent rejouables sans remise à zéro.
+
+### 22.4 Une seule source de vérité
+
+`pricing.spec.js` compare le total affiché dans la page et celui renvoyé par
+`/api/quote` : la page et l'API doivent donner exactement le même montant en
+centimes, sinon le total affiché pendant la sélection cesserait d'être celui
+qui sera facturé.

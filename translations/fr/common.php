@@ -13,6 +13,7 @@ return [
     'yes' => 'Oui',
     'no' => 'Non',
     'save' => 'Enregistrer',
+    'delete' => 'Supprimer',
     'cancel' => 'Annuler',
     'back' => 'Retour',
     'continue' => 'Continuer',

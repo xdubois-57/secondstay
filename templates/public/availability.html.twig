@@ -1,0 +1,124 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block content %}
+    <article class="py-5" data-testid="content-page" data-page-slug="{{ page.slug }}" data-season="{{ season }}">
+        <div class="container">
+            <h1 class="h2 mb-3">{{ translation ? translation.title : page.slug }}</h1>
+
+            {% if is_fallback_translation %}
+                <p class="alert alert-warning" data-testid="fallback-notice">{{ t('content.fallback_notice') }}</p>
+            {% endif %}
+
+            {% if translation and translation.lead %}
+                <p class="lead" data-testid="page-lead">{{ translation.lead }}</p>
+            {% endif %}
+
+            <div class="ss-rich-text mb-4" data-testid="page-body">{{ translation ? translation.body|raw : '' }}</div>
+
+            {# --- Règles de séjour ------------------------------------------ #}
+            <ul class="list-inline small text-body-secondary" data-testid="stay-rules">
+                <li class="list-inline-item me-3" data-rule="min-nights">
+                    {{ tc('booking.rule.min_nights', rules.min_nights, {'count': rules.min_nights}) }}
+                </li>
+                <li class="list-inline-item me-3" data-rule="max-guests">
+                    {{ tc('booking.rule.max_guests', rules.max_guests, {'count': rules.max_guests}) }}
+                </li>
+                <li class="list-inline-item me-3" data-rule="times">
+                    {{ t('booking.rule.times', {'checkin': rules.checkin_time, 'checkout': rules.checkout_time}) }}
+                </li>
+                {% if rules.fixed_week %}
+                    <li class="list-inline-item me-3" data-rule="fixed-week">{{ t('booking.rule.fixed_week') }}</li>
+                {% elseif rules.arrival_weekday %}
+                    <li class="list-inline-item me-3" data-rule="arrival-weekday">
+                        {{ t('booking.rule.arrival_weekday', {'weekday': weekday_names()[rules.arrival_weekday - 1]}) }}
+                    </li>
+                {% endif %}
+                {% if rules.night_multiple > 1 %}
+                    <li class="list-inline-item me-3" data-rule="night-multiple">
+                        {{ t('booking.rule.night_multiple', {'count': rules.night_multiple}) }}
+                    </li>
+                {% endif %}
+            </ul>
+
+            {# --- Calendrier ------------------------------------------------- #}
+            <div class="card mt-4" data-calendar
+                 data-base="{{ base_path }}"
+                 data-locale="{{ locale }}"
+                 data-currency="{{ currency }}"
+                 data-month="{{ calendar.month }}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ path('page.show', {'slug': page.slug}) }}?month={{ calendar.previous }}"
+                       rel="nofollow" data-testid="calendar-previous"
+                       aria-label="{{ t('booking.calendar.previous') }}">&larr;</a>
+                    <strong data-testid="calendar-month">{{ calendar_month|monthname }}</strong>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ path('page.show', {'slug': page.slug}) }}?month={{ calendar.next }}"
+                       rel="nofollow" data-testid="calendar-next"
+                       aria-label="{{ t('booking.calendar.next') }}">&rarr;</a>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered align-middle text-center mb-0 ss-calendar">
+                        <caption class="visually-hidden">{{ t('booking.calendar.caption') }}</caption>
+                        <thead>
+                            <tr>
+                                {% for weekday in weekday_names() %}
+                                    <th scope="col" class="small text-body-secondary">{{ weekday }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for week in calendar.weeks %}
+                                <tr>
+                                    {% for day in week %}
+                                        <td class="p-0 {{ day.in_month ? '' : 'text-body-tertiary' }}">
+                                            <button type="button"
+                                                    class="ss-calendar__day w-100 border-0 bg-transparent py-2"
+                                                    data-day="{{ day.day }}"
+                                                    data-state="{{ day.state }}"
+                                                    data-price="{{ day.price_cents }}"
+                                                    data-in-month="{{ day.in_month ? '1' : '0' }}"
+                                                    {{ day.state != 'free' ? 'disabled' : '' }}>
+                                                <span class="d-block">{{ day.day|slice(8, 2) }}</span>
+                                                {% if day.state == 'free' %}
+                                                    <span class="d-block small text-body-secondary"
+                                                          data-night-price>{{ day.price_cents|money }}</span>
+                                                {% endif %}
+                                            </button>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {# --- Total en direct --------------------------------------------- #}
+            <div class="card mt-4" data-quote hidden data-testid="quote">
+                <div class="card-header">{{ t('booking.quote.title') }}</div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <span data-quote-range></span>
+                        — <span data-quote-nights></span>
+                    </p>
+                    <dl class="row mb-0">
+                        <dt class="col-7 fw-normal">{{ t('booking.quote.accommodation') }}</dt>
+                        <dd class="col-5 text-end mb-1" data-quote-accommodation></dd>
+
+                        <dt class="col-7 fw-normal" data-quote-cleaning-label hidden>{{ t('booking.quote.cleaning') }}</dt>
+                        <dd class="col-5 text-end mb-1" data-quote-cleaning hidden></dd>
+
+                        <dt class="col-7">{{ t('booking.quote.total') }}</dt>
+                        <dd class="col-5 text-end fw-bold mb-0" data-quote-total></dd>
+                    </dl>
+                    <p class="small text-body-secondary mt-3 mb-0" data-quote-errors role="status"></p>
+                    <button class="btn btn-sm btn-outline-secondary mt-3" type="button"
+                            data-quote-reset>{{ t('booking.quote.reset') }}</button>
+                </div>
+            </div>
+
+            <p class="small text-body-secondary mt-3" data-testid="calendar-hint">{{ t('booking.calendar.hint') }}</p>
+        </div>
+    </article>
+{% endblock %}

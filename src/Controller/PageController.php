@@ -6,7 +6,11 @@ namespace SecondStay\Controller;
 
 use SecondStay\Content\ContentPage;
 use SecondStay\Content\ContentService;
+use SecondStay\Availability\AvailabilityService;
+use SecondStay\Booking\StayRules;
 use SecondStay\Content\PageKind;
+use SecondStay\Pricing\DateRange;
+use SecondStay\Pricing\PriceCalculator;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
@@ -82,7 +86,57 @@ final class PageController extends AbstractController
             $viewContext['gallery_preview'] = array_slice($this->galleryContext($context)['gallery_items'], 0, 6);
         }
 
+        if ($page->kind === PageKind::Availability) {
+            $viewContext += $this->availabilityContext($context);
+        }
+
+        if ($page->kind === PageKind::Rates) {
+            $viewContext += $this->ratesContext();
+        }
+
         return $this->render($page->kind->template(), $viewContext);
+    }
+
+    /**
+     * Calendrier public : un mois d'états et de tarifs, plus les règles à
+     * respecter. Le total en direct est calculé par l'API de devis, donc par
+     * le même code que le total facturé.
+     *
+     * @return array<string, mixed>
+     */
+    private function availabilityContext(RequestContext $context): array
+    {
+        $availability = $this->container->get(AvailabilityService::class);
+        $month = $availability->normaliseMonth($context->request->query('month'));
+
+        $calendar = $availability->month($month);
+
+        return [
+            'calendar' => $calendar,
+            'calendar_month' => DateRange::fromStrings($calendar['first_day'], $calendar['first_day'])->arrival,
+            'rules' => $this->container->get(StayRules::class)->summary(),
+            'default_night_price' => $this->settings()->money('pricing.default_night_price'),
+            'cleaning_mode' => $this->container->get(PriceCalculator::class)->cleaningMode(),
+            'cleaning_price' => $this->settings()->money('pricing.cleaning_price'),
+            'currency' => $this->config()->string('app.currency', 'EUR'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function ratesContext(): array
+    {
+        $prices = $this->container->get(PriceCalculator::class);
+
+        return [
+            'rules' => $this->container->get(StayRules::class)->summary(),
+            'default_night_price' => $this->settings()->money('pricing.default_night_price'),
+            'cleaning_mode' => $prices->cleaningMode(),
+            'cleaning_price' => $this->settings()->money('pricing.cleaning_price'),
+            'deposit_percent' => $this->settings()->int('pricing.deposit_percent'),
+            'security_deposit' => $this->settings()->money('pricing.security_deposit'),
+        ];
     }
 
     /**

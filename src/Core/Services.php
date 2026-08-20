@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace SecondStay\Core;
 
 use SecondStay\Audit\AuditTrail;
+use SecondStay\Availability\AvailabilityBlockRepository;
+use SecondStay\Availability\AvailabilityService;
+use SecondStay\Booking\QuoteService;
+use SecondStay\Booking\StayRules;
+use SecondStay\Pricing\PriceCalculator;
+use SecondStay\Pricing\RateRepository;
 use SecondStay\Auth\AccountService;
 use SecondStay\Auth\AuthService;
 use SecondStay\Auth\ConsentRepository;
@@ -372,6 +378,39 @@ final class Services
 
         $container->set(MailDnsChecker::class, static fn (): MailDnsChecker => new MailDnsChecker());
 
+        // --- Disponibilités et prix ---------------------------------------
+        $container->set(RateRepository::class, static fn (Container $c): RateRepository
+            => new RateRepository($c->get(Database::class)));
+
+        $container->set(AvailabilityBlockRepository::class, static fn (Container $c): AvailabilityBlockRepository
+            => new AvailabilityBlockRepository($c->get(Database::class)));
+
+        $container->set(PriceCalculator::class, static fn (Container $c): PriceCalculator => new PriceCalculator(
+            $c->get(SettingsService::class),
+            $c->get(RateRepository::class),
+            $c->get(Config::class)->string('app.currency', 'EUR'),
+        ));
+
+        $container->set(StayRules::class, static fn (Container $c): StayRules => new StayRules(
+            $c->get(SettingsService::class),
+            self::propertyTimezone($c),
+        ));
+
+        $container->set(AvailabilityService::class, static fn (Container $c): AvailabilityService
+            => new AvailabilityService(
+                $c->get(AvailabilityBlockRepository::class),
+                $c->get(RateRepository::class),
+                $c->get(PriceCalculator::class),
+                $c->get(StayRules::class),
+                self::propertyTimezone($c),
+            ));
+
+        $container->set(QuoteService::class, static fn (Container $c): QuoteService => new QuoteService(
+            $c->get(StayRules::class),
+            $c->get(AvailabilityService::class),
+            $c->get(PriceCalculator::class),
+        ));
+
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
             => new TokenRepository($c->get(Database::class)));
 
@@ -460,6 +499,16 @@ final class Services
 
             return $runner;
         });
+    }
+
+    /**
+     * Fuseau du logement, avec repli sur celui de l'application.
+     */
+    private static function propertyTimezone(Container $c): string
+    {
+        $timezone = $c->get(SettingsService::class)->string('site.timezone');
+
+        return $timezone !== '' ? $timezone : $c->get(Config::class)->string('app.timezone', 'Europe/Paris');
     }
 
     public static function optionalDatabase(Container $container): ?Database
