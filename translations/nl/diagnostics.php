@@ -15,6 +15,7 @@ return [
         'database' => 'Database',
         'security' => 'Beveiliging',
         'operations' => 'Beheer',
+        'mailbox' => 'Inkomende post',
     ],
     'ok' => 'In orde',
     'missing' => 'Ontbreekt',
@@ -92,5 +93,13 @@ return [
         'disabled' => 'Pushmeldingen uitgeschakeld',
         'keys_missing' => 'VAPID-sleutels ontbreken',
         'ready' => 'Pushmeldingen operationeel',
+    ],
+    'mailbox' => [
+        'disabled' => 'Ophalen van de postbus uitgeschakeld',
+        'configured' => 'Postbus geconfigureerd',
+        'not_configured' => 'Configuratie van de postbus onvolledig',
+        'reachable' => 'IMAP-verbinding geslaagd',
+        'reply_ok' => 'Antwoordadres geconfigureerd',
+        'reply_missing' => 'Geen antwoordadres ingesteld: antwoorden worden zo goed mogelijk gekoppeld',
     ],
 ];

@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 return [
     'property' => [
+        'siret' => [
+            'label' => 'SIRET',
+            'help' => 'Registration number, printed on the contract when filled in.',
+        ],
         'name' => [
             'label' => 'Property name',
             'help' => 'Name shown publicly for your holiday home.',
@@ -345,6 +349,62 @@ return [
         'tourist_cap_per_stay' => [
             'label' => 'Cap per stay',
             'help' => 'Maximum amount collected for one stay. Zero means no cap.',
+        ],
+    ],
+    'imap' => [
+        'enabled' => [
+            'label' => 'Poll the mailbox',
+            'help' => 'Periodically imports travellers’ replies and their attachments.',
+        ],
+        'host' => [
+            'label' => 'IMAP server',
+            'help' => 'Host name of the mailbox dedicated to the property.',
+        ],
+        'port' => [
+            'label' => 'IMAP port',
+            'help' => '993 for an encrypted connection, 143 with STARTTLS.',
+        ],
+        'encryption' => [
+            'label' => 'IMAP encryption',
+            'help' => 'Implicit TLS is recommended. No encryption should be avoided.',
+        ],
+        'username' => [
+            'label' => 'IMAP username',
+            'help' => 'Account of the polled mailbox.',
+        ],
+        'password' => [
+            'label' => 'IMAP password',
+            'help' => 'Encrypted at rest and never shown again.',
+        ],
+        'mailbox' => [
+            'label' => 'Polled folder',
+            'help' => 'INBOX unless replies land in a dedicated folder.',
+        ],
+        'reply_address' => [
+            'label' => 'Reply address',
+            'help' => 'Address announced to travellers. It is tagged per booking so replies attach themselves.',
+        ],
+        'uid_validity' => [
+            'label' => 'Validity identifier',
+            'help' => 'Filled in by the sync. If it changes, the mailbox was renumbered and polling restarts from the beginning.',
+        ],
+        'batch_size' => [
+            'label' => 'Messages per poll',
+            'help' => 'How many messages each pass handles. A poll must always finish.',
+        ],
+    ],
+    'legal' => [
+        'terms_version' => [
+            'label' => 'Terms version',
+            'help' => 'Frozen into every accepted contract. Change it when the terms text changes.',
+        ],
+        'mediator_name' => [
+            'label' => 'Consumer mediator',
+            'help' => 'Name of the mediator quoted in the contract.',
+        ],
+        'mediator_url' => [
+            'label' => 'Mediator website',
+            'help' => 'Where the traveller can refer a dispute to the mediator.',
         ],
     ],
 ];

@@ -106,6 +106,35 @@ final class BookingRepository
         return $row === null ? null : Booking::fromRow($row);
     }
 
+    /**
+     * Séjours en cours associés à une adresse.
+     *
+     * Sert de dernier recours au rattachement du courrier entrant : si
+     * l'adresse en désigne plusieurs, aucune conclusion n'est possible.
+     *
+     * @return list<Booking>
+     */
+    public function activeForEmail(string $email): array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return [];
+        }
+
+        return array_map(
+            static fn (array $row): Booking => Booking::fromRow($row),
+            $this->database->fetchAll(
+                'SELECT * FROM `booking` WHERE LOWER(`guest_email`) = :email '
+                . 'AND `status` NOT IN (:cancelled, :refused) ORDER BY `arrival` DESC LIMIT 10',
+                [
+                    'email' => $email,
+                    'cancelled' => BookingStatus::Cancelled->value,
+                    'refused' => BookingStatus::Refused->value,
+                ]
+            )
+        );
+    }
+
     public function findByReference(string $reference): ?Booking
     {
         $row = $this->database->fetchOne(

@@ -152,6 +152,10 @@ return [
         'payment_tourist_tax' => 'Taxe de séjour réglée',
         'payment_adjustment' => 'Ajustement encaissé',
         'payment_refund' => 'Remboursement effectué',
+        'contract_generated' => 'Contrat établi',
+        'contract_accepted' => 'Contrat accepté',
+        'mail_received' => 'Message reçu',
+        'mail_linked' => 'Message rattaché',
     ],
     'admin' => [
         'title' => 'Réservations',

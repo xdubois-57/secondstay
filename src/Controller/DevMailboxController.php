@@ -7,6 +7,8 @@ namespace SecondStay\Controller;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Imap\FakeImapProvider;
+use SecondStay\Imap\ImapProvider;
 use SecondStay\Payment\FakePaymentProvider;
 use SecondStay\Payment\PaymentProvider;
 use SecondStay\Payment\PaymentStatus;
@@ -99,6 +101,42 @@ final class DevMailboxController extends AbstractController
         $status = PaymentStatus::fromString((string) $context->request->input('status', 'paid'));
 
         return Response::json(['ok' => $provider->settle($reference, $status)]);
+    }
+
+    /**
+     * Dépose un message dans la boîte de réception factice.
+     *
+     * C'est l'équivalent, pour l'IMAP, de la boîte d'envoi factice : le
+     * scénario « réponse par e-mail avec contrat signé » devient jouable de
+     * bout en bout sans serveur de messagerie.
+     *
+     * @param array<string, string> $params
+     */
+    public function deliver(RequestContext $context, array $params = []): Response
+    {
+        $provider = $this->fakeImapProvider();
+
+        $raw = $context->request->body;
+        if ($raw === '') {
+            $raw = (string) $context->request->input('raw', '');
+        }
+
+        if (trim($raw) === '') {
+            return Response::json(['ok' => false, 'error' => 'empty'], 400);
+        }
+
+        return Response::json(['ok' => true, 'uid' => $provider->deliver($raw)]);
+    }
+
+    private function fakeImapProvider(): FakeImapProvider
+    {
+        $provider = $this->container->get(ImapProvider::class);
+
+        if (!$provider instanceof FakeImapProvider) {
+            throw new NotFoundException('Boîte de test indisponible.');
+        }
+
+        return $provider;
     }
 
     private function fakePaymentProvider(): FakePaymentProvider

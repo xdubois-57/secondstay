@@ -614,3 +614,59 @@ l'ISO/IEC 18004.
 - qu'une caution non reçue passe à « à restituer » ;
 - qu'un IBAN dont la clé de contrôle est fausse soit enregistré ;
 - qu'un QR code de virement soit lisible sans être authentifié.
+
+## 25. Itération 8 — contrats, documents, courrier entrant
+
+### 25.1 Couverture des scénarios critiques
+
+| Scénario critique | Fichier |
+|---|---|
+| 11 — IMAP mail + attachment → Documents | `tests/e2e/documents.spec.js`, `tests/php/Database/InboundMailServiceTest.php` |
+
+### 25.2 Le PDF relu par un lecteur indépendant
+
+`tests/php/Support/PdfReader.php` ne partage aucune ligne avec le générateur :
+il suit la table `xref` depuis `startxref`, résout chaque objet par son
+décalage, vérifie les longueurs de flux, décompresse et relit les chaînes
+affichées. Un décalage faux ou une longueur incohérente font échouer la
+construction du lecteur : la seule lecture du fichier valide donc toute sa
+structure.
+
+Les quatre langues font l'aller-retour, y compris `ß`, `œ`, `€` et les
+guillemets français ; un caractère hors codage doit être translittéré, jamais
+produire un fichier corrompu.
+
+### 25.3 Le client IMAP confronté à un vrai serveur
+
+`tests/php/Support/bin/imap-stub.php` ouvre une socket sur la boucle locale et
+parle IMAP. Le test fait dialoguer `ImapClient` avec lui, puis relit la
+**transcription** pour vérifier ce qui a réellement été émis : commandes,
+étiquettes distinctes, échappement du nom de boîte, absence du mot de passe
+ailleurs qu'en argument de `LOGIN`.
+
+Un cas mérite d'être nommé : un serveur IMAP renvoie toujours au moins un
+message à `UID n:*`, même quand tous sont plus anciens. Le test vérifie que le
+client filtre lui-même, sans quoi il réimporterait le dernier message à chaque
+relève.
+
+### 25.4 Le parcours complet, sans serveur de messagerie
+
+`FakeImapProvider` dépose les messages dans un répertoire, un fichier par UID :
+le scénario E2E compose un vrai message MIME avec pièce jointe, le dépose,
+déclenche la relève depuis l'administration, et vérifie que le contrat signé
+apparaît dans les documents du séjour — côté administration **et** côté
+voyageur.
+
+### 25.5 Ce que les tests interdisent
+
+- qu'un contrat existant soit réécrit par un changement de tarif ou de texte ;
+- qu'une acceptation ne conserve pas la version et la langue lues ;
+- qu'une substitution du PDF accepté passe inaperçue ;
+- qu'un tiers accepte le contrat d'autrui, ou l'accepte deux fois ;
+- qu'un fichier soit jugé sur son extension plutôt que sur son contenu ;
+- qu'un document soit écrit sous le document root ou lu hors du stockage ;
+- qu'un document de séjour soit lisible sans être authentifié et titulaire ;
+- qu'une adresse de réponse forgée rattache un message ;
+- qu'un même message soit importé deux fois ;
+- qu'un message imbriqué sans fin épuise l'analyseur ;
+- qu'un HTML reçu conserve ses scripts ou ses attributs d'événement.

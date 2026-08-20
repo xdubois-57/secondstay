@@ -7,6 +7,7 @@ namespace SecondStay\Mail;
 use SecondStay\Core\View;
 use SecondStay\I18n\Locales;
 use SecondStay\I18n\Translator;
+use SecondStay\Imap\ReplyToken;
 use SecondStay\Logging\Logger;
 use SecondStay\Settings\SettingsService;
 use Throwable;
@@ -26,6 +27,7 @@ final class MailService
         private readonly SettingsService $settings,
         private readonly MailRepository $repository,
         private readonly Logger $logger,
+        private readonly ?ReplyToken $replyToken = null,
     ) {
     }
 
@@ -79,13 +81,33 @@ final class MailService
         return 'localhost.localdomain';
     }
 
-    public function replyTo(): ?MailAddress
+    /**
+     * Adresse de réponse.
+     *
+     * Lorsqu'un séjour est connu, l'adresse est étiquetée de sa référence
+     * signée : la réponse du client revient alors rattachée au bon séjour,
+     * quoi que son logiciel de messagerie fasse des en-têtes de fil
+     * (SPECIFICATIONS.md §36).
+     */
+    public function replyTo(string $bookingReference = ''): ?MailAddress
     {
-        $address = $this->settings->string('mail.reply_to');
+        $address = $this->settings->string('imap.reply_address');
+        if ($address === '') {
+            $address = $this->settings->string('mail.reply_to');
+        }
 
-        return $address !== '' && filter_var($address, FILTER_VALIDATE_EMAIL) !== false
-            ? new MailAddress($address)
-            : null;
+        if ($address === '' || filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
+            return null;
+        }
+
+        if ($bookingReference !== '' && $this->replyToken !== null) {
+            $tagged = $this->replyToken->address($address, $bookingReference);
+            if (filter_var($tagged, FILTER_VALIDATE_EMAIL) !== false) {
+                return new MailAddress($tagged);
+            }
+        }
+
+        return new MailAddress($address);
     }
 
     /**
@@ -102,6 +124,8 @@ final class MailService
         array $context = [],
         ?int $userId = null,
         ?string $subjectKey = null,
+        ?int $bookingId = null,
+        string $bookingReference = '',
     ): array {
         $locale = Locales::isSupported($locale) ? $locale : Locales::FALLBACK;
         $previousLocale = $this->translator->locale();
@@ -129,7 +153,7 @@ final class MailService
                 '',
                 $locale,
                 $template,
-                $this->replyTo(),
+                $this->replyTo($bookingReference),
             );
 
             $recordId = $this->repository->record([
@@ -141,6 +165,9 @@ final class MailService
                 'to_name' => $to->name,
                 'subject' => $subject,
                 'user_id' => $userId,
+                // Rattacher l'envoi au séjour permet à une réponse citant son
+                // `Message-ID` d'être rattachée au même séjour, sans jeton.
+                'booking_id' => $bookingId,
                 'correlation_id' => $this->logger->correlationId(),
             ]);
 

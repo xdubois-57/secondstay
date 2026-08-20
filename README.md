@@ -356,6 +356,40 @@ fournisseur avant de changer quoi que ce soit.
 Sans clé de fournisseur configurée, le paiement en ligne n'est simplement pas
 proposé ; le virement et l'encaissement manuel restent disponibles.
 
+## Contrats et documents
+
+Chaque séjour reçoit un **contrat PDF** dans sa langue, produit par
+l'application elle-même : pas de dépendance supplémentaire, pas de service
+externe, et le contenu d'un contrat ne sort jamais du serveur.
+
+Le contrat est un instantané : une fois établi, il n'est plus réécrit, même si
+les tarifs ou les textes changent. Son acceptation conserve la version, la
+langue, la date et l'empreinte du document accepté — de sorte qu'on sache
+durablement ce que le client a lu.
+
+Tous les documents d'un séjour — contrat, contrat signé, justificatifs, reçus,
+pièces jointes — vivent hors du document root et ne sont servis qu'à leur
+titulaire.
+
+## Courrier entrant
+
+SecondStay relève périodiquement une boîte dédiée au logement et rattache
+chaque réponse au bon séjour. Les e-mails sortants annoncent une adresse de
+réponse signée, propre au séjour : la réponse du voyageur revient donc au bon
+endroit, même si son logiciel de messagerie perd les en-têtes de fil.
+
+Toute pièce jointe d'un message rattaché apparaît automatiquement dans les
+documents du séjour, avec un classement proposé.
+
+```text
+/fr/admin/mailbox      messages reçus, rattachement manuel, relève à la demande
+/fr/admin/documents    tous les documents, avec leur nature et leur provenance
+```
+
+La relève est périodique, jamais une connexion maintenue, et le client IMAP est
+écrit sur socket : l'extension `imap` de PHP, absente de la plupart des
+hébergements mutualisés, n'est pas nécessaire.
+
 ## Notifications
 
 Les événements du séjour sont notifiés par **e-mail et notification push**,

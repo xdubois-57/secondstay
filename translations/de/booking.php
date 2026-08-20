@@ -152,6 +152,10 @@ return [
         'payment_tourist_tax' => 'Kurtaxe bezahlt',
         'payment_adjustment' => 'Anpassung eingezogen',
         'payment_refund' => 'Erstattung ausgeführt',
+        'contract_generated' => 'Vertrag erstellt',
+        'contract_accepted' => 'Vertrag angenommen',
+        'mail_received' => 'Nachricht empfangen',
+        'mail_linked' => 'Nachricht zugeordnet',
     ],
     'admin' => [
         'title' => 'Buchungen',

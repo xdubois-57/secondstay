@@ -24,7 +24,8 @@ export default async function globalSetup(config) {
         ...process.env,
         SECONDSTAY_MAIL_TRANSPORT: 'fake',
         SECONDSTAY_PUSH_PROVIDER: 'fake',
-        SECONDSTAY_PAYMENT_PROVIDER: 'fake'
+        SECONDSTAY_PAYMENT_PROVIDER: 'fake',
+        SECONDSTAY_IMAP_PROVIDER: 'fake'
     };
     execFileSync(resolve(root, 'scripts/dev-server.sh'), ['restart'], {
         cwd: root,

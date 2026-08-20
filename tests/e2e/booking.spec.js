@@ -127,9 +127,13 @@ test.describe('réservation', () => {
         await expect(page.locator('[data-testid="booking-status"]')).toBeVisible();
         await expect(page.locator('[data-testid="booking-detail"]')).toHaveAttribute('data-status', 'to_confirm');
 
+        // La timeline nomme chaque étape : verrou, demande, puis production
+        // du contrat dès la première consultation de la fiche.
         const timeline = page.locator('[data-testid="booking-timeline"] [data-event]');
-        await expect(timeline).toHaveCount(2);
         await expect(timeline.first()).toHaveAttribute('data-event', 'hold_created');
+        for (const event of ['hold_created', 'requested', 'contract_generated']) {
+            await expect(page.locator(`[data-testid="booking-timeline"] [data-event="${event}"]`)).toHaveCount(1);
+        }
 
         // 6. Le séjour apparaît dans l'espace client.
         await page.goto('/fr/account');

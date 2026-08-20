@@ -11,6 +11,8 @@ return [
         'bookings' => 'Réservations',
         'pricing' => 'Tarifs',
         'payments' => 'Paiements',
+        'documents' => 'Documents',
+        'mailbox' => 'Messages',
         'settings' => 'Configuration',
         'users' => 'Comptes',
         'backups' => 'Sauvegardes',
@@ -58,6 +60,8 @@ return [
             'update' => 'Mise à jour',
             'payment' => 'Paiements',
             'tax' => 'Taxe de séjour',
+            'imap' => 'Courrier entrant',
+            'legal' => 'Mentions légales',
             'logging' => 'Journalisation',
         ],
         'value' => [
@@ -92,6 +96,9 @@ return [
             ],
             'payment' => [
                 'provider' => ['none' => 'Aucun (virement uniquement)', 'mollie' => 'Mollie'],
+            ],
+            'imap' => [
+                'encryption' => ['none' => 'Aucun', 'starttls' => 'STARTTLS', 'tls' => 'TLS implicite'],
             ],
             'update' => [
                 'channel' => ['stable' => 'Stable', 'prerelease' => 'Préversion'],
@@ -202,6 +209,7 @@ return [
         'title' => 'Diagnostics',
         'notification_help' => 'Vérifiez la configuration d’envoi et de notification. La sonde SMTP ouvre une connexion réelle vers votre serveur d’envoi.',
         'probe_smtp' => 'Tester la connexion SMTP',
+        'probe_imap' => 'Tester la connexion IMAP',
         'push_keys_generate' => 'Générer les clés push',
         'push_keys_renew' => 'Renouveler les clés push',
         'push_keys_confirm' => 'Renouveler les clés invalide tous les abonnements existants. Continuer ?',

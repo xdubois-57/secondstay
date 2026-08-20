@@ -63,7 +63,8 @@ export default defineConfig({
             ...process.env,
             SECONDSTAY_MAIL_TRANSPORT: 'fake',
             SECONDSTAY_PUSH_PROVIDER: 'fake',
-            SECONDSTAY_PAYMENT_PROVIDER: 'fake'
+            SECONDSTAY_PAYMENT_PROVIDER: 'fake',
+            SECONDSTAY_IMAP_PROVIDER: 'fake'
         },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,

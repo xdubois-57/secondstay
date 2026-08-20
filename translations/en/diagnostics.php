@@ -15,6 +15,7 @@ return [
         'database' => 'Database',
         'security' => 'Security',
         'operations' => 'Operations',
+        'mailbox' => 'Incoming mail',
     ],
     'ok' => 'Passing',
     'missing' => 'Missing',
@@ -92,5 +93,13 @@ return [
         'disabled' => 'Push notifications disabled',
         'keys_missing' => 'VAPID keys missing',
         'ready' => 'Push notifications operational',
+    ],
+    'mailbox' => [
+        'disabled' => 'Mailbox polling disabled',
+        'configured' => 'Mailbox configured',
+        'not_configured' => 'Mailbox configuration incomplete',
+        'reachable' => 'IMAP connection succeeded',
+        'reply_ok' => 'Reply address configured',
+        'reply_missing' => 'No reply address configured: replies will be attached as best they can',
     ],
 ];

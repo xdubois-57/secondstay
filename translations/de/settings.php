@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 return [
     'property' => [
+        'siret' => [
+            'label' => 'SIRET',
+            'help' => 'Registriernummer, im Vertrag ausgewiesen, sofern ausgefüllt.',
+        ],
         'name' => [
             'label' => 'Name des Objekts',
             'help' => 'Öffentlich angezeigter Name Ihres Ferienhauses.',
@@ -345,6 +349,62 @@ return [
         'tourist_cap_per_stay' => [
             'label' => 'Obergrenze je Aufenthalt',
             'help' => 'Höchstbetrag für einen Aufenthalt. Null bedeutet keine Obergrenze.',
+        ],
+    ],
+    'imap' => [
+        'enabled' => [
+            'label' => 'Postfach abrufen',
+            'help' => 'Holt regelmäßig die Antworten der Gäste und ihre Anhänge ab.',
+        ],
+        'host' => [
+            'label' => 'IMAP-Server',
+            'help' => 'Hostname des Postfachs der Unterkunft.',
+        ],
+        'port' => [
+            'label' => 'IMAP-Port',
+            'help' => '993 für eine verschlüsselte Verbindung, 143 mit STARTTLS.',
+        ],
+        'encryption' => [
+            'label' => 'IMAP-Verschlüsselung',
+            'help' => 'Implizites TLS wird empfohlen. Ohne Verschlüsselung ist abzuraten.',
+        ],
+        'username' => [
+            'label' => 'IMAP-Benutzername',
+            'help' => 'Konto des abgerufenen Postfachs.',
+        ],
+        'password' => [
+            'label' => 'IMAP-Passwort',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt.',
+        ],
+        'mailbox' => [
+            'label' => 'Abgerufener Ordner',
+            'help' => 'INBOX, sofern Antworten nicht in einem eigenen Ordner landen.',
+        ],
+        'reply_address' => [
+            'label' => 'Antwortadresse',
+            'help' => 'Den Gästen angezeigte Adresse. Sie wird je Buchung markiert, damit Antworten sich selbst zuordnen.',
+        ],
+        'uid_validity' => [
+            'label' => 'Gültigkeitskennung',
+            'help' => 'Wird von der Synchronisation gesetzt. Ändert sie sich, wurde das Postfach neu nummeriert und der Abruf beginnt von vorn.',
+        ],
+        'batch_size' => [
+            'label' => 'Nachrichten je Abruf',
+            'help' => 'Wie viele Nachrichten ein Durchlauf verarbeitet. Ein Abruf muss immer enden.',
+        ],
+    ],
+    'legal' => [
+        'terms_version' => [
+            'label' => 'Version der Bedingungen',
+            'help' => 'In jedem angenommenen Vertrag festgehalten. Ändern Sie sie, wenn sich der Text ändert.',
+        ],
+        'mediator_name' => [
+            'label' => 'Verbraucherschlichter',
+            'help' => 'Name des im Vertrag genannten Schlichters.',
+        ],
+        'mediator_url' => [
+            'label' => 'Website des Schlichters',
+            'help' => 'Wo der Gast eine Streitigkeit vorlegen kann.',
         ],
     ],
 ];

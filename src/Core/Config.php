@@ -70,6 +70,7 @@ final class Config
             'SECONDSTAY_MAIL_TRANSPORT' => 'mail.transport',
             'SECONDSTAY_PUSH_PROVIDER' => 'push.provider',
             'SECONDSTAY_PAYMENT_PROVIDER' => 'payment.provider',
+            'SECONDSTAY_IMAP_PROVIDER' => 'imap.provider',
         ];
 
         foreach ($map as $env => $key) {
