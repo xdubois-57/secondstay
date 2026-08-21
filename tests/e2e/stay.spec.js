@@ -88,32 +88,47 @@ test.describe('mon séjour', () => {
          * web ouvert.
          */
         test('un bloc du livret s’ouvre à une adresse publique une fois publié', async ({ browser, page }) => {
+            // Les deux projets Playwright partagent une installation : chacun
+            // publie son propre bloc, faute de quoi le second trouverait
+            // déjà publié ce que le premier a ouvert (TESTING.md §31.5).
+            const code = suffix === 'mobile' ? 'rules' : 'waste';
+            const text = `Bloc public de la campagne ${suffix}.`;
+
             await page.goto('/fr/admin/stay?locale=fr');
-            await expect(page.locator('#public_waste')).not.toBeChecked();
+            await expect(page.locator(`#public_${code}`)).not.toBeChecked();
 
             // Tant que rien n'est publié, l'adresse n'existe pas.
             const anonymous = await anonymousContext(browser);
-            expect((await anonymous.request.get('/fr/info/waste')).status()).toBe(404);
+            expect((await anonymous.request.get(`/fr/info/${code}`)).status()).toBe(404);
 
-            await page.check('#public_waste');
+            await page.fill(`#body_${code}`, text);
+            await page.check(`#public_${code}`);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
 
             await page.goto('/fr/admin/stay?locale=fr');
-            const printed = (await page.locator('[data-testid="qr-url-waste"]').innerText()).trim();
-            expect(printed).toMatch(/\/fr\/info\/waste$/);
-            await expect(page.locator('[data-testid="qr-waste"] svg')).toBeVisible();
+            const printed = (await page.locator(`[data-testid="qr-url-${code}"]`).innerText()).trim();
+            expect(printed).toMatch(new RegExp(`/fr/info/${code}$`));
+            await expect(page.locator(`[data-testid="qr-${code}"] svg`)).toBeVisible();
 
             // Un visiteur sans compte, sans séjour et sans lien invité lit la
             // page : c'est exactement la situation de celui qui scanne.
             const scanned = await anonymous.newPage();
             await scanned.goto(new URL(printed).pathname);
             await expect(scanned.locator('[data-testid="stay-info-page"]')).toBeVisible();
-            await expect(scanned.locator('[data-testid="info-body"]')).toContainText('Le tri se fait au bout de la rue.');
+            await expect(scanned.locator('[data-testid="info-body"]')).toContainText(text);
             await expect(scanned.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
             // Le mot de passe Wi-Fi n'y figure jamais.
             expect(await scanned.content()).not.toContain('sapin-2026');
+
+            // L'état de départ est rendu : dépublier referme l'adresse.
+            await page.goto('/fr/admin/stay?locale=fr');
+            await page.uncheck(`#public_${code}`);
+            await page.click('[data-testid="stay-save"]');
+            await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
+            expect((await anonymous.request.get(`/fr/info/${code}`)).status()).toBe(404);
+
             await anonymous.close();
         });
     });

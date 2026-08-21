@@ -286,6 +286,20 @@ dans **Réglages → Planificateur** et faites appeler
 `https://votre-site/tasks/run?token=…`. Tant qu'aucun jeton n'est enregistré,
 cette adresse répond 404 comme n'importe quel chemin inexistant.
 
+### Le tableau « À faire »
+
+Le tableau de bord et l'écran d'exploitation affichent la même liste, et elle
+ne contient que ce qui réclame une décision : une demande à valider, une
+échéance dépassée, une caution à restituer, un contrat non signé, un courrier
+qu'aucune règle n'a su rattacher, un incident ou un litige ouvert, un sujet de
+conformité à vérifier, une sauvegarde absente ou trop ancienne, une erreur des
+dernières vingt-quatre heures, une mise à jour disponible, une migration en
+attente, le site fermé pour maintenance.
+
+Rien de tout cela ne demande d'appel réseau : ces deux écrans sont les plus
+fréquentés de l'administration, et les rendre dépendants d'un service distant
+les rendrait aussi lents et aussi fragiles que lui.
+
 ## Site public
 
 L'installation crée un site complet, traduit dans les quatre langues :
@@ -321,8 +335,10 @@ plusieurs niveaux. La présentation s'adapte à la saison configurée
 /fr/admin/users        plusieurs administrateurs et responsables locaux
 /fr/admin/backups      création, vérification, téléchargement, restauration
 /fr/admin/updates      vérification et installation des GitHub Releases
-/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation,
-                       remise à zéro des compteurs de limitation de débit
+/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, e-mail, DNS,
+                       boîte de réception, paiement, IA, tâches périodiques,
+                       sauvegardes, mise à jour ; remise à zéro des compteurs
+                       de limitation de débit
 /fr/admin/logs         journal technique filtrable et purgeable
 /fr/admin/audit        journal des actions sensibles
 ```
@@ -559,8 +575,16 @@ suivies automatiquement ; seules celles qui demandent une action humaine se
 cochent.
 
 Le tableau « À faire » ne montre que ce qui réclame une décision : demandes à
-valider, échéances dépassées, cautions à restituer, courriers non rattachés,
-séjours proches encore à préparer, incidents ouverts, conformité à vérifier.
+valider, échéances dépassées, cautions à restituer, contrats non signés,
+courriers non rattachés, séjours proches encore à préparer, incidents et
+litiges ouverts, conformité à vérifier, sauvegarde absente ou trop ancienne,
+erreurs récentes, mise à jour disponible. C'est la même liste que sur le
+tableau de bord.
+
+L'écran d'exploitation porte aussi l'état des tâches périodiques : dernière
+exécution, résultat, retard éventuel, et un bouton pour lancer chacune à la
+demande — c'est ainsi qu'on vérifie qu'une tâche fonctionne avant de compter
+dessus.
 
 ## Calendriers privés
 

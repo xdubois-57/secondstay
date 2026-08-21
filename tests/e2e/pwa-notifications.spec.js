@@ -203,6 +203,14 @@ test.describe('notifications et application installable', () => {
         await page.fill('#password', PASSWORD);
         await page.click('[data-testid="login-form"] button[type="submit"]');
 
+        // La page d'arrivée doit être posée avant qu'on touche à une case :
+        // sur un petit écran, une case encore en cours de mise en page se
+        // déplace sous le doigt, et le clic atterrit sur le bouton
+        // d'enregistrement placé juste en dessous.
+        await expect(page).toHaveURL(/\/nl\/account$/);
+        await expect(page.locator('[data-testid="notifications"]')).toBeVisible();
+        await page.locator('#channel_email').scrollIntoViewIfNeeded();
+
         await page.uncheck('#channel_email');
         await page.click('[data-testid="save-notifications"]');
         await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
@@ -210,6 +218,7 @@ test.describe('notifications et application installable', () => {
         await expect(page.locator('#channel_email')).not.toBeChecked();
 
         // On rétablit la préférence pour ne pas piéger les scénarios suivants.
+        await page.locator('#channel_email').scrollIntoViewIfNeeded();
         await page.check('#channel_email');
         await page.click('[data-testid="save-notifications"]');
         await expect(page.locator('#channel_email')).toBeChecked();

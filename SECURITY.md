@@ -1011,9 +1011,14 @@ sauvegarde, ni purge, ni relève — et personne ne verrait cette absence.
   n'y a rien à forcer sur une installation qui ne s'en sert pas ;
 - **le jeton fait au moins trente-deux caractères**, refusé plus court à la
   saisie, et il est comparé en temps constant ;
-- **la limitation de débit porte sur l'empreinte du jeton présenté**, jamais sur
-  sa valeur : la table des compteurs ne doit pas devenir la liste des secrets
-  tentés ;
+- **la limitation de débit porte sur l'adresse d'appel**, et non sur le jeton
+  présenté. Celui qui balaie essaie précisément un jeton différent à chaque
+  coup : un compteur indexé sur le jeton lui ouvrirait un compteur neuf à
+  chaque essai, et ne limiterait rien. L'adresse, elle, ne change pas — et la
+  table des compteurs ne porte alors rien d'autre qu'une adresse IP, jamais la
+  liste des secrets tentés. Un appel valide remet le compteur à zéro, faute de
+  quoi un cron appelé toutes les cinq minutes finirait par se limiter
+  lui-même ;
 - **un jeton faux se lit comme un jeton absent** — 404 dans les deux cas.
 
 **Une tâche ne s'exécute jamais deux fois en parallèle.** Le verrou est pris en

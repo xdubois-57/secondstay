@@ -26,8 +26,11 @@ use SecondStay\Settings\SettingsService;
  * - **fermée par défaut.** Sans jeton enregistré, la route répond 404 : elle
  *   n'existe pas plus qu'un chemin inventé, et ne signale pas sa présence ;
  * - **jeton long, comparé en temps constant**, jamais journalisé ;
- * - **limitée en débit** sur le jeton présenté, pour qu'un balayage ne serve
- *    à rien même si le jeton fuitait un jour ;
+ * - **limitée en débit par adresse d'appel**, et non par jeton présenté : un
+ *   balayage essaie précisément un jeton différent à chaque coup, un compteur
+ *   indexé sur le jeton lui ouvrirait donc un compteur neuf à chaque essai. La
+ *   table des compteurs ne porte ainsi rien d'autre qu'une adresse IP, jamais
+ *   la liste des secrets tentés ;
  * - **muette sur l'état du produit** : la réponse dit ce qui a tourné, jamais
  *   pourquoi un jeton est refusé.
  */
@@ -52,11 +55,11 @@ final class SchedulerController extends AbstractController
             return $this->closed();
         }
 
-        // La limitation porte sur l'empreinte du jeton présenté, pas sur le
-        // jeton lui-même : la table des compteurs ne doit pas devenir une
-        // liste de secrets tentés.
-        $limit = $this->container->get(RateLimiter::class)
-            ->hit('scheduler:' . substr(hash('sha256', $presented), 0, 32), self::MAX_ATTEMPTS);
+        // Le compteur est indexé sur l'appelant, pas sur le jeton : celui qui
+        // balaie change de jeton à chaque essai et se verrait offrir un
+        // compteur neuf à chaque fois. L'adresse, elle, ne change pas.
+        $bucket = 'scheduler:ip:' . $context->request->ip();
+        $limit = $this->container->get(RateLimiter::class)->hit($bucket, self::MAX_ATTEMPTS);
 
         if (!$limit['allowed']) {
             return Response::text("rate limited\n", 429)
@@ -66,6 +69,12 @@ final class SchedulerController extends AbstractController
         if (!hash_equals($expected, $presented)) {
             return $this->closed();
         }
+
+        // Un appel légitime ne doit pas consommer le quota de la fenêtre :
+        // sur un hébergement qui appelle l'URL toutes les cinq minutes, le
+        // cron finirait par se limiter lui-même. Seuls les essais ratés
+        // comptent.
+        $this->container->get(RateLimiter::class)->reset($bucket);
 
         $results = SchedulerFactory::build($this->container)->runDue();
 

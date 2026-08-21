@@ -150,6 +150,18 @@ Ils doivent permettre un scénario complet sans réseau externe.
 - catalogues FR/EN/NL/DE valides ;
 - aucun texte système critique en dur détectable dans les zones concernées si le projet met en place un lint.
 
+« Aucune clé manquante » recouvre **deux** contrôles distincts, et le second
+est celui qu'on oublie :
+
+1. **parité entre catalogues** — aucune clé FR sans équivalent EN/NL/DE ;
+2. **existence des clés citées** — toute clé écrite littéralement dans `src/`
+   ou `templates/` existe réellement dans le catalogue.
+
+Le premier ne peut pas détecter une clé inventée : elle manque dans les quatre
+langues à la fois, donc symétriquement, et le traducteur rend le dernier
+segment lisible plutôt que d'échouer. Le défaut est alors invisible en revue
+comme à l'écran.
+
 ### E2E
 
 Matrice de locale pour les parcours principaux.
@@ -176,6 +188,24 @@ Automatiser autant que possible :
 - contrastes lorsque mesurable.
 
 Objectif WCAG 2.2 AA.
+
+### Mise en œuvre
+
+`rendering.spec.js` exécute `@axe-core/playwright` sur les trois familles de
+pages — contenu, formulaire, administration — avec les étiquettes `wcag2a`,
+`wcag2aa`, `wcag21a`, `wcag21aa` et `wcag22aa`, **dans les deux thèmes**. Le
+thème sombre n'est pas une variante décorative : c'est le thème par défaut
+d'une bonne partie des téléphones, les couleurs y sont différentes, donc les
+contrastes aussi, et une correction faite en clair peut n'y rien corriger.
+
+Le contrôle est **strict** : aucune violation tolérée, pas de liste
+d'exceptions. Une liste d'exceptions s'allonge toujours, et la première
+exécution de cette analyse a précisément trouvé un défaut réel et généralisé —
+les variantes « outline » de Bootstrap n'atteignaient pas le seuil de contraste.
+
+Un outil automatique ne prouve pas l'accessibilité : il ne voit ni l'ordre de
+lecture, ni la pertinence d'un texte alternatif. Il attrape en revanche ce qui
+se casse en silence à chaque modification de gabarit.
 
 ## 11. Sécurité
 
@@ -1073,3 +1103,57 @@ par projet), son propre blocage propriétaire, son propre séjour, et remet le
 quota des documents à sa valeur d'origine avant de rendre la main. Le mois
 utilisé — le dernier de l'horizon de réservation — porte des jours distincts de
 ceux des autres scénarios qui l'occupent.
+
+## 32. Consolidation — ce que la campagne doit continuer d'interdire
+
+### 32.1 Planificateur
+
+- qu'une tâche s'exécute deux fois en parallèle : le verrou est vérifié pris,
+  respecté, et **libéré même après une exception** ;
+- qu'une tâche en échec emporte les autres du même passage ;
+- qu'une tâche ignorée — module désactivé, aucun flux déclaré — se lise comme
+  une tâche réussie ;
+- qu'une tâche déclarée n'ait pas de traitement branché : une tâche non
+  enregistrée ne lève rien, elle ne fait simplement rien pendant que l'écran
+  affiche une liste rassurante ;
+- qu'un message d'exception atteigne l'écran d'exploitation plutôt que le
+  journal ;
+- qu'un passage cron rapproché relance une tâche quotidienne ;
+- qu'un verrou abandonné par un processus tué condamne sa tâche pour toujours.
+
+### 32.2 Porte HTTP du planificateur
+
+- qu'elle réponde autre chose que 404 sans jeton enregistré ;
+- qu'un jeton faux se distingue d'un jeton absent ;
+- qu'un jeton trop court soit accepté à la saisie ;
+- qu'un balayage à jetons variables échappe à la limitation de débit — le
+  compteur porte sur l'appelant, pas sur le jeton présenté ;
+- qu'un cron légitime, appelant très souvent avec le bon jeton, finisse par se
+  limiter lui-même.
+
+### 32.3 Rappels de séjour
+
+- qu'un rappel parte deux fois pour le même séjour ;
+- qu'un cron rattrapant plusieurs jours de retard envoie une rafale de rappels
+  pour des dates déjà passées ;
+- qu'un séjour annulé soit annoncé ;
+- qu'un séjour sans compte associé soit compté comme prévenu.
+
+### 32.4 Pages ouvertes depuis un QR
+
+- qu'un bloc soit lisible publiquement sans décision explicite ;
+- qu'un bloc dépublié du livret reste lisible par une adresse oubliée ;
+- qu'un QR ouvre une page vide ;
+- qu'un code d'accès ou un mot de passe Wi-Fi apparaisse dans la réponse ;
+- que le texte saisi par le propriétaire soit interprété comme du balisage ;
+- que l'adresse encodée dans le QR imprimé diffère de celle qui répond — le QR
+  est relu par un décodeur écrit indépendamment de l'encodeur, et l'adresse
+  décodée est ensuite demandée au produit.
+
+### 32.5 Diagnostics
+
+- qu'un secret apparaisse dans un résultat ;
+- qu'afficher la page ouvre une connexion sortante ;
+- qu'une ligne disparaisse de l'écran faute d'avoir quelque chose à dire : une
+  ligne absente se confond avec un contrôle qui n'existe pas, et l'on ne
+  cherche pas ce qu'on ne voit pas.
