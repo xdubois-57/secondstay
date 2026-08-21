@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Opslagquota (SPECIFICATIONS.md §67).
+ * Opslagquota (ROADMAP.md iteratie 14).
  */
 
 return [

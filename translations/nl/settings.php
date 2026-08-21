@@ -223,6 +223,7 @@ return [
         'iban' => 'Ongeldig IBAN: controleer het controlegetal.',
         'bic' => 'Ongeldige BIC (8 of 11 tekens).',
         'currency' => 'Ongeldige valuta: een ISO 4217-code van drie letters wordt verwacht.',
+        'color' => 'Ongeldige kleur: gebruik het formaat #rrggbb.',
         'too_long' => 'Waarde is te lang.',
         'too_small' => 'Waarde is te klein.',
         'too_large' => 'Waarde is te groot.',
@@ -478,6 +479,10 @@ return [
             'label' => 'Verversing (dagen)',
             'help' => 'Interval tussen twee generaties, tot aan het verblijf.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Themakleur', 'help' => 'Tint van de systeembalk zodra de app is geïnstalleerd. Formaat #rrggbb.'],
+        'background_color' => ['label' => 'Achtergrondkleur', 'help' => 'Wordt bij het starten getoond, vóór de eerste weergave. Formaat #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quotum media (MB)', 'help' => 'Nul betekent geen limiet.'],

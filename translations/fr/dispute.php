@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Litiges liés à un séjour (SPECIFICATIONS.md §68).
+ * Litiges liés à un séjour (ROADMAP.md itération 14).
  */
 
 return [

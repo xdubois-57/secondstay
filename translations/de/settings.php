@@ -223,6 +223,7 @@ return [
         'iban' => 'Ungültige IBAN: Prüfziffer kontrollieren.',
         'bic' => 'Ungültiger BIC (8 oder 11 Zeichen).',
         'currency' => 'Ungültige Währung: dreistelliger ISO-4217-Code erwartet.',
+        'color' => 'Ungültige Farbe: Verwenden Sie das Format #rrggbb.',
         'too_long' => 'Wert ist zu lang.',
         'too_small' => 'Wert ist zu klein.',
         'too_large' => 'Wert ist zu groß.',
@@ -478,6 +479,10 @@ return [
             'label' => 'Aktualisierung (Tage)',
             'help' => 'Abstand zwischen zwei Generierungen bis zum Aufenthalt.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Themenfarbe', 'help' => 'Farbton der Systemleiste, sobald die App installiert ist. Format #rrggbb.'],
+        'background_color' => ['label' => 'Hintergrundfarbe', 'help' => 'Wird beim Start angezeigt, vor der ersten Darstellung. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Kontingent Medien (MB)', 'help' => 'Null bedeutet keine Grenze.'],

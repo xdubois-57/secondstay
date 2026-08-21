@@ -110,6 +110,15 @@ final class SettingRegistry
             new SettingDefinition('site.public_url', SettingType::Url, '', 'site'),
             new SettingDefinition('site.season', SettingType::Enum, 'auto', 'site', enumValues: ['auto', 'summer', 'winter']),
 
+            // --- Application installable ----------------------------------
+            //
+            // Les couleurs du manifeste sont la seule part de l'application
+            // installable qui change réellement d'un logement à l'autre :
+            // c'est la teinte de la barre système une fois l'icône posée sur
+            // l'écran d'accueil.
+            new SettingDefinition('pwa.theme_color', SettingType::String, '#0d6efd', 'pwa', max: 7),
+            new SettingDefinition('pwa.background_color', SettingType::String, '#f8f9fa', 'pwa', max: 7),
+
             // --- Réservation ----------------------------------------------
             new SettingDefinition('booking.min_nights', SettingType::Integer, 2, 'booking', min: 1, max: 90),
             new SettingDefinition('booking.max_guests', SettingType::Integer, 6, 'booking', min: 1, max: 40),

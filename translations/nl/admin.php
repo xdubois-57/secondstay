@@ -74,6 +74,7 @@ return [
             'legal' => 'Juridische vermeldingen',
             'operations' => 'Exploitatie',
             'llm' => 'Lokale inhoud',
+            'pwa' => 'Installeerbare app',
             'quota' => 'Quota',
             'logging' => 'Logboek',
         ],

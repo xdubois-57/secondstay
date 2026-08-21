@@ -74,6 +74,7 @@ return [
             'legal' => 'Legal notices',
             'operations' => 'Operations',
             'llm' => 'Local content',
+            'pwa' => 'Installable app',
             'quota' => 'Quotas',
             'logging' => 'Logging',
         ],

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Quotas de stockage (SPECIFICATIONS.md §67).
+ * Quotas de stockage (ROADMAP.md itération 14).
  */
 
 return [

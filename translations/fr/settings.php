@@ -223,6 +223,7 @@ return [
         'iban' => 'IBAN invalide : vérifiez la clé de contrôle.',
         'bic' => 'BIC invalide (8 ou 11 caractères).',
         'currency' => 'Devise invalide : code ISO 4217 à trois lettres attendu.',
+        'color' => 'Couleur invalide : utilisez le format #rrggbb.',
         'too_long' => 'Valeur trop longue.',
         'too_small' => 'Valeur trop petite.',
         'too_large' => 'Valeur trop grande.',
@@ -478,6 +479,10 @@ return [
             'label' => 'Rafraîchissement (jours)',
             'help' => 'Intervalle entre deux régénérations, jusqu’au séjour.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Couleur du thème', 'help' => 'Teinte de la barre système une fois l’application installée. Format #rrggbb.'],
+        'background_color' => ['label' => 'Couleur de fond', 'help' => 'Fond affiché au lancement, avant le premier rendu. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quota médias (Mo)', 'help' => 'Zéro signifie aucune limite.'],

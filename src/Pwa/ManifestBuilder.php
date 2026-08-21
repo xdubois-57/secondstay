@@ -67,8 +67,8 @@ final class ManifestBuilder
             'scope' => $base . '/',
             'display' => 'standalone',
             'orientation' => 'portrait-primary',
-            'background_color' => '#f8f9fa',
-            'theme_color' => '#0d6efd',
+            'background_color' => $this->colour('pwa.background_color', '#f8f9fa'),
+            'theme_color' => $this->colour('pwa.theme_color', '#0d6efd'),
             'icons' => $icons,
             'shortcuts' => [
                 [
@@ -89,5 +89,19 @@ final class ManifestBuilder
             $this->build($locale),
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
         );
+    }
+
+    /**
+     * Couleur du manifeste, ramenée à une valeur que le navigateur accepte.
+     *
+     * Un réglage vide ou mal recopié doit donner la teinte d'origine plutôt
+     * qu'un manifeste invalide : l'application resterait installable, mais
+     * la barre système redeviendrait blanche sans explication.
+     */
+    private function colour(string $key, string $fallback): string
+    {
+        $value = strtolower(trim($this->settings->string($key)));
+
+        return preg_match('/^#[0-9a-f]{6}$/', $value) === 1 ? $value : $fallback;
     }
 }

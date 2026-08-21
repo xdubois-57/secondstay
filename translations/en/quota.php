@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Storage quotas (SPECIFICATIONS.md §67).
+ * Storage quotas (ROADMAP.md iteration 14).
  */
 
 return [

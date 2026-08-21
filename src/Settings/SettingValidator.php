@@ -66,6 +66,12 @@ final class SettingValidator
                 ? ['ok' => true, 'value' => EpcQrBuilder::normaliseIban($string)]
                 : ['ok' => false, 'error' => 'settings.error.iban'],
             'payment.bic' => $this->validateBic($string),
+            // Une couleur de manifeste mal écrite ne casse rien de visible
+            // côté serveur : le navigateur l'ignore, et la barre système
+            // reste blanche sans que personne comprenne pourquoi.
+            'pwa.theme_color', 'pwa.background_color' => preg_match('/^#[0-9a-fA-F]{6}$/', $string) === 1
+                ? ['ok' => true, 'value' => strtolower($string)]
+                : ['ok' => false, 'error' => 'settings.error.color'],
             'payment.currency' => preg_match('/^[A-Za-z]{3}$/', $string) === 1
                 ? ['ok' => true, 'value' => strtoupper($string)]
                 : ['ok' => false, 'error' => 'settings.error.currency'],

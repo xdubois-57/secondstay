@@ -5,7 +5,7 @@ import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
  * Suite transverse de clôture (ROADMAP.md itération 14 ;
- * SPECIFICATIONS.md §52, §66, §67 et §68).
+ * SPECIFICATIONS.md §52 et §66).
  *
  * Elle joue d'un bout à l'autre ce qui ferme l'exploitation :
  *

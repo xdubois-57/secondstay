@@ -74,6 +74,7 @@ return [
             'legal' => 'Rechtliche Hinweise',
             'operations' => 'Betrieb',
             'llm' => 'Lokale Inhalte',
+            'pwa' => 'Installierbare App',
             'quota' => 'Kontingente',
             'logging' => 'Protokollierung',
         ],

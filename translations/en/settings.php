@@ -223,6 +223,7 @@ return [
         'iban' => 'Invalid IBAN: check the check digits.',
         'bic' => 'Invalid BIC (8 or 11 characters).',
         'currency' => 'Invalid currency: a three-letter ISO 4217 code is expected.',
+        'color' => 'Invalid colour: use the #rrggbb format.',
         'too_long' => 'Value is too long.',
         'too_small' => 'Value is too small.',
         'too_large' => 'Value is too large.',
@@ -478,6 +479,10 @@ return [
             'label' => 'Refresh (days)',
             'help' => 'Interval between two regenerations, up to the stay.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Theme colour', 'help' => 'Tint of the system bar once the app is installed. Format #rrggbb.'],
+        'background_color' => ['label' => 'Background colour', 'help' => 'Shown at launch, before the first render. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Media quota (MB)', 'help' => 'Zero means no limit.'],

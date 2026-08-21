@@ -10,7 +10,7 @@ use SecondStay\Dispute\DisputeEvent;
 use SecondStay\Dispute\DisputeStatus;
 
 /**
- * Cycle de vie d'un litige (SPECIFICATIONS.md §68).
+ * Cycle de vie d'un litige (ROADMAP.md itération 14).
  */
 final class DisputeTest extends TestCase
 {

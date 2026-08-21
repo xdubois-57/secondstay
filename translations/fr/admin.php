@@ -74,6 +74,7 @@ return [
             'legal' => 'Mentions légales',
             'operations' => 'Exploitation',
             'llm' => 'Contenu local',
+            'pwa' => 'Application installable',
             'quota' => 'Quotas',
             'logging' => 'Journalisation',
         ],

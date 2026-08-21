@@ -40,7 +40,7 @@ use SecondStay\Tests\Support\XlsxReader;
 
 /**
  * Clôture de l'exploitation : import ICS, reporting, litiges
- * (ROADMAP.md itération 14 ; SPECIFICATIONS.md §52, §66 et §68).
+ * (ROADMAP.md itération 14 ; SPECIFICATIONS.md §52 et §66).
  *
  * Trois promesses y sont vérifiées bout en bout :
  *
