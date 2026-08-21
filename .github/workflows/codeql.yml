@@ -23,7 +23,7 @@ jobs:
         # assurent cette couverture (voir TESTING.md §12).
         language: ['javascript-typescript', 'actions']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Initialisation CodeQL
         uses: github/codeql-action/init@v3
