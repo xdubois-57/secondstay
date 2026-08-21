@@ -44,11 +44,20 @@ use SecondStay\Inspection\InspectionRepository;
 use SecondStay\Inspection\InspectionService;
 use SecondStay\Inspection\ZoneRepository;
 use SecondStay\Http\CurlHttpFetcher;
+use SecondStay\Http\FixtureHttpFetcher;
 use SecondStay\Http\HttpFetcher;
 use SecondStay\Installer\InstallationState;
 use SecondStay\Installer\Installer;
 use SecondStay\Installer\RequirementChecker;
 use SecondStay\I18n\Translator;
+use SecondStay\Llm\AnthropicLlmProvider;
+use SecondStay\Llm\FakeLlmProvider;
+use SecondStay\Llm\LlmProvider;
+use SecondStay\Llm\NullLlmProvider;
+use SecondStay\LocalContent\LocalContentRepository;
+use SecondStay\LocalContent\LocalContentService;
+use SecondStay\LocalContent\PageExtractor;
+use SecondStay\LocalContent\PromptBuilder;
 use SecondStay\Legal\BookingConsentRepository;
 use SecondStay\Legal\LegalDocumentRepository;
 use SecondStay\Legal\LegalService;
@@ -158,7 +167,18 @@ final class Services
 
         $container->set(SettingRegistry::class, static fn (): SettingRegistry => new SettingRegistry());
 
-        $container->set(HttpFetcher::class, static fn (): HttpFetcher => new CurlHttpFetcher());
+        $container->set(HttpFetcher::class, static function (Container $c): HttpFetcher {
+            $real = new CurlHttpFetcher();
+
+            // Fixtures sur disque : activables uniquement par variable
+            // d'environnement, pour les scénarios de bout en bout. Tout ce qui
+            // n'a pas de fixture part réellement, garde SSRF compris.
+            if ($c->get(Config::class)->string('http.fetcher', '') === FixtureHttpFetcher::NAME) {
+                return new FixtureHttpFetcher($c->get(Paths::class)->storage('temp/http'), $real);
+            }
+
+            return $real;
+        });
 
         $container->set(ReleaseProvider::class, static function (Container $c): ReleaseProvider {
             $repository = 'xdubois-57/secondstay';
@@ -722,6 +742,54 @@ final class Services
             $c->get(BookingEventRepository::class),
             $c->get(AuditTrail::class),
         ));
+
+        // --- Contenu local généré --------------------------------------------
+        // Le modèle factice n'est activable que par variable d'environnement,
+        // comme les autres fournisseurs de test : jamais depuis l'interface.
+        $container->set(LlmProvider::class, static function (Container $c): LlmProvider {
+            if ($c->get(Config::class)->string('llm.provider', '') === FakeLlmProvider::NAME) {
+                return new FakeLlmProvider();
+            }
+
+            $settings = $c->get(SettingsService::class);
+            if ($settings->string('llm.provider') !== AnthropicLlmProvider::NAME) {
+                return new NullLlmProvider();
+            }
+
+            $key = $settings->get('llm.api_key');
+
+            return new AnthropicLlmProvider(
+                $c->get(HttpFetcher::class),
+                $c->get(Logger::class),
+                is_string($key) ? $key : '',
+                $settings->string('llm.model') === ''
+                    ? AnthropicLlmProvider::DEFAULT_MODEL
+                    : $settings->string('llm.model'),
+            );
+        });
+
+        $container->set(PageExtractor::class, static fn (): PageExtractor => new PageExtractor());
+
+        $container->set(PromptBuilder::class, static fn (Container $c): PromptBuilder => new PromptBuilder(
+            $c->get(SettingsService::class),
+            $c->get(Translator::class),
+        ));
+
+        $container->set(LocalContentRepository::class, static fn (Container $c): LocalContentRepository
+            => new LocalContentRepository($c->get(Database::class)));
+
+        $container->set(LocalContentService::class, static fn (Container $c): LocalContentService
+            => new LocalContentService(
+                $c->get(LocalContentRepository::class),
+                $c->get(LlmProvider::class),
+                $c->get(HttpFetcher::class),
+                $c->get(PageExtractor::class),
+                $c->get(PromptBuilder::class),
+                $c->get(BookingRepository::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            ));
 
         // --- Textes légaux, conformité et rétention -------------------------
         $container->set(LegalDocumentRepository::class, static fn (Container $c): LegalDocumentRepository

@@ -9,6 +9,7 @@ use SecondStay\Booking\BookingRepository;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\LocalContent\LocalContentService;
 use SecondStay\Stay\GuestLinkRepository;
 use SecondStay\Stay\StayService;
 use SecondStay\Stay\StayView;
@@ -139,6 +140,11 @@ final class StayController extends AbstractController
             // L'état des lieux demande un compte : un invité n'y a pas accès,
             // et le propriétaire peut préférer le remplir lui-même.
             'inspection_enabled' => !$view->isGuest && $this->settings()->bool('inspection.guest_enabled'),
+            // Activités locales : filtrées sur les dates exactes du séjour, et
+            // visibles aussi d'un invité — ce sont des informations pratiques,
+            // pas des données de réservation (SPECIFICATIONS.md §58).
+            'activities' => $this->container->get(LocalContentService::class)
+                ->activitiesFor($view->booking, $view->locale),
             'meta_title' => $this->trans('stay.title'),
             'stay' => $view,
             'booking' => $view->booking,

@@ -7,6 +7,8 @@ namespace SecondStay\Controller;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Http\FixtureHttpFetcher;
+use SecondStay\Http\HttpFetcher;
 use SecondStay\Imap\FakeImapProvider;
 use SecondStay\Imap\ImapProvider;
 use SecondStay\Payment\FakePaymentProvider;
@@ -183,5 +185,50 @@ final class DevMailboxController extends AbstractController
         if ($this->config()->string('mail.transport', 'smtp') !== 'fake') {
             throw new NotFoundException('Boîte de test indisponible.');
         }
+    }
+
+    /**
+     * Dépose une page HTML de test, servie ensuite au lieu du réseau.
+     *
+     * N'existe que lorsque le fetcher de fixtures est activé par variable
+     * d'environnement : en production, la route répond 404 et aucune page ne
+     * peut être injectée dans le produit.
+     *
+     * @param array<string, string> $params
+     */
+    public function storeHttpFixture(RequestContext $context, array $params = []): Response
+    {
+        $fetcher = $this->fixtureFetcher();
+
+        $url = trim((string) $context->request->input('url', ''));
+        $body = (string) $context->request->input('body', '');
+
+        if ($url === '') {
+            return Response::json(['ok' => false, 'error' => 'url_required'], 422);
+        }
+
+        $fetcher->store($url, $body, (int) $context->request->input('status', '200'));
+
+        return Response::json(['ok' => true]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function purgeHttpFixtures(RequestContext $context, array $params = []): Response
+    {
+        $this->fixtureFetcher()->purge();
+
+        return Response::json(['ok' => true]);
+    }
+
+    private function fixtureFetcher(): FixtureHttpFetcher
+    {
+        $fetcher = $this->container->get(HttpFetcher::class);
+        if (!$fetcher instanceof FixtureHttpFetcher) {
+            throw new NotFoundException('Fixtures HTTP indisponibles.');
+        }
+
+        return $fetcher;
     }
 }

@@ -71,6 +71,8 @@ final class Config
             'SECONDSTAY_PUSH_PROVIDER' => 'push.provider',
             'SECONDSTAY_PAYMENT_PROVIDER' => 'payment.provider',
             'SECONDSTAY_IMAP_PROVIDER' => 'imap.provider',
+            'SECONDSTAY_LLM_PROVIDER' => 'llm.provider',
+            'SECONDSTAY_HTTP_FETCHER' => 'http.fetcher',
         ];
 
         foreach ($map as $env => $key) {

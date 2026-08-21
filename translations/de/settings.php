@@ -449,4 +449,34 @@ return [
             'help' => 'Wie lange nach der Abreise der Meldeschein automatisch gelöscht wird.',
         ],
     ],
+    'llm' => [
+        'enabled' => [
+            'label' => 'Lokale Inhalte aktivieren',
+            'help' => 'Erstellt Aktivitätsvorschläge für kommende Aufenthalte aus den von Ihnen angegebenen Quellen.',
+        ],
+        'provider' => [
+            'label' => 'Anbieter',
+            'help' => 'Ohne konfigurierten Anbieter wird keine Aktivität erstellt — und keine erfunden.',
+        ],
+        'api_key' => [
+            'label' => 'API-Schlüssel',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt.',
+        ],
+        'model' => [
+            'label' => 'Modell',
+            'help' => 'Kennung des für die Generierung verwendeten Modells.',
+        ],
+        'prompt' => [
+            'label' => 'Anweisung',
+            'help' => 'Ihre freie Anweisung. Ort, Jahreszeit, Daten, Quellen und Format werden automatisch ergänzt.',
+        ],
+        'window_weeks' => [
+            'label' => 'Fenster vor der Anreise (Wochen)',
+            'help' => 'Wie lange vor der Anreise die Inhalte eines Aufenthalts erstellt werden.',
+        ],
+        'refresh_days' => [
+            'label' => 'Aktualisierung (Tage)',
+            'help' => 'Abstand zwischen zwei Generierungen bis zum Aufenthalt.',
+        ],
+    ],
 ];

@@ -449,4 +449,34 @@ return [
             'help' => 'Hoelang na het vertrek de fiche automatisch wordt gewist.',
         ],
     ],
+    'llm' => [
+        'enabled' => [
+            'label' => 'Lokale inhoud inschakelen',
+            'help' => 'Maakt activiteitensuggesties voor komende verblijven, op basis van de bronnen die u opgeeft.',
+        ],
+        'provider' => [
+            'label' => 'Aanbieder',
+            'help' => 'Zonder geconfigureerde aanbieder wordt geen activiteit gemaakt — en niets verzonnen.',
+        ],
+        'api_key' => [
+            'label' => 'API-sleutel',
+            'help' => 'Versleuteld bewaard en nooit opnieuw getoond.',
+        ],
+        'model' => [
+            'label' => 'Model',
+            'help' => 'Identificatie van het model dat voor de generatie wordt gebruikt.',
+        ],
+        'prompt' => [
+            'label' => 'Instructie',
+            'help' => 'Uw vrije instructie. Locatie, seizoen, data, bronnen en formaat worden automatisch toegevoegd.',
+        ],
+        'window_weeks' => [
+            'label' => 'Venster vóór aankomst (weken)',
+            'help' => 'Hoelang vóór de aankomst de inhoud van een verblijf wordt gemaakt.',
+        ],
+        'refresh_days' => [
+            'label' => 'Verversing (dagen)',
+            'help' => 'Interval tussen twee generaties, tot aan het verblijf.',
+        ],
+    ],
 ];

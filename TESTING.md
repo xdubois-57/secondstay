@@ -837,3 +837,43 @@ l'empreinte d'une version publiée sont inchangés après réécriture du texte
   sa page reste atteignable en tapant son adresse ;
 - qu'une fiche de police soit lisible en base, ou survive à sa durée de
   conservation.
+
+## 30. Itération 13 — contenu local généré
+
+### 30.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 16 — contenu local | `tests/e2e/local-content.spec.js`, `tests/php/Database/LocalContentServiceTest.php`, `tests/php/Unit/LocalContentTest.php` |
+
+Le scénario demandé — « fixtures HTML + fake LLM » — est joué en entier : de
+vraies pages HTML sont déposées puis servies au produit, extraites, placées
+dans le prompt gardé, lues par le modèle factice, validées, stockées, et enfin
+filtrées sur les dates exactes du séjour.
+
+### 30.2 Deux pièces qui prouvent quelque chose
+
+`FakeLlmProvider` ne renvoie pas une réponse préenregistrée : il lit les
+sources du prompt. Si l'extraction cassait, si les marqueurs disparaissaient,
+si la page n'arrivait pas jusqu'au prompt, le test échouerait. Une réponse
+figée, elle, passerait quoi qu'il arrive.
+
+`FixtureHttpFetcher` sert les pages depuis le disque **et délègue tout le
+reste** : la source qui pointe vers un hôte inexistant part réellement et se
+fait refuser, ce qui prouve que le garde est bien dans le chemin.
+
+### 30.3 Ce que les tests interdisent
+
+- qu'un script, un style ou un commentaire d'une page atteigne le prompt ;
+- qu'une phrase impérative trouvée dans une page sorte de la zone « donnée » ;
+- qu'une activité citant une source jamais consultée soit stockée ;
+- qu'une activité sans titre, sans date lisible, ou dont la fin précède le
+  début, survive à la validation ;
+- qu'une activité hors des dates du séjour soit affichée ;
+- qu'un nom, un e-mail, un téléphone ou une référence de séjour figure dans le
+  prompt ;
+- qu'une adresse interne soit acceptée comme source, ou consultée ;
+- qu'une source désactivée soit lue ;
+- qu'un séjour annulé, ou hors fenêtre, déclenche une génération ;
+- qu'un rafraîchissement accumule des doublons ;
+- que du contenu soit produit sans fournisseur, ou sans aucune source.

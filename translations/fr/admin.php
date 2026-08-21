@@ -20,6 +20,7 @@ return [
         'mailbox' => 'Messages',
         'operations' => 'Exploitation',
         'stay' => 'Livret d’accueil',
+        'local' => 'Contenu local',
         'settings' => 'Configuration',
         'users' => 'Comptes',
         'backups' => 'Sauvegardes',
@@ -70,6 +71,7 @@ return [
             'imap' => 'Courrier entrant',
             'legal' => 'Mentions légales',
             'operations' => 'Exploitation',
+            'llm' => 'Contenu local',
             'logging' => 'Journalisation',
         ],
         'value' => [
@@ -97,6 +99,9 @@ return [
                     'star_4' => '4 étoiles',
                     'star_5' => '5 étoiles',
                 ],
+            ],
+            'llm' => [
+                'provider' => ['none' => 'Aucun', 'anthropic' => 'Claude (Anthropic)'],
             ],
             'site' => [
                 'default_locale' => ['fr' => 'Français', 'en' => 'English', 'nl' => 'Nederlands', 'de' => 'Deutsch'],

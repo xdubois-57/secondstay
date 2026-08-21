@@ -11,6 +11,7 @@ use SecondStay\Controller\Admin\AdminComplianceController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
 use SecondStay\Controller\Admin\AdminPoliceController;
 use SecondStay\Controller\Admin\AdminTaxController;
+use SecondStay\Controller\Admin\AdminLocalContentController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminDocumentController;
@@ -403,6 +404,28 @@ final class Routes
         );
         $router->post('/admin/retention/purge', [AdminPoliceController::class, 'purge'], 'admin.retention.purge');
 
+        // --- Contenu local généré ---------------------------------------------
+        $router->get('/admin/local', [AdminLocalContentController::class, 'index'], 'admin.local');
+        $router->post('/admin/local/sources', [AdminLocalContentController::class, 'addSource'], 'admin.local.source_add');
+        $router->post(
+            '/admin/local/sources/{id:\d+}/toggle',
+            [AdminLocalContentController::class, 'toggleSource'],
+            'admin.local.source_toggle'
+        );
+        $router->post(
+            '/admin/local/sources/{id:\d+}/delete',
+            [AdminLocalContentController::class, 'deleteSource'],
+            'admin.local.source_delete'
+        );
+        $router->post('/admin/local/prompt', [AdminLocalContentController::class, 'savePrompt'], 'admin.local.prompt');
+        $router->post(
+            '/admin/local/prompt/suggest',
+            [AdminLocalContentController::class, 'suggestPrompt'],
+            'admin.local.suggest'
+        );
+        $router->post('/admin/local/test', [AdminLocalContentController::class, 'test'], 'admin.local.test');
+        $router->post('/admin/local/refresh', [AdminLocalContentController::class, 'refresh'], 'admin.local.refresh');
+
         // --- Documents ------------------------------------------------------
         $router->get('/admin/documents', [AdminDocumentController::class, 'index'], 'admin.documents');
         $router->post(
@@ -458,6 +481,15 @@ final class Routes
         // Dépôt d'un message dans la boîte factice : authentifié par le
         // fournisseur de test lui-même, donc exempté de CSRF comme un webhook.
         $router->post('/webhook/dev/inbox', [DevMailboxController::class, 'deliver'], 'dev.inbox.deliver', false);
+        // Fixtures HTTP : mêmes règles que la boîte factice — la route
+        // n'existe que si le fetcher de fixtures est activé.
+        $router->post('/webhook/dev/http', [DevMailboxController::class, 'storeHttpFixture'], 'dev.http.store', false);
+        $router->post(
+            '/webhook/dev/http/purge',
+            [DevMailboxController::class, 'purgeHttpFixtures'],
+            'dev.http.purge',
+            false
+        );
 
         // --- Pages éditoriales (attrape-tout, déclaré en dernier) ------------
         $router->get('/{slug:[a-z0-9][a-z0-9-]*}', [PageController::class, 'show'], 'page.show');

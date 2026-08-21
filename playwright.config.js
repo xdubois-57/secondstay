@@ -64,7 +64,11 @@ export default defineConfig({
             SECONDSTAY_MAIL_TRANSPORT: 'fake',
             SECONDSTAY_PUSH_PROVIDER: 'fake',
             SECONDSTAY_PAYMENT_PROVIDER: 'fake',
-            SECONDSTAY_IMAP_PROVIDER: 'fake'
+            SECONDSTAY_IMAP_PROVIDER: 'fake',
+            // Modèle factice et pages servies depuis le disque : le pipeline
+            // de contenu local est joué en entier, sans clé et sans réseau.
+            SECONDSTAY_LLM_PROVIDER: 'fake',
+            SECONDSTAY_HTTP_FETCHER: 'fixtures'
         },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,

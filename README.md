@@ -456,6 +456,38 @@ historique en ajout seul : signalé, pris en charge, résolu. Seuls les
 incidents **urgents** préviennent immédiatement ; les autres apparaissent dans
 « À faire ».
 
+## Contenu local
+
+Ce que les voyageurs demandent le plus souvent est aussi ce qui change le plus
+vite : le marché du mardi, la fête du village, l'exposition de l'été. Le produit
+peut préparer ces suggestions à partir de pages que **vous** désignez — agenda
+de la commune, office de tourisme — et les afficher sur « Mon séjour ».
+
+```text
+/fr/admin/local     sources, consigne, essai
+```
+
+Trois gestes : coller des URL, écrire une consigne — ou en faire proposer une à
+partir de la localisation du logement — et lancer un essai. Le système ajoute
+seul la localisation, la saison, les dates exactes du séjour, les sources et le
+format attendu.
+
+Les garde-fous comptent autant que la fonction :
+
+- **rien n'est inventé.** Une activité qui ne cite pas une des pages réellement
+  consultées est écartée, comme une activité sans date lisible ;
+- **le web est une donnée, pas une consigne.** Les pages sont réduites à leur
+  texte et présentées au modèle comme du contenu à lire, jamais à obéir ;
+- **rien de personnel ne sort.** Le modèle reçoit un lieu, des dates et du
+  texte public — pas un nom, pas une adresse, pas même la référence du séjour ;
+- **sans clé, rien ne se produit.** La fonction est facultative : une
+  installation sans fournisseur configuré n'affiche simplement aucune
+  suggestion.
+
+Le voyageur ne voit que les activités qui tombent dans ses dates, groupées en
+« à réserver à l'avance » et « à faire pendant votre séjour », chacune avec sa
+source et sa date de vérification.
+
 ## Responsable local et exploitation
 
 Plusieurs comptes peuvent être responsables locaux. Un séjour reçoit un

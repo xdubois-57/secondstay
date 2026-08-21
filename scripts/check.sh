@@ -104,7 +104,7 @@ vitest() {
 playwright() {
     # Transports factices : les parcours de compte et de notification sont
     # vérifiables sans serveur SMTP, sans service de push et sans réseau.
-    SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake npx playwright test
+    SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake SECONDSTAY_LLM_PROVIDER=fake npx playwright test
 }
 
 composer_audit() {
