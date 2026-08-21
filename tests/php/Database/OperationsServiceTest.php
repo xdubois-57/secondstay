@@ -451,9 +451,18 @@ final class OperationsServiceTest extends DatabaseTestCase
 
         touch($created['path'], time() - 30 * 86400);
 
-        $codes = array_column($this->fullTodo()->items(), 'code');
+        $items = $this->fullTodo()->items();
+        $codes = array_column($items, 'code');
         self::assertContains('backup_stale', $codes);
         self::assertNotContains('backup_missing', $codes);
+
+        // Le compte est un nombre de choses à traiter, pas un âge : « 30 » se
+        // lirait comme trente sauvegardes en retard.
+        foreach ($items as $item) {
+            if ($item['code'] === 'backup_stale') {
+                self::assertSame(1, $item['count']);
+            }
+        }
     }
 
     public function testRecentErrorsAreListedAndOlderOnesAreNot(): void

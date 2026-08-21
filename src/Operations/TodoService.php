@@ -63,6 +63,10 @@ final class TodoService
     }
 
     /**
+     * Le `count` d'une entrée est un **nombre d'éléments à traiter**, jamais
+     * une autre grandeur : il s'affiche tel quel dans une pastille à côté du
+     * libellé, et un âge ou un pourcentage s'y lirait comme une quantité.
+     *
      * @return list<array{code: string, key: string, severity: string, count: int, route: string, params: array<string, string|int>}>
      */
     public function items(?string $today = null): array
@@ -145,11 +149,11 @@ final class TodoService
         // d'autre ne rappelle : le premier coûte des réservations chaque
         // jour, le second se voit sur chaque page publique.
         if ($this->maintenance?->isActive() === true) {
-            $items[] = $this->item('maintenance_active', 'warning', 0, 'admin.dashboard');
+            $items[] = $this->item('maintenance_active', 'warning', 1, 'admin.dashboard');
         }
 
         if ($this->settings !== null && $this->settings->string('property.name') === '') {
-            $items[] = $this->item('property_name', 'info', 0, 'admin.settings');
+            $items[] = $this->item('property_name', 'info', 1, 'admin.settings');
         }
 
         if ($this->migrator !== null && $this->migrator->pending() !== []) {
@@ -181,14 +185,17 @@ final class TodoService
         }
 
         if ($backups === []) {
-            return $this->item('backup_missing', 'danger', 0, 'admin.backups');
+            return $this->item('backup_missing', 'danger', 1, 'admin.backups');
         }
 
         $newest = strtotime($backups[0]['created_at']);
         $ageDays = $newest === false ? PHP_INT_MAX : intdiv(max(0, time() - $newest), 86400);
 
+        // Le compte est un nombre de choses à traiter, pas un âge : afficher
+        // « 30 » à côté de « sauvegarde trop ancienne » se lirait comme trente
+        // sauvegardes en retard.
         return $ageDays > OperationsDiagnostics::BACKUP_MAX_AGE_DAYS
-            ? $this->item('backup_stale', 'warning', $ageDays, 'admin.backups')
+            ? $this->item('backup_stale', 'warning', 1, 'admin.backups')
             : null;
     }
 
