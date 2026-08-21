@@ -338,6 +338,14 @@ return [
         ],
     ],
     'tax' => [
+        'territory' => [
+            'label' => 'Erhebungsgebiet',
+            'help' => 'Gemeinde oder Verband, der die Kurtaxe erhebt.',
+        ],
+        'classification' => [
+            'label' => 'Einstufung der Unterkunft',
+            'help' => 'Der Tarif hängt von der Einstufung als touristische Ferienwohnung ab.',
+        ],
         'tourist_enabled' => [
             'label' => 'Kurtaxe erheben',
             'help' => 'Fügt die Kurtaxe dem Zahlungsplan jeder Buchung hinzu.',
@@ -429,6 +437,16 @@ return [
         'guest_enabled' => [
             'label' => 'Übergabeprotokoll durch den Gast',
             'help' => 'Öffnet die Formulare für Anreise und Abreise in „Mein Aufenthalt“.',
+        ],
+    ],
+    'compliance' => [
+        'police_record_enabled' => [
+            'label' => 'Meldeschein',
+            'help' => 'Nur aktivieren, wenn die Pflicht gilt. Solange sie aus ist, wird nichts erhoben.',
+        ],
+        'police_retention_days' => [
+            'label' => 'Aufbewahrung der Meldescheine (Tage)',
+            'help' => 'Wie lange nach der Abreise der Meldeschein automatisch gelöscht wird.',
         ],
     ],
 ];

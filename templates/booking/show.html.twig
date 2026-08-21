@@ -57,6 +57,10 @@
 
             {% include 'document/_list.html.twig' %}
 
+            {% include 'legal/_tax-context.html.twig' %}
+
+            {% include 'legal/_consents.html.twig' %}
+
             <p class="mb-4">
                 <a class="btn btn-primary"
                    href="{{ path('stay.show', {'reference': booking.reference}) }}"

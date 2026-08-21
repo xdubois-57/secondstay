@@ -1,0 +1,42 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p><a href="{{ path('admin.police') }}">← {{ t('police.title') }}</a></p>
+
+    <div class="card" data-testid="police-record" data-booking="{{ booking.id }}">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <span>{{ booking.reference }} — {{ booking.guestName }}</span>
+            <span class="small text-body-secondary">
+                {{ t('police.purge_after', {'date': record ? record.purgeAfter : purge_after}) }}
+            </span>
+        </div>
+        <div class="card-body">
+            <p class="small text-body-secondary">{{ t('police.record_intro') }}</p>
+
+            <form method="post" action="{{ path('admin.police.save', {'id': booking.id}) }}"
+                  data-testid="police-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="row g-3">
+                    {% for field in fields %}
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="{{ field }}">{{ t('police.field.' ~ field) }}</label>
+                            <input class="form-control" id="{{ field }}" name="{{ field }}" maxlength="190"
+                                   value="{{ record ? record.field(field) : '' }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-primary mt-3" type="submit"
+                        data-testid="police-save">{{ t('common.save') }}</button>
+            </form>
+
+            {% if record %}
+                <form method="post" class="mt-3 border-top pt-3"
+                      action="{{ path('admin.police.delete', {'id': booking.id}) }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button class="btn btn-outline-danger" type="submit"
+                            data-testid="police-delete">{{ t('common.delete') }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

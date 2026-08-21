@@ -13,6 +13,9 @@ return [
         'payments' => 'Zahlungen',
         'inspections' => 'Übergabeprotokolle',
         'incidents' => 'Vorfälle',
+        'compliance' => 'Konformität',
+        'tax' => 'Kurtaxe',
+        'police' => 'Meldescheine',
         'documents' => 'Dokumente',
         'mailbox' => 'Nachrichten',
         'operations' => 'Betrieb',
@@ -83,6 +86,16 @@ return [
                     'friday' => 'Freitag',
                     'saturday' => 'Samstag',
                     'sunday' => 'Sonntag',
+                ],
+            ],
+            'tax' => [
+                'classification' => [
+                    'unclassified' => 'Nicht eingestuft',
+                    'star_1' => '1 Stern',
+                    'star_2' => '2 Sterne',
+                    'star_3' => '3 Sterne',
+                    'star_4' => '4 Sterne',
+                    'star_5' => '5 Sterne',
                 ],
             ],
             'site' => [

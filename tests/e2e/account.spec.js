@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN, ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
+import { ADMIN, ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 import { closeNavigation, openNavigation } from './helpers/navigation.js';
 
@@ -230,14 +230,9 @@ test.describe('comptes', () => {
     });
 
     test('export RGPD des données personnelles', async ({ page }) => {
-        await page.goto('/fr/login');
-        await page.fill('#email', email);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
         // La navigation doit être terminée avant d'interroger l'API : le
-        // contexte de requête partage le pot à cookies de la page, et WebKit
-        // rend la main sur le clic avant la fin de la redirection.
-        await expect(page).toHaveURL(/\/fr\/account$/);
+        // contexte de requête partage le pot à cookies de la page.
+        await signInAndWait(page, email, PASSWORD);
 
         const response = await page.request.get('/fr/account/export');
 

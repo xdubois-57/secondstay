@@ -17,6 +17,7 @@ return [
         'mail_unlinked' => 'Nicht zugeordnete Nachrichten',
         'stays_to_prepare' => 'Vorzubereitende Aufenthalte',
         'incidents_open' => 'Offene Vorfälle',
+        'compliance_to_verify' => 'Konformität zu prüfen',
         'migrations_pending' => 'Ausstehende Migrationen',
     ],
     'phase' => [

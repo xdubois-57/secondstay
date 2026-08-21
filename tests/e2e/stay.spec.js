@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
@@ -131,10 +131,7 @@ test.describe('mon séjour', () => {
         const context = await anonymousContext(browser);
         const page = await context.newPage();
 
-        await page.goto('/fr/login');
-        await page.fill('#email', client);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/de/stay/${reference}`);
 
@@ -153,10 +150,7 @@ test.describe('mon séjour', () => {
         const owner = await anonymousContext(browser);
         const page = await owner.newPage();
 
-        await page.goto('/fr/login');
-        await page.fill('#email', client);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/stay/${reference}`);
         await page.fill('#label', 'Les cousins');
@@ -300,10 +294,7 @@ test.describe('mon séjour', () => {
         const context = await anonymousContext(browser);
         const page = await context.newPage();
 
-        await page.goto('/fr/login');
-        await page.fill('#email', client);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/stay/${reference}`);
         const link = page.locator('[data-testid="guest-link-list"] [data-guest-link]').first();

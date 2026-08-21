@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
 import { pngBuffer } from './helpers/image.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
@@ -176,7 +176,7 @@ test.describe('états des lieux', () => {
 
         const context = await anonymousContext(browser);
         const page = await context.newPage();
-        await signInAs(page, client);
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/stay/${reference}/inspection/checkin`);
 
@@ -225,7 +225,7 @@ test.describe('états des lieux', () => {
 
         const context = await anonymousContext(browser);
         const page = await context.newPage();
-        await signInAs(page, client);
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/stay/${reference}/inspection/checkout`);
         await expect(page.locator('[data-testid="inspection-page"]')).toHaveAttribute('data-kind', 'checkout');
@@ -258,7 +258,7 @@ test.describe('états des lieux', () => {
 
         const context = await anonymousContext(browser);
         const page = await context.newPage();
-        await signInAs(page, client);
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/stay/${reference}/inspection/checkout`);
 
@@ -359,7 +359,7 @@ test.describe('états des lieux', () => {
     test('un type d’état des lieux inventé n’existe pas', async ({ browser }) => {
         const context = await anonymousContext(browser);
         const page = await context.newPage();
-        await signInAs(page, client);
+        await signInAndWait(page, client, PASSWORD);
 
         // Le type est contraint par la route elle-même.
         expect((await page.request.get(`/fr/stay/${reference}/inspection/milieu`)).status()).toBe(404);
@@ -367,18 +367,4 @@ test.describe('états des lieux', () => {
         await context.close();
     });
 
-    /**
-     * Connexion réellement établie avant de continuer.
-     *
-     * WebKit rend la main sur le clic avant la fin de la navigation : partir
-     * tout de suite vers une page protégée y produit un 403 fantôme. On
-     * attend donc l'espace client, qui est la destination du voyageur.
-     */
-    async function signInAs(page, email) {
-        await page.goto('/fr/login');
-        await page.fill('#email', email);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
-        await page.waitForURL(/\/fr\/account$/);
-    }
 });

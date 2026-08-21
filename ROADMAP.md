@@ -37,7 +37,7 @@ Une itération est terminée seulement si :
 | 9 | Responsable local et opérations | ✅ livrée |
 | 10 | Mon séjour et invités | ✅ livrée |
 | 11 | États des lieux et incidents | ✅ livrée |
-| 12 | France et conformité | ⏳ à venir |
+| 12 | France et conformité | ✅ livrée |
 | 13 | Contenu local IA | ⏳ à venir |
 | 14 | ICS externes, reporting, consolidation | ⏳ à venir |
 
@@ -465,6 +465,38 @@ Livrer :
 - rétention.
 
 E2E : réservation historique conserve version et langue du texte légal accepté.
+
+### Livré (0.13.0)
+
+- assistant conformité couvrant les dix-huit sujets de la spécification : pour
+  chacun, définition, applicabilité, où chercher et impact en FR/EN/NL/DE ;
+  statut, valeur, source officielle, date de vérification, échéance de revue
+  et pièce justificative saisis par le propriétaire ;
+- aucun conseil juridique automatisé : le produit dit ce qu'il sait, date ce
+  que le propriétaire constate, et affiche cette limite en toutes lettres ;
+- une source doit être une adresse web consultable ; un sujet déclaré conforme
+  est daté d'office et reçoit une échéance de revue ;
+- sujets à vérifier et revues dépassées remontent dans le tableau « À faire » ;
+- textes légaux **versionnés par langue** : publier fige un instantané de
+  chaque langue, avec son empreinte ; une version publiée ne se réécrit jamais ;
+- consentements versionnés : une réservation enregistre la version, la langue
+  et l'empreinte du texte réellement accepté, plus l'empreinte de l'adresse IP ;
+  réécrire les conditions ensuite ne change rien à ce qui a été accepté ;
+- l'inscription enregistre elle aussi la version publiée, et l'installation
+  publie une version initiale — le produit n'est jamais livré sans texte
+  opposable ;
+- moteur de taxe de séjour **daté** : règles par territoire, classement et
+  période, contexte de calcul figé avec le séjour, explication lisible sur la
+  fiche de réservation, recouvrements de barèmes signalés ;
+- fiche de police : rien n'est collecté tant que l'obligation n'est pas
+  activée, contenu chiffré au repos, purge automatique à l'échéance de
+  conservation configurée ;
+- rétention appliquée en un seul endroit — journaux, notifications, jetons,
+  liens invité, liste d'attente, webhooks, fiches de police — et auditée ; les
+  pièces contractuelles ne sont jamais purgées automatiquement ;
+- E2E `compliance.spec.js` (réservation en allemand, réécriture des conditions,
+  nouvelle version, preuve inchangée), tests PHP `ComplianceServiceTest` et
+  `ComplianceTest`.
 
 ## Itération 13 — Contenu local IA
 

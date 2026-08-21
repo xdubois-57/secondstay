@@ -11,6 +11,9 @@ use SecondStay\Audit\AuditTrail;
 use SecondStay\Content\ContentRepository;
 use SecondStay\Content\ContentSeeder;
 use SecondStay\Inspection\ZoneRepository;
+use SecondStay\Legal\BookingConsentRepository;
+use SecondStay\Legal\LegalDocumentRepository;
+use SecondStay\Legal\LegalService;
 use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
@@ -22,6 +25,7 @@ use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
 use SecondStay\I18n\Locales;
 use SecondStay\I18n\Translator;
+use SecondStay\Logging\Logger;
 use SecondStay\Security\Encryptor;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
@@ -173,6 +177,18 @@ final class Installer
         // Les zones d'état des lieux proposées : le propriétaire part d'un
         // parcours réel plutôt que d'une page vide (SPECIFICATIONS.md §53).
         (new ZoneRepository($database))->seedDefaults();
+
+        // Version initiale des textes légaux : le produit n'est jamais livré
+        // sans texte opposable, et une réservation faite le premier jour
+        // conserve donc une version et une langue (SPECIFICATIONS.md §65).
+        (new LegalService(
+            new LegalDocumentRepository($database),
+            new BookingConsentRepository($database),
+            new ContentRepository($database),
+            $settings,
+            new Logger($this->paths->storage('logs')),
+            new AuditTrail($database),
+        ))->publishInitialVersion();
 
         (new AuditTrail($database))->record(
             'install.completed',

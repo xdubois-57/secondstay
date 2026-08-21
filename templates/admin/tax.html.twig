@@ -1,0 +1,123 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('tax.intro') }}</p>
+
+    <p class="alert {{ enabled ? 'alert-success' : 'alert-secondary' }}" data-testid="tax-enabled"
+       data-enabled="{{ enabled ? 'true' : 'false' }}">
+        {{ enabled ? t('tax.enabled') : t('tax.disabled') }}
+        <a class="ms-2" href="{{ path('admin.settings') }}?module=tax">{{ t('tax.configure') }}</a>
+    </p>
+
+    {% if overlaps is not empty %}
+        <div class="alert alert-warning" data-testid="tax-overlaps">
+            {{ t('tax.overlap_warning') }}
+            <ul class="mb-0">
+                {% for pair in overlaps %}
+                    <li>{{ pair[0].effectiveFrom }} → {{ pair[0].effectiveTo ?: '…' }}
+                        / {{ pair[1].effectiveFrom }} → {{ pair[1].effectiveTo ?: '…' }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle" data-testid="tax-rules">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('tax.field.period') }}</th>
+                    <th scope="col">{{ t('tax.field.classification') }}</th>
+                    <th scope="col">{{ t('tax.field.territory') }}</th>
+                    <th scope="col">{{ t('tax.field.per_adult_night') }}</th>
+                    <th scope="col">{{ t('tax.field.cap') }}</th>
+                    <th scope="col"><span class="visually-hidden">{{ t('common.delete') }}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                    <tr data-tax-rule="{{ rule.id }}"
+                        data-tax-active="{{ rule.appliesOn(today) ? 'true' : 'false' }}">
+                        <td>
+                            {{ rule.effectiveFrom }} → {{ rule.effectiveTo ?: '…' }}
+                            {% if rule.appliesOn(today) %}
+                                <span class="badge text-bg-success">{{ t('tax.current') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t('admin.settings.value.tax.classification.' ~ rule.classification) }}</td>
+                        <td>{{ rule.territory ?: '—' }}</td>
+                        <td>{{ rule.perAdultNightCents|money }}</td>
+                        <td>{{ rule.capPerStayCents > 0 ? rule.capPerStayCents|money : '—' }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{{ path('admin.tax.delete', {'id': rule.id}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <button class="btn btn-sm btn-outline-danger" type="submit"
+                                        data-testid="tax-delete-{{ rule.id }}">{{ t('common.delete') }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" data-testid="tax-empty">{{ t('tax.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('tax.new_rule') }}</div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin.tax.create') }}" data-testid="tax-form">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="effective_from">{{ t('tax.field.effective_from') }}</label>
+                        <input class="form-control" type="date" id="effective_from" name="effective_from" required>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="effective_to">{{ t('tax.field.effective_to') }}</label>
+                        <input class="form-control" type="date" id="effective_to" name="effective_to">
+                        <div class="form-text">{{ t('tax.field.effective_to_help') }}</div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="classification">{{ t('tax.field.classification') }}</label>
+                        <select class="form-select" id="classification" name="classification">
+                            {% for value in ['unclassified', 'star_1', 'star_2', 'star_3', 'star_4', 'star_5'] %}
+                                <option value="{{ value }}"
+                                        {{ value == classification ? 'selected' : '' }}>{{ t('admin.settings.value.tax.classification.' ~ value) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label" for="taxable_from_age">{{ t('tax.field.taxable_from_age') }}</label>
+                        <input class="form-control" type="number" min="0" max="99" id="taxable_from_age"
+                               name="taxable_from_age" value="18">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="per_adult_night">{{ t('tax.field.per_adult_night') }}</label>
+                        <input class="form-control" type="number" step="0.01" min="0" id="per_adult_night"
+                               name="per_adult_night" value="0">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="cap_per_stay">{{ t('tax.field.cap') }}</label>
+                        <input class="form-control" type="number" step="0.01" min="0" id="cap_per_stay"
+                               name="cap_per_stay" value="0">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label" for="territory">{{ t('tax.field.territory') }}</label>
+                        <input class="form-control" id="territory" name="territory" maxlength="120">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="source_url">{{ t('tax.field.source') }}</label>
+                        <input class="form-control" type="url" id="source_url" name="source_url"
+                               maxlength="500" placeholder="https://">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="notes">{{ t('tax.field.notes') }}</label>
+                        <input class="form-control" id="notes" name="notes" maxlength="255">
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-3" type="submit"
+                        data-testid="tax-create">{{ t('common.create') }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

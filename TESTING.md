@@ -790,3 +790,50 @@ Le gabarit garde donc le bouton actif, et c'est
 - qu'une photo d'état des lieux soit servie à un anonyme ;
 - qu'une photo d'incident devienne visible du voyageur ;
 - qu'un état des lieux s'ouvre sans compte, ou pour un type inventé.
+
+## 29. Itération 12 — France et conformité
+
+### 29.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 15 — conformité et versionnage | `tests/e2e/compliance.spec.js`, `tests/php/Database/ComplianceServiceTest.php`, `tests/php/Unit/ComplianceTest.php` |
+
+Le scénario demandé — « réservation historique conserve version et langue du
+texte légal accepté » — est joué en entier : une version est publiée dans les
+quatre langues, un voyageur réserve **en allemand**, les conditions sont
+ensuite entièrement réécrites et republiées sous un nouveau numéro, et la
+réservation d'origine cite toujours la version et la langue qu'elle a
+acceptées — vue côté administration comme côté voyageur.
+
+### 29.2 Prouver que la preuve tient
+
+Le test ne se contente pas de constater qu'une version est enregistrée. Il
+modifie le texte source **après** la réservation, ce qui est exactement le cas
+où un consentement non versionné se met à mentir. La vérification porte donc
+sur ce qui n'a pas bougé, pas sur ce qui a été écrit.
+
+Côté PHP, `ComplianceServiceTest` va plus loin : il vérifie que le corps et
+l'empreinte d'une version publiée sont inchangés après réécriture du texte
+éditorial, et qu'une republication sous le même numéro est refusée.
+
+### 29.3 Ce que les tests interdisent
+
+- qu'une version publiée soit réécrite, ou republiée sous le même numéro ;
+- qu'une acceptation perde sa version ou sa langue après une nouvelle
+  publication ;
+- qu'une adresse IP de consentement soit stockée en clair ;
+- qu'une seconde acceptation remplace la première ;
+- qu'un consentement soit enregistré alors qu'aucun texte n'est publié ;
+- qu'un sujet de conformité soit déclaré conforme sans date de vérification ;
+- qu'une « source officielle » qui n'est pas une adresse web consultable soit
+  acceptée — le test le provoque depuis l'interface, avec une adresse que le
+  navigateur laisse passer ;
+- qu'un sujet dont la revue est dépassée disparaisse du tableau « À faire » ;
+- qu'un barème voté après coup change le montant d'un séjour déjà engagé ;
+- qu'un barème dont la fin précède le début soit enregistré ;
+- que deux barèmes qui se recouvrent passent inaperçus ;
+- qu'une fiche de police existe alors que l'obligation est désactivée, ou que
+  sa page reste atteignable en tapant son adresse ;
+- qu'une fiche de police soit lisible en base, ou survive à sa durée de
+  conservation.

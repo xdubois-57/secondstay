@@ -18,6 +18,8 @@ use SecondStay\Contract\ContractService;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Legal\LegalService;
+use SecondStay\Tax\TouristTaxCalculator;
 use SecondStay\Document\DocumentRepository;
 use SecondStay\Imap\InboundMailService;
 use SecondStay\Payment\PaymentProvider;
@@ -149,7 +151,7 @@ final class BookingController extends AbstractController
             'accept_rules' => $context->request->input('accept_rules'),
             'phone' => $context->request->input('phone'),
             'message' => $context->request->input('message'),
-        ], $user);
+        ], $user, $context->locale, $context->request->ip());
 
         if ($result['ok'] === false) {
             return $this->renderFinalise($context, $booking, $result['errors'], 422);
@@ -207,6 +209,11 @@ final class BookingController extends AbstractController
             'paid_cents' => $paid,
             'due_cents' => $due,
             'contract_acceptance' => $contracts->acceptanceFor($booking),
+            // Ce que ce séjour a accepté : la version et la langue du texte,
+            // telles qu'elles étaient au moment de la réservation
+            // (SPECIFICATIONS.md §65).
+            'consents' => $this->container->get(LegalService::class)->acceptanceFor($booking),
+            'tax_context' => $this->container->get(TouristTaxCalculator::class)->explain($booking),
             'documents' => $this->container->get(DocumentRepository::class)->forBooking($booking->id),
             'reply_address' => $settings->bool('imap.enabled')
                 ? $this->container->get(InboundMailService::class)->replyAddressFor($booking)

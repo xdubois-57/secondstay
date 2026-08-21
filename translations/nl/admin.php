@@ -13,6 +13,9 @@ return [
         'payments' => 'Betalingen',
         'inspections' => 'Plaatsbeschrijvingen',
         'incidents' => 'Incidenten',
+        'compliance' => 'Conformiteit',
+        'tax' => 'Toeristenbelasting',
+        'police' => 'Politiefiches',
         'documents' => 'Documenten',
         'mailbox' => 'Berichten',
         'operations' => 'Exploitatie',
@@ -83,6 +86,16 @@ return [
                     'friday' => 'Vrijdag',
                     'saturday' => 'Zaterdag',
                     'sunday' => 'Zondag',
+                ],
+            ],
+            'tax' => [
+                'classification' => [
+                    'unclassified' => 'Niet geclassificeerd',
+                    'star_1' => '1 ster',
+                    'star_2' => '2 sterren',
+                    'star_3' => '3 sterren',
+                    'star_4' => '4 sterren',
+                    'star_5' => '5 sterren',
                 ],
             ],
             'site' => [

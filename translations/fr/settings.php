@@ -338,6 +338,14 @@ return [
         ],
     ],
     'tax' => [
+        'territory' => [
+            'label' => 'Territoire de la taxe',
+            'help' => 'Commune ou intercommunalité qui perçoit la taxe de séjour.',
+        ],
+        'classification' => [
+            'label' => 'Classement du logement',
+            'help' => 'Le barème de la taxe dépend du classement en meublé de tourisme.',
+        ],
         'tourist_enabled' => [
             'label' => 'Percevoir la taxe de séjour',
             'help' => 'Ajoute la taxe de séjour à l’échéancier de chaque réservation.',
@@ -429,6 +437,16 @@ return [
         'guest_enabled' => [
             'label' => 'État des lieux rempli par le voyageur',
             'help' => 'Ouvre les formulaires d’arrivée et de départ depuis « Mon séjour ».',
+        ],
+    ],
+    'compliance' => [
+        'police_record_enabled' => [
+            'label' => 'Fiche de police',
+            'help' => 'À activer seulement si l’obligation s’applique. Rien n’est collecté tant qu’elle est désactivée.',
+        ],
+        'police_retention_days' => [
+            'label' => 'Conservation des fiches (jours)',
+            'help' => 'Durée après le départ au-delà de laquelle la fiche est effacée automatiquement.',
         ],
     ],
 ];

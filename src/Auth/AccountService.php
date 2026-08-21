@@ -7,6 +7,8 @@ namespace SecondStay\Auth;
 use SecondStay\Audit\AuditTrail;
 use SecondStay\Core\Exception\ValidationException;
 use SecondStay\I18n\Locales;
+use SecondStay\Legal\LegalDocumentType;
+use SecondStay\Legal\LegalService;
 use SecondStay\Logging\Logger;
 use SecondStay\Mail\MailAddress;
 use SecondStay\Mail\MailService;
@@ -20,6 +22,12 @@ use Throwable;
  */
 final class AccountService
 {
+    /**
+     * Types de consentement recueillis à l'inscription.
+     *
+     * Ils reprennent les valeurs de `LegalDocumentType` : le même texte porte
+     * le même nom, qu'il soit accepté à l'inscription ou à la réservation.
+     */
     public const CONSENT_TERMS = 'terms';
     public const CONSENT_PRIVACY = 'privacy';
 
@@ -36,6 +44,7 @@ final class AccountService
         private readonly RateLimiter $rateLimiter,
         private readonly Logger $logger,
         private readonly ?AuditTrail $audit = null,
+        private readonly ?LegalService $legal = null,
     ) {
     }
 
@@ -111,8 +120,20 @@ final class AccountService
             UserStatus::Pending,
         );
 
-        $this->consents->record($userId, self::CONSENT_TERMS, '1', $locale, $ip);
-        $this->consents->record($userId, self::CONSENT_PRIVACY, '1', $locale, $ip);
+        // La version acceptée est celle réellement publiée : enregistrer un
+        // « 1 » constant reviendrait à ne rien enregistrer du tout
+        // (SPECIFICATIONS.md §65).
+        foreach (LegalDocumentType::acceptedOnSignup() as $type) {
+            $document = $this->legal?->current($type, $locale);
+
+            $this->consents->record(
+                $userId,
+                $type->value,
+                $document === null ? LegalService::INITIAL_VERSION : $document->version,
+                $document === null ? $locale : $document->locale,
+                $ip,
+            );
+        }
 
         $token = $this->tokens->issue($userId, TokenType::EmailConfirmation, $ip);
         $result = $this->mail->send('account_confirmation', new MailAddress($email, trim($firstName . ' ' . $lastName)), $locale, [
