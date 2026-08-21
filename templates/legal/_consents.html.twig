@@ -1,0 +1,21 @@
+{# Ce que ce séjour a accepté : version et langue du texte légal. #}
+<div class="card mb-4" data-testid="booking-consents">
+    <div class="card-header">{{ t('legal.accepted') }}</div>
+    <ul class="list-group list-group-flush">
+        {% for consent in consents %}
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                data-consent="{{ consent.type.value }}"
+                data-consent-version="{{ consent.version }}"
+                data-consent-locale="{{ consent.locale }}">
+                <span>{{ t(consent.type.labelKey) }}</span>
+                <span class="small text-body-secondary">
+                    {{ t('legal.version') }} {{ consent.version }} — {{ locale_name(consent.locale) }}
+                    <span class="d-block">{{ consent.acceptedDate|localdatetime('short') }}</span>
+                </span>
+            </li>
+        {% else %}
+            <li class="list-group-item text-body-secondary"
+                data-testid="consents-empty">{{ t('legal.none_accepted') }}</li>
+        {% endfor %}
+    </ul>
+</div>

@@ -22,6 +22,22 @@ export async function signIn(page, email = ADMIN.email, password = ADMIN.passwor
 }
 
 /**
+ * Connexion réellement établie avant de continuer.
+ *
+ * `click()` rend la main dès que le clic est délivré, pas quand la navigation
+ * est terminée : sous WebKit, partir aussitôt vers une page protégée y produit
+ * un 403 fantôme, parce que le cookie de session n'est pas encore posé. On
+ * attend donc l'espace client, qui est la destination du voyageur.
+ *
+ * La redirection utilise la langue **du compte**, qui n'est pas forcément
+ * celle de la page de connexion.
+ */
+export async function signInAndWait(page, email, password, locale = 'fr') {
+    await signIn(page, email, password, locale);
+    await page.waitForURL(/\/(fr|en|nl|de)\/account$/);
+}
+
+/**
  * Contexte réellement anonyme.
  *
  * `browser.newContext()` hérite du `storageState` déclaré par `test.use` :

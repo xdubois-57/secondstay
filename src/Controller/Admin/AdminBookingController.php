@@ -18,6 +18,9 @@ use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\Document\DocumentKind;
 use SecondStay\Incident\IncidentRepository;
+use SecondStay\Legal\LegalService;
+use SecondStay\Police\PoliceRecordService;
+use SecondStay\Tax\TouristTaxCalculator;
 use SecondStay\Inspection\InspectionService;
 use SecondStay\Document\DocumentRepository;
 use SecondStay\Operations\ChecklistService;
@@ -96,6 +99,9 @@ final class AdminBookingController extends AdminController
             'checklist_progress' => $checklists->progress($booking),
             'inspections' => $this->container->get(InspectionService::class)->forBooking($booking, $context->locale),
             'incidents' => $this->container->get(IncidentRepository::class)->forBooking($booking->id, $context->locale),
+            'consents' => $this->container->get(LegalService::class)->acceptanceFor($booking),
+            'tax_context' => $this->container->get(TouristTaxCalculator::class)->explain($booking),
+            'police_enabled' => $this->container->get(PoliceRecordService::class)->isEnabled(),
         ]);
     }
 

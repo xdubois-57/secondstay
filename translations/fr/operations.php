@@ -17,6 +17,7 @@ return [
         'mail_unlinked' => 'Messages non rattachés',
         'stays_to_prepare' => 'Séjours à préparer',
         'incidents_open' => 'Incidents ouverts',
+        'compliance_to_verify' => 'Conformité à vérifier',
         'migrations_pending' => 'Migrations en attente',
     ],
     'phase' => [

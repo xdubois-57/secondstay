@@ -17,6 +17,7 @@ return [
         'mail_unlinked' => 'Unattached messages',
         'stays_to_prepare' => 'Stays to prepare',
         'incidents_open' => 'Open incidents',
+        'compliance_to_verify' => 'Compliance to verify',
         'migrations_pending' => 'Pending migrations',
     ],
     'phase' => [

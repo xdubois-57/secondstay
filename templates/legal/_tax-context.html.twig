@@ -1,0 +1,41 @@
+{# Explication du calcul de la taxe de séjour, telle qu'elle a été figée. #}
+{% if tax_context.enabled and tax_context.total_cents > 0 %}
+    <div class="card mb-4" data-testid="tax-context">
+        <div class="card-header">{{ t('tax.explain.title') }}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('tax.explain.per_adult_night') }}</span>
+                <strong data-tax="per_adult_night">{{ tax_context.per_adult_night_cents|money }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('tax.explain.adults') }}</span>
+                <strong data-tax="adults">{{ tax_context.adults }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('tax.explain.exempt') }}</span>
+                <strong data-tax="exempt">{{ tax_context.exempt }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('tax.explain.nights') }}</span>
+                <strong data-tax="nights">{{ tax_context.nights }}</strong>
+            </li>
+            {% if tax_context.cap_cents > 0 %}
+                <li class="list-group-item d-flex justify-content-between gap-2">
+                    <span>{{ t('tax.explain.cap') }}</span>
+                    <strong data-tax="cap">{{ tax_context.cap_cents|money }}</strong>
+                </li>
+            {% endif %}
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span>{{ t('tax.explain.total') }}</span>
+                <strong data-tax="total">{{ tax_context.total_cents|money }}</strong>
+            </li>
+        </ul>
+        <div class="card-footer small text-body-secondary">
+            {{ t('tax.explain.exemption_note') }}
+            {% if tax_context.source_url %}
+                <a class="d-block" href="{{ tax_context.source_url }}"
+                   target="_blank" rel="noopener noreferrer">{{ t('tax.field.source') }}</a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

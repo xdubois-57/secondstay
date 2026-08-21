@@ -112,8 +112,11 @@ Calendar
 Stay
 Inspection
 Incident
+Legal
 ComplianceFrance
 TouristTax
+Police
+Privacy
 Backup
 Maintenance
 Diagnostics
@@ -1600,3 +1603,130 @@ Les pages d'état des lieux et d'incident **écrivent**. Elles ont donc rejoint
 la liste des chemins jamais mis en cache : servir une version en cache y
 afficherait un constat périmé, ou ferait croire qu'une photo est partie alors
 qu'elle est restée sur le téléphone.
+
+## 41. Itération 12 — France et conformité
+
+### 41.1 Nouveaux modules
+
+```text
+src/Legal/
+├── LegalDocumentType         conditions, confidentialité, règlement
+├── LegalDocument             une version publiée, dans une langue
+├── LegalDocumentRepository   publication et lecture des versions
+├── BookingConsent            ce qu'un séjour a accepté
+├── BookingConsentRepository  preuve d'acceptation, en ajout seul
+└── LegalService              publication, version en vigueur, consentement
+
+src/Compliance/
+├── ComplianceTopic           les dix-huit sujets de la spécification
+├── ComplianceStatus          conforme, à vérifier, non applicable
+├── ComplianceItem            l'état d'un sujet pour ce logement
+├── ComplianceRepository      persistance, sujets jamais saisis compris
+└── ComplianceService         saisie, échéances, synthèse
+
+src/Tax/
+├── TouristTaxRule            un barème et sa période de validité
+├── TouristTaxRuleRepository  règles datées, détection des recouvrements
+├── TouristTaxContextRepository  contexte figé avec le séjour
+└── TouristTaxCalculator      moteur versionné
+
+src/Police/
+├── PoliceRecord              la fiche, une fois déchiffrée
+├── PoliceRecordRepository    registre chiffré, purge en base
+└── PoliceRecordService       activation, validation, rétention
+
+src/Privacy/
+└── RetentionService          durées de conservation, purge, audit
+```
+
+### 41.2 Un texte accepté est un instantané
+
+On ne peut opposer à quelqu'un que ce qu'il a réellement lu. Le texte légal
+continue de vivre là où le propriétaire l'écrit — dans les pages éditoriales —
+mais **publier une version** en prend une photo : corps, titre, empreinte
+SHA-256, langue, date. Éditer la page ensuite ne réécrit aucune version déjà
+publiée, et republier le même numéro est refusé.
+
+Une acceptation enregistre alors quatre choses : le type de texte, la
+**version**, la **langue** et l'empreinte. La langue retenue est celle de la
+page où la case a été cochée, pas celle du séjour : c'est ce texte-là que le
+voyageur a lu. L'adresse IP n'est conservée que hachée, comme pour
+l'acceptation d'un contrat.
+
+La publication est faite pour **toutes les langues à la fois**. Publier langue
+par langue produirait des « version 3 » qui n'existent qu'en français, et un
+voyageur néerlandais accepterait alors une version fantôme.
+
+L'installation publie une version initiale : le produit n'est jamais livré sans
+texte opposable, et une réservation faite le premier jour conserve donc une
+version et une langue.
+
+### 41.3 L'assistant ne conseille pas, il date
+
+Pour chacun des dix-huit sujets (SPECIFICATIONS.md §62), le produit fournit
+**du texte traduit** : définition, applicabilité, où trouver l'information,
+impact. Ce qui est propre à ce logement — statut, valeur, source officielle,
+date de vérification, échéance — est saisi par le propriétaire.
+
+La séparation est volontaire et visible à l'écran : le produit ne prétend
+jamais savoir si une situation est conforme. Il aide à le vérifier, garde la
+source, et rappelle l'échéance. Un avertissement le dit en toutes lettres.
+
+Trois garde-fous :
+
+- une « source officielle » doit être une adresse web consultable ; le reste
+  serait un souvenir, pas une source ;
+- un sujet déclaré conforme sans date de vérification reçoit celle du jour :
+  une conformité non datée n'est pas vérifiable ;
+- un sujet « non applicable » ne se périme pas — il n'y a rien à revoir — mais
+  un sujet conforme dont la revue est dépassée redevient une action.
+
+Trois sujets sont pilotés ailleurs — taxe de séjour, fiche de police, contrat —
+et l'assistant y renvoie plutôt que de demander une saisie qui existerait alors
+deux fois.
+
+### 41.4 Un barème est daté
+
+Un barème de taxe de séjour est voté, prend effet à une date, puis est
+remplacé. `TouristTaxRule` porte donc sa période de validité, et
+`TouristTaxRuleRepository::applicableOn()` choisit celle qui s'appliquait à la
+date d'arrivée, pour le classement du logement.
+
+Le contexte de calcul est **figé avec le séjour** au moment de la réservation :
+territoire, classement, période, barème, adultes, exonérés, nuits, plafond,
+total. Un barème voté ensuite — même avec effet rétroactif — ne change plus le
+montant d'une réservation déjà engagée, et la fiche du séjour reste capable
+d'expliquer son calcul des années plus tard.
+
+Sans règle datée saisie, la configuration tient lieu de barème courant : une
+petite installation fonctionne sans jamais ouvrir cet écran.
+
+Deux barèmes qui se recouvrent ne sont pas refusés — un barème peut être
+corrigé — mais ils sont **signalés** : sans cela, le montant dépendrait de
+l'ordre des lignes.
+
+### 41.5 Ce qu'on ne collecte pas
+
+La fiche de police n'est exigée que dans certains cas. Tant que
+`compliance.police_record_enabled` est faux, le produit ne propose rien, la
+route de saisie répond 404, et aucune ligne n'existe. Collecter « au cas où »
+une identité, une date de naissance et un domicile serait l'inverse de la
+minimisation.
+
+Activée, la fiche est chiffrée au repos avec le contexte `police:record`, ne
+comporte que les champs du formulaire réglementaire, et porte sa propre date de
+purge — comptée depuis le **départ**, parce que compter depuis la création
+commencerait à courir avant le séjour.
+
+### 41.6 Rétention
+
+`RetentionService` applique en un seul endroit les durées configurées :
+journaux, journal des notifications, sessions et jetons expirés, liens invité
+caducs, liste d'attente passée, notifications de paiement, compteurs de
+limitation, fiches de police échues. La purge est elle-même auditée : effacer
+sans trace serait un trou dans la piste d'audit.
+
+Ce qui n'est **pas** purgé mérite d'être dit : séjours, paiements, contrats
+acceptés, états des lieux et consentements sont des pièces contractuelles. Les
+effacer automatiquement priverait les deux parties de leur preuve ; leur
+suppression reste une décision humaine.

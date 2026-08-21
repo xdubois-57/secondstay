@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 import { deliverToInbox, replyWithAttachment, samplePdf } from './helpers/inbox.js';
 
@@ -195,10 +195,7 @@ test.describe('documents et courrier', () => {
         const context = await anonymousContext(browser);
         const page = await context.newPage();
 
-        await page.goto('/fr/login');
-        await page.fill('#email', client);
-        await page.fill('#password', PASSWORD);
-        await page.click('[data-testid="login-form"] button[type="submit"]');
+        await signInAndWait(page, client, PASSWORD);
 
         await page.goto(`/fr/booking/${reference}`);
 

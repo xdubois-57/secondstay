@@ -149,6 +149,51 @@ mêmes nuits.
 Si les dates sont déjà prises, le visiteur peut demander à être prévenu
 lorsqu'elles se libèrent.
 
+## Conformité France
+
+La réglementation d'une location saisonnière n'est pas la même d'une commune à
+l'autre, et elle change. Le produit ne prétend donc pas savoir à votre place :
+il décrit chacun des dix-huit sujets — meublé de tourisme, déclaration, SIRET,
+statut, classement, DPE, changement d'usage, taxe de séjour, fiche de police,
+contrat, annulation, médiation, assurances, risques locaux, débroussaillement,
+équipement hiver, déchets — et vous laisse constater, avec la source officielle
+et la date de vérification.
+
+```text
+/fr/admin/compliance   assistant conformité et textes légaux versionnés
+/fr/admin/tax          barèmes de taxe de séjour, datés
+/fr/admin/police       fiches de police et durées de conservation
+```
+
+Ce que vous déclarez conforme est daté et reçoit une échéance de revue. Quand
+elle arrive à terme, le sujet réapparaît dans « À faire ». Ce ne sont pas des
+conseils juridiques : ce sont vos constats, gardés au bon endroit.
+
+### Textes légaux versionnés
+
+Publier une version de vos conditions ou de votre politique de confidentialité
+en fige le texte de chaque langue. Une réservation conserve alors la **version**
+et la **langue** réellement acceptées : réécrire vos conditions l'an prochain
+ne change rien à ce qu'un voyageur a accepté cette année.
+
+### Taxe de séjour
+
+Les barèmes sont datés : territoire, classement, période de validité. Le calcul
+d'un séjour est figé au moment de la réservation et reste explicable — par
+adulte, par nuit, avec les exonérations et le plafond — même après un
+changement de barème.
+
+### Fiche de police et rétention
+
+La fiche individuelle n'est proposée que si vous activez l'obligation. Tant
+qu'elle est désactivée, aucune donnée d'identité n'est collectée. Activée, elle
+est chiffrée et effacée automatiquement à l'échéance que vous fixez.
+
+Les durées de conservation des journaux, notifications, jetons et liens invité
+sont visibles au même endroit, et s'appliquent d'un geste. Les séjours,
+paiements, contrats et états des lieux, eux, ne sont jamais purgés
+automatiquement : ce sont des pièces contractuelles.
+
 ## Notifications
 
 SMTP + Web Push. Si le push est actif, **e-mail et push sont tous deux tentés**, avec journal séparé par canal.
@@ -426,7 +471,7 @@ cochent.
 
 Le tableau « À faire » ne montre que ce qui réclame une décision : demandes à
 valider, échéances dépassées, cautions à restituer, courriers non rattachés,
-séjours proches encore à préparer, incidents ouverts.
+séjours proches encore à préparer, incidents ouverts, conformité à vérifier.
 
 ## Calendriers privés
 

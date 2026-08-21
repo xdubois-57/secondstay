@@ -13,6 +13,9 @@ return [
         'payments' => 'Paiements',
         'inspections' => 'États des lieux',
         'incidents' => 'Incidents',
+        'compliance' => 'Conformité',
+        'tax' => 'Taxe de séjour',
+        'police' => 'Fiches de police',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Exploitation',
@@ -83,6 +86,16 @@ return [
                     'friday' => 'Vendredi',
                     'saturday' => 'Samedi',
                     'sunday' => 'Dimanche',
+                ],
+            ],
+            'tax' => [
+                'classification' => [
+                    'unclassified' => 'Non classé',
+                    'star_1' => '1 étoile',
+                    'star_2' => '2 étoiles',
+                    'star_3' => '3 étoiles',
+                    'star_4' => '4 étoiles',
+                    'star_5' => '5 étoiles',
                 ],
             ],
             'site' => [

@@ -851,3 +851,51 @@ protégé par un lien caché.
 ont rejoint la liste `NEVER_CACHED` du service worker : elles écrivent, et une
 version servie depuis le disque ferait croire à un constat enregistré ou à une
 photo partie.
+
+## 35. Conformité, textes légaux et rétention
+
+**Une version publiée est immuable.** `LegalDocumentRepository::publish()`
+refuse d'écraser une version existante, et `LegalDocument::isIntact()` compare
+le corps stocké à son empreinte. Un consentement pointe vers cette version :
+sans immuabilité, la preuve d'acceptation ne prouverait rien.
+
+**Un consentement enregistre la langue, pas seulement la version.** Accepter
+des conditions en néerlandais et se voir opposer la version française serait
+sans valeur. La langue retenue est celle de la page où la case a été cochée.
+
+**L'adresse IP n'est conservée que hachée**, comme pour l'acceptation d'un
+contrat : elle sert de preuve, pas de moyen de retrouver quelqu'un.
+
+**Une acceptation ne se réécrit pas.** `UNIQUE(booking_id, type)` fait qu'une
+seconde acceptation ne remplace pas la première : c'est la première qui a eu
+lieu.
+
+**La fiche de police ne collecte rien tant qu'elle n'est pas activée.** Le
+réglage est vérifié côté serveur à chaque requête — la route de saisie répond
+404 quand l'obligation est désactivée — et non seulement au moment d'afficher
+un lien. Le contenu est chiffré au repos avec un contexte dédié
+(`police:record`) et ne comporte que les champs réglementaires.
+
+**La purge d'une fiche ne la déchiffre pas.** Elle se fait en base sur la date
+d'échéance : il n'y a aucune raison de lire une fiche pour l'effacer.
+
+**Une fiche illisible ne fait pas tomber l'écran.** Après un retrait de clé ou
+une rotation ratée, la fiche apparaît vide — ce qui est précisément
+l'information utile — plutôt que de provoquer une erreur.
+
+**La source d'un sujet de conformité doit être une adresse web.** Un champ
+libre y stockerait « demandé par téléphone », qui n'est pas vérifiable ; seuls
+`http` et `https` sont acceptés.
+
+**Le contexte de taxe est figé.** Un barème voté après coup, même rétroactif,
+ne peut pas changer le montant d'une réservation déjà engagée : le montant
+facturé reste explicable.
+
+**La purge est auditée.** `RetentionService::purge()` inscrit le détail de ce
+qui a disparu dans la piste d'audit : effacer sans trace serait un trou dans
+cette piste.
+
+**Les pièces contractuelles ne sont jamais purgées automatiquement.** Séjours,
+paiements, contrats acceptés, états des lieux et consentements survivent à
+toute rétention : leur suppression est une décision humaine, jamais un effet de
+bord d'un réglage.

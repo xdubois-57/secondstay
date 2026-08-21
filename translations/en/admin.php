@@ -13,6 +13,9 @@ return [
         'payments' => 'Payments',
         'inspections' => 'Inspections',
         'incidents' => 'Incidents',
+        'compliance' => 'Compliance',
+        'tax' => 'Tourist tax',
+        'police' => 'Police records',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Operations',
@@ -83,6 +86,16 @@ return [
                     'friday' => 'Friday',
                     'saturday' => 'Saturday',
                     'sunday' => 'Sunday',
+                ],
+            ],
+            'tax' => [
+                'classification' => [
+                    'unclassified' => 'Unclassified',
+                    'star_1' => '1 star',
+                    'star_2' => '2 stars',
+                    'star_3' => '3 stars',
+                    'star_4' => '4 stars',
+                    'star_5' => '5 stars',
                 ],
             ],
             'site' => [

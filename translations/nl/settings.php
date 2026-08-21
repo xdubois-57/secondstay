@@ -338,6 +338,14 @@ return [
         ],
     ],
     'tax' => [
+        'territory' => [
+            'label' => 'Belastinggebied',
+            'help' => 'De gemeente of het samenwerkingsverband dat de toeristenbelasting int.',
+        ],
+        'classification' => [
+            'label' => 'Classificatie van de woning',
+            'help' => 'Het tarief hangt af van de classificatie als toeristisch gemeubileerde woning.',
+        ],
         'tourist_enabled' => [
             'label' => 'Toeristenbelasting innen',
             'help' => 'Voegt de toeristenbelasting toe aan het betaalschema van elke reservering.',
@@ -429,6 +437,16 @@ return [
         'guest_enabled' => [
             'label' => 'Plaatsbeschrijving door de reiziger',
             'help' => 'Opent de formulieren voor aankomst en vertrek vanuit „Mijn verblijf”.',
+        ],
+    ],
+    'compliance' => [
+        'police_record_enabled' => [
+            'label' => 'Politiefiche',
+            'help' => 'Alleen inschakelen als de verplichting geldt. Zolang ze uit staat wordt niets verzameld.',
+        ],
+        'police_retention_days' => [
+            'label' => 'Bewaartermijn fiches (dagen)',
+            'help' => 'Hoelang na het vertrek de fiche automatisch wordt gewist.',
         ],
     ],
 ];

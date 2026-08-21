@@ -338,6 +338,14 @@ return [
         ],
     ],
     'tax' => [
+        'territory' => [
+            'label' => 'Tax territory',
+            'help' => 'The municipality or authority that collects the tourist tax.',
+        ],
+        'classification' => [
+            'label' => 'Property classification',
+            'help' => 'The tax scale depends on the furnished-tourism classification.',
+        ],
         'tourist_enabled' => [
             'label' => 'Collect tourist tax',
             'help' => 'Adds the tourist tax to every booking schedule.',
@@ -429,6 +437,16 @@ return [
         'guest_enabled' => [
             'label' => 'Inspection filled in by the traveller',
             'help' => 'Opens the arrival and departure forms from “My stay”.',
+        ],
+    ],
+    'compliance' => [
+        'police_record_enabled' => [
+            'label' => 'Police record',
+            'help' => 'Enable only if the obligation applies. Nothing is collected while it is off.',
+        ],
+        'police_retention_days' => [
+            'label' => 'Record retention (days)',
+            'help' => 'How long after departure the record is automatically erased.',
         ],
     ],
 ];

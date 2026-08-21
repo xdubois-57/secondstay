@@ -69,6 +69,20 @@
 
             {% include 'admin/_inspection-panel.html.twig' %}
 
+            {% include 'legal/_tax-context.html.twig' %}
+
+            {% include 'legal/_consents.html.twig' %}
+
+            {% if police_enabled %}
+                <div class="card mb-4" data-testid="admin-police-link">
+                    <div class="card-header">{{ t('police.record') }}</div>
+                    <div class="card-body">
+                        <a href="{{ path('admin.police.edit', {'id': booking.id}) }}"
+                           data-testid="police-link">{{ t('police.open_record') }}</a>
+                    </div>
+                </div>
+            {% endif %}
+
             <div class="card">
                 <div class="card-header">{{ t('booking.journey.timeline') }}</div>
                 <ul class="list-group list-group-flush" data-testid="booking-timeline">

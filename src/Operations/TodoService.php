@@ -7,6 +7,7 @@ namespace SecondStay\Operations;
 use SecondStay\Booking\Booking;
 use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\BookingStatus;
+use SecondStay\Compliance\ComplianceService;
 use SecondStay\Database\Migrator;
 use SecondStay\Imap\InboundMailRepository;
 use SecondStay\Incident\IncidentRepository;
@@ -32,6 +33,7 @@ final class TodoService
         private readonly ChecklistService $checklists,
         private readonly ?Migrator $migrator = null,
         private readonly ?IncidentRepository $incidents = null,
+        private readonly ?ComplianceService $compliance = null,
     ) {
     }
 
@@ -76,6 +78,14 @@ final class TodoService
         $openIncidents = $this->incidents?->countOpen() ?? 0;
         if ($openIncidents > 0) {
             $items[] = $this->item('incidents_open', 'danger', $openIncidents, 'admin.incidents');
+        }
+
+        // Conformité : un sujet à vérifier ou dont la revue est dépassée
+        // réclame une décision, exactement comme un paiement en retard
+        // (SPECIFICATIONS.md §50).
+        $compliance = $this->compliance?->outstanding($today) ?? [];
+        if ($compliance !== []) {
+            $items[] = $this->item('compliance_to_verify', 'warning', count($compliance), 'admin.compliance');
         }
 
         if ($this->migrator !== null && $this->migrator->pending() !== []) {

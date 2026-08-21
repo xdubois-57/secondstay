@@ -9,6 +9,7 @@ use SecondStay\Audit\AuditTrail;
 use SecondStay\Auth\User;
 use SecondStay\Availability\AvailabilityService;
 use SecondStay\I18n\Locales;
+use SecondStay\Legal\LegalService;
 use SecondStay\Logging\Logger;
 use SecondStay\Mail\MailAddress;
 use SecondStay\Mail\MailService;
@@ -17,6 +18,7 @@ use SecondStay\Notification\NotificationService;
 use SecondStay\Pricing\DateRange;
 use SecondStay\Pricing\PriceCalculator;
 use SecondStay\Settings\SettingsService;
+use SecondStay\Tax\TouristTaxCalculator;
 
 /**
  * Parcours de réservation (SPECIFICATIONS.md §25 à §28).
@@ -44,6 +46,8 @@ final class BookingService
         private readonly ?NotificationService $notifications = null,
         private readonly ?MailService $mail = null,
         private readonly ?AuditTrail $audit = null,
+        private readonly ?LegalService $legal = null,
+        private readonly ?TouristTaxCalculator $tax = null,
     ) {
     }
 
@@ -157,7 +161,13 @@ final class BookingService
      *
      * @return array{ok: true, booking: Booking}|array{ok: false, errors: list<string>}
      */
-    public function submit(Booking $booking, array $input, User $user): array
+    public function submit(
+        Booking $booking,
+        array $input,
+        User $user,
+        string $locale = '',
+        string $ip = '',
+    ): array
     {
         if ($booking->status !== BookingStatus::Hold) {
             return ['ok' => false, 'errors' => ['booking.error.not_open']];
@@ -195,14 +205,29 @@ final class BookingService
 
         $this->consumePromo($booking);
 
-        $this->events->record($booking->id, 'requested', [
-            'status' => $target->value,
-        ], $user->id, $user->email);
-
         $updated = $this->bookings->find($booking->id);
         if ($updated === null) {
             return ['ok' => false, 'errors' => ['booking.error.not_found']];
         }
+
+        // Ce que le voyageur vient d'accepter est figé maintenant : version,
+        // langue et empreinte du texte. La langue retenue est celle de la
+        // page où la case a été cochée, pas celle du séjour : c'est ce texte-là
+        // qu'il a lu (SPECIFICATIONS.md §65).
+        $this->legal?->recordBookingAcceptance(
+            $updated,
+            $locale === '' ? $booking->locale : $locale,
+            $ip,
+        );
+
+        // Le barème de taxe de séjour est daté : le contexte de calcul est
+        // figé avec le séjour, sans quoi un séjour passé deviendrait
+        // inexplicable après un changement de tarif (SPECIFICATIONS.md §63).
+        $this->tax?->freeze($updated);
+
+        $this->events->record($booking->id, 'requested', [
+            'status' => $target->value,
+        ], $user->id, $user->email);
 
         $this->notify($updated, $user, $target === BookingStatus::Confirmed
             ? NotificationEvent::BookingConfirmed

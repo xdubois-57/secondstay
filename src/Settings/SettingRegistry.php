@@ -176,6 +176,17 @@ final class SettingRegistry
             new SettingDefinition('legal.terms_version', SettingType::String, '', 'legal', max: 24),
             new SettingDefinition('legal.mediator_name', SettingType::String, '', 'legal', max: 190),
             new SettingDefinition('legal.mediator_url', SettingType::Url, '', 'legal'),
+            // Fiche de police : rien n'est collecté tant qu'elle n'est pas
+            // activée (SPECIFICATIONS.md §64).
+            new SettingDefinition('compliance.police_record_enabled', SettingType::Bool, false, 'legal'),
+            new SettingDefinition(
+                'compliance.police_retention_days',
+                SettingType::Integer,
+                183,
+                'legal',
+                min: 1,
+                max: 3650
+            ),
 
             // --- Paiements --------------------------------------------------
             new SettingDefinition(
@@ -197,6 +208,16 @@ final class SettingRegistry
             new SettingDefinition('tax.tourist_enabled', SettingType::Bool, false, 'tax'),
             new SettingDefinition('tax.tourist_per_adult_night', SettingType::Money, 0, 'tax', min: 0),
             new SettingDefinition('tax.tourist_cap_per_stay', SettingType::Money, 0, 'tax', min: 0),
+            // Territoire et classement : ils déterminent quel barème daté
+            // s'applique (SPECIFICATIONS.md §63).
+            new SettingDefinition('tax.territory', SettingType::String, '', 'tax', max: 120),
+            new SettingDefinition(
+                'tax.classification',
+                SettingType::Enum,
+                'unclassified',
+                'tax',
+                enumValues: ['unclassified', 'star_1', 'star_2', 'star_3', 'star_4', 'star_5']
+            ),
 
             // --- E-mail -----------------------------------------------------
             new SettingDefinition('mail.from_address', SettingType::Email, '', 'mail'),

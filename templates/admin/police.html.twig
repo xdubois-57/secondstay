@@ -1,0 +1,60 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('police.intro') }}</p>
+
+    <p class="alert {{ enabled ? 'alert-warning' : 'alert-secondary' }}" data-testid="police-enabled"
+       data-enabled="{{ enabled ? 'true' : 'false' }}">
+        {{ enabled ? t('police.enabled') : t('police.disabled') }}
+        <a class="ms-2" href="{{ path('admin.settings') }}?module=legal">{{ t('police.configure') }}</a>
+    </p>
+
+    {% if enabled %}
+        <div class="card mb-4">
+            <div class="card-header">{{ t('police.records') }}</div>
+            <ul class="list-group list-group-flush" data-testid="police-records">
+                {% for record in records %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                        data-police-booking="{{ record.bookingId }}">
+                        <span>
+                            <a href="{{ path('admin.police.edit', {'id': record.bookingId}) }}">
+                                {{ record.field('last_name') ?: t('police.unreadable') }}
+                                {{ record.field('first_names') }}
+                            </a>
+                        </span>
+                        <span class="small text-body-secondary">
+                            {{ t('police.purge_after', {'date': record.purgeAfter}) }}
+                        </span>
+                    </li>
+                {% else %}
+                    <li class="list-group-item text-body-secondary"
+                        data-testid="police-empty">{{ t('police.empty') }}</li>
+                {% endfor %}
+            </ul>
+            <div class="card-footer small text-body-secondary">
+                {{ t('police.retention', {'days': retention_days}) }}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">{{ t('privacy.retention') }}</div>
+        <div class="card-body">
+            <p class="small text-body-secondary">{{ t('privacy.retention_intro') }}</p>
+            <ul class="list-group list-group-flush mb-3" data-testid="retention-policy">
+                {% for category, days in policy %}
+                    <li class="list-group-item d-flex justify-content-between" data-retention="{{ category }}">
+                        <span>{{ t('privacy.category.' ~ category) }}</span>
+                        <strong>{{ t('privacy.days', {'days': days}) }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="small text-body-secondary">{{ t('privacy.kept_intro') }}</p>
+            <form method="post" action="{{ path('admin.retention.purge') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <button class="btn btn-outline-danger" type="submit"
+                        data-testid="retention-purge">{{ t('privacy.purge_now') }}</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

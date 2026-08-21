@@ -7,7 +7,10 @@ namespace SecondStay\Core;
 use SecondStay\Controller\Admin\AdminBackupController;
 use SecondStay\Controller\Admin\AdminBookingController;
 use SecondStay\Controller\Admin\AdminDashboardController;
+use SecondStay\Controller\Admin\AdminComplianceController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
+use SecondStay\Controller\Admin\AdminPoliceController;
+use SecondStay\Controller\Admin\AdminTaxController;
 use SecondStay\Controller\Admin\AdminLogController;
 use SecondStay\Controller\Admin\AdminMaintenanceController;
 use SecondStay\Controller\Admin\AdminDocumentController;
@@ -365,6 +368,40 @@ final class Routes
             [AdminIncidentController::class, 'uploadPhoto'],
             'admin.incidents.photo'
         );
+
+        // --- Conformité France ------------------------------------------------
+        $router->get('/admin/compliance', [AdminComplianceController::class, 'index'], 'admin.compliance');
+        $router->post(
+            '/admin/compliance/{topic:[a-z_]+}',
+            [AdminComplianceController::class, 'save'],
+            'admin.compliance.save'
+        );
+        $router->post(
+            '/admin/compliance/{topic:[a-z_]+}/evidence',
+            [AdminComplianceController::class, 'uploadEvidence'],
+            'admin.compliance.evidence'
+        );
+        $router->post(
+            '/admin/legal/publish',
+            [AdminComplianceController::class, 'publishLegal'],
+            'admin.legal.publish'
+        );
+
+        // --- Taxe de séjour ---------------------------------------------------
+        $router->get('/admin/tax', [AdminTaxController::class, 'index'], 'admin.tax');
+        $router->post('/admin/tax', [AdminTaxController::class, 'create'], 'admin.tax.create');
+        $router->post('/admin/tax/{id:\d+}/delete', [AdminTaxController::class, 'delete'], 'admin.tax.delete');
+
+        // --- Fiche de police et rétention -------------------------------------
+        $router->get('/admin/police', [AdminPoliceController::class, 'index'], 'admin.police');
+        $router->get('/admin/police/{id:\d+}', [AdminPoliceController::class, 'edit'], 'admin.police.edit');
+        $router->post('/admin/police/{id:\d+}', [AdminPoliceController::class, 'save'], 'admin.police.save');
+        $router->post(
+            '/admin/police/{id:\d+}/delete',
+            [AdminPoliceController::class, 'delete'],
+            'admin.police.delete'
+        );
+        $router->post('/admin/retention/purge', [AdminPoliceController::class, 'purge'], 'admin.retention.purge');
 
         // --- Documents ------------------------------------------------------
         $router->get('/admin/documents', [AdminDocumentController::class, 'index'], 'admin.documents');

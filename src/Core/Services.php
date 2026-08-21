@@ -36,6 +36,8 @@ use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Diagnostics\MailDnsChecker;
 use SecondStay\Diagnostics\MailboxDiagnostics;
 use SecondStay\Diagnostics\NotificationDiagnostics;
+use SecondStay\Compliance\ComplianceRepository;
+use SecondStay\Compliance\ComplianceService;
 use SecondStay\Incident\IncidentRepository;
 use SecondStay\Incident\IncidentService;
 use SecondStay\Inspection\InspectionRepository;
@@ -47,6 +49,9 @@ use SecondStay\Installer\InstallationState;
 use SecondStay\Installer\Installer;
 use SecondStay\Installer\RequirementChecker;
 use SecondStay\I18n\Translator;
+use SecondStay\Legal\BookingConsentRepository;
+use SecondStay\Legal\LegalDocumentRepository;
+use SecondStay\Legal\LegalService;
 use SecondStay\Logging\Logger;
 use SecondStay\Media\ImageProcessor;
 use SecondStay\Media\MediaRepository;
@@ -106,7 +111,12 @@ use SecondStay\Payment\PaymentRepository;
 use SecondStay\Payment\PaymentService;
 use SecondStay\Payment\WebhookRepository;
 use SecondStay\Settings\SettingsService;
+use SecondStay\Police\PoliceRecordRepository;
+use SecondStay\Police\PoliceRecordService;
+use SecondStay\Privacy\RetentionService;
 use SecondStay\Tax\TouristTaxCalculator;
+use SecondStay\Tax\TouristTaxContextRepository;
+use SecondStay\Tax\TouristTaxRuleRepository;
 use SecondStay\Update\GitHubReleaseProvider;
 use SecondStay\Update\ReleaseProvider;
 use SecondStay\Update\UpdateService;
@@ -480,6 +490,8 @@ final class Services
             $c->get(NotificationService::class),
             $c->get(MailService::class),
             $c->get(AuditTrail::class),
+            $c->get(LegalService::class),
+            $c->get(TouristTaxCalculator::class),
         ));
 
         $container->set(QuoteService::class, static fn (Container $c): QuoteService => new QuoteService(
@@ -494,8 +506,18 @@ final class Services
         $container->set(WebhookRepository::class, static fn (Container $c): WebhookRepository
             => new WebhookRepository($c->get(Database::class)));
 
+        $container->set(TouristTaxRuleRepository::class, static fn (Container $c): TouristTaxRuleRepository
+            => new TouristTaxRuleRepository($c->get(Database::class)));
+
+        $container->set(TouristTaxContextRepository::class, static fn (Container $c): TouristTaxContextRepository
+            => new TouristTaxContextRepository($c->get(Database::class)));
+
         $container->set(TouristTaxCalculator::class, static fn (Container $c): TouristTaxCalculator
-            => new TouristTaxCalculator($c->get(SettingsService::class)));
+            => new TouristTaxCalculator(
+                $c->get(SettingsService::class),
+                $c->get(TouristTaxRuleRepository::class),
+                $c->get(TouristTaxContextRepository::class),
+            ));
 
         $container->set(PaymentProvider::class, static function (Container $c): PaymentProvider {
             // Le fournisseur factice n'est activable que par variable
@@ -644,6 +666,7 @@ final class Services
             $c->get(ChecklistService::class),
             $c->get(Migrator::class),
             $c->get(IncidentRepository::class),
+            $c->get(ComplianceService::class),
         ));
 
         // --- Mon séjour et liens invité ------------------------------------
@@ -700,6 +723,56 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
+        // --- Textes légaux, conformité et rétention -------------------------
+        $container->set(LegalDocumentRepository::class, static fn (Container $c): LegalDocumentRepository
+            => new LegalDocumentRepository($c->get(Database::class)));
+
+        $container->set(BookingConsentRepository::class, static fn (Container $c): BookingConsentRepository
+            => new BookingConsentRepository($c->get(Database::class)));
+
+        $container->set(LegalService::class, static fn (Container $c): LegalService => new LegalService(
+            $c->get(LegalDocumentRepository::class),
+            $c->get(BookingConsentRepository::class),
+            $c->get(ContentRepository::class),
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(ComplianceRepository::class, static fn (Container $c): ComplianceRepository
+            => new ComplianceRepository($c->get(Database::class)));
+
+        $container->set(ComplianceService::class, static fn (Container $c): ComplianceService => new ComplianceService(
+            $c->get(ComplianceRepository::class),
+            $c->get(LegalService::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(PoliceRecordRepository::class, static fn (Container $c): PoliceRecordRepository
+            => new PoliceRecordRepository($c->get(Database::class), $c->get(Encryptor::class)));
+
+        $container->set(PoliceRecordService::class, static fn (Container $c): PoliceRecordService
+            => new PoliceRecordService(
+                $c->get(PoliceRecordRepository::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            ));
+
+        $container->set(RetentionService::class, static fn (Container $c): RetentionService => new RetentionService(
+            $c->get(SettingsService::class),
+            $c->get(Logger::class),
+            $c->get(NotificationRepository::class),
+            $c->get(SessionRepository::class),
+            $c->get(TokenRepository::class),
+            $c->get(GuestLinkRepository::class),
+            $c->get(WaitlistRepository::class),
+            $c->get(WebhookRepository::class),
+            $c->get(RateLimiter::class),
+            $c->get(PoliceRecordService::class),
+            $c->get(AuditTrail::class),
+        ));
+
         $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
             => new TokenRepository($c->get(Database::class)));
 
@@ -716,6 +789,7 @@ final class Services
             $c->get(RateLimiter::class),
             $c->get(Logger::class),
             $c->get(AuditTrail::class),
+            $c->get(LegalService::class),
         ));
 
         $container->set(WebAuthnCredentialRepository::class, static fn (Container $c): WebAuthnCredentialRepository

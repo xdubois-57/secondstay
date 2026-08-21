@@ -1,0 +1,167 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * French compliance assistant (SPECIFICATIONS.md §61 and §62).
+ */
+
+return [
+    'title' => 'French compliance',
+    'intro' => 'Every topic is described, then established by you: status, official source, verification date and next review.',
+    'disclaimer' => 'These notes are landmarks, not legal advice. The rules vary by municipality and change over time: the official source and the verification date are what count.',
+    'saved' => 'Topic saved.',
+    'evidence_added' => 'Supporting document added.',
+    'overdue' => 'Review overdue',
+    'managed_elsewhere' => 'This topic is handled on its own screen.',
+    'status' => [
+        'compliant' => 'Compliant',
+        'to_verify' => 'To verify',
+        'not_applicable' => 'Not applicable',
+    ],
+    'field' => [
+        'definition' => 'Definition',
+        'applicability' => 'Applicability',
+        'where' => 'Where to look',
+        'impact' => 'Impact',
+        'status' => 'Status',
+        'value' => 'Value',
+        'notes' => 'Notes',
+        'source' => 'Official source',
+        'last_verified' => 'Verified on',
+        'next_review' => 'Next review',
+        'evidence' => 'Supporting document',
+        'evidence_current' => 'View the attachment',
+    ],
+    'error' => [
+        'source' => 'The source must be a web address (http or https).',
+    ],
+    'topic' => [
+        'furnished_tourism' => [
+            'label' => 'Furnished tourism accommodation',
+            'definition' => 'Status of a furnished home let to short-stay travellers who do not take up residence.',
+            'applicability' => 'Applies to any seasonal letting of a whole furnished home.',
+            'where' => 'The municipality’s planning department or website, and the national business service.',
+            'impact' => 'Determines which declaration is due, which tax applies and what must be disclosed.',
+        ],
+        'declaration' => [
+            'label' => 'Declaration or registration with the municipality',
+            'definition' => 'Declaring the furnished let to the municipality, sometimes with a registration number to display.',
+            'applicability' => 'Mandatory in many municipalities; registration applies where the municipality introduced it.',
+            'where' => 'The municipality of the property, through its online desk where one exists.',
+            'impact' => 'Failing to declare exposes you to a fine and prevents displaying the number platforms require.',
+        ],
+        'siret' => [
+            'label' => 'SIRET number',
+            'definition' => 'Identification number of the furnished letting activity.',
+            'applicability' => 'Required once the furnished letting activity is declared.',
+            'where' => 'The single window for business formalities.',
+            'impact' => 'Needed for tax returns and for invoicing.',
+        ],
+        'owner_status' => [
+            'label' => 'Landlord status',
+            'definition' => 'Non-professional or professional furnished landlord, depending on receipts and their share of income.',
+            'applicability' => 'Concerns every owner letting a furnished home.',
+            'where' => 'Official tax documentation and your accountant.',
+            'impact' => 'Changes the tax regime, the contributions and the bookkeeping obligations.',
+        ],
+        'residence_kind' => [
+            'label' => 'Main or second home',
+            'definition' => 'How the property is qualified with regard to the owner’s own occupancy.',
+            'applicability' => 'Concerns every property; this product targets a second home.',
+            'where' => 'Local tax notice and occupancy declaration.',
+            'impact' => 'A main home may only be let for a limited number of days per year.',
+        ],
+        'classification' => [
+            'label' => 'Star classification',
+            'definition' => 'Voluntary classification of the furnished let, from one to five stars.',
+            'applicability' => 'Optional, but it drives certain tax scales and allowances.',
+            'where' => 'An accredited body carrying out the classification visit.',
+            'impact' => 'Changes the tourist tax scale and may open tax allowances.',
+        ],
+        'energy_diagnosis' => [
+            'label' => 'Energy performance diagnosis',
+            'definition' => 'Assessment of the property’s energy performance.',
+            'applicability' => 'Required depending on the nature and length of the letting; check your own situation.',
+            'where' => 'A certified assessor.',
+            'impact' => 'May condition letting the property, and must be disclosed where it is required.',
+        ],
+        'change_of_use' => [
+            'label' => 'Change of use',
+            'definition' => 'Authorisation to turn a residential unit into tourism accommodation.',
+            'applicability' => 'Required in some municipalities, often the largest or most strained ones.',
+            'where' => 'The municipality’s planning department.',
+            'impact' => 'Letting without the authorisation where it is required exposes you to a heavy civil fine.',
+        ],
+        'tourist_tax' => [
+            'label' => 'Tourist tax',
+            'definition' => 'Tax collected from the traveller and paid over to the local authority.',
+            'applicability' => 'Applies wherever the authority has introduced it.',
+            'where' => 'The competent authority, which publishes the scale and the payment deadlines.',
+            'impact' => 'The scale depends on the classification; payment is periodic and self-declared.',
+        ],
+        'police_record' => [
+            'label' => 'Individual police record',
+            'definition' => 'A record filled in on arrival for certain foreign travellers.',
+            'applicability' => 'Only if the obligation concerns you.',
+            'where' => 'The prefecture or the competent police service.',
+            'impact' => 'Imposes a framed collection, a limited retention and handover on request.',
+        ],
+        'contract' => [
+            'label' => 'Seasonal letting contract',
+            'definition' => 'A written document describing the property, the dates, the price and the conditions.',
+            'applicability' => 'Required for a seasonal letting.',
+            'where' => 'The template produced by the application, completed by your own conditions.',
+            'impact' => 'A clear, accepted contract prevents most disputes.',
+        ],
+        'cancellation' => [
+            'label' => 'Cancellation terms',
+            'definition' => 'The rules that apply when the traveller — or you — cancels.',
+            'applicability' => 'Always: these are your terms, and they must be written and accepted.',
+            'where' => 'Your terms and conditions, published and versioned.',
+            'impact' => 'Without written, accepted rules, every refund becomes a case-by-case negotiation.',
+        ],
+        'mediation' => [
+            'label' => 'Consumer mediation',
+            'definition' => 'The amicable route offered to the traveller in case of a dispute.',
+            'applicability' => 'Mandatory for a professional; check against your own status.',
+            'where' => 'A listed mediator, whose name and website must be disclosed.',
+            'impact' => 'The mediator must appear in your terms and on your site.',
+        ],
+        'insurance' => [
+            'label' => 'Insurance',
+            'definition' => 'Cover for the property and for the liability arising from letting it.',
+            'applicability' => 'Always: your policy must explicitly cover seasonal letting.',
+            'where' => 'Your insurer, with an express mention in the policy.',
+            'impact' => 'An uncovered claim stays at your expense.',
+        ],
+        'local_risks' => [
+            'label' => 'Risk information',
+            'definition' => 'Informing the traveller about natural and technological risks in the area.',
+            'applicability' => 'Depends on the municipality and the zoning.',
+            'where' => 'The public service dedicated to risk information.',
+            'impact' => 'The information must be available and current where it is required.',
+        ],
+        'clearing' => [
+            'label' => 'Vegetation clearing',
+            'definition' => 'Legal obligation to clear vegetation around buildings.',
+            'applicability' => 'In areas exposed to wildfire risk.',
+            'where' => 'The municipality and the prefecture, through the departmental order.',
+            'impact' => 'Failing to comply exposes you to a fine and engages your liability.',
+        ],
+        'winter_equipment' => [
+            'label' => 'Winter equipment',
+            'definition' => 'Obligation to equip vehicles during the winter period.',
+            'applicability' => 'In the municipalities covered by the mountain regulation.',
+            'where' => 'The prefecture of the department.',
+            'impact' => 'Tell the traveller before arrival: they are the ones who will be checked.',
+        ],
+        'waste' => [
+            'label' => 'Waste',
+            'definition' => 'Local rules for sorting, dropping off and collection.',
+            'applicability' => 'Always, with rules specific to each municipality.',
+            'where' => 'The authority in charge of collection.',
+            'impact' => 'Clear instructions prevent fly-tipping and penalties.',
+        ],
+    ],
+];
