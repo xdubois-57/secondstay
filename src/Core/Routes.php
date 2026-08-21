@@ -9,6 +9,8 @@ use SecondStay\Controller\Admin\AdminBookingController;
 use SecondStay\Controller\Admin\AdminDashboardController;
 use SecondStay\Controller\Admin\AdminComplianceController;
 use SecondStay\Controller\Admin\AdminDiagnosticsController;
+use SecondStay\Controller\Admin\AdminDisputeController;
+use SecondStay\Controller\Admin\AdminReportController;
 use SecondStay\Controller\Admin\AdminPoliceController;
 use SecondStay\Controller\Admin\AdminTaxController;
 use SecondStay\Controller\Admin\AdminLocalContentController;
@@ -425,6 +427,46 @@ final class Routes
         );
         $router->post('/admin/local/test', [AdminLocalContentController::class, 'test'], 'admin.local.test');
         $router->post('/admin/local/refresh', [AdminLocalContentController::class, 'refresh'], 'admin.local.refresh');
+
+        // --- Litiges ------------------------------------------------------------
+        $router->get('/admin/disputes', [AdminDisputeController::class, 'index'], 'admin.disputes');
+        $router->get('/admin/disputes/{id:\d+}', [AdminDisputeController::class, 'show'], 'admin.disputes.show');
+        $router->post(
+            '/admin/bookings/{id:\d+}/dispute',
+            [AdminDisputeController::class, 'open'],
+            'admin.disputes.open'
+        );
+        $router->post(
+            '/admin/disputes/{id:\d+}/status',
+            [AdminDisputeController::class, 'transition'],
+            'admin.disputes.status'
+        );
+        $router->post(
+            '/admin/disputes/{id:\d+}/comment',
+            [AdminDisputeController::class, 'comment'],
+            'admin.disputes.comment'
+        );
+
+        // --- Reporting ------------------------------------------------------------
+        $router->get('/admin/reports', [AdminReportController::class, 'index'], 'admin.reports');
+        $router->get('/admin/reports/export.xlsx', [AdminReportController::class, 'export'], 'admin.reports.export');
+
+        // --- Calendriers externes -------------------------------------------------
+        $router->post(
+            '/admin/calendars/imports',
+            [AdminOperationsController::class, 'addCalendarImport'],
+            'admin.imports.add'
+        );
+        $router->post(
+            '/admin/calendars/imports/{id:\d+}/delete',
+            [AdminOperationsController::class, 'deleteCalendarImport'],
+            'admin.imports.delete'
+        );
+        $router->post(
+            '/admin/calendars/imports/sync',
+            [AdminOperationsController::class, 'syncCalendarImports'],
+            'admin.imports.sync'
+        );
 
         // --- Documents ------------------------------------------------------
         $router->get('/admin/documents', [AdminDocumentController::class, 'index'], 'admin.documents');

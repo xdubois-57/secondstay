@@ -16,6 +16,8 @@ return [
         'compliance' => 'Konformität',
         'tax' => 'Kurtaxe',
         'police' => 'Meldescheine',
+        'disputes' => 'Streitfälle',
+        'reports' => 'Auswertungen',
         'documents' => 'Dokumente',
         'mailbox' => 'Nachrichten',
         'operations' => 'Betrieb',
@@ -72,6 +74,7 @@ return [
             'legal' => 'Rechtliche Hinweise',
             'operations' => 'Betrieb',
             'llm' => 'Lokale Inhalte',
+            'quota' => 'Kontingente',
             'logging' => 'Protokollierung',
         ],
         'value' => [

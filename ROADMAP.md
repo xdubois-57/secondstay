@@ -557,3 +557,36 @@ Livrer :
 - campagne complète upgrade/restore/security/mobile/PWA/i18n.
 
 E2E : suite transverse complète.
+
+### Livré (0.15.0)
+
+- **import ICS** : flux externes déclarés par le propriétaire, synchronisés à la
+  demande, chaque blocage gardant sa provenance. Un flux bloque mais ne réserve
+  jamais ; une synchronisation ne touche que ses propres lignes ; un flux muet
+  — erreur réseau, code HTTP, page de connexion à la place du calendrier — ne
+  libère aucune nuit ; supprimer le flux emporte ses blocages et laisse ceux du
+  propriétaire ;
+- **lecteur iCalendar** écrit indépendamment du générateur, borné à 2 Mo et
+  2000 événements, `DTEND` exclusif, UID dérivé quand le flux n'en publie pas ;
+- **reporting** mensuel et annuel : encaissé, attendu, reste à encaisser,
+  remboursé, cautions détenues, taxe de séjour, nuits vendues, taux
+  d'occupation, prix moyen de la nuit. La caution n'est pas un revenu, la taxe
+  est comptée à part, et les nuits sont comptées nuit par nuit — un séjour à
+  cheval sur deux mois compte dans les deux ;
+- **XLSX** écrit en PHP pur, déterministe, traduit dans la langue de la page,
+  portant l'avertissement « ni conseil fiscal ni déclaration », relu dans les
+  tests par un lecteur indépendant ;
+- **litiges** : ouverture depuis le séjour, discussion, clôture avec montant
+  réglé et explication, historique en ajout seul, et un dossier de pièces
+  agrégé depuis ce que le produit avait déjà — caution détenue, état des lieux
+  de départ, anomalies, photos, incidents, contrat accepté ;
+- **quotas** : quatre catégories mesurées, refus **avant** écriture, alerte à
+  80 %, zéro signifiant « pas de limite », suppression de document offerte dans
+  l'interface et fichier partagé effacé seulement une fois orphelin ;
+- **purge** consolidée : les indisponibilités passées rejoignent la rétention
+  appliquée en un seul endroit, toujours auditée, sans jamais toucher aux
+  pièces contractuelles ;
+- E2E `closing.spec.js` (suite transverse : import ICS vérifié sur le calendrier
+  public en visiteur anonyme, reporting, export, litige complet, quota atteint
+  puis relevé), tests PHP `OperationsClosingTest`, `IcsParserTest`,
+  `XlsxWriterTest`, `ReportingTest`, `DisputeTest`, `QuotaServiceTest`.

@@ -7,6 +7,7 @@ namespace SecondStay\Privacy;
 use SecondStay\Audit\AuditTrail;
 use SecondStay\Auth\SessionRepository;
 use SecondStay\Auth\TokenRepository;
+use SecondStay\Availability\AvailabilityBlockRepository;
 use SecondStay\Booking\WaitlistRepository;
 use SecondStay\Logging\Logger;
 use SecondStay\Notification\NotificationRepository;
@@ -37,6 +38,15 @@ final class RetentionService
     /** Notifications de fournisseur de paiement : ce sont des reçus techniques. */
     public const WEBHOOK_DAYS = 365;
 
+    /**
+     * Indisponibilités passées : deux ans.
+     *
+     * Un blocage échu ne prouve rien et n'explique aucun montant — le prix
+     * payé, lui, est figé sur le séjour. Le garder indéfiniment ne ferait
+     * qu'alourdir le calendrier et le disque d'un hébergement mutualisé.
+     */
+    public const AVAILABILITY_BLOCK_DAYS = 730;
+
     public function __construct(
         private readonly SettingsService $settings,
         private readonly Logger $logger,
@@ -48,6 +58,7 @@ final class RetentionService
         private readonly WebhookRepository $webhooks,
         private readonly RateLimiter $rateLimiter,
         private readonly PoliceRecordService $police,
+        private readonly AvailabilityBlockRepository $blocks,
         private readonly ?AuditTrail $audit = null,
     ) {
     }
@@ -65,6 +76,7 @@ final class RetentionService
             'guest_links' => self::GUEST_LINK_DAYS,
             'webhooks' => self::WEBHOOK_DAYS,
             'police_records' => $this->police->retentionDays(),
+            'availability_blocks' => self::AVAILABILITY_BLOCK_DAYS,
         ];
     }
 
@@ -92,6 +104,9 @@ final class RetentionService
             ),
             'rate_limits' => $this->rateLimiter->purge(),
             'police_records' => $this->police->purge($today),
+            'availability_blocks' => $this->blocks->purgeBefore(
+                $this->daysBefore($today, $policy['availability_blocks'])
+            ),
         ];
 
         $total = array_sum($removed);

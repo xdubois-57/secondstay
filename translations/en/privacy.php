@@ -20,5 +20,6 @@ return [
         'guest_links' => 'Expired guest links',
         'webhooks' => 'Payment notifications',
         'police_records' => 'Police records',
+        'availability_blocks' => 'Past unavailable dates',
     ],
 ];

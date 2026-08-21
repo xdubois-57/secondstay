@@ -226,6 +226,13 @@ Assistant conformité propriétaire, taxe de séjour, classement, déclaration/e
 
 Abstraction LLM, sources par URLs publiques, protections SSRF et prompt injection, aucune donnée personnelle client envoyée, génération avant séjour et affichage uniquement des activités correspondant aux dates exactes du séjour.
 
+### Clôture de l'exploitation
+
+Import des calendriers externes (Airbnb, Booking, Abritel ou tout flux ICS
+public) sans jamais effacer les blocages du propriétaire, reporting mensuel et
+annuel avec export XLSX, litiges adossés aux pièces déjà collectées, quotas de
+stockage et purge des données échues.
+
 ## Installation
 
 Une installation SecondStay se fait en copiant l'archive de release à la racine
@@ -521,6 +528,66 @@ montants, le voyageur voit le sien avec le contact du responsable.
 
 Les liens sont longs, uniques et révocables. Un lien n'est affiché qu'une fois,
 n'est jamais stocké en clair, et le révoquer coupe l'accès immédiatement.
+
+## Calendriers externes importés
+
+Les nuits vendues sur une autre plateforme deviennent des indisponibilités :
+
+```text
+/fr/admin/operations    déclaration, synchronisation et suppression des flux
+```
+
+Trois règles gouvernent l'import :
+
+- **un flux bloque, il ne réserve pas.** Un événement distant ne crée jamais de
+  séjour, de montant ni d'engagement ;
+- **une synchronisation ne touche que ses propres lignes.** Ce que vous avez
+  bloqué à la main survit à n'importe quel import, et deux flux ne s'effacent
+  pas l'un l'autre ;
+- **un flux muet ne libère rien.** Une erreur réseau, une page de connexion
+  renvoyée à la place du calendrier : les blocages restent. Rendre disponibles
+  des nuits déjà vendues serait le pire résultat possible.
+
+Chaque adresse est contrôlée à la saisie **et** à chaque requête sortante.
+Supprimer un flux emporte les blocages qui en venaient, et laisse les vôtres.
+
+## Reporting et quotas
+
+```text
+/fr/admin/reports              indicateurs du mois ou de l'année
+/fr/admin/reports/export.xlsx  classeur comptable de la période affichée
+```
+
+Le reporting **compte**, il ne conseille pas : encaissé, attendu, reste à
+encaisser, remboursé, cautions détenues, taxe de séjour, nuits vendues, taux
+d'occupation et prix moyen de la nuit. La caution n'est pas un revenu ; la taxe
+de séjour est comptée à part. Un séjour à cheval sur deux mois est compté dans
+chacun, pour les nuits qu'il y occupe.
+
+L'export est un vrai `.xlsx`, écrit en PHP pur — aucune dépendance ajoutée — et
+traduit dans la langue de la page. Ces chiffres ne constituent ni un conseil
+fiscal ni une déclaration : l'avertissement est affiché et voyage dans le
+fichier.
+
+La même page mesure l'espace occupé par les médias, les documents, les
+sauvegardes et les pièces jointes. Un quota atteint **refuse l'écriture avant
+de la tenter** : sur un hébergement mutualisé, un disque plein casse aussi la
+sauvegarde qui aurait permis de s'en sortir. Un quota laissé à zéro ne limite
+rien.
+
+## Litiges
+
+```text
+/fr/admin/disputes      litiges ouverts, en discussion, résolus
+```
+
+Un litige rassemble ce que le produit a **déjà** collecté — caution détenue,
+état des lieux de départ et ses anomalies, photos, incidents, contrat accepté —
+pour que la discussion s'appuie sur des faits datés.
+
+La retenue réclamée ne peut pas dépasser la caution réellement détenue, et
+clore un litige exige un montant réglé et une explication. L'historique est en
+ajout seul.
 
 ## Contrats et documents
 

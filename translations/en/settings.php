@@ -479,4 +479,10 @@ return [
             'help' => 'Interval between two regenerations, up to the stay.',
         ],
     ],
+    'quota' => [
+        'media_mb' => ['label' => 'Media quota (MB)', 'help' => 'Zero means no limit.'],
+        'documents_mb' => ['label' => 'Document quota (MB)', 'help' => 'Zero means no limit.'],
+        'backups_mb' => ['label' => 'Backup quota (MB)', 'help' => 'Zero means no limit.'],
+        'attachments_mb' => ['label' => 'Attachment quota (MB)', 'help' => 'Zero means no limit.'],
+    ],
 ];

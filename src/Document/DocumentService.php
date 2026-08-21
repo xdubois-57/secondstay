@@ -8,6 +8,7 @@ use RuntimeException;
 use SecondStay\Audit\AuditTrail;
 use SecondStay\Core\Paths;
 use SecondStay\Logging\Logger;
+use SecondStay\Quota\QuotaService;
 
 /**
  * Stockage des documents d'un séjour.
@@ -54,6 +55,7 @@ final class DocumentService
         private readonly Paths $paths,
         private readonly Logger $logger,
         private readonly ?AuditTrail $audit = null,
+        private readonly ?QuotaService $quotas = null,
     ) {
     }
 
@@ -80,6 +82,12 @@ final class DocumentService
 
         if (strlen($contents) > self::MAX_BYTES) {
             return ['ok' => false, 'document' => null, 'error' => 'document.error.too_large'];
+        }
+
+        // Le quota est vérifié **avant** d'écrire : un disque plein casse la
+        // sauvegarde qui aurait permis de s'en sortir.
+        if ($this->quotas !== null && !$this->quotas->allows('documents', strlen($contents))) {
+            return ['ok' => false, 'document' => null, 'error' => 'quota.error.documents'];
         }
 
         $mime = $this->detectMime($contents);
@@ -209,9 +217,10 @@ final class DocumentService
         $this->documents->delete($document->id);
 
         // Le fichier est nommé par son empreinte : il peut être partagé par
-        // deux enregistrements. On ne l'efface qu'une fois orphelin.
-        if ($path !== null && $this->documents->findByHash(null, $document->sha256) === null
-            && $this->documents->findByHash($document->bookingId, $document->sha256) === null) {
+        // plusieurs enregistrements, y compris sur d'autres séjours. On ne
+        // l'efface qu'une fois réellement orphelin — sinon supprimer un
+        // document en rendrait un autre illisible.
+        if ($path !== null && !$this->documents->existsWithHash($document->sha256)) {
             @unlink($path);
         }
 

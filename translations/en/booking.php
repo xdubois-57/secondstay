@@ -161,6 +161,7 @@ return [
         'incident_reported' => 'Incident reported',
     ],
     'admin' => [
+        'reference' => 'Reference',
         'title' => 'Bookings',
         'none' => 'No booking.',
         'guest' => 'Guest',

@@ -479,4 +479,10 @@ return [
             'help' => 'Intervalle entre deux régénérations, jusqu’au séjour.',
         ],
     ],
+    'quota' => [
+        'media_mb' => ['label' => 'Quota médias (Mo)', 'help' => 'Zéro signifie aucune limite.'],
+        'documents_mb' => ['label' => 'Quota documents (Mo)', 'help' => 'Zéro signifie aucune limite.'],
+        'backups_mb' => ['label' => 'Quota sauvegardes (Mo)', 'help' => 'Zéro signifie aucune limite.'],
+        'attachments_mb' => ['label' => 'Quota pièces jointes (Mo)', 'help' => 'Zéro signifie aucune limite.'],
+    ],
 ];

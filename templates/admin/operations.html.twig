@@ -132,4 +132,96 @@
             </div>
         {% endif %}
     </div>
+
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <span>{{ t('calendar.import.title') }}</span>
+            {% if imports is not empty %}
+                <form method="post" action="{{ path('admin.imports.sync') }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit"
+                            data-testid="sync-imports">{{ t('calendar.import.action.sync') }}</button>
+                </form>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <p class="text-body-secondary">{{ t('calendar.import.intro') }}</p>
+            <form method="post" action="{{ path('admin.imports.add') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                <div class="col-12 col-md-5">
+                    <label class="form-label" for="import_url">{{ t('calendar.import.url') }}</label>
+                    <input class="form-control" id="import_url" name="url" type="url" required
+                           placeholder="https://…" data-testid="import-url">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label" for="import_label">{{ t('calendar.import.label') }}</label>
+                    <input class="form-control" id="import_label" name="label" type="text" maxlength="190"
+                           data-testid="import-label">
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label" for="import_provider">{{ t('calendar.import.provider_label') }}</label>
+                    <select class="form-select" id="import_provider" name="provider" data-testid="import-provider">
+                        {% for provider in providers %}
+                            <option value="{{ provider }}">{{ t('calendar.import.provider.' ~ provider) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                    <button class="btn btn-primary" type="submit"
+                            data-testid="add-import">{{ t('calendar.import.action.add') }}</button>
+                </div>
+            </form>
+        </div>
+
+        {% if imports is empty %}
+            <div class="card-body text-body-secondary pt-0"
+                 data-testid="imports-empty">{{ t('calendar.import.empty') }}</div>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle" data-testid="calendar-imports">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('calendar.import.provider_label') }}</th>
+                            <th scope="col">{{ t('calendar.import.url') }}</th>
+                            <th scope="col">{{ t('calendar.import.last_sync') }}</th>
+                            <th scope="col">{{ t('calendar.import.events') }}</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for import in imports %}
+                            <tr data-calendar-import="{{ import.id }}"
+                                data-import-status="{{ import.lastStatus }}">
+                                <td>
+                                    {{ t(import.providerLabelKey()) }}
+                                    {% if import.label is not empty %}
+                                        <span class="d-block small text-body-secondary">{{ import.label }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-break"><code>{{ import.url }}</code></td>
+                                <td class="text-nowrap">
+                                    <span class="badge text-bg-{{ import.hasFailed() ? 'danger' : (import.lastStatus == '' ? 'secondary' : 'success') }}"
+                                          data-testid="import-status-{{ import.id }}">
+                                        {{ t(import.statusLabelKey()) }}
+                                    </span>
+                                    <span class="d-block small text-body-secondary">
+                                        {{ import.lastSyncAt ?: t('calendar.import.never_synced') }}
+                                    </span>
+                                </td>
+                                <td data-testid="import-events-{{ import.id }}">{{ import.lastEvents }}</td>
+                                <td class="text-end">
+                                    <form method="post"
+                                          action="{{ path('admin.imports.delete', {'id': import.id}) }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                data-testid="delete-import-{{ import.id }}">{{ t('calendar.import.action.delete') }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

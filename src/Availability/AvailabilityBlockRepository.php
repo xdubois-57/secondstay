@@ -25,16 +25,70 @@ final class AvailabilityBlockRepository
     {
     }
 
-    public function create(DateRange $range, string $kind, string $label, ?int $userId = null): int
-    {
+    public function create(
+        DateRange $range,
+        string $kind,
+        string $label,
+        ?int $userId = null,
+        ?int $sourceId = null,
+        string $externalUid = '',
+    ): int {
         return $this->database->insert('availability_block', [
             'start_day' => $range->arrivalKey(),
             'end_day' => $range->lastNightKey(),
             'kind' => in_array($kind, self::KINDS, true) ? $kind : self::KIND_OWNER,
+            'source_id' => $sourceId,
+            'external_uid' => mb_substr($externalUid, 0, 190),
             'label' => mb_substr($label, 0, 190),
             'created_at' => gmdate('Y-m-d H:i:s'),
             'created_by' => $userId,
         ]);
+    }
+
+    /**
+     * Remplace les blocages issus d'une source par ceux qu'elle publie
+     * aujourd'hui.
+     *
+     * Une synchronisation ne touche **que** ses propres lignes : ce que le
+     * propriétaire a bloqué à la main ne peut pas disparaître parce qu'un flux
+     * distant a changé d'avis (SPECIFICATIONS.md §52).
+     *
+     * @param list<array{uid: string, start: string, end: string, summary: string}> $events
+     */
+    public function replaceForSource(int $sourceId, array $events): int
+    {
+        return (int) $this->database->transaction(function () use ($sourceId, $events): int {
+            $this->database->execute(
+                'DELETE FROM `availability_block` WHERE `source_id` = :source',
+                ['source' => $sourceId]
+            );
+
+            $written = 0;
+            foreach ($events as $event) {
+                // `DTEND` est exclusif : la dernière nuit occupée est la
+                // veille, comme pour un séjour.
+                $range = DateRange::fromStrings($event['start'], $event['end']);
+                if ($range->nights() < 1) {
+                    continue;
+                }
+
+                $this->create($range, self::KIND_EXTERNAL, $event['summary'], null, $sourceId, $event['uid']);
+                $written++;
+            }
+
+            return $written;
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function forSource(int $sourceId): array
+    {
+        return $this->database->fetchAll(
+            'SELECT * FROM `availability_block` WHERE `source_id` = :source ORDER BY `start_day`',
+            ['source' => $sourceId]
+        );
     }
 
     /**

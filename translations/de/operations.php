@@ -18,6 +18,7 @@ return [
         'stays_to_prepare' => 'Vorzubereitende Aufenthalte',
         'incidents_open' => 'Offene Vorfälle',
         'compliance_to_verify' => 'Konformität zu prüfen',
+        'disputes_open' => 'Offene Streitfälle',
         'migrations_pending' => 'Ausstehende Migrationen',
     ],
     'phase' => [

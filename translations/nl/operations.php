@@ -18,6 +18,7 @@ return [
         'stays_to_prepare' => 'Voor te bereiden verblijven',
         'incidents_open' => 'Openstaande incidenten',
         'compliance_to_verify' => 'Conformiteit te controleren',
+        'disputes_open' => 'Openstaande geschillen',
         'migrations_pending' => 'Openstaande migraties',
     ],
     'phase' => [
