@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SecondStay\Tests\Database;
 
 use SecondStay\Audit\AuditTrail;
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
@@ -535,7 +534,7 @@ final class LocalContentServiceTest extends DatabaseTestCase
     {
         $id = $this->users->create(
             $email,
-            (new PasswordHasher())->hash('Marée-Haute-2026!'),
+            self::passwordHash('Marée-Haute-2026!'),
             'Claire',
             'Dubois',
             '+33600000000',

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SecondStay\Tests\Support;
 
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Content\ContentRepository;
 use SecondStay\Content\ContentSeeder;
 use SecondStay\Auth\Role;
@@ -118,7 +117,7 @@ abstract class InstalledAppTestCase extends DatabaseTestCase
     {
         return (new UserRepository($this->database))->create(
             self::ADMIN_EMAIL,
-            (new PasswordHasher())->hash(self::ADMIN_PASSWORD),
+            self::passwordHash(self::ADMIN_PASSWORD),
             'Claire',
             'Dubois',
             '',
@@ -132,7 +131,7 @@ abstract class InstalledAppTestCase extends DatabaseTestCase
     {
         return (new UserRepository($this->database))->create(
             $email,
-            (new PasswordHasher())->hash(self::ADMIN_PASSWORD),
+            self::passwordHash(self::ADMIN_PASSWORD),
             'Test',
             'Utilisateur',
             '',

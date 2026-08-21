@@ -102,9 +102,20 @@ vitest() {
 }
 
 playwright() {
+    # `SECONDSTAY_E2E_PROJECT` restreint la campagne à un seul navigateur.
+    # L'intégration continue s'en sert pour jouer les deux projets en
+    # parallèle sur deux exécuteurs : chacun installe le sien, ce qui les
+    # isole mieux qu'une installation partagée. Sans la variable, les deux
+    # sont joués à la suite, comme en local.
+    local project=()
+    if [ -n "${SECONDSTAY_E2E_PROJECT:-}" ]; then
+        project=(--project="$SECONDSTAY_E2E_PROJECT")
+    fi
+
     # Transports factices : les parcours de compte et de notification sont
     # vérifiables sans serveur SMTP, sans service de push et sans réseau.
-    SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake SECONDSTAY_LLM_PROVIDER=fake npx playwright test
+    SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake SECONDSTAY_LLM_PROVIDER=fake \
+        npx playwright test "${project[@]}"
 }
 
 composer_audit() {

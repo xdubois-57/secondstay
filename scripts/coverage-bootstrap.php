@@ -14,9 +14,25 @@ declare(strict_types=1);
  * fournisseurs factices, la collecte s'active par variable d'environnement et
  * n'est jamais sélectionnable depuis l'interface.
  *
- * Chaque requête écrit son propre fichier : le serveur intégré tourne avec
- * plusieurs processus, et un fichier partagé serait corrompu par les écritures
- * concurrentes. `scripts/coverage-merge.php` les fusionne ensuite.
+ * Deux choix commandent le coût, qui se paie sur **chaque** requête de la
+ * campagne :
+ *
+ * 1. **la liste des sources est mise en cache.** Parcourir `src/` à chaque
+ *    requête coûtait trois cents appels système pour un résultat invariant ;
+ * 2. **l'analyse statique est mise en cache sur disque.** Pour distinguer une
+ *    ligne exécutable d'une accolade, la bibliothèque analyse le code source
+ *    des fichiers atteints. Sans cache, elle recommençait à chaque requête —
+ *    quelques dizaines de fichiers analysés des milliers de fois, ce qui
+ *    dominait très largement le coût de la mesure ;
+ * 3. **ce qui est écrit est réduit au strict nécessaire** — par fichier, les
+ *    seules lignes réellement exécutées. Sérialiser l'objet de couverture
+ *    entier écrivait aussi son filtre, ses caches, l'identité des tests et les
+ *    lignes exécutables des trois cents fichiers du filtre : cinquante fois
+ *    plus d'octets pour la même information.
+ *
+ * Le serveur intégré traite les requêtes dans des processus distincts et sans
+ * état partagé : chaque requête écrit donc son propre fichier, qu'un fichier
+ * commun aurait corrompu. `scripts/coverage-merge.php` les fusionne ensuite.
  */
 
 use SebastianBergmann\CodeCoverage\CodeCoverage;
@@ -35,20 +51,7 @@ use SebastianBergmann\CodeCoverage\Filter;
 
     $root = dirname(__DIR__);
 
-    // La liste de fichiers est explicite : `Filter` ne connaît que des
-    // fichiers, et n'inclure que `src/` évite de mesurer le vendor ou les
-    // gabarits compilés.
-    $sources = [];
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($root . '/src', FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $file) {
-        /** @var SplFileInfo $file */
-        if ($file->isFile() && $file->getExtension() === 'php') {
-            $sources[] = $file->getPathname();
-        }
-    }
-
+    $sources = secondstay_coverage_sources($root, $directory);
     if ($sources === []) {
         return;
     }
@@ -64,11 +67,42 @@ use SebastianBergmann\CodeCoverage\Filter;
         return;
     }
 
+    // Le cache d'analyse statique est partagé par toutes les requêtes : le
+    // serveur intégré repart d'un état vierge à chaque fois, seul le disque
+    // survit d'une requête à l'autre.
+    $cache = $directory . '/analyse';
+    if (is_dir($cache) || mkdir($cache, 0o750, true) || is_dir($cache)) {
+        $coverage->cacheStaticAnalysis($cache);
+    }
+
     $coverage->start('e2e');
 
     register_shutdown_function(static function () use ($coverage, $directory): void {
         try {
             $coverage->stop();
+
+            // Seules les lignes réellement exécutées sont écrites. La
+            // bibliothèque rend aussi les lignes exécutables de **tous** les
+            // fichiers du filtre — trois cents fichiers à chaque requête, pour
+            // une information que SonarQube déduit déjà du code lui-même. Ne
+            // garder que ce qui a été atteint divise la taille par vingt.
+            $payload = [];
+            foreach ($coverage->getData()->lineCoverage() as $file => $lines) {
+                $covered = [];
+                foreach ($lines as $line => $tests) {
+                    if ($tests !== []) {
+                        $covered[] = $line;
+                    }
+                }
+
+                if ($covered !== []) {
+                    $payload[$file] = $covered;
+                }
+            }
+
+            if ($payload === []) {
+                return;
+            }
 
             $file = sprintf(
                 '%s/%s-%d-%s.cov.gz',
@@ -78,13 +112,46 @@ use SebastianBergmann\CodeCoverage\Filter;
                 bin2hex(random_bytes(6))
             );
 
-            // Une campagne complète produit plusieurs milliers de fichiers :
-            // compressés, ils tiennent sur le disque d'un exécuteur
-            // d'intégration continue, ce qui n'est pas le cas autrement.
-            file_put_contents($file, gzencode(serialize($coverage), 6), LOCK_EX);
+            file_put_contents($file, gzencode(serialize($payload), 1), LOCK_EX);
         } catch (Throwable) {
             // Une requête dont la couverture n'a pas pu être écrite ne doit
             // pas faire échouer le scénario qui l'a provoquée.
         }
     });
 })();
+
+/**
+ * Fichiers source à mesurer, mis en cache après le premier parcours.
+ *
+ * @return list<string>
+ */
+function secondstay_coverage_sources(string $root, string $directory): array
+{
+    $cache = $directory . '/sources.json';
+
+    $raw = @file_get_contents($cache);
+    if (is_string($raw) && $raw !== '') {
+        /** @var mixed $decoded */
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) && $decoded !== []) {
+            /** @var list<string> $decoded */
+            return $decoded;
+        }
+    }
+
+    $sources = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root . '/src', FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $file) {
+        /** @var SplFileInfo $file */
+        if ($file->isFile() && $file->getExtension() === 'php') {
+            $sources[] = $file->getPathname();
+        }
+    }
+
+    sort($sources);
+    @file_put_contents($cache, (string) json_encode($sources), LOCK_EX);
+
+    return $sources;
+}

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SecondStay\Tests\Database;
 
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
 use SecondStay\Auth\UserStatus;
@@ -40,7 +39,7 @@ final class PushSubscriptionRepositoryTest extends DatabaseTestCase
     {
         return $this->users->create(
             $email,
-            (new PasswordHasher())->hash('Marée-Haute-2026!'),
+            self::passwordHash('Marée-Haute-2026!'),
             'Claire',
             'Dubois',
             '',
