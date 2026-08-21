@@ -7,7 +7,6 @@ namespace SecondStay\Tests\Database;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use SecondStay\Audit\AuditTrail;
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
@@ -42,7 +41,7 @@ final class WebAuthnServiceTest extends DatabaseTestCase
         $users = new UserRepository($this->database);
         $id = $users->create(
             'client@example.test',
-            (new PasswordHasher())->hash('Marée-Haute-2026!'),
+            self::passwordHash('Marée-Haute-2026!'),
             'Claire',
             'Dubois',
             '',

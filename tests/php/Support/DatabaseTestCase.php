@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SecondStay\Tests\Support;
 
 use PHPUnit\Framework\TestCase;
+use SecondStay\Auth\PasswordHasher;
 use SecondStay\Core\Paths;
 use SecondStay\Database\Database;
 use SecondStay\Database\DatabaseConfig;
@@ -53,7 +54,76 @@ abstract class DatabaseTestCase extends TestCase
         }
     }
 
+    /**
+     * Empreintes déjà calculées, par mot de passe.
+     *
+     * @var array<string, string>
+     */
+    private static array $passwordHashes = [];
+
+    /**
+     * Empreinte d'un mot de passe, calculée une seule fois par exécution.
+     *
+     * `password_hash` est lent **par construction** : c'est sa raison d'être,
+     * et le produit doit le payer. Un test qui a seulement besoin d'un compte
+     * utilisable, non — il payait jusqu'ici deux cents millisecondes par
+     * compte créé, soit plus de deux minutes sur la suite.
+     *
+     * La valeur reste une vraie empreinte, vérifiable par `password_verify` :
+     * seul le nombre de calculs change, jamais leur force. Les tests qui
+     * portent sur le hachage lui-même appellent `PasswordHasher` directement.
+     */
+    protected static function passwordHash(string $password): string
+    {
+        return self::$passwordHashes[$password] ??= (new PasswordHasher())->hash($password);
+    }
+
+    /**
+     * Tables attendues après migration, mémorisées au premier passage.
+     *
+     * @var list<string>
+     */
+    private static array $schemaTables = [];
+
+    /**
+     * Lignes de suivi des migrations, telles qu'elles existent juste après
+     * une migration complète.
+     *
+     * @var list<array<string, mixed>>
+     */
+    private static array $migrationRows = [];
+
+    /**
+     * Rend la base à l'état d'une installation fraîchement migrée.
+     *
+     * Reconstruire le schéma — supprimer vingt tables puis rejouer quatorze
+     * migrations — coûtait plusieurs secondes **par test**, soit l'essentiel
+     * de la durée de la suite. Or aucune migration n'insère de donnée : l'état
+     * après migration est donc entièrement décrit par « toutes les tables
+     * vides, plus le suivi des migrations ». `TRUNCATE` le reproduit
+     * exactement, compteurs d'auto-incrément compris.
+     *
+     * La reconstruction complète reste faite au premier test, et refaite dès
+     * que le schéma ne correspond plus à ce qui est attendu — un test qui
+     * crée ou supprime une table se répare donc tout seul.
+     */
     protected function resetSchema(): void
+    {
+        $tables = $this->database->tables();
+
+        if (self::$schemaTables === [] || $tables !== self::$schemaTables) {
+            $this->rebuildSchema();
+
+            return;
+        }
+
+        $this->truncateSchema($tables);
+    }
+
+    /**
+     * Reconstruction complète : suppression puis migration.
+     */
+    protected function rebuildSchema(): void
     {
         $pdo = $this->database->pdo();
         $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
@@ -63,6 +133,30 @@ abstract class DatabaseTestCase extends TestCase
         $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 
         $this->migrator()->migrate();
+
+        self::$schemaTables = $this->database->tables();
+        self::$migrationRows = $this->database->fetchAll(
+            'SELECT * FROM `' . Migrator::TABLE . '` ORDER BY `version`'
+        );
+    }
+
+    /**
+     * @param list<string> $tables
+     */
+    private function truncateSchema(array $tables): void
+    {
+        $pdo = $this->database->pdo();
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+        foreach ($tables as $table) {
+            $pdo->exec('TRUNCATE TABLE `' . $table . '`');
+        }
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+
+        // Le suivi des migrations fait partie de l'état attendu : sans lui,
+        // le produit croirait la base non migrée.
+        foreach (self::$migrationRows as $row) {
+            $this->database->insert(Migrator::TABLE, $row);
+        }
     }
 
     protected function migrator(): Migrator

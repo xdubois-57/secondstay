@@ -222,8 +222,12 @@ Jobs suggérés :
 - setup PHP/Node ;
 - DB ;
 - fake providers ;
-- Playwright ;
+- Playwright, **un exécuteur par navigateur** (`SECONDSTAY_E2E_PROJECT`) ;
+- collecte de la couverture PHP des contrôleurs ;
 - upload report/traces.
+
+Séparer les deux projets divise la durée par deux et **améliore** l'isolement :
+chacun installe la sienne, au lieu de partager une installation unique.
 
 ### `security`
 
@@ -232,23 +236,25 @@ Jobs suggérés :
 
 ### `sonarcloud`
 
-- récupère la couverture PHP des **deux** suites — unitaire et base de données
-  — et la couverture JS ;
-- scan ;
-- Quality Gate bloquante.
+Dernier travail du **même** workflow, déclenché par `needs` une fois les
+autres terminés. Il ne rejoue rien : il récupère les couvertures déjà
+produites, lance le scan, puis la Quality Gate bloquante.
+
+L'analyse vivait auparavant dans un workflow séparé qui rejouait la campagne
+E2E pour son propre compte — vingt minutes de calcul pour un résultat déjà
+obtenu. Le retour complet est passé d'environ quarante minutes à moins de
+quinze, sans qu'aucun test ne disparaisse.
 
 La couverture PHP vient des **trois** campagnes :
 
-| Rapport | Ce qu'il couvre |
-|---|---|
-| `build/coverage/clover-unit.xml` | logique pure, formats, règles |
-| `build/coverage/clover-database.xml` | dépôts et services, sur une vraie base |
-| `build/coverage/clover-e2e.xml` | contrôleurs, traversés par Playwright |
+| Rapport | Produit par | Ce qu'il couvre |
+|---|---|---|
+| `clover-unit.xml` | `php` | logique pure, formats, règles |
+| `clover-database.xml` | `database` | dépôts et services, sur une vraie base |
+| `clover-e2e-desktop.xml`, `clover-e2e-mobile.xml` | `e2e` (un par navigateur) | contrôleurs, traversés par Playwright |
 
 N'en compter qu'une faisait apparaître comme non couvert du code qui l'est
-réellement : la mesure décrivait l'outillage, pas le produit. Le scan a donc
-besoin du service MySQL et des navigateurs, comme les travaux `database` et
-`e2e` de la CI.
+réellement : la mesure décrivait l'outillage, pas le produit.
 
 La couverture E2E est collectée par `scripts/coverage-bootstrap.php`, chargé
 par le routeur du serveur de développement **et seulement** si
@@ -260,10 +266,20 @@ requête écrit donc son propre fichier, qu'un fichier partagé aurait corrompu.
 scripts vivent sous `scripts/`, exclu de l'archive de release : ils ne partent
 jamais en production.
 
+Ce qui est écrit est réduit au strict nécessaire : les seules lignes
+réellement exécutées, fichier par fichier. Écrire l'objet de couverture entier
+— filtre, caches d'analyse statique, lignes exécutables des trois cents
+fichiers du filtre — coûtait cinquante fois plus d'octets à chaque requête, et
+c'est ce qui rendait la campagne instrumentée trois fois plus lente que la
+campagne nue.
+
 ```bash
 SECONDSTAY_COVERAGE_DIR="$PWD/build/coverage/e2e" ./scripts/check.sh --e2e
 php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
 ```
+
+`SECONDSTAY_E2E_PROJECT` restreint la campagne à un navigateur ; la CI s'en
+sert pour jouer les deux projets en parallèle.
 
 La détection de copier-coller exclut `translations/**` et `migrations/**`
 (`sonar.cpd.exclusions`). I18N.md exige que les quatre langues portent
@@ -345,7 +361,30 @@ PHPUnit produit la couverture Clover via Xdebug (`XDEBUG_MODE=coverage`) en
 local et via pcov en CI. `./scripts/check.sh --full` détecte l'absence de driver
 et exécute alors les tests sans couverture plutôt que d'échouer faussement.
 
-### 18.2 Base de données de test
+### 18.2 Ce qui coûte cher dans la suite base de données
+
+Cinq cent quatre-vingt-huit tests contre une vraie base : la durée vient
+presque entièrement de deux gestes répétés à chaque test, et non des
+assertions.
+
+**Rendre la base à l'état initial.** Supprimer une cinquantaine de tables puis
+rejouer quatorze migrations coûtait 370 ms par test. Or aucune migration
+n'insère de donnée : l'état après migration est entièrement décrit par « toutes
+les tables vides, plus le suivi des migrations ». `TRUNCATE` le reproduit
+exactement, compteurs d'auto-incrément compris, pour 150 ms. La reconstruction
+complète reste faite au premier test, et **refaite dès que le schéma ne
+correspond plus** à ce qui est attendu : un test qui crée ou supprime une table
+se répare tout seul.
+
+**Hacher un mot de passe.** `password_hash` coûte 225 ms — c'est sa raison
+d'être, et le produit doit la payer. Un test qui a seulement besoin d'un compte
+utilisable, non : `DatabaseTestCase::passwordHash()` mémorise l'empreinte par
+mot de passe. La valeur reste une vraie empreinte, vérifiable par
+`password_verify` ; seul le nombre de calculs change, jamais leur force. Les
+tests qui portent sur le hachage lui-même appellent `PasswordHasher`
+directement.
+
+### 18.3 Base de données de test
 
 `./scripts/check.sh` source `scripts/test-env.local.sh` s'il existe (fichier non
 versionné, modèle : `scripts/test-env.local.sh.dist`). Les variables attendues
@@ -362,7 +401,7 @@ SECONDSTAY_TEST_DB_PASSWORD
 La suite `database` refuse de s'exécuter sans base de test explicitement
 configurée : la base de production ne doit jamais être touchée.
 
-### 18.3 Serveur utilisé par Playwright
+### 18.4 Serveur utilisé par Playwright
 
 Le serveur est démarré par `tests/e2e/global-setup.js` et arrêté par
 `tests/e2e/global-teardown.js`, **pas** par l'option `webServer` de Playwright.
@@ -382,7 +421,7 @@ Le serveur PHP intégré tourne derrière `scripts/router.php`. Ce routeur
 applique la politique de chemins privés de `PublicPathPolicy`, ce qui rend les
 tests de sécurité représentatifs du comportement Apache en production.
 
-### 18.4 Attendre que le JavaScript soit câblé
+### 18.5 Attendre que le JavaScript soit câblé
 
 Les modules ES sont différés : entre l'affichage d'un bouton et l'attachement
 de son écouteur, il s'écoule le temps de charger `app.js` et ses imports. Un
@@ -399,7 +438,7 @@ await page.waitForSelector('html[data-js-ready="true"]');
 Ce n'est pas une précaution théorique : la campagne instrumentée pour la
 couverture, plus lente, a fait apparaître la course sur les clés d'accès.
 
-### 18.5 Matrice de navigateurs
+### 18.6 Matrice de navigateurs
 
 | Projet Playwright | Moteur | Viewport |
 |---|---|---|
@@ -409,7 +448,7 @@ couverture, plus lente, a fait apparaître la course sur les clés d'accès.
 Les parcours « Mon séjour » et « états des lieux » doivent toujours être
 exécutés sur le projet mobile.
 
-### 18.6 Contrôle de l'artefact
+### 18.7 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
 exécution. La CI ajoute une vérification de démarrage réel de l'artefact

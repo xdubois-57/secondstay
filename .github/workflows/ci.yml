@@ -40,7 +40,7 @@ jobs:
         run: ./scripts/check.sh --php
 
       - name: PHPUnit avec couverture
-        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover.xml --log-junit build/reports/phpunit-junit.xml
+        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover-unit.xml --log-junit build/reports/phpunit-junit.xml
 
       - name: Upload des rapports PHP
         if: always()
@@ -49,6 +49,13 @@ jobs:
           name: php-reports
           path: build/
           retention-days: 7
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: build/coverage/clover-unit.xml
+          retention-days: 1
 
   database:
     name: Base de données — migrations et intégration
@@ -79,14 +86,21 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
-          coverage: none
+          coverage: pcov
           tools: composer:v2
 
       - name: Composer install
         run: composer install --no-interaction --no-progress
 
       - name: Tests base de données
-        run: ./scripts/check.sh --db
+        run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-database
+          path: build/coverage/clover-database.xml
+          retention-days: 1
 
   javascript:
     name: JavaScript — Vitest
@@ -112,9 +126,23 @@ jobs:
           path: coverage/
           retention-days: 7
 
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-js
+          path: coverage/lcov.info
+          retention-days: 1
+
   e2e:
-    name: E2E — Playwright
+    # Un exécuteur par navigateur : la campagne passe de huit minutes à
+    # quatre, et chaque projet installe la sienne — un isolement meilleur que
+    # l'installation partagée d'avant.
+    name: E2E — ${{ matrix.project }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop-chromium, mobile-safari]
     services:
       mysql:
         image: mysql:8.0
@@ -133,6 +161,7 @@ jobs:
       SECONDSTAY_TEST_DB_NAME: secondstay_test
       SECONDSTAY_TEST_DB_USER: secondstay
       SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      SECONDSTAY_E2E_PROJECT: ${{ matrix.project }}
     steps:
       - uses: actions/checkout@v4
 
@@ -141,7 +170,9 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
-          coverage: none
+          # Les contrôleurs ne sont traversés que par cette campagne : sans
+          # pilote de couverture ici, ils apparaîtraient comme non testés.
+          coverage: pcov
           tools: composer:v2
 
       - uses: actions/setup-node@v4
@@ -155,12 +186,24 @@ jobs:
 
       - name: Playwright
         run: ./scripts/check.sh --e2e
+        env:
+          SECONDSTAY_COVERAGE_DIR: ${{ github.workspace }}/build/coverage/e2e
+
+      - name: Fusion de la couverture E2E
+        run: php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e-${{ matrix.project }}
+          path: build/coverage/clover-e2e.xml
+          retention-days: 1
 
       - name: Upload du rapport Playwright
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: |
             playwright-report/
             test-results/
@@ -221,3 +264,46 @@ jobs:
           # bien dans le ZIP.
           curl -fsSL http://127.0.0.1:8321/de/ | grep -q 'SecondStay installieren'
           kill "$SERVER_PID"
+
+  sonarcloud:
+    # L'analyse consomme les couvertures produites par les travaux
+    # précédents. Elle rejouait auparavant la campagne E2E pour son propre
+    # compte, dans un second workflow : vingt minutes de calcul pour un
+    # résultat déjà obtenu ici.
+    name: Analyse SonarCloud
+    runs-on: ubuntu-latest
+    needs: [php, database, javascript, e2e]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Récupération des couvertures
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: build/artifacts
+
+      - name: Mise en place des rapports
+        run: |
+          set -euo pipefail
+          mkdir -p build/coverage coverage
+          cp build/artifacts/coverage-unit/clover-unit.xml build/coverage/
+          cp build/artifacts/coverage-database/clover-database.xml build/coverage/
+          cp build/artifacts/coverage-js/lcov.info coverage/
+          cp build/artifacts/coverage-e2e-desktop-chromium/clover-e2e.xml \
+             build/coverage/clover-e2e-desktop.xml
+          cp build/artifacts/coverage-e2e-mobile-safari/clover-e2e.xml \
+             build/coverage/clover-e2e-mobile.xml
+          ls -l build/coverage coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

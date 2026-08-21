@@ -6,7 +6,6 @@ namespace SecondStay\Tests\Database;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use SecondStay\Audit\AuditTrail;
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
@@ -501,7 +500,7 @@ final class StayServiceTest extends DatabaseTestCase
     {
         $id = $this->users->create(
             $email,
-            (new PasswordHasher())->hash('Marée-Haute-2026!'),
+            self::passwordHash('Marée-Haute-2026!'),
             'Prénom',
             'Nom',
             '+33600000000',

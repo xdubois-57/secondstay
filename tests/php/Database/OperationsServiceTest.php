@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace SecondStay\Tests\Database;
 
-use SecondStay\Auth\PasswordHasher;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
@@ -587,7 +586,7 @@ final class OperationsServiceTest extends DatabaseTestCase
     {
         $id = $this->users->create(
             $email,
-            (new PasswordHasher())->hash('Marée-Haute-2026!'),
+            self::passwordHash('Marée-Haute-2026!'),
             'Prénom',
             'Nom',
             '+33600000000',
