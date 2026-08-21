@@ -281,12 +281,20 @@ jobs:
           php -S 127.0.0.1:8321 -t /tmp/artifact/public &
           SERVER_PID=$!
           sleep 3
-          curl -fsS http://127.0.0.1:8321/api/version | tee /dev/stderr | grep -q '"version"'
+          # Les réponses sont écrites sur disque avant d'être examinées.
+          # Enchaîner `curl | grep -q` est une course perdue d'avance : `grep`
+          # s'arrête à la première correspondance et ferme le tube, `curl`
+          # échoue alors sur une écriture impossible (code 23) — un contrôle
+          # qui passe ou non selon la vitesse du réseau ne prouve rien.
+          curl -fsS http://127.0.0.1:8321/api/version -o /tmp/artifact-version.json
+          cat /tmp/artifact-version.json
+          grep -q '"version"' /tmp/artifact-version.json
           # Une archive fraîchement déployée n'est pas installée : elle doit
           # conduire à l'assistant d'installation, dans la langue demandée.
           # C'est aussi la preuve que les catalogues de traduction voyagent
           # bien dans le ZIP.
-          curl -fsSL http://127.0.0.1:8321/de/ | grep -q 'SecondStay installieren'
+          curl -fsSL http://127.0.0.1:8321/de/ -o /tmp/artifact-de.html
+          grep -q 'SecondStay installieren' /tmp/artifact-de.html
           kill "$SERVER_PID"
 
   sonarcloud:
