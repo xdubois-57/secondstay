@@ -216,3 +216,60 @@
         font-size: .8rem;
     }
 }
+
+/* --- Contraste (TESTING.md §10 — WCAG 2.2 AA, critère 1.4.3) --------------
+ *
+ * Les variantes « outline » de Bootstrap écrivent leur texte dans la couleur
+ * de marque, sur un fond clair : `#6c757d` sur blanc atteint 4,69, mais 4,45
+ * sur `bg-body-tertiary`, et `#ffc107` plafonne à 1,63. Les liens
+ * `.link-secondary` du pied de page sont dans le même cas. Ces écarts ne se
+ * voient pas à l'œil d'un développeur ; ils se voient d'un écran de téléphone
+ * en plein soleil, ou d'un œil de plus de cinquante ans — c'est-à-dire dans
+ * les conditions réelles où l'on cherche le code du portail.
+ *
+ * Les jetons `--bs-*-text-emphasis` de Bootstrap 5.3 portent déjà des valeurs
+ * qui passent le seuil, **et** basculent avec le thème sombre. Les réutiliser
+ * évite d'inscrire des couleurs en dur qu'il faudrait maintenir en double.
+ */
+.btn-outline-primary {
+    --bs-btn-color: var(--bs-primary-text-emphasis);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--bs-secondary-text-emphasis);
+}
+
+.btn-outline-success {
+    --bs-btn-color: var(--bs-success-text-emphasis);
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--bs-danger-text-emphasis);
+}
+
+/* Jaune et cyan sont les deux cas où la bordure elle-même est invisible sur
+   fond clair : elle suit donc le texte. */
+.btn-outline-warning {
+    --bs-btn-color: var(--bs-warning-text-emphasis);
+    --bs-btn-border-color: var(--bs-warning-text-emphasis);
+    --bs-btn-hover-color: var(--bs-warning-text-emphasis);
+}
+
+.btn-outline-info {
+    --bs-btn-color: var(--bs-info-text-emphasis);
+    --bs-btn-border-color: var(--bs-info-text-emphasis);
+    --bs-btn-hover-color: var(--bs-info-text-emphasis);
+}
+
+/* Liens discrets — pied de page, mentions. `.link-secondary` de Bootstrap
+   n'atteint pas le seuil sur un fond tertiaire. */
+.ss-link-muted {
+    color: var(--bs-secondary-text-emphasis);
+    text-decoration-color: rgba(var(--bs-emphasis-color-rgb), .4);
+}
+
+.ss-link-muted:hover,
+.ss-link-muted:focus {
+    color: var(--bs-emphasis-color);
+    text-decoration-color: currentColor;
+}

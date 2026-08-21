@@ -151,7 +151,7 @@
                 <ul class="list-inline mb-0 small">
                     {% for link in legal_links %}
                         <li class="list-inline-item">
-                            <a class="link-secondary" href="{{ path('page.show', {'slug': link.slug}) }}"
+                            <a class="ss-link-muted" href="{{ path('page.show', {'slug': link.slug}) }}"
                                data-legal-slug="{{ link.slug }}">{{ link.label }}</a>
                         </li>
                     {% endfor %}

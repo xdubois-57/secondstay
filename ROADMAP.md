@@ -706,3 +706,22 @@ souvent mauvais dans une buanderie.
 Le QR imprimé est relu dans les tests par un décodeur écrit indépendamment de
 l'encodeur : un QR juste à un caractère près est un lien mort découvert un
 dimanche par un voyageur.
+
+### Accessibilité mesurée, et non supposée
+
+`TESTING.md §10` demande une analyse automatisée via axe, avec l'objectif
+WCAG 2.2 AA. La dépendance `@axe-core/playwright` était installée depuis le
+début et n'était appelée nulle part : l'outil était présent, la mesure absente.
+
+La campagne l'exécute désormais sur les trois familles de pages — contenu,
+formulaire, administration — dans les deux thèmes. Elle a immédiatement trouvé
+un défaut réel et généralisé : les variantes « outline » de Bootstrap écrivent
+leur texte dans la couleur de marque, ce qui donne 4,45 pour le gris sur fond
+tertiaire et 1,63 pour le jaune. Les liens du pied de page étaient dans le même
+cas. L'écart ne se voit pas depuis un écran de développeur ; il se voit d'un
+téléphone en plein soleil, ou d'un œil de plus de cinquante ans — c'est-à-dire
+dans les conditions réelles où l'on cherche le code du portail.
+
+La correction réutilise les jetons `--bs-*-text-emphasis` de Bootstrap plutôt
+que d'inscrire des couleurs en dur : ils passent le seuil et basculent avec le
+thème sombre, qui est le thème par défaut d'une bonne partie des téléphones.
