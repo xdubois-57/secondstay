@@ -88,6 +88,8 @@
                 {% endif %}
             </div>
 
+            {% include 'stay/_activities.html.twig' %}
+
             {% for block in stay.visibleBlocks %}
                 <div class="card mb-3" data-block="{{ block.code }}">
                     <div class="card-header">{{ block.title ?: t(block.labelKey) }}</div>

@@ -38,7 +38,7 @@ Une itération est terminée seulement si :
 | 10 | Mon séjour et invités | ✅ livrée |
 | 11 | États des lieux et incidents | ✅ livrée |
 | 12 | France et conformité | ✅ livrée |
-| 13 | Contenu local IA | ⏳ à venir |
+| 13 | Contenu local IA | ✅ livrée |
 | 14 | ICS externes, reporting, consolidation | ⏳ à venir |
 
 Le numéro de version mineure suit l’itération livrée : l’itération N correspond
@@ -514,6 +514,35 @@ Livrer :
 - rendu FR/EN/NL/DE.
 
 E2E : fixtures HTML + fake LLM.
+
+### Livré (0.14.0)
+
+- `LlmProvider` comme les autres frontières externes du produit : implémentation
+  Claude appelée en HTTP direct — donc à travers le garde SSRF —, fournisseur
+  nul par défaut, fournisseur factice activable par la seule variable
+  d'environnement ;
+- sources : URL simples saisies par le propriétaire, contrôlées à la saisie et
+  surtout **à chaque sortie**, avec leur dernier état visible ;
+- extraction : les pages sont réduites à du texte avant d'approcher le prompt —
+  scripts, styles et commentaires ne peuvent pas y cacher d'instruction ;
+- prompt gardé : le propriétaire écrit sa consigne, le système ajoute la
+  localisation, la saison, les dates exactes, les sources et le schéma ; le
+  contenu récupéré est enfermé entre marqueurs et déclaré donnée, jamais
+  instruction ;
+- bouton « Générer le prompt à partir de la localisation », essai à blanc et
+  rafraîchissement à la demande ;
+- sortie contrainte par un schéma JSON **et revalidée** : une activité sans
+  source consultée, sans titre ou aux dates impossibles est écartée ;
+- fenêtre de génération configurable — cinq semaines avant l'arrivée par
+  défaut, rafraîchie chaque semaine jusqu'au séjour ;
+- affichage limité aux dates exactes du séjour, groupé en « à réserver à
+  l'avance » et « à faire pendant votre séjour », chaque activité citant sa
+  source et sa date de vérification, dans les quatre langues ;
+- aucune donnée personnelle n'atteint le modèle : un lieu, des dates et du
+  texte public ;
+- E2E `local-content.spec.js` (fixtures HTML servies au produit, modèle
+  factice, filtrage sur les dates), tests PHP `LocalContentServiceTest` et
+  `LocalContentTest`.
 
 ## Itération 14 — ICS externes, reporting, consolidation
 

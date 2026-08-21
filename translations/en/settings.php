@@ -449,4 +449,34 @@ return [
             'help' => 'How long after departure the record is automatically erased.',
         ],
     ],
+    'llm' => [
+        'enabled' => [
+            'label' => 'Enable local content',
+            'help' => 'Produces activity suggestions for upcoming stays, from the sources you list.',
+        ],
+        'provider' => [
+            'label' => 'Provider',
+            'help' => 'With no provider configured, no activity is produced — and none is invented.',
+        ],
+        'api_key' => [
+            'label' => 'API key',
+            'help' => 'Stored encrypted and never shown again.',
+        ],
+        'model' => [
+            'label' => 'Model',
+            'help' => 'Identifier of the model used for generation.',
+        ],
+        'prompt' => [
+            'label' => 'Instruction',
+            'help' => 'Your free instruction. Location, season, dates, sources and format are added automatically.',
+        ],
+        'window_weeks' => [
+            'label' => 'Window before arrival (weeks)',
+            'help' => 'How long before arrival a stay’s content starts being produced.',
+        ],
+        'refresh_days' => [
+            'label' => 'Refresh (days)',
+            'help' => 'Interval between two regenerations, up to the stay.',
+        ],
+    ],
 ];

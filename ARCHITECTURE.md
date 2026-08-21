@@ -1730,3 +1730,97 @@ Ce qui n'est **pas** purgé mérite d'être dit : séjours, paiements, contrats
 acceptés, états des lieux et consentements sont des pièces contractuelles. Les
 effacer automatiquement priverait les deux parties de leur preuve ; leur
 suppression reste une décision humaine.
+
+## 42. Itération 13 — contenu local généré
+
+### 42.1 Nouveaux modules
+
+```text
+src/Llm/
+├── LlmProvider            frontière vers un modèle de langage
+├── LlmPrompt              consigne système, message, schéma attendu
+├── LlmResult              réponse décodée, ou raison de l'échec
+├── AnthropicLlmProvider   API Messages, appelée à travers `HttpFetcher`
+├── FakeLlmProvider        lit réellement les sources du prompt (tests)
+└── NullLlmProvider        aucun modèle : rien n'est produit
+
+src/LocalContent/
+├── LocalSource            une URL consultée
+├── SourceDocument         une page réduite à son texte
+├── PageExtractor          HTML → texte borné, sans balise
+├── ActivitySchema         schéma imposé et revalidé
+├── PromptBuilder          prompt gardé : système + message + sources
+├── LocalActivity          une activité, ses dates, sa source
+├── LocalContentRepository sources, exécutions, activités
+└── LocalContentService    le pipeline
+
+src/Http/
+└── FixtureHttpFetcher     pages de test sur disque, délègue le reste
+```
+
+### 42.2 Pourquoi un appel HTTP direct plutôt qu'un SDK
+
+Tout ce qui sort de l'application passe par `HttpFetcher`, donc par le garde
+SSRF (§3, SECURITY.md §16). Un client HTTP embarqué par une bibliothèque tierce
+contournerait ce point de passage unique — précisément ce que la spécification
+demande de tenir. S'ajoute la contrainte d'hébergement : le ZIP embarque
+`vendor/` et s'installe par FTP, chaque dépendance est du poids transféré à
+chaque mise à jour.
+
+L'appel suit la documentation de l'API Messages : version d'API dans l'en-tête,
+sortie contrainte par `output_config.format`, refus de sécurité reconnu comme
+tel plutôt que confondu avec une panne.
+
+### 42.3 Le web est une donnée, jamais une consigne
+
+C'est la propriété de sécurité centrale de cette itération, et elle tient en
+trois gestes qui se renforcent :
+
+1. **l'extraction** réduit la page à du texte : scripts, styles, commentaires et
+   balises disparaissent avant d'approcher le prompt. Une instruction cachée
+   dans un `<script>` n'existe déjà plus ;
+2. **les marqueurs** enferment ce qui reste entre `[SOURCE n]` et
+   `[FIN SOURCE n]`, et la consigne système déclare explicitement que ce
+   contenu est une donnée. Une page qui écrirait « ignore les consignes
+   précédentes » reste une page qui contient cette phrase ;
+3. **la validation** ne fait confiance à rien : une activité dont la source
+   n'est pas une des URL réellement consultées est écartée, comme une activité
+   sans titre ou aux dates impossibles. Le modèle propose, la validation
+   dispose.
+
+### 42.4 Rien de personnel ne sort
+
+Le prompt contient un lieu, une saison, des dates et du texte public. Pas de
+nom, pas d'adresse e-mail, pas de téléphone, pas même la référence du séjour —
+et un test le vérifie explicitement. La localisation elle-même s'arrête au code
+postal et à la ville : il n'y a aucune raison d'envoyer un numéro de rue pour
+trouver un marché.
+
+### 42.5 Fenêtre et fraîcheur
+
+La génération commence quelques semaines avant l'arrivée (cinq par défaut,
+configurable) et se rafraîchit chaque semaine jusqu'au séjour
+(SPECIFICATIONS.md §57). Une génération **remplace** la précédente pour le
+couple séjour + langue : accumuler produirait des doublons à chaque
+rafraîchissement.
+
+L'affichage, lui, ne montre que les activités dont les dates recouvrent celles
+du séjour, bornes incluses (§58) : un marché la veille de l'arrivée est stocké
+mais jamais affiché. Deux groupes seulement — à réserver à l'avance, à faire
+pendant le séjour — et chaque activité porte sa source et sa date de
+vérification.
+
+### 42.6 Tester sans réseau ni clé
+
+Deux pièces rendent le pipeline entièrement jouable hors ligne :
+
+- `FakeLlmProvider` ne renvoie pas une réponse figée : il **lit** les sources
+  placées dans le prompt et en extrait les activités. Un test qui passe prouve
+  donc que la page a bien traversé la chaîne ;
+- `FixtureHttpFetcher` sert des pages depuis le disque et **délègue tout le
+  reste** au fetcher réel. Ce qui n'a pas de fixture part vraiment, garde SSRF
+  compris : une source pointant vers le réseau interne est refusée pendant le
+  test exactement comme en production.
+
+Les deux ne s'activent que par variable d'environnement, comme les autres
+fournisseurs factices du produit.

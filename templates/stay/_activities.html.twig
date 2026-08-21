@@ -1,0 +1,42 @@
+{# Activités locales, limitées aux dates exactes du séjour (§58). #}
+{% if activities.book_ahead is not empty or activities.this_week is not empty %}
+    <div class="card mb-4" data-testid="stay-activities">
+        <div class="card-header">{{ t('local.stay.title') }}</div>
+
+        {% for group in ['book_ahead', 'this_week'] %}
+            {% if activities[group] is not empty %}
+                <div class="card-header bg-body-tertiary small text-uppercase"
+                     data-activity-group="{{ group }}">{{ t('local.group.' ~ group) }}</div>
+                <ul class="list-group list-group-flush">
+                    {% for activity in activities[group] %}
+                        <li class="list-group-item" data-activity="{{ activity.id }}"
+                            data-activity-category="{{ activity.category }}"
+                            data-activity-start="{{ activity.startsOn }}"
+                            data-activity-end="{{ activity.endsOn }}">
+                            <div class="d-flex justify-content-between gap-2">
+                                <strong>{{ activity.title }}</strong>
+                                <span class="small text-body-secondary text-nowrap">
+                                    {{ activity.startsDate|daymonth }}{% if activity.endsOn != activity.startsOn %} → {{ activity.endsDate|daymonth }}{% endif %}
+                                </span>
+                            </div>
+                            {% if activity.summary %}
+                                <div class="small">{{ activity.summary }}</div>
+                            {% endif %}
+                            {% if activity.location %}
+                                <div class="small text-body-secondary">{{ activity.location }}</div>
+                            {% endif %}
+                            {# Source et date de vérification : toujours (§58). #}
+                            <div class="small text-body-secondary mt-1">
+                                <a href="{{ activity.sourceUrl }}" target="_blank" rel="noopener noreferrer"
+                                   data-activity-source>{{ activity.host }}</a>
+                                — {{ t('local.verified_on', {'date': activity.verifiedDate|daymonth}) }}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endfor %}
+
+        <div class="card-footer small text-body-secondary">{{ t('local.stay.disclaimer') }}</div>
+    </div>
+{% endif %}

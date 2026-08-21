@@ -20,6 +20,7 @@ return [
         'mailbox' => 'Berichten',
         'operations' => 'Exploitatie',
         'stay' => 'Welkomstboek',
+        'local' => 'Lokale inhoud',
         'settings' => 'Configuratie',
         'users' => 'Accounts',
         'backups' => 'Back-ups',
@@ -70,6 +71,7 @@ return [
             'imap' => 'Inkomende post',
             'legal' => 'Juridische vermeldingen',
             'operations' => 'Exploitatie',
+            'llm' => 'Lokale inhoud',
             'logging' => 'Logboek',
         ],
         'value' => [
@@ -97,6 +99,9 @@ return [
                     'star_4' => '4 sterren',
                     'star_5' => '5 sterren',
                 ],
+            ],
+            'llm' => [
+                'provider' => ['none' => 'Geen', 'anthropic' => 'Claude (Anthropic)'],
             ],
             'site' => [
                 'default_locale' => ['fr' => 'Français', 'en' => 'English', 'nl' => 'Nederlands', 'de' => 'Deutsch'],

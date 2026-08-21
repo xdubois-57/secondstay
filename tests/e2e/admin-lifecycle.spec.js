@@ -49,6 +49,10 @@ test.describe('cycle de vie administrateur', () => {
         await page.goto('/fr/admin/settings?module=pricing');
         await page.fill('#setting_pricing__default_night_price', '999.00');
         await page.click('[data-testid="settings-save"]');
+        // L'enregistrement doit avoir abouti avant de recharger : partir tout
+        // de suite annulerait la requête au lieu de vérifier son effet.
+        await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
+
         await page.goto('/fr/admin/settings?module=pricing');
         await expect(page.locator('#setting_pricing__default_night_price')).toHaveValue('999.00');
 

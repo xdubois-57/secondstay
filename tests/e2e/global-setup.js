@@ -25,7 +25,11 @@ export default async function globalSetup(config) {
         SECONDSTAY_MAIL_TRANSPORT: 'fake',
         SECONDSTAY_PUSH_PROVIDER: 'fake',
         SECONDSTAY_PAYMENT_PROVIDER: 'fake',
-        SECONDSTAY_IMAP_PROVIDER: 'fake'
+        SECONDSTAY_IMAP_PROVIDER: 'fake',
+        // Modèle factice et pages servies depuis le disque : le pipeline de
+        // contenu local est joué en entier, sans clé et sans réseau sortant.
+        SECONDSTAY_LLM_PROVIDER: 'fake',
+        SECONDSTAY_HTTP_FETCHER: 'fixtures'
     };
     execFileSync(resolve(root, 'scripts/dev-server.sh'), ['restart'], {
         cwd: root,
@@ -49,5 +53,15 @@ export default async function globalSetup(config) {
                 + `Le serveur doit tourner avec ${variable}.`
             );
         }
+    }
+
+    // Le dépôt de fixtures HTTP n'a pas de lecture : on vérifie qu'il accepte
+    // une écriture, puis on repart d'un dépôt vide.
+    const fixtures = await fetch(`${baseURL}/webhook/dev/http/purge`, { method: 'POST' });
+    if (!fixtures.ok) {
+        throw new Error(
+            `Les fixtures HTTP sont indisponibles (${fixtures.status}). `
+            + 'Le serveur doit tourner avec SECONDSTAY_HTTP_FETCHER=fixtures.'
+        );
     }
 }

@@ -170,6 +170,23 @@ final class SettingRegistry
             // séjour » ? Certains propriétaires préfèrent le faire seuls.
             new SettingDefinition('inspection.guest_enabled', SettingType::Bool, true, 'operations'),
 
+            // --- Contenu local généré (SPECIFICATIONS.md §56 et §57) ---------
+            new SettingDefinition('llm.enabled', SettingType::Bool, false, 'llm'),
+            new SettingDefinition(
+                'llm.provider',
+                SettingType::Enum,
+                'none',
+                'llm',
+                enumValues: ['none', 'anthropic']
+            ),
+            new SettingDefinition('llm.api_key', SettingType::Secret, null, 'llm'),
+            new SettingDefinition('llm.model', SettingType::String, 'claude-opus-5', 'llm', max: 64),
+            // Consigne libre du propriétaire : le système y ajoute la
+            // localisation, la saison, les dates, les sources et le schéma.
+            new SettingDefinition('llm.prompt', SettingType::Text, '', 'llm', max: 4000),
+            new SettingDefinition('llm.window_weeks', SettingType::Integer, 5, 'llm', min: 1, max: 26),
+            new SettingDefinition('llm.refresh_days', SettingType::Integer, 7, 'llm', min: 1, max: 90),
+
             // --- Mentions légales -------------------------------------------
             // La version des conditions est figée dans chaque contrat : elle
             // doit donc être une valeur explicite, pas une date implicite.

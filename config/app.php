@@ -66,6 +66,19 @@ return [
         // les tests : une boîte factice ne doit jamais servir en production.
         'provider' => '',
     ],
+    'http' => [
+        // Sorties HTTP réelles. 'fixtures' n'est activable que par la variable
+        // d'environnement SECONDSTAY_HTTP_FETCHER, pour les tests : une page
+        // servie depuis le disque ne doit jamais alimenter une installation.
+        'fetcher' => '',
+    ],
+    'llm' => [
+        // Fournisseur réel choisi dans la configuration de l'installation.
+        // 'fake' n'est activable que par la variable d'environnement
+        // SECONDSTAY_LLM_PROVIDER, pour les tests : un modèle factice ne doit
+        // jamais produire de contenu affiché à un voyageur.
+        'provider' => '',
+    ],
     'logging' => [
         'level' => 'info',
         'retention_days' => 90,

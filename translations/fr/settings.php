@@ -449,4 +449,34 @@ return [
             'help' => 'Durée après le départ au-delà de laquelle la fiche est effacée automatiquement.',
         ],
     ],
+    'llm' => [
+        'enabled' => [
+            'label' => 'Activer le contenu local',
+            'help' => 'Produit des suggestions d’activités pour les séjours à venir, à partir des sources que vous indiquez.',
+        ],
+        'provider' => [
+            'label' => 'Fournisseur',
+            'help' => 'Sans fournisseur configuré, aucune activité n’est produite — et aucune n’est inventée.',
+        ],
+        'api_key' => [
+            'label' => 'Clé d’API',
+            'help' => 'Conservée chiffrée et jamais réaffichée.',
+        ],
+        'model' => [
+            'label' => 'Modèle',
+            'help' => 'Identifiant du modèle utilisé pour la génération.',
+        ],
+        'prompt' => [
+            'label' => 'Consigne',
+            'help' => 'Votre consigne libre. La localisation, la saison, les dates, les sources et le format sont ajoutés automatiquement.',
+        ],
+        'window_weeks' => [
+            'label' => 'Fenêtre avant l’arrivée (semaines)',
+            'help' => 'Délai avant l’arrivée à partir duquel le contenu d’un séjour est produit.',
+        ],
+        'refresh_days' => [
+            'label' => 'Rafraîchissement (jours)',
+            'help' => 'Intervalle entre deux régénérations, jusqu’au séjour.',
+        ],
+    ],
 ];

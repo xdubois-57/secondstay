@@ -899,3 +899,41 @@ cette piste.
 paiements, contrats acceptés, états des lieux et consentements survivent à
 toute rétention : leur suppression est une décision humaine, jamais un effet de
 bord d'un réglage.
+
+## 36. Contenu local généré
+
+**Toute sortie passe par le garde SSRF.** Le fournisseur de modèle appelle
+l'API à travers `HttpFetcher`, comme la récupération des sources : il n'existe
+pas de second chemin réseau dans l'application. Une URL de source est contrôlée
+à la saisie — schéma, adresse littérale privée — et surtout **à chaque
+requête**, redirections comprises.
+
+**Un nom qui ne se résout pas est accepté à la saisie, jamais à la sortie.** Un
+site peut être injoignable une minute ; refuser de l'enregistrer ne protégerait
+rien. La barrière est au moment de la requête, où elle est effective.
+
+**Le contenu récupéré est une donnée.** Il est réduit à du texte — scripts,
+styles et commentaires supprimés — puis enfermé entre marqueurs, et la consigne
+système déclare explicitement qu'aucune instruction ne doit en être suivie.
+C'est la défense contre l'injection de prompt exigée par SPECIFICATIONS.md §59.
+
+**La sortie du modèle est revalidée.** Le schéma est envoyé au fournisseur
+**et** appliqué au retour : une activité citant une source jamais consultée,
+sans titre, ou dont la fin précède le début, est écartée. Un fournisseur qui
+n'appliquerait pas la contrainte ne peut donc pas peupler la base.
+
+**La date de vérification est celle de la consultation**, pas celle que le
+modèle annonce : elle est écrite par le produit.
+
+**Aucune donnée personnelle n'atteint le modèle.** Ni nom, ni e-mail, ni
+téléphone, ni référence de séjour : un lieu, une saison, des dates et du texte
+public. Un test le vérifie champ par champ.
+
+**La clé d'API est un secret de configuration** : chiffrée au repos, jamais
+réaffichée, et jamais écrite dans un journal — les journaux d'appel ne portent
+que l'empreinte du prompt.
+
+**Le modèle factice et les fixtures HTTP ne s'activent que par variable
+d'environnement.** Ni l'un ni l'autre n'est sélectionnable depuis l'interface :
+une installation ne peut pas se retrouver à afficher du contenu de test à un
+voyageur.
