@@ -376,6 +376,13 @@ complète reste faite au premier test, et **refaite dès que le schéma ne
 correspond plus** à ce qui est attendu : un test qui crée ou supprime une table
 se répare tout seul.
 
+**Écrire de façon synchrone.** En intégration continue, la base est jetable :
+un incident d'exécuteur se répare en relançant la CI, pas en relisant un
+journal. Les travaux `database` et `e2e` désactivent donc
+`innodb_flush_log_at_trx_commit` et `sync_binlog` avant de commencer, faute de
+quoi la remise à zéro entre chaque test est dominée par des `fsync`. Le réglage
+vit dans le workflow, jamais dans le produit ni dans les tests.
+
 **Hacher un mot de passe.** `password_hash` coûte 225 ms — c'est sa raison
 d'être, et le produit doit la payer. Un test qui a seulement besoin d'un compte
 utilisable, non : `DatabaseTestCase::passwordHash()` mémorise l'empreinte par

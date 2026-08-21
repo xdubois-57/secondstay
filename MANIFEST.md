@@ -11,5 +11,5 @@ Fichiers de référence SecondStay :
 - `ROADMAP.md` — 22744 bytes — sha256 `4ba298e62d6b528da861ca5648aebf1afdceab74cb925a169f44119b93f6e9c1`
 - `SECURITY.md` — 40446 bytes — sha256 `498f02bb425110ede0d0860c3aac67efdc1062e7acba72d7b0ef04bd80e1239a`
 - `SPECIFICATIONS.md` — 14077 bytes — sha256 `17cc30e636cef434ac556ffa0fdf7b55208c4be54b257ded5194183881103b8a`
-- `TESTING.md` — 42359 bytes — sha256 `a65725c86aade98827a624a5778e8b771fed4482dc8f27c95987bfac3c3f8761`
+- `TESTING.md` — 42803 bytes — sha256 `e11521bc798df1cd145444def4c794e793e8b7a3fbbe9d6cdd9fd3722a0b5778`
 - `VERSION` — 7 bytes — sha256 `f8405a7330c287028d470c3ee3506f878f1ad85ed79c1d1adc19df2ff7398915`

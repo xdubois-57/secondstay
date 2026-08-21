@@ -92,6 +92,18 @@ jobs:
       - name: Composer install
         run: composer install --no-interaction --no-progress
 
+      # Base jetable : la durabilité n'y sert à rien. Un incident d'exécuteur
+      # se répare en relançant la CI, pas en relisant un journal. Sans les
+      # écritures synchrones, la remise à zéro entre chaque test — cinquante
+      # `TRUNCATE`, cinq cent quatre-vingt-huit fois — cesse d'être dominée par
+      # des `fsync`.
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
       - name: Tests base de données
         run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml
 
@@ -183,6 +195,18 @@ jobs:
       - run: composer install --no-interaction --no-progress
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
+
+      # Base jetable : la durabilité n'y sert à rien. Un incident d'exécuteur
+      # se répare en relançant la CI, pas en relisant un journal. Sans les
+      # écritures synchrones, la remise à zéro entre chaque test — cinquante
+      # `TRUNCATE`, cinq cent quatre-vingt-huit fois — cesse d'être dominée par
+      # des `fsync`.
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
 
       - name: Playwright
         run: ./scripts/check.sh --e2e
