@@ -937,3 +937,56 @@ que l'empreinte du prompt.
 d'environnement.** Ni l'un ni l'autre n'est sélectionnable depuis l'interface :
 une installation ne peut pas se retrouver à afficher du contenu de test à un
 voyageur.
+
+## 37. Calendriers externes, reporting et quotas
+
+**Un flux importé traverse le garde SSRF, à chaque synchronisation.** L'URL est
+contrôlée à la saisie — ce qui est certainement interdit est refusé tout de
+suite — mais la barrière effective est au moment de la requête, redirections
+comprises (§16). Une adresse du réseau interne n'est donc jamais consultée,
+même si elle a été enregistrée avant qu'un DNS ne change d'avis.
+
+**Un flux ne peut pas rouvrir des nuits.** Une réponse absente, un code HTTP
+autre que 200 ou un corps qui n'est pas un calendrier laissent les blocages en
+place. C'est une propriété de sûreté avant d'être une propriété technique :
+libérer des nuits déjà vendues ailleurs provoquerait une double réservation
+réelle, avec un voyageur devant une porte fermée.
+
+**Un flux ne crée jamais de réservation.** Il pose des indisponibilités, avec
+leur provenance. Un flux distant ne peut donc pas fabriquer de client, de
+montant ni d'engagement contractuel.
+
+**Une synchronisation ne peut effacer que ses propres lignes.** La suppression
+est bornée par `source_id` à l'intérieur d'une transaction : aucune requête
+n'efface un blocage qui n'appartient pas à la source traitée.
+
+**La lecture d'un flux est bornée.** Deux mégaoctets, deux mille événements, et
+seulement quatre propriétés retenues. Un flux hostile ou simplement énorme ne
+peut pas épuiser la mémoire d'un hébergement mutualisé.
+
+**Le classeur exporté n'est jamais mis en cache partagé** (`no-store, private`)
+et n'est accessible qu'à un compte opérationnel : c'est un état financier
+nominatif.
+
+**Le classeur porte sa propre mise en garde.** Le rapport ne constitue ni un
+conseil fiscal ni une déclaration ; le fichier étant destiné à être transmis,
+l'avertissement voyage avec lui.
+
+**Un quota refuse avant d'écrire.** Un disque plein casse aussi la sauvegarde
+qui aurait permis de s'en sortir : le contrôle est donc en amont de
+l'écriture, pas un constat après coup. Un quota non réglé — la valeur par
+défaut — ne bloque rien.
+
+**Un fichier partagé n'est effacé qu'une fois orphelin.** Les documents sont
+nommés par leur empreinte et peuvent être référencés par plusieurs séjours :
+la suppression vérifie qu'aucun enregistrement ne les référence plus, tous
+séjours confondus, avant de toucher au disque.
+
+**Un litige ne peut pas réclamer plus que la caution détenue**, ni se clore
+sans montant borné et sans explication. L'historique est en ajout seul : une
+étape ne peut pas être réécrite après coup.
+
+**La purge reste auditée.** L'ajout des indisponibilités passées à la rétention
+ne change pas la règle : ce qui est effacé automatiquement laisse une trace,
+et les pièces contractuelles — séjours, paiements, contrats acceptés, états des
+lieux — ne sont jamais purgées sans décision humaine.

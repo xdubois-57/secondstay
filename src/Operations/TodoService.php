@@ -8,6 +8,7 @@ use SecondStay\Booking\Booking;
 use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Compliance\ComplianceService;
+use SecondStay\Dispute\DisputeRepository;
 use SecondStay\Database\Migrator;
 use SecondStay\Imap\InboundMailRepository;
 use SecondStay\Incident\IncidentRepository;
@@ -34,6 +35,7 @@ final class TodoService
         private readonly ?Migrator $migrator = null,
         private readonly ?IncidentRepository $incidents = null,
         private readonly ?ComplianceService $compliance = null,
+        private readonly ?DisputeRepository $disputes = null,
     ) {
     }
 
@@ -86,6 +88,12 @@ final class TodoService
         $compliance = $this->compliance?->outstanding($today) ?? [];
         if ($compliance !== []) {
             $items[] = $this->item('compliance_to_verify', 'warning', count($compliance), 'admin.compliance');
+        }
+
+        // Un litige ouvert attend une décision : caution retenue ou rendue.
+        $openDisputes = $this->disputes?->countOpen() ?? 0;
+        if ($openDisputes > 0) {
+            $items[] = $this->item('disputes_open', 'danger', $openDisputes, 'admin.disputes');
         }
 
         if ($this->migrator !== null && $this->migrator->pending() !== []) {

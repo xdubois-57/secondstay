@@ -1,0 +1,49 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="text-body-secondary">{{ t('dispute.intro') }}</p>
+
+    <ul class="nav nav-pills mb-4" data-testid="dispute-filters">
+        <li class="nav-item">
+            <a class="nav-link{{ current_status is null ? ' active' : '' }}"
+               href="{{ path('admin.disputes') }}" data-dispute-filter="all">{{ t('dispute.filter.all') }}</a>
+        </li>
+        {% for status in statuses %}
+            <li class="nav-item">
+                <a class="nav-link{{ current_status is not null and current_status.value == status.value ? ' active' : '' }}"
+                   href="{{ path('admin.disputes') }}?status={{ status.value }}"
+                   data-dispute-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table align-middle" data-testid="dispute-list">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('dispute.field.summary') }}</th>
+                    <th scope="col">{{ t('dispute.field.booking') }}</th>
+                    <th scope="col">{{ t('dispute.field.claimed') }}</th>
+                    <th scope="col">{{ t('dispute.field.settled') }}</th>
+                    <th scope="col">{{ t('dispute.field.status') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dispute in disputes %}
+                    <tr data-dispute-id="{{ dispute.id }}" data-dispute-status="{{ dispute.status.value }}">
+                        <td>
+                            <a href="{{ path('admin.disputes.show', {'id': dispute.id}) }}">{{ dispute.summary }}</a>
+                            <span class="d-block small text-body-secondary">{{ t(dispute.kindLabelKey) }}</span>
+                        </td>
+                        <td><code>{{ dispute.bookingReference }}</code></td>
+                        <td>{{ dispute.claimedCents|money }}</td>
+                        <td>{{ dispute.status.isResolved ? dispute.settledCents|money : '—' }}</td>
+                        <td><span class="badge {{ dispute.status.badgeClass }}">{{ t(dispute.status.labelKey) }}</span></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" data-testid="dispute-empty">{{ t('dispute.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

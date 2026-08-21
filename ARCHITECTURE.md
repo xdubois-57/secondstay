@@ -1824,3 +1824,151 @@ Deux pièces rendent le pipeline entièrement jouable hors ligne :
 
 Les deux ne s'activent que par variable d'environnement, comme les autres
 fournisseurs factices du produit.
+
+## 43. Itération 14 — calendriers externes, reporting, litiges, quotas
+
+### 43.1 Nouveaux modules
+
+```text
+src/Calendar/
+├── IcsParser                 lecteur RFC 5545, écrit sans le générateur
+├── ExternalCalendar          un flux déclaré, son état, sa plateforme
+├── ExternalCalendarRepository
+└── ExternalCalendarService   synchronisation d'un flux, ou de tous
+
+src/Reporting/
+├── ReportPeriod              un mois, ou une année
+├── Report                    montants, nuits, taux, séjours
+├── ReportService             agrégation, années disponibles, classeur
+└── XlsxWriter                XLSX en PHP pur, déterministe
+
+src/Dispute/
+├── DisputeStatus             ouvert → discussion → résolu, et retour
+├── Dispute                   nature, montants, résumé, résolution
+├── DisputeEvent              historique en ajout seul
+├── DisputeRepository
+└── DisputeService            garde-fous et pièces au dossier
+
+src/Quota/
+└── QuotaService              mesure et refus avant écriture
+```
+
+### 43.2 Un blocage garde sa provenance
+
+`availability_block` porte désormais `source_id` et `external_uid`. Ce n'est pas
+une commodité d'affichage : c'est ce qui rend l'import **réversible** et sans
+effet de bord.
+
+1. **un flux ne réserve pas, il bloque.** Un événement distant devient une
+   indisponibilité, jamais un séjour. Confondre les deux ferait apparaître des
+   clients qui n'existent pas, avec des montants qui n'ont pas été convenus ;
+2. **une synchronisation ne touche que ses propres lignes.**
+   `replaceForSource()` supprime dans une transaction les seules lignes portant
+   ce `source_id`, puis réécrit ce que le flux publie aujourd'hui. Ce que le
+   propriétaire a bloqué à la main ne peut pas disparaître parce qu'une
+   plateforme a changé d'avis ;
+3. **un flux muet ne libère rien.** Erreur réseau, code HTTP autre que 200, ou
+   corps qui n'est pas un calendrier : l'état est enregistré, les blocages
+   restent. Rendre disponibles des nuits déjà vendues ailleurs serait le pire
+   résultat possible — pire qu'un calendrier périmé ;
+4. **supprimer le flux emporte ses blocages** (`ON DELETE CASCADE`) : sans leur
+   source, ils deviendraient des indisponibilités sans provenance, que plus
+   personne ne saurait justifier.
+
+Un calendrier vide mais **valide** est, lui, une information : la plateforme
+dit que plus rien n'est vendu, et les nuits sont bien libérées. C'est la
+différence entre « je ne sais pas » et « je sais qu'il n'y a rien », et le
+service la fait explicitement (`looksLikeCalendar()`).
+
+### 43.3 Lire l'ICS sans le code qui l'écrit
+
+`IcsParser` est écrit indépendamment de `IcsCalendar`, comme `QrDecoder`,
+`PdfReader` et `IcsReader` le sont de leurs générateurs (TESTING.md §12). Le
+lecteur d'import est du **code de production**, mais la règle vaut aussi :
+réutiliser le générateur reproduirait ses erreurs.
+
+Ce qui est lu est volontairement minimal — identifiant, début, fin, résumé — et
+borné : 2 Mo, 2000 événements. Les conventions sont celles des plateformes :
+`DTEND` exclusif, horodatage ramené au jour (une heure ne change pas la nuit
+occupée), UID dérivé du contenu quand le flux n'en publie pas.
+
+### 43.4 Le reporting compte, il ne conseille pas
+
+`Report` porte des montants en centimes et rien d'autre. Trois séparations
+comptent :
+
+- **la caution n'est pas un revenu** : elle est détenue, puis rendue ou
+  partiellement retenue. Elle a sa propre ligne ;
+- **la taxe de séjour est encaissée pour le compte de la collectivité** : elle
+  est comptée à part, jamais dans le revenu ;
+- **le prix moyen de la nuit** porte sur l'hébergement rapporté aux nuits
+  vendues. Y mêler ménage, taxe ou caution donnerait un chiffre qu'on ne peut
+  comparer d'un mois à l'autre.
+
+Les nuits sont comptées **nuit par nuit** : un séjour à cheval sur deux mois
+compte dans les deux, pour ce qu'il y occupe. La nuit du départ ne compte pas.
+
+L'avertissement — ces chiffres ne sont ni un conseil fiscal ni une déclaration
+— est affiché à l'écran **et** écrit dans le classeur exporté : un fichier
+transmis à un tiers doit porter sa propre mise en garde.
+
+### 43.5 XLSX en PHP pur
+
+Un `.xlsx` est une archive ZIP de documents XML : `ext-zip` suffit, et le
+produit n'ajoute aucune dépendance — même contrainte d'hébergement mutualisé
+que pour le PDF et le QR (§26, §30).
+
+L'écriture est **déterministe** : mêmes données, mêmes octets. Deux exports du
+même mois se comparent alors avec `diff`, ce qu'un classeur horodaté
+interdirait. Les montants sont écrits en unités monétaires avec un format
+numérique, jamais en chaînes « 145,50 € » qu'il faudrait reconvertir.
+
+Côté test, `tests/php/Support/XlsxReader.php` relit l'archive comme le ferait
+un tableur — relations du classeur, ordre des feuilles, cellules résolues par
+leur référence — sans partager une ligne avec l'écrivain.
+
+### 43.6 Un litige rassemble, il n'invente pas
+
+`DisputeService::evidenceFor()` agrège ce que le produit a **déjà** collecté :
+caution réellement détenue, état des lieux de départ et ses anomalies, photos
+versées, incidents enregistrés, contrat accepté. La discussion s'appuie sur des
+faits datés plutôt que sur des souvenirs.
+
+Deux garde-fous refusent ce qui n'aurait pas de sens :
+
+- la retenue réclamée ne peut pas dépasser la caution détenue — réclamer plus
+  que ce que l'on tient n'est pas une réclamation ;
+- clore exige un montant réglé compris entre zéro et le montant réclamé **et**
+  une explication. Un litige « résolu » sans dire comment ne vaut pas mieux
+  qu'un litige ouvert. Rouvrir efface la résolution : la garder ferait croire à
+  un dossier clos.
+
+Un séjour porte au plus un litige par nature (contrainte d'unicité) : la
+seconde ouverture n'écrase pas la première, elle est refusée.
+
+### 43.7 Quotas : refuser avant, pas après
+
+Un disque plein casse tout, y compris la sauvegarde qui aurait permis de s'en
+sortir. `QuotaService` mesure quatre catégories — médias, documents,
+sauvegardes, pièces jointes — et `DocumentService` comme `MediaService`
+l'interrogent **avant** d'écrire.
+
+La mesure est faite à la demande plutôt qu'entretenue en continu : parcourir
+quelques milliers de fichiers coûte moins cher qu'un compteur qu'il faudrait
+tenir à jour à chaque écriture et qui finirait par mentir.
+
+Un quota à zéro signifie « pas de limite » : c'est la configuration par défaut,
+et le produit ne doit rien empêcher tant que le propriétaire n'a rien décidé.
+Au-delà de 80 %, l'écran prévient sans encore refuser.
+
+Libérer de la place est le remède annoncé : la suppression d'un document est
+donc offerte dans l'interface, et le fichier — nommé par son empreinte, donc
+partageable entre séjours — n'est effacé qu'une fois réellement orphelin.
+
+### 43.8 Purge consolidée
+
+`RetentionService` applique désormais aussi la rétention des indisponibilités
+passées (deux ans). Un blocage échu ne prouve rien et n'explique aucun montant
+— le prix payé est figé sur le séjour —, alors qu'il alourdit le calendrier et
+le disque. Ce qui reste hors purge automatique n'a pas changé : séjours,
+paiements, contrats acceptés et états des lieux sont des pièces contractuelles.

@@ -20,5 +20,6 @@ return [
         'guest_links' => 'Verlopen gastlinks',
         'webhooks' => 'Betalingsmeldingen',
         'police_records' => 'Politiefiches',
+        'availability_blocks' => 'Voorbije blokkades',
     ],
 ];

@@ -16,6 +16,8 @@ return [
         'compliance' => 'Conformiteit',
         'tax' => 'Toeristenbelasting',
         'police' => 'Politiefiches',
+        'disputes' => 'Geschillen',
+        'reports' => 'Rapportage',
         'documents' => 'Documenten',
         'mailbox' => 'Berichten',
         'operations' => 'Exploitatie',
@@ -72,6 +74,7 @@ return [
             'legal' => 'Juridische vermeldingen',
             'operations' => 'Exploitatie',
             'llm' => 'Lokale inhoud',
+            'quota' => 'Quota',
             'logging' => 'Logboek',
         ],
         'value' => [

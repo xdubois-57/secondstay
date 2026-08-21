@@ -16,6 +16,8 @@ return [
         'compliance' => 'Compliance',
         'tax' => 'Tourist tax',
         'police' => 'Police records',
+        'disputes' => 'Disputes',
+        'reports' => 'Reporting',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Operations',
@@ -72,6 +74,7 @@ return [
             'legal' => 'Legal notices',
             'operations' => 'Operations',
             'llm' => 'Local content',
+            'quota' => 'Quotas',
             'logging' => 'Logging',
         ],
         'value' => [

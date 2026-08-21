@@ -479,4 +479,10 @@ return [
             'help' => 'Abstand zwischen zwei Generierungen bis zum Aufenthalt.',
         ],
     ],
+    'quota' => [
+        'media_mb' => ['label' => 'Kontingent Medien (MB)', 'help' => 'Null bedeutet keine Grenze.'],
+        'documents_mb' => ['label' => 'Kontingent Dokumente (MB)', 'help' => 'Null bedeutet keine Grenze.'],
+        'backups_mb' => ['label' => 'Kontingent Sicherungen (MB)', 'help' => 'Null bedeutet keine Grenze.'],
+        'attachments_mb' => ['label' => 'Kontingent Anhänge (MB)', 'help' => 'Null bedeutet keine Grenze.'],
+    ],
 ];

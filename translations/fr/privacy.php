@@ -20,5 +20,6 @@ return [
         'guest_links' => 'Liens invité expirés',
         'webhooks' => 'Notifications de paiement',
         'police_records' => 'Fiches de police',
+        'availability_blocks' => 'Indisponibilités passées',
     ],
 ];

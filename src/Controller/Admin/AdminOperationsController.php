@@ -11,8 +11,12 @@ use SecondStay\Calendar\CalendarScope;
 use SecondStay\Calendar\CalendarService;
 use SecondStay\Calendar\CalendarTokenRepository;
 use SecondStay\Core\Exception\NotFoundException;
+use SecondStay\Calendar\ExternalCalendar;
+use SecondStay\Calendar\ExternalCalendarRepository;
+use SecondStay\Calendar\ExternalCalendarService;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Http\UrlGuard;
 use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TodoService;
 
@@ -60,6 +64,8 @@ final class AdminOperationsController extends AdminController
                 static fn (array $row): array => $checklists->progress($row['booking']),
                 $todo->unpreparedStays(null, max(1, $this->settings()->int('operations.prepare_days')))
             ),
+            'imports' => $this->container->get(ExternalCalendarRepository::class)->all(),
+            'providers' => ExternalCalendar::PROVIDERS,
         ]);
     }
 
@@ -223,6 +229,105 @@ final class AdminOperationsController extends AdminController
         ], null, $user->id, $user->email);
 
         $this->flashSuccess('calendar.revoked');
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+
+    /**
+     * Déclare un calendrier externe à importer (SPECIFICATIONS.md §52).
+     *
+     * @param array<string, string> $params
+     */
+    public function addCalendarImport(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $url = trim((string) $context->request->input('url', ''));
+
+        // Même règle que pour les sources de contenu local : ce qui est
+        // certainement interdit est refusé tout de suite, le reste est
+        // contrôlé à chaque requête sortante.
+        $inspection = (new UrlGuard())->inspect($url);
+        if ($inspection['ok'] === false && $inspection['reason'] !== 'ssrf.dns_failed') {
+            $this->flashError($inspection['reason']);
+
+            return $this->redirectToRoute($context, 'admin.operations');
+        }
+
+        $calendars = $this->container->get(ExternalCalendarRepository::class);
+        if ($calendars->findByUrl($url) !== null) {
+            $this->flashWarning('calendar.import.error.duplicate');
+
+            return $this->redirectToRoute($context, 'admin.operations');
+        }
+
+        $calendars->create(
+            $url,
+            (string) $context->request->input('label', ''),
+            (string) $context->request->input('provider', 'other'),
+        );
+
+        $this->audit()->record(
+            'calendar.import_added',
+            'external_calendar',
+            $url,
+            null,
+            null,
+            $user->id,
+            $user->email
+        );
+        $this->flashSuccess('calendar.import.added');
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    public function deleteCalendarImport(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireOperational();
+
+        $calendars = $this->container->get(ExternalCalendarRepository::class);
+        $calendar = $calendars->find((int) ($params['id'] ?? 0));
+        if ($calendar === null) {
+            throw new NotFoundException('Calendrier introuvable.');
+        }
+
+        $calendars->delete($calendar->id);
+
+        $this->audit()->record(
+            'calendar.import_deleted',
+            'external_calendar',
+            $calendar->url,
+            null,
+            null,
+            $user->id,
+            $user->email
+        );
+        $this->flashSuccess('calendar.import.deleted');
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+
+    /**
+     * Synchronise les calendriers externes, à la demande.
+     *
+     * @param array<string, string> $params
+     */
+    public function syncCalendarImports(RequestContext $context, array $params = []): Response
+    {
+        $this->requireOperational();
+
+        $result = $this->container->get(ExternalCalendarService::class)->syncAll();
+
+        if ($result['calendars'] === 0) {
+            $this->flashWarning('calendar.import.nothing');
+        } elseif ($result['failed'] > 0) {
+            $this->flashWarning('calendar.import.partial');
+        } else {
+            $this->flashSuccess('calendar.import.synced');
+        }
 
         return $this->redirectToRoute($context, 'admin.operations');
     }

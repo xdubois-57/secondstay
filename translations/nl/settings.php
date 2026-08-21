@@ -479,4 +479,10 @@ return [
             'help' => 'Interval tussen twee generaties, tot aan het verblijf.',
         ],
     ],
+    'quota' => [
+        'media_mb' => ['label' => 'Quotum media (MB)', 'help' => 'Nul betekent geen limiet.'],
+        'documents_mb' => ['label' => 'Quotum documenten (MB)', 'help' => 'Nul betekent geen limiet.'],
+        'backups_mb' => ['label' => 'Quotum back-ups (MB)', 'help' => 'Nul betekent geen limiet.'],
+        'attachments_mb' => ['label' => 'Quotum bijlagen (MB)', 'help' => 'Nul betekent geen limiet.'],
+    ],
 ];

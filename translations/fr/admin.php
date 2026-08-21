@@ -16,6 +16,8 @@ return [
         'compliance' => 'Conformité',
         'tax' => 'Taxe de séjour',
         'police' => 'Fiches de police',
+        'disputes' => 'Litiges',
+        'reports' => 'Reporting',
         'documents' => 'Documents',
         'mailbox' => 'Messages',
         'operations' => 'Exploitation',
@@ -72,6 +74,7 @@ return [
             'legal' => 'Mentions légales',
             'operations' => 'Exploitation',
             'llm' => 'Contenu local',
+            'quota' => 'Quotas',
             'logging' => 'Journalisation',
         ],
         'value' => [

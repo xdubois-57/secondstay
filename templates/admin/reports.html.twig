@@ -1,0 +1,119 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block admin_content %}
+    <p class="alert alert-secondary" data-testid="report-disclaimer">{{ t('report.disclaimer') }}</p>
+
+    <form method="get" class="row g-2 align-items-end mb-4" data-testid="report-filter">
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="year">{{ t('report.field.year') }}</label>
+            <select class="form-select" id="year" name="year">
+                {% for available in years %}
+                    <option value="{{ available }}"
+                            {{ available == selected_year ? 'selected' : '' }}>{{ available }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="month">{{ t('report.field.month') }}</label>
+            <select class="form-select" id="month" name="month">
+                <option value="0">{{ t('report.whole_year') }}</option>
+                {% for number in 1..12 %}
+                    <option value="{{ number }}"
+                            {{ number == selected_month ? 'selected' : '' }}>{{ number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-grid">
+            <button class="btn btn-primary" type="submit" data-testid="report-apply">{{ t('report.apply') }}</button>
+        </div>
+        <div class="col-12 col-md-3 d-grid">
+            <a class="btn btn-outline-primary"
+               href="{{ path('admin.reports.export') }}?year={{ selected_year }}&month={{ selected_month }}"
+               data-testid="report-export">{{ t('report.export') }}</a>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-4" data-testid="report-summary" data-period="{{ report.period.label }}">
+        {% set tiles = [
+            {'key': 'received', 'value': report.receivedCents|money},
+            {'key': 'expected', 'value': report.expectedCents|money},
+            {'key': 'outstanding', 'value': report.outstandingCents|money},
+            {'key': 'deposits_held', 'value': report.depositsHeldCents|money},
+            {'key': 'tourist_tax', 'value': report.touristTaxCents|money},
+            {'key': 'refunded', 'value': report.refundedCents|money},
+            {'key': 'occupancy', 'value': report.occupancyPercent ~ ' %'},
+            {'key': 'average_night', 'value': report.averageNightCents|money}
+        ] %}
+        {% for tile in tiles %}
+            <div class="col-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="h5 mb-0" data-report="{{ tile.key }}">{{ tile.value }}</div>
+                        <div class="small text-body-secondary">{{ t('report.' ~ tile.key) }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle" data-testid="report-stays">
+            <thead>
+                <tr>
+                    <th scope="col">{{ t('booking.admin.reference') }}</th>
+                    <th scope="col">{{ t('report.field.arrival') }}</th>
+                    <th scope="col">{{ t('report.field.departure') }}</th>
+                    <th scope="col">{{ t('report.field.nights_in_period') }}</th>
+                    <th scope="col">{{ t('report.received') }}</th>
+                    <th scope="col">{{ t('report.tourist_tax') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stay in report.stays %}
+                    <tr data-report-stay="{{ stay.reference }}">
+                        <td><code>{{ stay.reference }}</code></td>
+                        <td>{{ stay.arrival }}</td>
+                        <td>{{ stay.departure }}</td>
+                        <td data-report-nights="{{ stay.nights_in_period }}">{{ stay.nights_in_period }}</td>
+                        <td>{{ stay.received_cents|money }}</td>
+                        <td>{{ stay.tax_cents|money }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" data-testid="report-empty">{{ t('report.empty') }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{ t('quota.title') }}</div>
+        <ul class="list-group list-group-flush" data-testid="quota-usage">
+            {% for entry in quotas %}
+                <li class="list-group-item" data-quota="{{ entry.category }}"
+                    data-quota-exceeded="{{ entry.exceeded ? 'true' : 'false' }}">
+                    <div class="d-flex justify-content-between gap-2">
+                        <span>{{ t('quota.category.' ~ entry.category) }}</span>
+                        <span class="small text-body-secondary">
+                            {{ (entry.used_bytes / 1048576)|round(1) }} {{ t('quota.mb') }}
+                            {% if entry.limit_bytes > 0 %}
+                                / {{ (entry.limit_bytes / 1048576)|round(0) }} {{ t('quota.mb') }}
+                            {% else %}
+                                — {{ t('quota.no_limit') }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if entry.limit_bytes > 0 %}
+                        <div class="progress mt-1" role="progressbar"
+                             aria-valuenow="{{ entry.percent }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar {{ entry.exceeded ? 'bg-danger' : (entry.warning ? 'bg-warning' : '') }}"
+                                 style="width: {{ entry.percent > 100 ? 100 : entry.percent }}%"></div>
+                        </div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="card-footer small text-body-secondary">
+            <a href="{{ path('admin.settings') }}?module=quota">{{ t('quota.configure') }}</a>
+        </div>
+    </div>
+{% endblock %}

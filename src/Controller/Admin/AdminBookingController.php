@@ -16,6 +16,9 @@ use SecondStay\Contract\ContractService;
 use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
+use SecondStay\Dispute\Dispute;
+use SecondStay\Dispute\DisputeRepository;
+use SecondStay\Dispute\DisputeService;
 use SecondStay\Document\DocumentKind;
 use SecondStay\Incident\IncidentRepository;
 use SecondStay\Legal\LegalService;
@@ -102,6 +105,9 @@ final class AdminBookingController extends AdminController
             'consents' => $this->container->get(LegalService::class)->acceptanceFor($booking),
             'tax_context' => $this->container->get(TouristTaxCalculator::class)->explain($booking),
             'police_enabled' => $this->container->get(PoliceRecordService::class)->isEnabled(),
+            'disputes' => $this->container->get(DisputeRepository::class)->forBooking($booking->id),
+            'dispute_kinds' => Dispute::KINDS,
+            'deposit_held_cents' => $this->container->get(DisputeService::class)->depositHeldCents($booking),
         ]);
     }
 

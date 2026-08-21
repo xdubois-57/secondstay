@@ -63,6 +63,25 @@ final class DocumentRepository
      * L'empreinte évite qu'une pièce jointe reçue deux fois — réponse citée,
      * renvoi manuel — apparaisse deux fois dans les documents du séjour.
      */
+    /**
+     * Un enregistrement référence-t-il encore ce contenu ?
+     *
+     * Le fichier est nommé par son empreinte : il peut être partagé par
+     * plusieurs séjours. Interroger un seul séjour ne suffit donc pas à
+     * décider qu'il est orphelin.
+     */
+    public function existsWithHash(string $sha256): bool
+    {
+        if ($sha256 === '') {
+            return false;
+        }
+
+        return (int) $this->database->fetchValue(
+            'SELECT COUNT(*) FROM `document` WHERE `sha256` = :hash',
+            ['hash' => $sha256]
+        ) > 0;
+    }
+
     public function findByHash(?int $bookingId, string $sha256): ?Document
     {
         if ($sha256 === '') {

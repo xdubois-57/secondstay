@@ -187,6 +187,14 @@ final class SettingRegistry
             new SettingDefinition('llm.window_weeks', SettingType::Integer, 5, 'llm', min: 1, max: 26),
             new SettingDefinition('llm.refresh_days', SettingType::Integer, 7, 'llm', min: 1, max: 90),
 
+            // --- Quotas de stockage -------------------------------------------
+            // Zéro signifie « pas de limite » : une installation qui n'a rien
+            // décidé ne doit pas se voir refuser une écriture.
+            new SettingDefinition('quota.media_mb', SettingType::Integer, 0, 'quota', min: 0, max: 1000000),
+            new SettingDefinition('quota.documents_mb', SettingType::Integer, 0, 'quota', min: 0, max: 1000000),
+            new SettingDefinition('quota.backups_mb', SettingType::Integer, 0, 'quota', min: 0, max: 1000000),
+            new SettingDefinition('quota.attachments_mb', SettingType::Integer, 0, 'quota', min: 0, max: 1000000),
+
             // --- Mentions légales -------------------------------------------
             // La version des conditions est figée dans chaque contrat : elle
             // doit donc être une valeur explicite, pas une date implicite.

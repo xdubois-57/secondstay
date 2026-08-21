@@ -40,7 +40,19 @@
                             {% if document.sender %} — {{ document.sender }}{% endif %}
                         </span>
                     </div>
-                    <span class="text-nowrap small text-body-secondary">{{ document.humanSize }}</span>
+                    <div class="text-end">
+                        <span class="d-block text-nowrap small text-body-secondary">{{ document.humanSize }}</span>
+                        {% if is_admin %}
+                            {# Libérer de la place est le remède annoncé quand un
+                               quota est atteint : il faut donc pouvoir supprimer. #}
+                            <form method="post" class="d-inline"
+                                  action="{{ path('admin.documents.delete', {'id': document.id}) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                <button class="btn btn-sm btn-link text-danger p-0" type="submit"
+                                        data-testid="delete-document-{{ document.id }}">{{ t('common.delete') }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
                 </li>
             {% endfor %}
         </ul>

@@ -9,6 +9,7 @@ use SecondStay\Audit\AuditTrail;
 use SecondStay\Content\Season;
 use SecondStay\Core\Exception\ValidationException;
 use SecondStay\Core\Paths;
+use SecondStay\Quota\QuotaService;
 use SecondStay\I18n\Locales;
 use SecondStay\Support\Slugger;
 
@@ -31,6 +32,7 @@ final class MediaService
         private readonly Paths $paths,
         private readonly ImageProcessor $processor = new ImageProcessor(),
         private readonly ?AuditTrail $audit = null,
+        private readonly ?QuotaService $quotas = null,
     ) {
     }
 
@@ -64,6 +66,12 @@ final class MediaService
         $size = (int) ($file['size'] ?? filesize($temporary) ?: 0);
         if ($size > self::MAX_UPLOAD_BYTES) {
             throw new ValidationException(['file' => 'media.error.too_large']);
+        }
+
+        // Le quota est vérifié avant d'écrire : une galerie ne doit pas
+        // remplir le disque au point d'empêcher une sauvegarde.
+        if ($this->quotas !== null && !$this->quotas->allows('media', $size)) {
+            throw new ValidationException(['file' => 'quota.error.media']);
         }
 
         try {

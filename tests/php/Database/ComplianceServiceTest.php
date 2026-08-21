@@ -11,6 +11,7 @@ use SecondStay\Auth\SessionRepository;
 use SecondStay\Auth\TokenRepository;
 use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
+use SecondStay\Availability\AvailabilityBlockRepository;
 use SecondStay\Auth\UserStatus;
 use SecondStay\Booking\Booking;
 use SecondStay\Booking\BookingRepository;
@@ -157,6 +158,7 @@ final class ComplianceServiceTest extends DatabaseTestCase
             new WebhookRepository($this->database),
             new RateLimiter($this->database),
             $this->police,
+            new AvailabilityBlockRepository($this->database),
             new AuditTrail($this->database),
         );
 

@@ -18,6 +18,7 @@ return [
         'stays_to_prepare' => 'Stays to prepare',
         'incidents_open' => 'Open incidents',
         'compliance_to_verify' => 'Compliance to verify',
+        'disputes_open' => 'Open disputes',
         'migrations_pending' => 'Pending migrations',
     ],
     'phase' => [

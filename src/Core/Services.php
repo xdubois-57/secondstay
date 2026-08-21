@@ -91,6 +91,9 @@ use SecondStay\Security\RateLimiter;
 use SecondStay\Settings\SettingRegistry;
 use SecondStay\Settings\SettingsRepository;
 use SecondStay\Calendar\CalendarService;
+use SecondStay\Calendar\ExternalCalendarRepository;
+use SecondStay\Calendar\ExternalCalendarService;
+use SecondStay\Calendar\IcsParser;
 use SecondStay\Calendar\CalendarTokenRepository;
 use SecondStay\Contract\ContractBuilder;
 use SecondStay\Contract\ContractRepository;
@@ -122,7 +125,11 @@ use SecondStay\Payment\WebhookRepository;
 use SecondStay\Settings\SettingsService;
 use SecondStay\Police\PoliceRecordRepository;
 use SecondStay\Police\PoliceRecordService;
+use SecondStay\Dispute\DisputeRepository;
+use SecondStay\Dispute\DisputeService;
 use SecondStay\Privacy\RetentionService;
+use SecondStay\Quota\QuotaService;
+use SecondStay\Reporting\ReportService;
 use SecondStay\Tax\TouristTaxCalculator;
 use SecondStay\Tax\TouristTaxContextRepository;
 use SecondStay\Tax\TouristTaxRuleRepository;
@@ -342,6 +349,7 @@ final class Services
             $c->get(Paths::class),
             $c->get(ImageProcessor::class),
             $c->get(AuditTrail::class),
+            $c->get(QuotaService::class),
         ));
 
         $container->set(SeoBuilder::class, static fn (Container $c): SeoBuilder => new SeoBuilder(
@@ -593,6 +601,7 @@ final class Services
             $c->get(Paths::class),
             $c->get(Logger::class),
             $c->get(AuditTrail::class),
+            $c->get(QuotaService::class),
         ));
 
         $container->set(ContractBuilder::class, static fn (Container $c): ContractBuilder => new ContractBuilder(
@@ -687,6 +696,7 @@ final class Services
             $c->get(Migrator::class),
             $c->get(IncidentRepository::class),
             $c->get(ComplianceService::class),
+            $c->get(DisputeRepository::class),
         ));
 
         // --- Mon séjour et liens invité ------------------------------------
@@ -741,6 +751,48 @@ final class Services
             $c->get(Logger::class),
             $c->get(BookingEventRepository::class),
             $c->get(AuditTrail::class),
+        ));
+
+        // --- Calendriers externes, litiges, reporting, quotas ------------------
+        $container->set(IcsParser::class, static fn (): IcsParser => new IcsParser());
+
+        $container->set(ExternalCalendarRepository::class, static fn (Container $c): ExternalCalendarRepository
+            => new ExternalCalendarRepository($c->get(Database::class)));
+
+        $container->set(ExternalCalendarService::class, static fn (Container $c): ExternalCalendarService
+            => new ExternalCalendarService(
+                $c->get(ExternalCalendarRepository::class),
+                $c->get(AvailabilityBlockRepository::class),
+                $c->get(IcsParser::class),
+                $c->get(HttpFetcher::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            ));
+
+        $container->set(DisputeRepository::class, static fn (Container $c): DisputeRepository
+            => new DisputeRepository($c->get(Database::class)));
+
+        $container->set(DisputeService::class, static fn (Container $c): DisputeService => new DisputeService(
+            $c->get(DisputeRepository::class),
+            $c->get(PaymentRepository::class),
+            $c->get(InspectionRepository::class),
+            $c->get(IncidentRepository::class),
+            $c->get(ContractRepository::class),
+            $c->get(Logger::class),
+            $c->get(BookingEventRepository::class),
+            $c->get(AuditTrail::class),
+        ));
+
+        $container->set(QuotaService::class, static fn (Container $c): QuotaService => new QuotaService(
+            $c->get(Paths::class),
+            $c->get(SettingsService::class),
+        ));
+
+        $container->set(ReportService::class, static fn (Container $c): ReportService => new ReportService(
+            $c->get(Database::class),
+            $c->get(PaymentRepository::class),
+            $c->get(Translator::class),
+            $c->get(Config::class)->string('app.currency', 'EUR'),
         ));
 
         // --- Contenu local généré --------------------------------------------
@@ -838,6 +890,7 @@ final class Services
             $c->get(WebhookRepository::class),
             $c->get(RateLimiter::class),
             $c->get(PoliceRecordService::class),
+            $c->get(AvailabilityBlockRepository::class),
             $c->get(AuditTrail::class),
         ));
 

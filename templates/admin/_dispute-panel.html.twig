@@ -1,0 +1,48 @@
+<div class="card mb-4">
+    <div class="card-header">{{ t('dispute.title') }}</div>
+
+    {% if disputes is not empty %}
+        <ul class="list-group list-group-flush" data-testid="booking-disputes">
+            {% for dispute in disputes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2"
+                    data-dispute-id="{{ dispute.id }}" data-dispute-status="{{ dispute.status.value }}">
+                    <a href="{{ path('admin.disputes.show', {'id': dispute.id}) }}">{{ dispute.summary }}</a>
+                    <span class="badge {{ dispute.status.badgeClass }}">{{ t(dispute.status.labelKey) }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="card-body">
+        {# La caution réellement détenue est rappelée ici : c'est elle qui
+           borne la retenue que l'on peut réclamer. #}
+        <p class="small text-body-secondary" data-testid="dispute-deposit-held">
+            {{ t('dispute.evidence_field.deposit') }} : <strong>{{ deposit_held_cents|money }}</strong>
+        </p>
+        <form method="post" action="{{ path('admin.disputes.open', {'id': booking.id}) }}" class="row g-2 align-items-end">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="dispute_kind">{{ t('dispute.field.kind') }}</label>
+                <select class="form-select" id="dispute_kind" name="kind" data-testid="dispute-kind">
+                    {% for kind in dispute_kinds %}
+                        <option value="{{ kind }}">{{ t('dispute.kind.' ~ kind) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="dispute_claimed">{{ t('dispute.field.claimed') }}</label>
+                <input class="form-control" id="dispute_claimed" name="claimed" type="number" step="0.01" min="0"
+                       value="0" data-testid="dispute-claimed">
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label" for="dispute_summary">{{ t('dispute.field.summary') }}</label>
+                <input class="form-control" id="dispute_summary" name="summary" maxlength="190"
+                       data-testid="dispute-summary">
+            </div>
+            <div class="col-12">
+                <button class="btn btn-outline-danger" type="submit"
+                        data-testid="open-dispute">{{ t('dispute.open_title') }}</button>
+            </div>
+        </form>
+    </div>
+</div>

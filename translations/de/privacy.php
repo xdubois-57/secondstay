@@ -20,5 +20,6 @@ return [
         'guest_links' => 'Abgelaufene Gastlinks',
         'webhooks' => 'Zahlungsbenachrichtigungen',
         'police_records' => 'Meldescheine',
+        'availability_blocks' => 'Vergangene Sperrzeiten',
     ],
 ];

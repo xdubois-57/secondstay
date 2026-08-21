@@ -877,3 +877,78 @@ fait refuser, ce qui prouve que le garde est bien dans le chemin.
 - qu'un séjour annulé, ou hors fenêtre, déclenche une génération ;
 - qu'un rafraîchissement accumule des doublons ;
 - que du contenu soit produit sans fournisseur, ou sans aucune source.
+
+## 31. Itération 14 — clôture de l'exploitation
+
+### 31.1 Couverture du scénario critique
+
+| Scénario critique | Fichier |
+|---|---|
+| 17 — suite transverse de clôture | `tests/e2e/closing.spec.js` |
+| Import ICS, reporting, litiges | `tests/php/Database/OperationsClosingTest.php` |
+| Lecture ICS | `tests/php/Unit/IcsParserTest.php` |
+| Classeur XLSX | `tests/php/Unit/XlsxWriterTest.php` |
+| Périodes et indicateurs | `tests/php/Unit/ReportingTest.php` |
+| Cycle de vie d'un litige | `tests/php/Unit/DisputeTest.php` |
+| Quotas de stockage | `tests/php/Unit/QuotaServiceTest.php` |
+
+### 31.2 Le classeur relu par un lecteur indépendant
+
+`tests/php/Support/XlsxReader.php` complète la série ouverte par `QrDecoder`,
+`PdfReader` et `IcsReader` (§24.3, §25.2, §26.2) : il ouvre l'archive, suit les
+relations du classeur, retrouve l'ordre des feuilles et résout chaque cellule
+par sa référence (`B7`), sans partager une ligne avec `XlsxWriter`. Un
+aller-retour réussi prouve que le fichier est réellement lisible par un
+tableur, et pas seulement qu'il contient les bonnes chaînes.
+
+Le déterminisme est vérifié explicitement : deux écritures des mêmes données
+produisent les mêmes octets.
+
+### 31.3 Ce que le scénario E2E prouve vraiment
+
+`closing.spec.js` ne se contente pas de cliquer sur « Synchroniser » : il
+dépose un vrai flux iCalendar servi par `FixtureHttpFetcher`, l'importe, puis
+**va vérifier sur le calendrier public**, en visiteur anonyme, que les nuits
+concernées sont réellement fermées et que la nuit suivant `DTEND` reste libre.
+Le chemin complet — HTTP, lecture ICS, blocages, disponibilité publique — est
+donc éprouvé, pas seulement l'écran d'administration.
+
+Trois régressions dangereuses y sont interdites explicitement :
+
+- un flux qui répond 503 **ne rouvre pas** les nuits déjà bloquées ;
+- une page HTML servie à la place d'un calendrier n'est pas prise pour un
+  calendrier vide ;
+- supprimer le flux libère ses nuits **et laisse** celles que le propriétaire
+  avait bloquées lui-même.
+
+### 31.4 Ce que les tests interdisent
+
+- qu'un événement importé crée une réservation plutôt qu'une indisponibilité ;
+- qu'une synchronisation efface un blocage saisi par le propriétaire, ou celui
+  d'un autre flux ;
+- qu'une erreur réseau rende disponibles des nuits vendues ailleurs ;
+- qu'un flux pointant vers le réseau interne soit accepté ou consulté ;
+- qu'un fin d'événement antérieur à son début, ou une date impossible, produise
+  un blocage ;
+- qu'une caution ou une taxe de séjour soit comptée comme un revenu ;
+- qu'un séjour annulé apparaisse dans le reporting ;
+- qu'un séjour à cheval sur deux mois soit compté deux fois en entier, ou une
+  seule ;
+- qu'un taux d'occupation soit calculé sans nuit ouverte ;
+- qu'un litige réclame plus que la caution réellement détenue ;
+- qu'un litige se clôture sans explication, ou avec un règlement supérieur à ce
+  qui était réclamé ;
+- qu'un litige rouvert conserve sa date de résolution ;
+- qu'un second litige de même nature écrase le premier ;
+- qu'une écriture dépassant un quota soit acceptée ;
+- qu'un quota non réglé bloque quoi que ce soit ;
+- qu'un fichier encore référencé par un autre document soit effacé.
+
+### 31.5 Rejouabilité sur l'installation partagée
+
+Les deux projets Playwright partagent une seule installation. Ce scénario pose
+donc lui-même son état de départ et le rend : il crée son propre flux (une URL
+par projet), son propre blocage propriétaire, son propre séjour, et remet le
+quota des documents à sa valeur d'origine avant de rendre la main. Le mois
+utilisé — le dernier de l'horizon de réservation — porte des jours distincts de
+ceux des autres scénarios qui l'occupent.
