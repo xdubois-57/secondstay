@@ -5,6 +5,7 @@ const port = Number(process.env.SECONDSTAY_PORT || 8123);
 // party » WebAuthn valide, les clés d'accès seraient refusées par le navigateur.
 const host = process.env.SECONDSTAY_HOST || 'localhost';
 const baseURL = process.env.SECONDSTAY_BASE_URL || `http://${host}:${port}`;
+const collectsCoverage = Boolean(process.env.SECONDSTAY_COVERAGE_DIR);
 
 // Le serveur de test est démarré et arrêté par `global-setup.js` /
 // `global-teardown.js`, pas par l'option `webServer`. Deux raisons :
@@ -35,8 +36,12 @@ export default defineConfig({
         ['html', { outputFolder: 'playwright-report', open: 'never' }]
     ],
     outputDir: 'test-results',
-    timeout: 30000,
-    expect: { timeout: 7500 },
+    // Quand la couverture PHP est collectée, chaque requête est instrumentée
+    // et le serveur répond nettement plus lentement. Les assertions sont les
+    // mêmes : seule la patience change, faute de quoi un scénario juste
+    // échouerait pour une raison qui ne dit rien du produit.
+    timeout: collectsCoverage ? 90000 : 30000,
+    expect: { timeout: collectsCoverage ? 20000 : 7500 },
     use: {
         baseURL,
         trace: 'retain-on-failure',

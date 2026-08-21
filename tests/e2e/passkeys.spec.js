@@ -81,6 +81,12 @@ test.describe('clés d’accès', () => {
         await expect(page.locator('[data-testid="passkeys"]')).toBeVisible();
         await expect(page.locator('[data-testid="no-passkey"]')).toBeVisible();
 
+        // Les modules ES sont différés : cliquer avant qu'ils ne soient
+        // câblés perd le clic, sans erreur visible. Le produit publie
+        // lui-même le signal — on l'attend plutôt que de parier sur la
+        // vitesse du serveur.
+        await page.waitForSelector('html[data-js-ready="true"]');
+
         await page.fill('[data-passkey-label]', 'Téléphone de Paul');
         await page.click('[data-testid="passkey-add"]');
 
@@ -96,6 +102,7 @@ test.describe('clés d’accès', () => {
         // La clé enregistrée au scénario précédent appartenait à un
         // authentificateur détruit : on en enregistre une pour celui-ci.
         await signIn(page);
+        await page.waitForSelector('html[data-js-ready="true"]');
         const before = await page.locator('[data-passkey-id]').count();
         await page.fill('[data-passkey-label]', 'Ordinateur de Paul');
         await page.click('[data-testid="passkey-add"]');
@@ -105,6 +112,7 @@ test.describe('clés d’accès', () => {
         await expect(page).toHaveURL(/\/fr\/?$/);
 
         await page.goto('/fr/login');
+        await page.waitForSelector('html[data-js-ready="true"]');
         const button = page.locator('[data-testid="passkey-signin"]');
         await expect(button).toBeVisible();
 
@@ -118,6 +126,7 @@ test.describe('clés d’accès', () => {
         test.slow();
 
         await signIn(page);
+        await page.waitForSelector('html[data-js-ready="true"]');
 
         const before = await page.locator('[data-passkey-id]').count();
         await page.fill('[data-passkey-label]', 'Clé jetable');

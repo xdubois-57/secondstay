@@ -237,10 +237,33 @@ Jobs suggérés :
 - scan ;
 - Quality Gate bloquante.
 
-La couverture PHP doit venir des deux suites : les tests de base de données
-exercent l'essentiel des dépôts et des services, et ne compter que la suite
-unitaire faisait apparaître comme non couvert du code qui l'est réellement. Le
-scan a donc besoin du service MySQL, comme le travail `database` de la CI.
+La couverture PHP vient des **trois** campagnes :
+
+| Rapport | Ce qu'il couvre |
+|---|---|
+| `build/coverage/clover-unit.xml` | logique pure, formats, règles |
+| `build/coverage/clover-database.xml` | dépôts et services, sur une vraie base |
+| `build/coverage/clover-e2e.xml` | contrôleurs, traversés par Playwright |
+
+N'en compter qu'une faisait apparaître comme non couvert du code qui l'est
+réellement : la mesure décrivait l'outillage, pas le produit. Le scan a donc
+besoin du service MySQL et des navigateurs, comme les travaux `database` et
+`e2e` de la CI.
+
+La couverture E2E est collectée par `scripts/coverage-bootstrap.php`, chargé
+par le routeur du serveur de développement **et seulement** si
+`SECONDSTAY_COVERAGE_DIR` est défini — comme les fournisseurs factices, la
+collecte s'active par variable d'environnement et n'est jamais sélectionnable
+depuis l'interface. Le serveur intégré tourne avec plusieurs processus : chaque
+requête écrit donc son propre fichier, qu'un fichier partagé aurait corrompu.
+`scripts/coverage-merge.php` les fusionne ensuite en un seul Clover. Ces deux
+scripts vivent sous `scripts/`, exclu de l'archive de release : ils ne partent
+jamais en production.
+
+```bash
+SECONDSTAY_COVERAGE_DIR="$PWD/build/coverage/e2e" ./scripts/check.sh --e2e
+php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
+```
 
 La détection de copier-coller exclut `translations/**` et `migrations/**`
 (`sonar.cpd.exclusions`). I18N.md exige que les quatre langues portent
@@ -359,7 +382,24 @@ Le serveur PHP intégré tourne derrière `scripts/router.php`. Ce routeur
 applique la politique de chemins privés de `PublicPathPolicy`, ce qui rend les
 tests de sécurité représentatifs du comportement Apache en production.
 
-### 18.4 Matrice de navigateurs
+### 18.4 Attendre que le JavaScript soit câblé
+
+Les modules ES sont différés : entre l'affichage d'un bouton et l'attachement
+de son écouteur, il s'écoule le temps de charger `app.js` et ses imports. Un
+clic délivré dans cet intervalle est **perdu sans erreur** — le test échoue
+alors sur une conséquence, jamais sur la cause.
+
+Tout scénario qui clique sur un contrôle piloté par JavaScript attend donc le
+signal que le produit publie lui-même :
+
+```js
+await page.waitForSelector('html[data-js-ready="true"]');
+```
+
+Ce n'est pas une précaution théorique : la campagne instrumentée pour la
+couverture, plus lente, a fait apparaître la course sur les clés d'accès.
+
+### 18.5 Matrice de navigateurs
 
 | Projet Playwright | Moteur | Viewport |
 |---|---|---|
@@ -369,7 +409,7 @@ tests de sécurité représentatifs du comportement Apache en production.
 Les parcours « Mon séjour » et « états des lieux » doivent toujours être
 exécutés sur le projet mobile.
 
-### 18.5 Contrôle de l'artefact
+### 18.6 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
 exécution. La CI ajoute une vérification de démarrage réel de l'artefact
