@@ -58,7 +58,12 @@
                                 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                                 <input type="hidden" name="status" value="{{ target.value }}">
                                 <div class="input-group">
-                                    <input class="form-control" name="note" maxlength="255"
+                                    {# Un texte de substitution n'est pas une étiquette : il disparaît
+                                       à la saisie et n'est pas annoncé de façon fiable. #}
+                                    <label class="visually-hidden"
+                                           for="incident_note_{{ target.value }}">{{ t('incident.field.note') }}</label>
+                                    <input class="form-control" id="incident_note_{{ target.value }}"
+                                           name="note" maxlength="255"
                                            placeholder="{{ t('incident.field.note') }}">
                                     <button class="btn btn-outline-primary" type="submit"
                                             data-testid="incident-to-{{ target.value }}">{{ t('incident.action.' ~ target.value) }}</button>

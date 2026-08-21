@@ -14,6 +14,26 @@ jobs:
   sonarcloud:
     name: Analyse SonarCloud
     runs-on: ubuntu-latest
+    # La couverture PHP ne vaut que si les deux suites tournent : les tests de
+    # base de données exercent l'essentiel des dépôts et des services.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,8 +55,11 @@ jobs:
       - run: composer install --no-interaction --no-progress
       - run: npm ci
 
-      - name: Couverture PHP
-        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover.xml --log-junit build/reports/phpunit-junit.xml
+      - name: Couverture PHP — suite unitaire
+        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover-unit.xml --log-junit build/reports/phpunit-junit.xml
+
+      - name: Couverture PHP — suite base de données
+        run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml
 
       - name: Couverture JavaScript
         run: npm run test:coverage

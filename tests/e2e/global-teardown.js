@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -14,6 +15,19 @@ export default async function globalTeardown() {
     // manuellement l'application après une campagne.
     if (process.env.SECONDSTAY_KEEP_INSTALL === '1') {
         return;
+    }
+
+    // La configuration locale disparaît : le serveur qui la lisait n'a plus
+    // rien à servir, et le laisser tourner ne ferait qu'un processus orphelin
+    // pointant vers une installation effacée.
+    try {
+        execFileSync(resolve(root, 'scripts/dev-server.sh'), ['stop'], {
+            cwd: root,
+            stdio: 'inherit',
+            env: process.env
+        });
+    } catch {
+        // Un serveur déjà arrêté n'est pas une erreur de campagne.
     }
 
     const localConfig = resolve(root, 'config/local.php');
