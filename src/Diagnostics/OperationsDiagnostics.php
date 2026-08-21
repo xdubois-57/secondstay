@@ -142,41 +142,40 @@ final class OperationsDiagnostics
      */
     private function checkScheduler(): array
     {
+        // Les deux contrôles sont **toujours** rendus, y compris quand il n'y
+        // a rien à dire. Une ligne qui disparaît de l'écran de diagnostics
+        // n'attire pas l'attention : elle se confond avec un contrôle qui
+        // n'existe pas, et l'on ne cherche pas ce qu'on ne voit pas.
         try {
             $states = $this->tasks->all();
             $lastRun = $this->tasks->lastSuccessfulRun();
         } catch (Throwable) {
-            return [new DiagnosticResult(
-                'scheduler_cron',
-                self::CATEGORY,
-                DiagnosticStatus::Warning,
-                'diagnostics.scheduler.unknown',
-            )];
+            return [
+                $this->schedulerResult('scheduler_cron', DiagnosticStatus::Warning, 'diagnostics.scheduler.unknown'),
+                $this->schedulerResult('scheduler_tasks', DiagnosticStatus::Warning, 'diagnostics.scheduler.unknown'),
+            ];
         }
 
         $now = gmdate('Y-m-d H:i:s');
 
         if ($lastRun === null) {
-            return [new DiagnosticResult(
-                'scheduler_cron',
-                self::CATEGORY,
-                DiagnosticStatus::Warning,
-                'diagnostics.scheduler.never',
-            )];
+            // Installation neuve : la ligne cron n'a pas encore été posée.
+            // Ce n'est pas une panne, et aucune tâche n'est en souffrance —
+            // elles n'ont simplement jamais eu l'occasion de tourner.
+            return [
+                $this->schedulerResult('scheduler_cron', DiagnosticStatus::Warning, 'diagnostics.scheduler.never'),
+                $this->schedulerResult(
+                    'scheduler_tasks',
+                    DiagnosticStatus::NotApplicable,
+                    'diagnostics.scheduler.never'
+                ),
+            ];
         }
 
         // Le cron est considéré comme vivant tant qu'il a servi la tâche la
         // plus fréquente dans sa fenêtre de retard.
         $tolerance = ScheduledTask::BookingHolds->staleAfterMinutes();
         $silence = TaskState::minutesBetween($lastRun, $now);
-
-        $results = [new DiagnosticResult(
-            'scheduler_cron',
-            self::CATEGORY,
-            $silence <= $tolerance ? DiagnosticStatus::Ok : DiagnosticStatus::Error,
-            $silence <= $tolerance ? 'diagnostics.scheduler.running' : 'diagnostics.scheduler.silent',
-            ['detail' => $lastRun],
-        )];
 
         $stale = [];
         $failing = [];
@@ -189,17 +188,31 @@ final class OperationsDiagnostics
             }
         }
 
-        $results[] = new DiagnosticResult(
-            'scheduler_tasks',
-            self::CATEGORY,
-            $failing !== [] ? DiagnosticStatus::Error
-                : ($stale !== [] ? DiagnosticStatus::Warning : DiagnosticStatus::Ok),
-            $failing !== [] ? 'diagnostics.scheduler.failing'
-                : ($stale !== [] ? 'diagnostics.scheduler.late' : 'diagnostics.scheduler.tasks_ok'),
-            ['detail' => implode(', ', $failing !== [] ? $failing : $stale)],
-        );
+        return [
+            $this->schedulerResult(
+                'scheduler_cron',
+                $silence <= $tolerance ? DiagnosticStatus::Ok : DiagnosticStatus::Error,
+                $silence <= $tolerance ? 'diagnostics.scheduler.running' : 'diagnostics.scheduler.silent',
+                $lastRun,
+            ),
+            $this->schedulerResult(
+                'scheduler_tasks',
+                $failing !== [] ? DiagnosticStatus::Error
+                    : ($stale !== [] ? DiagnosticStatus::Warning : DiagnosticStatus::Ok),
+                $failing !== [] ? 'diagnostics.scheduler.failing'
+                    : ($stale !== [] ? 'diagnostics.scheduler.late' : 'diagnostics.scheduler.tasks_ok'),
+                implode(', ', $failing !== [] ? $failing : $stale),
+            ),
+        ];
+    }
 
-        return $results;
+    private function schedulerResult(
+        string $id,
+        DiagnosticStatus $status,
+        string $messageKey,
+        string $detail = '',
+    ): DiagnosticResult {
+        return new DiagnosticResult($id, self::CATEGORY, $status, $messageKey, ['detail' => $detail]);
     }
 
     /**

@@ -150,6 +150,19 @@ final class OperationsDiagnosticsTest extends DatabaseTestCase
         self::assertSame('diagnostics.scheduler.never', $result->messageKey);
     }
 
+    /**
+     * Les deux lignes sont rendues même quand il n'y a rien à dire : une ligne
+     * qui disparaît de l'écran se confond avec un contrôle qui n'existe pas,
+     * et l'on ne cherche pas ce qu'on ne voit pas.
+     */
+    public function testBothSchedulerChecksAreAlwaysRenderedIncludingOnAFreshInstallation(): void
+    {
+        $tasks = $this->find('scheduler_tasks');
+
+        self::assertSame(DiagnosticStatus::NotApplicable, $tasks->status);
+        self::assertSame('diagnostics.scheduler.never', $tasks->messageKey);
+    }
+
     public function testARecentRunReportsTheCronAsAlive(): void
     {
         $this->record(ScheduledTask::BookingHolds, TaskOutcome::ok(), gmdate('Y-m-d H:i:s'));
