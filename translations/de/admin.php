@@ -44,11 +44,6 @@ return [
     ],
     'todo' => [
         'diagnostics_error' => '{count} Diagnose(n) mit Fehler',
-        'pending_migrations' => '{count} ausstehende Migration(en)',
-        'no_backup' => 'Es existiert noch keine Sicherung',
-        'maintenance_active' => 'Der Wartungsmodus ist aktiv',
-        'property_name' => 'Der Name des Objekts fehlt',
-        'update_available' => 'Eine Aktualisierung ist verfügbar',
     ],
     'settings' => [
         'title' => 'Konfiguration',

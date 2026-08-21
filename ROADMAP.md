@@ -647,3 +647,36 @@ Le cron donne lieu à deux contrôles et non un seul : « le cron passe-t-il ? �
 et « une tâche est-elle en souffrance ? ». Les confondre afficherait vert une
 installation dont une tâche échoue en boucle, ou rouge une installation neuve
 dont la ligne cron n'est simplement pas encore posée.
+
+### Tableau « À faire » complet
+
+`SPECIFICATIONS.md §50` énumère huit sujets ; quatre manquaient — contrat,
+sauvegarde, erreur, mise à jour. Ils rejoignent le tableau :
+
+- **contrat** : les séjours confirmés ou en cours, non terminés, dont le
+  contrat n'est pas signé. Le décompte porte sur la table entière et non sur
+  une page, sans quoi une installation active annoncerait toujours « 100 » ;
+- **sauvegarde** : l'absence de toute sauvegarde et le vieillissement de la
+  plus récente, à des gravités différentes — n'en avoir aucune est une bombe à
+  retardement, en avoir une trop ancienne est une perte bornée ;
+- **erreur** : les entrées de gravité au moins « erreur » des dernières
+  vingt-quatre heures, une panne critique comptant parmi elles ;
+- **mise à jour** : lue dans le résultat de la tâche périodique, jamais
+  demandée à GitHub — ce tableau s'affiche sur deux écrans très fréquentés, et
+  le rendre dépendant du réseau le rendrait aussi lent et aussi fragile que lui.
+
+Le tableau de bord tenait en réalité **sa propre liste** en plus de celle du
+service, avec ses propres libellés : « aucune sauvegarde », « mise à jour
+disponible » et « migrations en attente » y étaient recalculées d'une façon qui
+divergeait de l'écran d'exploitation, et la mise à jour y était vérifiée par un
+appel à GitHub **à chaque affichage** — pour alimenter une variable de vue que
+plus aucun gabarit ne lisait. Les deux écrans partagent désormais la liste et
+les identifiants ; le tableau de bord n'ajoute que le nombre de diagnostics en
+erreur, qu'il est seul à connaître puisqu'il calcule déjà ce résumé pour ses
+indicateurs. Le site fermé pour maintenance et le logement sans nom rejoignent
+la liste commune, et se voient donc sur les deux écrans.
+
+Au passage, `LogRepository` remplace le SQL écrit directement dans le
+contrôleur des journaux — deux endroits interrogeant `app_log` auraient dérivé
+l'un de l'autre — et corrige la recherche : un `%` saisi par l'humain n'est plus
+interprété comme un joker SQL.

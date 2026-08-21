@@ -232,7 +232,7 @@ test.describe('conformité et textes légaux', () => {
         test('la conformité restante apparaît dans « À faire »', async ({ page }) => {
             await page.goto('/fr/admin');
 
-            await expect(page.locator('[data-todo="operations.todo.compliance_to_verify"]')).toBeVisible();
+            await expect(page.locator('[data-todo="compliance_to_verify"]')).toBeVisible();
         });
     });
 

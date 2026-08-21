@@ -4,28 +4,46 @@ declare(strict_types=1);
 
 namespace SecondStay\Operations;
 
+use SecondStay\Backup\BackupService;
 use SecondStay\Booking\Booking;
 use SecondStay\Booking\BookingRepository;
 use SecondStay\Booking\BookingStatus;
 use SecondStay\Compliance\ComplianceService;
 use SecondStay\Dispute\DisputeRepository;
 use SecondStay\Database\Migrator;
+use SecondStay\Diagnostics\OperationsDiagnostics;
 use SecondStay\Imap\InboundMailRepository;
 use SecondStay\Incident\IncidentRepository;
+use SecondStay\Logging\LogLevel;
+use SecondStay\Logging\LogRepository;
+use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Payment\PaymentRepository;
+use SecondStay\Scheduler\ScheduledTask;
+use SecondStay\Scheduler\TaskStateRepository;
+use SecondStay\Settings\SettingsService;
+use Throwable;
 
 /**
  * Tableau « À faire » (SPECIFICATIONS.md §50).
  *
  * Il ne liste que ce qui **réclame une décision humaine** : une demande à
- * valider, une échéance dépassée, une caution à restituer, un courrier qu'aucune
- * règle n'a su rattacher, une migration en attente. Un tableau qui listerait
- * tout ce qui existe ne serait plus lu.
+ * valider, une échéance dépassée, une caution à restituer, un contrat qui
+ * n'est pas signé, un courrier qu'aucune règle n'a su rattacher, une
+ * sauvegarde absente, une erreur récente, une mise à jour disponible, une
+ * migration en attente. Un tableau qui listerait tout ce qui existe ne serait
+ * plus lu.
+ *
+ * Aucune entrée ne coûte un appel sortant. Le tableau s'affiche sur deux
+ * écrans très fréquentés : le rendre dépendant du réseau le rendrait aussi
+ * lent et aussi fragile que lui.
  */
 final class TodoService
 {
     /** Horizon des séjours à préparer, en jours. */
     public const HORIZON_DAYS = 14;
+
+    /** Fenêtre des erreurs récentes, en heures. */
+    public const ERROR_WINDOW_HOURS = 24;
 
     public function __construct(
         private readonly BookingRepository $bookings,
@@ -36,6 +54,11 @@ final class TodoService
         private readonly ?IncidentRepository $incidents = null,
         private readonly ?ComplianceService $compliance = null,
         private readonly ?DisputeRepository $disputes = null,
+        private readonly ?BackupService $backups = null,
+        private readonly ?LogRepository $logs = null,
+        private readonly ?TaskStateRepository $tasks = null,
+        private readonly ?MaintenanceMode $maintenance = null,
+        private readonly ?SettingsService $settings = null,
     ) {
     }
 
@@ -96,11 +119,118 @@ final class TodoService
             $items[] = $this->item('disputes_open', 'danger', $openDisputes, 'admin.disputes');
         }
 
+        // Un séjour confirmé sans contrat signé engage les deux parties sans
+        // que rien ne dise sur quoi : c'est une décision à prendre, pas une
+        // formalité (SPECIFICATIONS.md §39 et §50).
+        $pendingContracts = $this->bookings->countPendingContracts($today);
+        if ($pendingContracts > 0) {
+            $items[] = $this->item('contracts_pending', 'warning', $pendingContracts, 'admin.bookings');
+        }
+
+        $backup = $this->backupItem();
+        if ($backup !== null) {
+            $items[] = $backup;
+        }
+
+        $errors = $this->recentErrors();
+        if ($errors > 0) {
+            $items[] = $this->item('errors_recent', 'danger', $errors, 'admin.logs');
+        }
+
+        if ($this->updateAvailable()) {
+            $items[] = $this->item('update_available', 'info', 1, 'admin.updates');
+        }
+
+        // Le site fermé et le logement sans nom sont deux états que rien
+        // d'autre ne rappelle : le premier coûte des réservations chaque
+        // jour, le second se voit sur chaque page publique.
+        if ($this->maintenance?->isActive() === true) {
+            $items[] = $this->item('maintenance_active', 'warning', 0, 'admin.dashboard');
+        }
+
+        if ($this->settings !== null && $this->settings->string('property.name') === '') {
+            $items[] = $this->item('property_name', 'info', 0, 'admin.settings');
+        }
+
         if ($this->migrator !== null && $this->migrator->pending() !== []) {
             $items[] = $this->item('migrations_pending', 'danger', count($this->migrator->pending()), 'admin.diagnostics');
         }
 
         return $items;
+    }
+
+    /**
+     * Absence ou vieillissement des sauvegardes.
+     *
+     * Les deux cas méritent le même endroit mais pas la même gravité :
+     * n'avoir aucune sauvegarde est une bombe à retardement, en avoir une trop
+     * ancienne est une perte de données bornée.
+     *
+     * @return array{code: string, key: string, severity: string, count: int, route: string, params: array<string, string|int>}|null
+     */
+    private function backupItem(): ?array
+    {
+        if ($this->backups === null) {
+            return null;
+        }
+
+        try {
+            $backups = $this->backups->list();
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($backups === []) {
+            return $this->item('backup_missing', 'danger', 0, 'admin.backups');
+        }
+
+        $newest = strtotime($backups[0]['created_at']);
+        $ageDays = $newest === false ? PHP_INT_MAX : intdiv(max(0, time() - $newest), 86400);
+
+        return $ageDays > OperationsDiagnostics::BACKUP_MAX_AGE_DAYS
+            ? $this->item('backup_stale', 'warning', $ageDays, 'admin.backups')
+            : null;
+    }
+
+    /**
+     * Erreurs et pannes critiques des dernières vingt-quatre heures.
+     */
+    private function recentErrors(): int
+    {
+        if ($this->logs === null) {
+            return 0;
+        }
+
+        try {
+            return $this->logs->countAtLeast(
+                LogLevel::Error,
+                gmdate('Y-m-d H:i:s', time() - self::ERROR_WINDOW_HOURS * 3600)
+            );
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * Une mise à jour est-elle disponible ?
+     *
+     * La réponse est lue dans le résultat de la tâche périodique, jamais
+     * demandée à GitHub : construire ce tableau ne doit pas dépendre d'un
+     * appel sortant, sous peine de rendre l'écran d'exploitation aussi lent
+     * et aussi fragile que le réseau.
+     */
+    private function updateAvailable(): bool
+    {
+        if ($this->tasks === null) {
+            return false;
+        }
+
+        try {
+            return $this->tasks->state(ScheduledTask::UpdateCheck)->lastDetail
+                === 'scheduler.detail.update_available';
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**

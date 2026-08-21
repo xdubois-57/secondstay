@@ -23,7 +23,14 @@ use SecondStay\Operations\ChecklistItem;
 use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TaskPhase;
 use SecondStay\Operations\TaskRepository;
+use SecondStay\Backup\BackupService;
+use SecondStay\Logging\LogLevel;
+use SecondStay\Logging\LogRepository;
+use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Operations\TodoService;
+use SecondStay\Scheduler\ScheduledTask;
+use SecondStay\Scheduler\TaskOutcome;
+use SecondStay\Scheduler\TaskStateRepository;
 use SecondStay\Payment\HoldStatus;
 use SecondStay\Payment\PaymentKind;
 use SecondStay\Payment\PaymentRepository;
@@ -375,6 +382,158 @@ final class OperationsServiceTest extends DatabaseTestCase
         $this->bookings->update($booking->id, ['status' => BookingStatus::Cancelled->value]);
 
         self::assertSame([], $this->todo->unpreparedStays());
+    }
+
+    // --- Tableau « À faire » : contrat, sauvegarde, erreurs, mise à jour ---------------
+
+    /**
+     * SPECIFICATIONS.md §50 énumère huit sujets, dont le contrat. Un séjour
+     * confirmé sans contrat signé engage les deux parties sans que rien ne
+     * dise sur quoi : c'est une décision à prendre, pas une formalité.
+     */
+    public function testAConfirmedStayWithoutASignedContractIsListed(): void
+    {
+        $booking = $this->booking('2099-06-01', '2099-06-08');
+        $this->bookings->update($booking->id, ['status' => BookingStatus::Confirmed->value]);
+
+        self::assertContains('contracts_pending', array_column($this->fullTodo()->items(), 'code'));
+    }
+
+    public function testASignedContractLeavesTheBoard(): void
+    {
+        $booking = $this->booking('2099-06-01', '2099-06-08');
+        $this->bookings->update($booking->id, [
+            'status' => BookingStatus::Confirmed->value,
+            'contract_status' => SubStatus::Done->value,
+        ]);
+
+        self::assertNotContains('contracts_pending', array_column($this->fullTodo()->items(), 'code'));
+    }
+
+    /**
+     * Un séjour terminé n'a plus de contrat à signer : le tableau doit
+     * montrer ce qui reste à décider, pas l'archive de ce qui n'a pas été
+     * fait il y a trois ans.
+     */
+    public function testAPastStayIsNotListedAsAPendingContract(): void
+    {
+        $booking = $this->booking('2020-06-01', '2020-06-08');
+        $this->bookings->update($booking->id, ['status' => BookingStatus::Confirmed->value]);
+
+        self::assertNotContains('contracts_pending', array_column($this->fullTodo()->items(), 'code'));
+    }
+
+    public function testTheAbsenceOfAnyBackupIsListedAsUrgent(): void
+    {
+        $items = $this->fullTodo()->items();
+
+        $backup = null;
+        foreach ($items as $item) {
+            if ($item['code'] === 'backup_missing') {
+                $backup = $item;
+            }
+        }
+
+        self::assertNotNull($backup);
+        self::assertSame('danger', $backup['severity']);
+    }
+
+    /**
+     * Une sauvegarde récente retire l'alerte ; une sauvegarde qui date la
+     * remet, avec une gravité moindre — la perte de données est bornée.
+     */
+    public function testABackupAgesOutOfFreshness(): void
+    {
+        $created = $this->backups()->create(false);
+
+        self::assertNotContains('backup_missing', array_column($this->fullTodo()->items(), 'code'));
+        self::assertNotContains('backup_stale', array_column($this->fullTodo()->items(), 'code'));
+
+        touch($created['path'], time() - 30 * 86400);
+
+        $codes = array_column($this->fullTodo()->items(), 'code');
+        self::assertContains('backup_stale', $codes);
+        self::assertNotContains('backup_missing', $codes);
+    }
+
+    public function testRecentErrorsAreListedAndOlderOnesAreNot(): void
+    {
+        $this->logEntry(LogLevel::Error, gmdate('Y-m-d H:i:s', time() - 3600));
+        $this->logEntry(LogLevel::Critical, gmdate('Y-m-d H:i:s', time() - 7200));
+        // Hors fenêtre : une panne d'il y a trois jours n'est plus une
+        // décision à prendre aujourd'hui.
+        $this->logEntry(LogLevel::Error, gmdate('Y-m-d H:i:s', time() - 3 * 86400));
+        // Un avertissement n'est pas une erreur.
+        $this->logEntry(LogLevel::Warning, gmdate('Y-m-d H:i:s', time() - 3600));
+
+        $errors = null;
+        foreach ($this->fullTodo()->items() as $item) {
+            if ($item['code'] === 'errors_recent') {
+                $errors = $item;
+            }
+        }
+
+        self::assertNotNull($errors);
+        self::assertSame(2, $errors['count']);
+    }
+
+    /**
+     * La disponibilité d'une mise à jour est lue dans le résultat de la tâche
+     * périodique : construire ce tableau ne doit jamais dépendre d'un appel
+     * sortant.
+     */
+    public function testAnAvailableUpdateIsReadFromTheScheduledTaskNotFromTheNetwork(): void
+    {
+        $tasks = new TaskStateRepository($this->database);
+        $now = gmdate('Y-m-d H:i:s');
+
+        $tasks->claim(ScheduledTask::UpdateCheck, $now, gmdate('Y-m-d H:i:s', time() - 1));
+        $tasks->release(ScheduledTask::UpdateCheck, $now, TaskOutcome::ok('scheduler.detail.up_to_date'), 1);
+        self::assertNotContains('update_available', array_column($this->fullTodo()->items(), 'code'));
+
+        $tasks->claim(ScheduledTask::UpdateCheck, $now, gmdate('Y-m-d H:i:s', time() - 1));
+        $tasks->release(ScheduledTask::UpdateCheck, $now, TaskOutcome::ok('scheduler.detail.update_available'), 1);
+        self::assertContains('update_available', array_column($this->fullTodo()->items(), 'code'));
+    }
+
+    private function fullTodo(): TodoService
+    {
+        return new TodoService(
+            $this->bookings,
+            $this->payments,
+            new InboundMailRepository($this->database),
+            $this->checklists,
+            null,
+            null,
+            null,
+            null,
+            $this->backups(),
+            new LogRepository($this->database),
+            new TaskStateRepository($this->database),
+        );
+    }
+
+    private function backups(): BackupService
+    {
+        return new BackupService(
+            $this->database,
+            $this->paths,
+            new MaintenanceMode($this->storagePath . '/maintenance.json'),
+            '0.15.0',
+        );
+    }
+
+    private function logEntry(LogLevel $level, string $at): void
+    {
+        $this->database->insert('app_log', [
+            'created_at' => $at,
+            'level' => $level->value,
+            'category' => 'test',
+            'message' => 'entrée de test',
+            'context' => null,
+            'user_id' => null,
+            'correlation_id' => 'test',
+        ]);
     }
 
     // --- Calendriers privés -------------------------------------------------------------

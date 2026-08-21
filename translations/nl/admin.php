@@ -44,11 +44,6 @@ return [
     ],
     'todo' => [
         'diagnostics_error' => '{count} diagnose(s) in fout',
-        'pending_migrations' => '{count} openstaande migratie(s)',
-        'no_backup' => 'Er bestaat nog geen back-up',
-        'maintenance_active' => 'De onderhoudsmodus is actief',
-        'property_name' => 'De naam van de woning is niet ingevuld',
-        'update_available' => 'Er is een update beschikbaar',
     ],
     'settings' => [
         'title' => 'Configuratie',

@@ -62,6 +62,7 @@ use SecondStay\LocalContent\PromptBuilder;
 use SecondStay\Legal\BookingConsentRepository;
 use SecondStay\Legal\LegalDocumentRepository;
 use SecondStay\Legal\LegalService;
+use SecondStay\Logging\LogRepository;
 use SecondStay\Logging\Logger;
 use SecondStay\Media\ImageProcessor;
 use SecondStay\Media\MediaRepository;
@@ -164,6 +165,9 @@ final class Services
 
             return $logger->withDatabase(self::optionalDatabase($c));
         });
+
+        $container->set(LogRepository::class, static fn (Container $c): LogRepository
+            => new LogRepository($c->get(Database::class)));
 
         $container->set(InstallationState::class, static fn (Container $c): InstallationState
             => new InstallationState($c->get(Paths::class)));
@@ -723,6 +727,11 @@ final class Services
             $c->get(IncidentRepository::class),
             $c->get(ComplianceService::class),
             $c->get(DisputeRepository::class),
+            $c->get(BackupService::class),
+            $c->get(LogRepository::class),
+            $c->get(TaskStateRepository::class),
+            $c->get(MaintenanceMode::class),
+            $c->get(SettingsService::class),
         ));
 
         // --- Mon séjour et liens invité ------------------------------------

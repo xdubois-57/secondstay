@@ -12,8 +12,6 @@ use SecondStay\Operations\TodoService;
 use SecondStay\Database\Migrator;
 use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Maintenance\MaintenanceMode;
-use SecondStay\Update\UpdateService;
-use Throwable;
 
 final class AdminDashboardController extends AdminController
 {
@@ -33,50 +31,33 @@ final class AdminDashboardController extends AdminController
 
         $diagnostics = $this->container->get(DiagnosticRunner::class)->summary();
         $migrator = $this->container->get(Migrator::class);
-        $backups = $this->container->get(BackupService::class);
         $maintenance = $this->container->get(MaintenanceMode::class);
 
-        $backupList = $backups->list();
+        $backupList = $this->container->get(BackupService::class)->list();
+
+        // Le tableau « À faire » vient d'un seul service, sur les deux écrans
+        // qui l'affichent (SPECIFICATIONS.md §50). Le tableau de bord n'y
+        // ajoute qu'une entrée : le nombre de diagnostics en erreur, qu'il est
+        // le seul à connaître puisqu'il calcule déjà ce résumé pour ses
+        // indicateurs. Tout le reste — sauvegarde absente, mise à jour
+        // disponible, migration en attente — était autrefois recalculé ici,
+        // avec ses propres libellés et une définition qui divergeait de celle
+        // de l'écran d'exploitation.
         $todo = [];
 
         if ($diagnostics['error'] > 0) {
-            $todo[] = ['key' => 'admin.todo.diagnostics_error', 'count' => $diagnostics['error'], 'route' => 'admin.diagnostics'];
-        }
-        if ($migrator->pending() !== []) {
-            $todo[] = ['key' => 'admin.todo.pending_migrations', 'count' => count($migrator->pending()), 'route' => 'admin.diagnostics'];
-        }
-        if ($backupList === []) {
-            $todo[] = ['key' => 'admin.todo.no_backup', 'count' => 0, 'route' => 'admin.backups'];
-        }
-        if ($maintenance->isActive()) {
-            $todo[] = ['key' => 'admin.todo.maintenance_active', 'count' => 0, 'route' => 'admin.dashboard'];
-        }
-        if ($this->settings()->string('property.name') === '') {
-            $todo[] = ['key' => 'admin.todo.property_name', 'count' => 0, 'route' => 'admin.settings'];
-        }
-
-        $updateState = ['available' => false, 'current' => $this->version(), 'latest' => null];
-        try {
-            $updateState = $this->container->get(UpdateService::class)->check(
-                $this->settings()->string('update.channel') === 'prerelease'
-            );
-        } catch (Throwable) {
-            // Réseau indisponible : le tableau de bord reste utilisable.
-        }
-
-        if ($updateState['available']) {
-            $todo[] = ['key' => 'admin.todo.update_available', 'count' => 0, 'route' => 'admin.updates'];
-        }
-
-        // Les éléments d'exploitation — demandes à valider, échéances
-        // dépassées, cautions à restituer — viennent du même service que la
-        // page d'exploitation : une seule liste, une seule vérité.
-        foreach ($this->container->get(TodoService::class)->items() as $operational) {
             $todo[] = [
-                'key' => $operational['key'],
-                'count' => $operational['count'],
-                'route' => $operational['route'],
+                'code' => 'diagnostics_error',
+                'key' => 'admin.todo.diagnostics_error',
+                'severity' => 'danger',
+                'count' => $diagnostics['error'],
+                'route' => 'admin.diagnostics',
+                'params' => [],
             ];
+        }
+
+        foreach ($this->container->get(TodoService::class)->items() as $operational) {
+            $todo[] = $operational;
         }
 
         return $this->renderAdmin('admin/dashboard.html.twig', [
@@ -89,20 +70,7 @@ final class AdminDashboardController extends AdminController
             'last_backup' => $backupList[0] ?? null,
             'maintenance_active' => $maintenance->isActive(),
             'schema_version' => $migrator->currentVersion(),
-            'update_state' => [
-                'available' => $updateState['available'],
-                'current' => $updateState['current'],
-                'latest' => $updateState['latest']?->version,
-            ],
             'current_user_name' => $user->displayName(),
         ]);
-    }
-
-    private function version(): string
-    {
-        $file = $this->paths()->root('VERSION');
-        $content = is_file($file) ? file_get_contents($file) : false;
-
-        return $content === false ? '0.0.0' : trim($content);
     }
 }

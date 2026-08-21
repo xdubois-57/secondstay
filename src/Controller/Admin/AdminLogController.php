@@ -6,8 +6,8 @@ namespace SecondStay\Controller\Admin;
 
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
-use SecondStay\Database\Database;
 use SecondStay\Logging\LogLevel;
+use SecondStay\Logging\LogRepository;
 
 final class AdminLogController extends AdminController
 {
@@ -24,50 +24,26 @@ final class AdminLogController extends AdminController
     public function index(RequestContext $context, array $params = []): Response
     {
         $this->requireAdministrator();
-        $database = $this->container->get(Database::class);
 
-        $level = (string) ($context->request->query('level') ?? '');
-        $category = (string) ($context->request->query('category') ?? '');
-        $search = (string) ($context->request->query('q') ?? '');
+        $filters = [
+            'level' => (string) ($context->request->query('level') ?? ''),
+            'category' => (string) ($context->request->query('category') ?? ''),
+            'q' => (string) ($context->request->query('q') ?? ''),
+        ];
         $page = max(1, (int) ($context->request->query('page') ?? '1'));
 
-        $conditions = [];
-        $parameters = [];
-
-        if ($level !== '' && LogLevel::tryFrom($level) !== null) {
-            $conditions[] = '`level` = :level';
-            $parameters['level'] = $level;
-        }
-        if ($category !== '') {
-            $conditions[] = '`category` = :category';
-            $parameters['category'] = $category;
-        }
-        if ($search !== '') {
-            $conditions[] = '`message` LIKE :search';
-            $parameters['search'] = '%' . $search . '%';
-        }
-
-        $where = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
-        $total = (int) $database->fetchValue('SELECT COUNT(*) FROM `app_log`' . $where, $parameters);
-        $offset = ($page - 1) * self::PAGE_SIZE;
-
-        $entries = $database->fetchAll(
-            'SELECT * FROM `app_log`' . $where . sprintf(' ORDER BY `id` DESC LIMIT %d OFFSET %d', self::PAGE_SIZE, $offset),
-            $parameters
-        );
-
-        /** @var list<array<string, mixed>> $categories */
-        $categories = $database->fetchAll('SELECT DISTINCT `category` FROM `app_log` ORDER BY `category`');
+        $logs = $this->container->get(LogRepository::class);
+        $result = $logs->page($filters, $page, self::PAGE_SIZE);
 
         return $this->renderAdmin('admin/logs.html.twig', [
             'meta_title' => $this->trans('admin.logs.title'),
-            'entries' => $entries,
+            'entries' => $result['entries'],
             'levels' => array_map(static fn (LogLevel $l): string => $l->value, LogLevel::cases()),
-            'categories' => array_map(static fn (array $row): string => (string) $row['category'], $categories),
-            'filters' => ['level' => $level, 'category' => $category, 'q' => $search],
+            'categories' => $logs->categories(),
+            'filters' => $filters,
             'page' => $page,
-            'pages' => max(1, (int) ceil($total / self::PAGE_SIZE)),
-            'total' => $total,
+            'pages' => max(1, (int) ceil($result['total'] / self::PAGE_SIZE)),
+            'total' => $result['total'],
             'retention_days' => $this->settings()->int('logging.retention_days'),
         ]);
     }

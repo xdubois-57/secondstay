@@ -283,6 +283,30 @@ final class BookingRepository
     }
 
     /**
+     * Séjours à venir dont le contrat n'est pas signé.
+     *
+     * Le décompte porte sur la table entière et non sur une page : un tableau
+     * « À faire » qui compterait sur les cent premières lignes annoncerait
+     * « 100 » à une installation qui en a mille, et « 0 » à celle dont les
+     * séjours concernés sont plus anciens que la page.
+     */
+    public function countPendingContracts(?string $today = null): int
+    {
+        return (int) $this->database->fetchValue(
+            'SELECT COUNT(*) FROM `booking` WHERE `departure` >= :today '
+            . 'AND `status` IN (:confirmed, :in_progress) '
+            . 'AND `contract_status` NOT IN (:done, :not_applicable)',
+            [
+                'today' => $today ?? gmdate('Y-m-d'),
+                'confirmed' => BookingStatus::Confirmed->value,
+                'in_progress' => BookingStatus::InProgress->value,
+                'done' => SubStatus::Done->value,
+                'not_applicable' => SubStatus::NotApplicable->value,
+            ]
+        );
+    }
+
+    /**
      * Séjours dont le départ tombe le jour donné.
      *
      * Symétrique de `startingOn()` : les rappels de départ ne peuvent pas se

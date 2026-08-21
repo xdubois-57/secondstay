@@ -31,8 +31,23 @@ test.describe('cycle de vie administrateur', () => {
         await page.goto('/fr/admin/backups');
         const initialCount = await page.locator('[data-backup-id]').count();
 
+        // SPECIFICATIONS.md §50 — une installation sans aucune sauvegarde le
+        // dit dans le tableau « À faire », là où le propriétaire regarde,
+        // plutôt que de le taire jusqu'au jour où il en aura besoin.
+        if (initialCount === 0) {
+            await page.goto('/fr/admin/operations');
+            await expect(page.locator('[data-todo="backup_missing"]')).toBeVisible();
+            await page.goto('/fr/admin/backups');
+        }
+
         await page.click('[data-testid="create-backup"]');
         await expect(page.locator('[data-backup-id]')).toHaveCount(initialCount + 1);
+
+        // Une fois la sauvegarde faite, l'entrée disparaît : le tableau ne
+        // liste que ce qui réclame encore une décision.
+        await page.goto('/fr/admin/operations');
+        await expect(page.locator('[data-todo="backup_missing"]')).toHaveCount(0);
+        await page.goto('/fr/admin/backups');
 
         // Les sauvegardes sont listées de la plus récente à la plus ancienne.
         const backupId = await page.locator('[data-backup-id]').first().getAttribute('data-backup-id');

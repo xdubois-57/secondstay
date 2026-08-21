@@ -9,6 +9,13 @@ declare(strict_types=1);
 return [
     'title' => 'Betrieb',
     'todo' => [
+        'maintenance_active' => 'Der Wartungsmodus ist aktiv',
+        'property_name' => 'Der Name der Unterkunft fehlt',
+        'contracts_pending' => 'Nicht unterzeichnete Verträge',
+        'backup_missing' => 'Keine Sicherung',
+        'backup_stale' => 'Sicherung zu alt',
+        'errors_recent' => 'Fehler der letzten 24 Std.',
+        'update_available' => 'Aktualisierung verfügbar',
         'title' => 'Zu erledigen',
         'empty' => 'Nichts erfordert Ihre Aufmerksamkeit.',
         'bookings_to_confirm' => 'Zu bestätigende Anfragen',
