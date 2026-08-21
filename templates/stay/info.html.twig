@@ -1,0 +1,33 @@
+{% extends 'layout/base.html.twig' %}
+
+{# Page ouverte depuis un QR physique (SPECIFICATIONS.md §47).
+
+   Elle est volontairement pauvre : un seul bloc, du texte, rien à cliquer.
+   Celui qui la lit est debout devant une machine à laver ou un local à
+   poubelles, souvent avec un réseau médiocre. #}
+
+{% block content %}
+    <section class="py-4">
+        <div class="container" style="max-width: 40rem;"
+             data-testid="stay-info-page"
+             data-block="{{ info.code }}"
+             data-block-locale="{{ info.locale }}">
+
+            {% if info.locale != requested_locale %}
+                {# Le bloc n'existe pas dans la langue demandée : le dire
+                   plutôt que de laisser croire à une traduction. #}
+                <p class="alert alert-secondary" data-testid="info-fallback">
+                    {{ t('stay.info.fallback') }}
+                </p>
+            {% endif %}
+
+            <h1 class="h3 mb-3">{{ info.title ?: t(info.labelKey) }}</h1>
+
+            {# Le texte du livret est saisi par le propriétaire et échappé :
+               aucun HTML n'y est interprété. #}
+            <p class="mb-4" style="white-space: pre-line;" data-testid="info-body">{{ info.body }}</p>
+
+            <p class="text-body-secondary small mb-0">{{ t('stay.info.notice') }}</p>
+        </div>
+    </section>
+{% endblock %}

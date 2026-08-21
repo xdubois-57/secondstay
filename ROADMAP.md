@@ -680,3 +680,29 @@ Au passage, `LogRepository` remplace le SQL écrit directement dans le
 contrôleur des journaux — deux endroits interrogeant `app_log` auraient dérivé
 l'un de l'autre — et corrige la recherche : un `%` saisi par l'humain n'est plus
 interprété comme un joker SQL.
+
+### QR physiques
+
+`SPECIFICATIONS.md §47` demande des URLs stables vers le Wi-Fi, les déchets,
+les appareils, les règles. Seul le lien invité existait — et il ne peut pas
+tenir ce rôle : il est nominatif et il expire, alors qu'un autocollant collé
+sur la machine à laver, non.
+
+Chaque bloc du livret est donc publiable à `/{langue}/info/{bloc}`, adresse
+dérivée du seul code du bloc. La publication est **refusée par défaut** et se
+décide bloc par bloc et langue par langue : la page est lisible par quiconque
+en connaît l'adresse, et le livret contient des choses qui n'ont rien à faire
+sur le web ouvert — à commencer par un code d'accès recopié dans le texte d'un
+bloc. Un réglage global aurait transformé une commodité en fuite.
+
+Trois conditions doivent tenir pour qu'une adresse réponde — bloc public,
+publié, non vide — et aucun secret n'y transite : les codes d'accès restent
+chiffrés et réservés à « Mon séjour ». Un bloc absent dans la langue demandée
+est servi dans celle du logement, en le disant. L'écran du livret affiche
+l'adresse et le QR à imprimer, la page n'est pas indexée, et le service worker
+la garde hors ligne — c'est un texte que `§44` autorise, et le réseau est
+souvent mauvais dans une buanderie.
+
+Le QR imprimé est relu dans les tests par un décodeur écrit indépendamment de
+l'encodeur : un QR juste à un caractère près est un lien mort découvert un
+dimanche par un voyageur.

@@ -458,6 +458,29 @@ Un lien invité donne accès à ces informations pratiques — et à rien d'autr
 Il expire peu après le départ, se révoque, et s'accompagne d'un QR à imprimer
 pour l'afficher dans le logement.
 
+### QR physiques
+
+Un lien invité expire ; un autocollant collé sur la machine à laver, non.
+Chaque bloc du livret peut donc être publié à une adresse qui ne change jamais,
+faite pour être imprimée en QR et posée là où la question se pose :
+
+```text
+/fr/info/waste       le tri, sur le local à poubelles
+/fr/info/appliances  les appareils, sur la machine à laver
+/fr/info/wifi        le Wi-Fi, dans le salon
+```
+
+Cette publication est **refusée par défaut** et se décide bloc par bloc, dans
+chaque langue, depuis l'écran du livret — qui affiche alors l'adresse et le QR
+à imprimer. C'est délibéré : la page est lisible par quiconque en connaît
+l'adresse, et le livret contient des choses qui n'ont rien à faire sur le web
+ouvert. N'y mettez ni code de boîte à clés, ni mot de passe Wi-Fi : ceux-là
+restent chiffrés et réservés à « Mon séjour ».
+
+Ces pages fonctionnent hors ligne une fois vues, ne sont pas indexées, et
+tombent sur la langue du logement quand le bloc n'existe pas encore dans celle
+du visiteur.
+
 ## États des lieux et incidents
 
 Le propriétaire décrit son logement zone par zone : l'ordre du parcours, les

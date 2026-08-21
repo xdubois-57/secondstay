@@ -69,6 +69,10 @@ return [
         'banner' => 'U bekijkt dit verblijf via een gastenlink.',
     ],
     'admin' => [
+        'public' => 'Openbaar adres voor QR',
+        'public_help' => 'Publiceert dit blok op een vast adres, leesbaar zonder account of verblijf. Zet dit alleen aan voor tekst die iedereen mag lezen: laat er geen toegangscode of wifiwachtwoord in staan.',
+        'public_url' => 'Adres om in de QR-code te zetten',
+        'qr_alt' => 'QR-code van de openbare pagina',
         'title' => 'Welkomstboek',
         'intro' => 'Deze teksten verschijnen in „Mijn verblijf” en achter gastenlinks. Ze zijn offline beschikbaar.',
         'block_title' => 'Titel',
@@ -83,6 +87,10 @@ return [
         'not_set' => 'Niet ingevuld',
         'completeness' => 'Volledigheid',
         'language' => 'Taal',
+    ],
+    'info' => [
+        'fallback' => 'Deze tekst bestaat nog niet in uw taal; hij wordt getoond in de taal van de woning.',
+        'notice' => 'Informatiepagina van de woning. Ze bevat geen reserveringsgegevens.',
     ],
     'error' => [
         'not_active' => 'Dit verblijf is niet meer actief.',

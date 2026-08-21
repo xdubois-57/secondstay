@@ -43,6 +43,7 @@ use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
 use SecondStay\Controller\CalendarController;
 use SecondStay\Controller\StayController;
+use SecondStay\Controller\StayInfoController;
 use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
@@ -166,6 +167,12 @@ final class Routes
         // Lien invité : localisé, sans compte, adresse stable pour un QR collé
         // dans le logement (SPECIFICATIONS.md §47).
         $router->get('/guest/{token:[a-f0-9]{64}}', [StayController::class, 'guest'], 'stay.guest');
+
+        // QR physiques : une adresse par bloc du livret, stable et dérivée du
+        // seul code du bloc — l'autocollant ne se met pas à jour. La page
+        // n'existe que si le propriétaire l'a explicitement rendue publique
+        // (SPECIFICATIONS.md §47).
+        $router->get('/info/{code:[a-z]{4,32}}', [StayInfoController::class, 'show'], 'stay.info');
 
         // --- États des lieux --------------------------------------------------
         // Ces pages écrivent — un constat, une photo : elles ne sont donc
