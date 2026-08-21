@@ -172,7 +172,17 @@ return [
             'help' => 'Internal note explaining the reason for maintenance.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Scheduler call token',
+            'help' => 'Set this only if your host offers cron by URL alone. Left empty, the trigger URL does not exist.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatic backup',
+            'help' => 'Lets the scheduler create a backup every day.',
+        ],
         'retention_count' => [
             'label' => 'Backups kept',
             'help' => 'Number of backups kept before automatic deletion.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'The token must be at least 32 characters long.',
         'required' => 'This setting is required.',
         'unknown' => 'Unknown setting.',
         'integer' => 'Enter a whole number.',
@@ -267,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Stay reminder (days before arrival)',
+            'help' => 'Number of days between sending the reminder and the guest’s arrival.',
+        ],
         'push_enabled' => [
             'label' => 'Push notifications',
             'help' => 'Lets browsers receive notifications. Email is still sent in every case.',

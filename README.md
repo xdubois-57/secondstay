@@ -259,6 +259,33 @@ Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la b
 devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
 rouvrir l'installation d'une instance existante.
 
+### Tâches périodiques
+
+Une dernière étape reste manuelle parce qu'elle vit chez l'hébergeur : la ligne
+cron. Sans elle, le produit fonctionne — mais rien de ce qui doit arriver
+*seul* n'arrive : le courrier n'est pas relevé, les calendriers externes ne se
+synchronisent pas, les rappels ne partent pas, les sauvegardes ne se font pas,
+et les verrous de réservation abandonnés continuent d'occuper des nuits.
+
+```cron
+*/10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php >/dev/null 2>&1
+```
+
+Une seule entrée suffit, à la fréquence que l'hébergement autorise : le produit
+porte lui-même le calendrier de chaque tâche et n'exécute que ce qui est dû. Un
+passage manqué n'a pas de conséquence, deux passages simultanés non plus — la
+tâche est verrouillée le temps de son exécution.
+
+L'écran **Exploitation** liste les tâches, leur dernière exécution, leur
+résultat, et permet de lancer chacune à la demande — c'est ainsi qu'on vérifie
+qu'une tâche fonctionne avant de compter dessus. Une tâche qui accuse trois
+intervalles de retard y est signalée, et les diagnostics le disent aussi.
+
+Sur les hébergements dont le cron n'appelle que des URLs, enregistrez un jeton
+dans **Réglages → Planificateur** et faites appeler
+`https://votre-site/tasks/run?token=…`. Tant qu'aucun jeton n'est enregistré,
+cette adresse répond 404 comme n'importe quel chemin inexistant.
+
 ## Site public
 
 L'installation crée un site complet, traduit dans les quatre langues :

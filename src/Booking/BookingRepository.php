@@ -282,6 +282,32 @@ final class BookingRepository
         );
     }
 
+    /**
+     * Séjours dont le départ tombe le jour donné.
+     *
+     * Symétrique de `startingOn()` : les rappels de départ ne peuvent pas se
+     * déduire de l'arrivée, un séjour d'une nuit et un séjour de trois
+     * semaines partant le même jour n'étant arrivés ni l'un ni l'autre à la
+     * même date.
+     *
+     * @return list<Booking>
+     */
+    public function endingOn(string $day): array
+    {
+        return array_map(
+            static fn (array $row): Booking => Booking::fromRow($row),
+            $this->database->fetchAll(
+                'SELECT * FROM `booking` WHERE `departure` = :day AND `status` IN (:confirmed, :in_progress) '
+                . 'ORDER BY `id`',
+                [
+                    'day' => $day,
+                    'confirmed' => BookingStatus::Confirmed->value,
+                    'in_progress' => BookingStatus::InProgress->value,
+                ]
+            )
+        );
+    }
+
     public function countByStatus(BookingStatus $status): int
     {
         return (int) $this->database->fetchValue(

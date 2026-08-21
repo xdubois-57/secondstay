@@ -76,6 +76,7 @@ return [
             'llm' => 'Local content',
             'pwa' => 'Installable app',
             'quota' => 'Quotas',
+            'scheduler' => 'Scheduler',
             'logging' => 'Logging',
         ],
         'value' => [

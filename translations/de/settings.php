@@ -172,7 +172,17 @@ return [
             'help' => 'Interne Notiz zur Begründung der Wartung.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Token für den Planer',
+            'help' => 'Nur ausfüllen, wenn Ihr Hoster Cron ausschließlich per URL anbietet. Leer existiert die Auslöse-URL nicht.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatische Sicherung',
+            'help' => 'Lässt den Planer täglich eine Sicherung erstellen.',
+        ],
         'retention_count' => [
             'label' => 'Aufbewahrte Sicherungen',
             'help' => 'Anzahl der Sicherungen vor automatischer Löschung.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Das Token muss mindestens 32 Zeichen lang sein.',
         'required' => 'Diese Einstellung ist erforderlich.',
         'unknown' => 'Unbekannte Einstellung.',
         'integer' => 'Geben Sie eine ganze Zahl ein.',
@@ -267,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Erinnerung an den Aufenthalt (Tage vor Anreise)',
+            'help' => 'Anzahl der Tage zwischen dem Versand der Erinnerung und der Anreise des Gastes.',
+        ],
         'push_enabled' => [
             'label' => 'Push-Benachrichtigungen',
             'help' => 'Erlaubt Browsern, Benachrichtigungen zu empfangen. Die E-Mail wird in jedem Fall versendet.',

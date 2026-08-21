@@ -128,6 +128,9 @@ use SecondStay\Police\PoliceRecordService;
 use SecondStay\Dispute\DisputeRepository;
 use SecondStay\Dispute\DisputeService;
 use SecondStay\Privacy\RetentionService;
+use SecondStay\Scheduler\Scheduler;
+use SecondStay\Scheduler\TaskStateRepository;
+use SecondStay\Notification\StayReminderService;
 use SecondStay\Quota\QuotaService;
 use SecondStay\Reporting\ReportService;
 use SecondStay\Tax\TouristTaxCalculator;
@@ -448,6 +451,28 @@ final class Services
                 $c->get(SettingsService::class),
                 $c->get(Logger::class),
             ));
+
+        $container->set(StayReminderService::class, static fn (Container $c): StayReminderService
+            => new StayReminderService(
+                $c->get(BookingRepository::class),
+                $c->get(UserRepository::class),
+                $c->get(NotificationService::class),
+                $c->get(NotificationRepository::class),
+                $c->get(SettingsService::class),
+            ));
+
+        // --- Tâches périodiques (ARCHITECTURE.md §23) ----------------------
+        // Le planificateur n'est qu'un ordonnanceur : il ne connaît aucune
+        // tâche par lui-même, `SchedulerFactory` les lui branche au moment de
+        // l'exécution afin qu'une tâche non due ne construise rien.
+        $container->set(TaskStateRepository::class, static fn (Container $c): TaskStateRepository
+            => new TaskStateRepository($c->get(Database::class)));
+
+        $container->set(Scheduler::class, static fn (Container $c): Scheduler => new Scheduler(
+            $c->get(TaskStateRepository::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
 
         // --- Application installable --------------------------------------
         $container->set(ManifestBuilder::class, static function (Container $c): ManifestBuilder {

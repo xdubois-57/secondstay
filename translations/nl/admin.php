@@ -76,6 +76,7 @@ return [
             'llm' => 'Lokale inhoud',
             'pwa' => 'Installeerbare app',
             'quota' => 'Quota',
+            'scheduler' => 'Planner',
             'logging' => 'Logboek',
         ],
         'value' => [

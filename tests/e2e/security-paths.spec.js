@@ -7,6 +7,9 @@ import { expect, test } from '@playwright/test';
  */
 const privatePaths = [
     '/src/Core/Kernel.php',
+    // Le planificateur est un exécutable : il doit rester hors de portée du
+    // serveur web, même si tout le dépôt se trouve sous le document root.
+    '/src/Scheduler/cron.php',
     '/src/',
     '/config/app.php',
     '/config/local.php',
@@ -70,6 +73,19 @@ test.describe('protection du document root', () => {
         ]) {
             const response = await request.get(asset);
             expect(response.status(), asset).toBe(200);
+        }
+    });
+
+    /**
+     * ARCHITECTURE.md §23 — le déclenchement HTTP du planificateur n'existe
+     * que si le propriétaire a enregistré un jeton. Tant qu'il n'y en a pas,
+     * l'URL ne doit pas se distinguer d'un chemin inventé : ni 200, ni 401,
+     * ni 403 — rien qui signale qu'il y a là quelque chose à forcer.
+     */
+    test('le planificateur n’est pas déclenchable sans jeton', async ({ request }) => {
+        for (const path of ['/tasks/run', '/tasks/run?token=', '/tasks/run?token=devine']) {
+            const response = await request.get(path, { maxRedirects: 0 });
+            expect(response.status(), path).toBe(404);
         }
     });
 

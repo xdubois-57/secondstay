@@ -20,6 +20,7 @@ test.describe('SEO multilingue', () => {
         expect(body).toContain('Disallow: /admin');
         expect(body).toContain('Disallow: /login');
         expect(body).toContain('Disallow: /install');
+        expect(body).toContain('Disallow: /tasks/');
     });
 
     test('la page d’accueil publie des données structurées', async ({ page }) => {

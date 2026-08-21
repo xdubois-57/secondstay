@@ -172,7 +172,17 @@ return [
             'help' => 'Interne notitie met de reden voor het onderhoud.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Token voor de planner',
+            'help' => 'Vul dit alleen in als uw hostingprovider cron enkel via een URL aanbiedt. Leeg bestaat de start-URL niet.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatische back-up',
+            'help' => 'Laat de planner elke dag een back-up maken.',
+        ],
         'retention_count' => [
             'label' => 'Bewaarde back-ups',
             'help' => 'Aantal back-ups dat wordt bewaard vóór automatische verwijdering.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Het token moet minstens 32 tekens lang zijn.',
         'required' => 'Deze instelling is verplicht.',
         'unknown' => 'Onbekende instelling.',
         'integer' => 'Voer een geheel getal in.',
@@ -267,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Herinnering verblijf (dagen voor aankomst)',
+            'help' => 'Aantal dagen tussen het versturen van de herinnering en de aankomst van de gast.',
+        ],
         'push_enabled' => [
             'label' => 'Pushmeldingen',
             'help' => 'Laat browsers meldingen ontvangen. E-mail wordt in elk geval verstuurd.',

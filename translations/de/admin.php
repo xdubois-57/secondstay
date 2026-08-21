@@ -76,6 +76,7 @@ return [
             'llm' => 'Lokale Inhalte',
             'pwa' => 'Installierbare App',
             'quota' => 'Kontingente',
+            'scheduler' => 'Planer',
             'logging' => 'Protokollierung',
         ],
         'value' => [

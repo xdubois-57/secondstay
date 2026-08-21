@@ -224,4 +224,67 @@
             </div>
         {% endif %}
     </div>
+
+    {% if tasks is not empty %}
+        <div class="card mt-4">
+            <div class="card-header">{{ t('scheduler.title') }}</div>
+            <div class="card-body">
+                <p class="text-body-secondary mb-0">{{ t('scheduler.intro') }}</p>
+                <p class="small text-body-secondary mb-0 mt-2">
+                    <code>php {{ t('scheduler.command_path') }}</code>
+                </p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle" data-testid="scheduled-tasks">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ t('scheduler.column.task') }}</th>
+                            <th scope="col">{{ t('scheduler.column.last_run') }}</th>
+                            <th scope="col">{{ t('scheduler.column.result') }}</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                            <tr data-task="{{ task.code }}" data-task-status="{{ task.last_status }}">
+                                <th scope="row" class="fw-normal">
+                                    {{ t(task.label_key) }}
+                                    <span class="d-block small text-body-secondary">
+                                        {{ t('scheduler.every', {'minutes': task.interval_minutes}) }}
+                                    </span>
+                                </th>
+                                <td class="text-nowrap">
+                                    {{ task.last_run_at ?: t('scheduler.never') }}
+                                    {% if task.stale %}
+                                        <span class="badge text-bg-warning d-block mt-1"
+                                              data-testid="task-stale-{{ task.code }}">{{ t('scheduler.stale') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge text-bg-{{ task.last_status == 'error' ? 'danger' : (task.last_status == 'ok' ? 'success' : 'secondary') }}"
+                                          data-testid="task-status-{{ task.code }}">
+                                        {{ t('scheduler.status.' ~ task.last_status) }}
+                                    </span>
+                                    {% if task.last_detail is not empty %}
+                                        <span class="d-block small text-body-secondary"
+                                              data-testid="task-detail-{{ task.code }}">
+                                            {{ t(task.last_detail, {'count': task.last_count}) }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ path('admin.tasks.run') }}">
+                                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                                        <input type="hidden" name="task" value="{{ task.code }}">
+                                        <button class="btn btn-sm btn-outline-secondary" type="submit"
+                                                data-testid="run-task-{{ task.code }}">{{ t('scheduler.action.run') }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

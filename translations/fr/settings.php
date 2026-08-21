@@ -172,7 +172,17 @@ return [
             'help' => 'Note interne expliquant la raison de la maintenance.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Jeton d’appel du planificateur',
+            'help' => 'À renseigner uniquement si votre hébergeur ne propose de cron que par URL. Vide, l’URL de déclenchement n’existe pas.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Sauvegarde automatique',
+            'help' => 'Laisse le planificateur créer une sauvegarde chaque jour.',
+        ],
         'retention_count' => [
             'label' => 'Sauvegardes conservées',
             'help' => 'Nombre de sauvegardes gardées avant suppression automatique.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Le jeton doit compter au moins 32 caractères.',
         'required' => 'Ce réglage est obligatoire.',
         'unknown' => 'Réglage inconnu.',
         'integer' => 'Saisissez un nombre entier.',
@@ -267,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Rappel de séjour (jours avant l’arrivée)',
+            'help' => 'Nombre de jours entre l’envoi du rappel et l’arrivée du voyageur.',
+        ],
         'push_enabled' => [
             'label' => 'Notifications push',
             'help' => 'Autorise les navigateurs à recevoir des notifications. L’e-mail reste envoyé dans tous les cas.',

@@ -434,6 +434,51 @@ Jobs courts/idempotents via cron :
 - update check ;
 - diagnostics heartbeat.
 
+### Ce que porte le produit et ce que porte l'hébergeur
+
+L'hébergeur ne porte qu'une chose : une entrée cron, appelée aussi souvent
+qu'il l'autorise.
+
+```cron
+*/10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php
+```
+
+Tout le reste vit dans le produit. Le calendrier de chaque tâche est porté par
+`ScheduledTask`, son état par la table `scheduled_task`, et `Scheduler` décide
+à chaque passage de ce qui est dû. Ce partage n'est pas un détail
+d'installation : mettre le calendrier dans la table cron de l'hébergeur
+obligerait à recopier huit lignes différentes, à les tenir à jour, et rendrait
+le comportement du produit dépendant d'une configuration qu'il ne peut ni lire
+ni vérifier.
+
+Le planificateur ne survit pas d'un appel à l'autre — c'est la conséquence
+directe de l'absence de worker. Trois choix en découlent :
+
+1. **l'état est entièrement en base.** Dernière exécution, résultat, verrou :
+   rien n'est gardé en mémoire, puisqu'il n'y a pas de mémoire ;
+2. **le verrou est un verrou à échéance**, pris par un `UPDATE` conditionnel —
+   seule primitive atomique disponible sans dépendance. Deux passages qui se
+   chevauchent ne relèvent pas la même boîte deux fois, et un processus tué par
+   l'hébergeur ne condamne pas sa tâche : son verrou expire ;
+3. **une tâche qui échoue n'arrête pas les autres.** Une boîte IMAP injoignable
+   ne doit pas empêcher la sauvegarde de la nuit.
+
+Le détail rapporté par une tâche est **toujours une clé de traduction**, jamais
+un message de fournisseur : l'écran d'exploitation parle quatre langues, et un
+message brut peut porter un hôte, un chemin ou un identifiant.
+
+`src/Scheduler/cron.php` vit sous `src/` et non à la racine ou sous `public/` :
+`src/` est refusé par le `.htaccess` **et** par `PublicPathPolicy`, et le
+fichier refuse lui-même de répondre hors CLI. Un planificateur ne doit jamais
+devenir une URL déclenchable par accident.
+
+Une porte HTTP existe malgré tout — `GET /tasks/run?token=…` — parce qu'une
+partie des hébergements mutualisés ne propose de cron que par URL, et qu'une
+installation sans tâches périodiques est une installation qui se dégrade sans
+que personne le voie. Elle est fermée par défaut : sans jeton enregistré, elle
+répond 404 comme un chemin inexistant, ne se signale pas, et le jeton présenté
+est comparé en temps constant après limitation de débit.
+
 ## 24. Backups
 
 Pure PHP.

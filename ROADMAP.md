@@ -590,3 +590,41 @@ E2E : suite transverse complète.
   public en visiteur anonyme, reporting, export, litige complet, quota atteint
   puis relevé), tests PHP `OperationsClosingTest`, `IcsParserTest`,
   `XlsxWriterTest`, `ReportingTest`, `DisputeTest`, `QuotaServiceTest`.
+
+## Consolidation — audit de fin de feuille de route
+
+Une fois les quatorze itérations livrées, la relecture des spécifications
+contre le code a fait apparaître des exigences énoncées mais jamais servies.
+Elles sont traitées ici, dans l'ordre où leur absence se voit.
+
+### Planificateur de tâches périodiques
+
+`ARCHITECTURE.md §23` décrit depuis le début des travaux courts et idempotents
+lancés par cron, et `SPECIFICATIONS.md §18` demande un diagnostic « cron ». Ni
+l'un ni l'autre n'existait : la relève IMAP, l'import ICS, la génération de
+contenu local et la purge n'étaient joignables que par un clic dans
+l'administration, les sauvegardes n'étaient jamais automatiques, les rappels de
+séjour — pourtant traduits dans les quatre langues — ne partaient jamais, et
+`releaseExpiredHolds()` n'était appelé par personne : un panier abandonné
+gardait ses nuits indéfiniment.
+
+Livré :
+
+- `ScheduledTask`, `Scheduler`, `TaskState` et `TaskStateRepository` : le
+  calendrier et l'état vivent dans le produit, l'hébergeur ne porte qu'une
+  ligne cron ;
+- verrou à échéance pris par `UPDATE` conditionnel : deux passages qui se
+  chevauchent ne relèvent pas deux fois la même boîte, un processus tué
+  n'immobilise pas sa tâche ;
+- isolement des échecs : une boîte injoignable n'empêche pas la sauvegarde ;
+- huit tâches branchées — verrous expirés, IMAP, ICS, contenu local, rappels,
+  purge, sauvegarde, contrôle de mise à jour ;
+- `StayReminderService` : rappel avant l'arrivée, arrivée et départ, une fois
+  chacun, sans rattrapage rétroactif ;
+- `src/Scheduler/cron.php`, hors de portée du serveur web par trois mécanismes
+  indépendants, et porte HTTP `GET /tasks/run?token=…` fermée par défaut pour
+  les hébergements sans cron en ligne de commande ;
+- écran d'exploitation listant l'état de chaque tâche, exécution à la demande,
+  retard signalé ;
+- tests `SchedulerStateTest`, `SchedulerTest`, `StayReminderServiceTest`, et
+  E2E dans `operations.spec.js` et `security-paths.spec.js`.

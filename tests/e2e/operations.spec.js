@@ -142,6 +142,31 @@ test.describe('exploitation', () => {
             await expect(page.locator('[data-testid="todo-list"] [data-todo="bookings_to_confirm"]')).toBeVisible();
         });
 
+        /**
+         * ARCHITECTURE.md §23 — le planificateur est le seul endroit du
+         * produit où l'on découvre qu'une chose *n'est pas* arrivée. L'écran
+         * doit donc dire l'état de chaque tâche, et permettre d'en lancer une
+         * pour vérifier qu'elle marche avant de compter dessus.
+         */
+        test('les tâches périodiques sont listées et déclenchables', async ({ page }) => {
+            await page.goto('/fr/admin/operations');
+
+            const table = page.locator('[data-testid="scheduled-tasks"]');
+            await expect(table).toBeVisible();
+            await expect(table.locator('tr[data-task]')).toHaveCount(8);
+
+            // Avant tout passage du cron, rien n'a tourné — et rien n'est
+            // pour autant présenté comme en retard.
+            await expect(page.locator('[data-testid="task-status-backup"]')).toHaveText(/jamais/i);
+            await expect(page.locator('[data-testid="task-stale-backup"]')).toHaveCount(0);
+
+            await page.click('[data-testid="run-task-booking_holds"]');
+            await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
+
+            await expect(page.locator('tr[data-task="booking_holds"]')).toHaveAttribute('data-task-status', 'ok');
+            await expect(page.locator('[data-testid="task-detail-booking_holds"]')).not.toBeEmpty();
+        });
+
         test('un lien de calendrier d’administration est délivré', async ({ page }) => {
             await page.goto('/fr/admin/operations');
             await page.selectOption('#scope', 'admin');

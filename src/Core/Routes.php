@@ -46,6 +46,7 @@ use SecondStay\Controller\StayController;
 use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
+use SecondStay\Controller\SchedulerController;
 use SecondStay\Controller\QuoteController;
 use SecondStay\Controller\SeoController;
 use SecondStay\Controller\WebhookController;
@@ -224,6 +225,11 @@ final class Routes
         // de l'état chez le fournisseur, donc exemptée de CSRF (Kernel).
         $router->post('/webhook/payment', [WebhookController::class, 'payment'], 'payment.webhook', false);
 
+        // Déclenchement HTTP du planificateur, pour les hébergements dont le
+        // cron n'appelle que des URLs. Fermé tant qu'aucun jeton n'est
+        // enregistré : sans jeton, la route répond 404 (SchedulerController).
+        $router->get('/tasks/run', [SchedulerController::class, 'run'], 'scheduler.run', false);
+
         // --- Devis en direct ------------------------------------------------
         $router->get('/api/quote', [QuoteController::class, 'quote'], 'api.quote', false);
 
@@ -321,6 +327,11 @@ final class Routes
             '/admin/bookings/{id:\d+}/task',
             [AdminOperationsController::class, 'toggleTask'],
             'admin.operations.task'
+        );
+        $router->post(
+            '/admin/tasks/run',
+            [AdminOperationsController::class, 'runTask'],
+            'admin.tasks.run'
         );
         $router->post(
             '/admin/calendars',

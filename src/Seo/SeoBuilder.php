@@ -165,6 +165,9 @@ final class SeoBuilder
             'Disallow: /login',
             'Disallow: /install',
             'Disallow: /api/',
+            // Le planificateur n'a rien à indexer, et une URL déclenchable
+            // n'a rien à faire dans un index public même fermée par jeton.
+            'Disallow: /tasks/',
             'Allow: /',
         ];
 

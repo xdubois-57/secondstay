@@ -42,6 +42,26 @@ final class NotificationRepository
     }
 
     /**
+     * Un envoi a-t-il déjà eu lieu pour cet événement et cette référence ?
+     *
+     * Les tâches périodiques repassent tous les jours sur les mêmes séjours :
+     * sans cette question, un rappel de séjour partirait chaque nuit jusqu'à
+     * l'arrivée. Un envoi ignoré compte comme traité — le voyageur a désactivé
+     * le canal, ce n'est pas une raison de réessayer indéfiniment.
+     */
+    public function hasBeenSent(NotificationEvent $event, string $reference): bool
+    {
+        if ($reference === '') {
+            return false;
+        }
+
+        return $this->database->fetchOne(
+            'SELECT `id` FROM `notification` WHERE `event` = :event AND `reference` = :reference LIMIT 1',
+            ['event' => $event->value, 'reference' => mb_substr($reference, 0, 190)]
+        ) !== null;
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function recent(int $limit = 100): array
