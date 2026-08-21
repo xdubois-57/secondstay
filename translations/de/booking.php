@@ -161,6 +161,7 @@ return [
         'incident_reported' => 'Vorfall gemeldet',
     ],
     'admin' => [
+        'all' => 'Alle',
         'reference' => 'Referenz',
         'title' => 'Buchungen',
         'none' => 'Keine Buchung.',
