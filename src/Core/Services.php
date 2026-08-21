@@ -36,6 +36,7 @@ use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Diagnostics\MailDnsChecker;
 use SecondStay\Diagnostics\MailboxDiagnostics;
 use SecondStay\Diagnostics\NotificationDiagnostics;
+use SecondStay\Diagnostics\OperationsDiagnostics;
 use SecondStay\Compliance\ComplianceRepository;
 use SecondStay\Compliance\ComplianceService;
 use SecondStay\Incident\IncidentRepository;
@@ -1003,6 +1004,17 @@ final class Services
                     $c->get(PushProvider::class),
                     $c->get(PushSubscriptionRepository::class),
                     $probe,
+                ));
+
+                // Paiement, IA, cron, sauvegarde et mise à jour : tous ces
+                // contrôles se lisent localement, sans un seul appel sortant.
+                $runner->register(new OperationsDiagnostics(
+                    $settings,
+                    $c->get(PaymentProvider::class),
+                    $c->get(LlmProvider::class),
+                    $c->get(TaskStateRepository::class),
+                    $c->get(BackupService::class),
+                    $c->get(UpdateService::class),
                 ));
 
                 // Comme la sonde SMTP, la connexion IMAP n'est ouverte que

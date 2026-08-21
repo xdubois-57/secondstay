@@ -90,6 +90,26 @@ test.describe('cycle de vie administrateur', () => {
         await expect(page.locator('[data-diagnostic="crypto_sodium"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-diagnostic="storage_backups"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-testid="schema-version"]')).toHaveText(/^\d{4}$/);
+
+        // SPECIFICATIONS.md §18 — paiement, IA, cron, sauvegarde et mise à
+        // jour figurent au même titre que PHP, la base et le chiffrement.
+        for (const check of [
+            'payment_provider',
+            'llm_provider',
+            'scheduler_cron',
+            'scheduler_tasks',
+            'backup_state',
+            'update_channel'
+        ]) {
+            await expect(page.locator(`[data-diagnostic="${check}"]`)).toBeVisible();
+        }
+
+        // Une installation neuve dont la ligne cron n'est pas encore posée
+        // n'est pas une installation en panne : l'écran doit le dire ainsi.
+        await expect(page.locator('[data-diagnostic="scheduler_cron"]')).toHaveAttribute(
+            'data-status',
+            'warning'
+        );
     });
 
     test('le secret d’un réglage n’est jamais réaffiché', async ({ page }) => {

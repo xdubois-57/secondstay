@@ -36,6 +36,12 @@ return [
         'inactive' => 'Site ouvert',
     ],
     'check' => [
+        'payment_provider' => 'Fournisseur de paiement',
+        'llm_provider' => 'Modèle de contenu local',
+        'scheduler_cron' => 'Tâches périodiques (cron)',
+        'scheduler_tasks' => 'État des tâches',
+        'backup_state' => 'Sauvegardes',
+        'update_channel' => 'Mise à jour',
         'php_version' => 'Version de PHP',
         'app_version' => 'Version de SecondStay',
         'ext_pdo_mysql' => 'Extension PDO MySQL',
@@ -101,5 +107,34 @@ return [
         'reachable' => 'Connexion IMAP réussie',
         'reply_ok' => 'Adresse de réponse configurée',
         'reply_missing' => 'Adresse de réponse non configurée : les réponses seront rattachées au mieux',
+    ],
+    'payment' => [
+        'disabled' => 'Aucun fournisseur : chaque acompte se vérifie à la main',
+        'not_configured' => 'Fournisseur choisi mais clé absente',
+        'configured' => 'Fournisseur configuré',
+    ],
+    'llm' => [
+        'disabled' => 'Contenu local désactivé',
+        'not_configured' => 'Contenu local activé sans clé ni fournisseur',
+        'ready' => 'Génération de contenu local opérationnelle',
+    ],
+    'scheduler' => [
+        'never' => 'Le cron n’a jamais tourné : ajoutez la ligne cron',
+        'running' => 'Le cron tourne',
+        'silent' => 'Le cron ne tourne plus',
+        'unknown' => 'État du cron indéterminable',
+        'tasks_ok' => 'Toutes les tâches sont à jour',
+        'late' => 'Des tâches accusent du retard',
+        'failing' => 'Des tâches échouent',
+    ],
+    'backup' => [
+        'none' => 'Aucune sauvegarde',
+        'fresh' => 'Sauvegardes à jour',
+        'stale' => 'Dernière sauvegarde trop ancienne',
+        'unknown' => 'Sauvegardes illisibles',
+    ],
+    'update' => [
+        'manual' => 'Installation manuelle des mises à jour',
+        'automatic' => 'Installation automatique des mises à jour',
     ],
 ];

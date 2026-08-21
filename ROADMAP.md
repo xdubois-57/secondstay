@@ -628,3 +628,22 @@ Livré :
   retard signalé ;
 - tests `SchedulerStateTest`, `SchedulerTest`, `StayReminderServiceTest`, et
   E2E dans `operations.spec.js` et `security-paths.spec.js`.
+
+### Diagnostics complets
+
+`SPECIFICATIONS.md §18` énumère seize contrôles ; cinq manquaient — Mollie,
+LLM, cron, sauvegarde et mise à jour. Ils sont d'autant plus utiles qu'ils
+portent sur ce dont l'absence ne se voit pas autrement : un fournisseur de
+paiement choisi mais sans clé, une génération de contenu activée sans modèle,
+un cron qui a cessé de passer, une sauvegarde qui date de trois semaines.
+
+`OperationsDiagnostics` les rend tous **sans un seul appel sortant** : ouvrir
+la page ne parle ni au fournisseur de paiement, ni au modèle, ni à GitHub. Une
+page de diagnostics qui interroge le monde extérieur devient lente, puis
+inutilisée, puis rouge le jour où le monde extérieur tombe — alors que
+l'installation, elle, va bien.
+
+Le cron donne lieu à deux contrôles et non un seul : « le cron passe-t-il ? »
+et « une tâche est-elle en souffrance ? ». Les confondre afficherait vert une
+installation dont une tâche échoue en boucle, ou rouge une installation neuve
+dont la ligne cron n'est simplement pas encore posée.

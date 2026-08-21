@@ -8,7 +8,7 @@ Fichiers de référence SecondStay :
 - `I18N.md` — 20889 bytes — sha256 `b68234cbc860bfa206b9728267b31daed894b78417d3d639fee19cb393e4ceeb`
 - `README.md` — 32713 bytes — sha256 `f2829ed2af1d9ac5d9351e6069ccc456f1228e18bbee80c654e286625789451d`
 - `RELEASE.md` — 4531 bytes — sha256 `367f9fd6c1c6913145a7e9377cef567ffed7d7417ddced279c5a3980e1f2b018`
-- `ROADMAP.md` — 24805 bytes — sha256 `b919d6ea33b31d43d00055456271da5b64ac9121d6f567e0bdd4245ddde96365`
+- `ROADMAP.md` — 25863 bytes — sha256 `a824bf329b057138f05cf60e15a02394fc3cbbde5b3d406614611d830e74960d`
 - `SECURITY.md` — 40446 bytes — sha256 `498f02bb425110ede0d0860c3aac67efdc1062e7acba72d7b0ef04bd80e1239a`
 - `SPECIFICATIONS.md` — 14077 bytes — sha256 `17cc30e636cef434ac556ffa0fdf7b55208c4be54b257ded5194183881103b8a`
 - `TESTING.md` — 42803 bytes — sha256 `e11521bc798df1cd145444def4c794e793e8b7a3fbbe9d6cdd9fd3722a0b5778`
