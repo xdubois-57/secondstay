@@ -232,9 +232,23 @@ Jobs suggérés :
 
 ### `sonarcloud`
 
-- récupère coverage PHP + JS ;
+- récupère la couverture PHP des **deux** suites — unitaire et base de données
+  — et la couverture JS ;
 - scan ;
 - Quality Gate bloquante.
+
+La couverture PHP doit venir des deux suites : les tests de base de données
+exercent l'essentiel des dépôts et des services, et ne compter que la suite
+unitaire faisait apparaître comme non couvert du code qui l'est réellement. Le
+scan a donc besoin du service MySQL, comme le travail `database` de la CI.
+
+La détection de copier-coller exclut `translations/**` et `migrations/**`
+(`sonar.cpd.exclusions`). I18N.md exige que les quatre langues portent
+exactement les mêmes clés, et `TranslationCatalogueTest` fait échouer la
+construction sinon : mesurer la duplication de ces fichiers reviendrait à
+mesurer une exigence, et la seule façon d'y répondre serait de casser la règle
+qu'ils servent. L'exclusion porte sur la **portée de la mesure**, jamais sur la
+règle, qui reste appliquée au code PHP, au JavaScript et aux gabarits.
 
 ### `codeql`
 
@@ -327,10 +341,23 @@ configurée : la base de production ne doit jamais être touchée.
 
 ### 18.3 Serveur utilisé par Playwright
 
-Playwright démarre `./scripts/dev-server.sh start`, qui lance le serveur PHP
-intégré derrière `scripts/router.php`. Ce routeur applique la politique de
-chemins privés de `PublicPathPolicy`, ce qui rend les tests de sécurité
-représentatifs du comportement Apache en production.
+Le serveur est démarré par `tests/e2e/global-setup.js` et arrêté par
+`tests/e2e/global-teardown.js`, **pas** par l'option `webServer` de Playwright.
+Deux raisons :
+
+1. `dev-server.sh` détache le serveur puis rend la main, alors que `webServer`
+   attend un processus qui reste au premier plan. En local, l'option
+   `reuseExistingServer` masquait le problème ; en intégration continue, où il
+   n'y a aucun serveur à réutiliser, la campagne échouait sur « Process from
+   config.webServer exited early » ;
+2. le serveur doit tourner avec les fournisseurs factices — courriel, push,
+   paiement, IMAP, modèle de langage, fixtures HTTP —, et c'est la préparation
+   globale qui les connaît. Deux endroits démarrant le même serveur avec deux
+   environnements différents finissent toujours par diverger.
+
+Le serveur PHP intégré tourne derrière `scripts/router.php`. Ce routeur
+applique la politique de chemins privés de `PublicPathPolicy`, ce qui rend les
+tests de sécurité représentatifs du comportement Apache en production.
 
 ### 18.4 Matrice de navigateurs
 
@@ -345,8 +372,16 @@ exécutés sur le projet mobile.
 ### 18.5 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
-exécution. La CI ajoute une vérification de démarrage réel de l'artefact extrait
-(`/api/version` et une page publique localisée).
+exécution. La CI ajoute une vérification de démarrage réel de l'artefact
+extrait : `/api/version` répond avec la version, et `/de/` conduit à
+l'assistant d'installation **en allemand**.
+
+C'est bien l'assistant qui est attendu, et non une page publique : une archive
+fraîchement déployée n'est pas installée. Exiger une page d'accueil localisée
+revenait à exiger un état que le ZIP ne peut pas avoir — la vérification
+échouait donc à chaque exécution. L'assistant prouve à la fois que
+l'application démarre et que les catalogues de traduction voyagent dans
+l'archive.
 
 ## 19. Organisation E2E (itération 1)
 

@@ -48,12 +48,15 @@ export function highlightedDays(selection) {
     }
 
     const days = [];
-    const cursor = new Date(selection.arrival + 'T00:00:00Z');
-    const end = new Date(selection.departure + 'T00:00:00Z');
+    const start = Date.parse(selection.arrival + 'T00:00:00Z');
+    const end = Date.parse(selection.departure + 'T00:00:00Z');
 
-    while (cursor <= end) {
-        days.push(cursor.toISOString().slice(0, 10));
-        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    // Tout est en UTC : un jour vaut exactement 86 400 000 ms, sans heure
+    // d'été qui décalerait le pas. La variable de boucle avance donc
+    // explicitement, plutôt qu'une date mutée en place dont on ne voit pas
+    // qu'elle progresse.
+    for (let time = start; time <= end; time += 86400000) {
+        days.push(new Date(time).toISOString().slice(0, 10));
     }
 
     return days;

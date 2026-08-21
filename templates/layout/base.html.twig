@@ -61,7 +61,7 @@
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle{{ current_path == '/' ~ item.slug ? ' active' : '' }}"
                                        href="{{ path('page.show', {'slug': item.slug}) }}"
-                                       id="menu-{{ item.slug }}" role="button" data-bs-toggle="dropdown"
+                                       id="menu-{{ item.slug }}" data-bs-toggle="dropdown"
                                        aria-expanded="false" data-menu-slug="{{ item.slug }}">{{ item.label }}</a>
                                     <ul class="dropdown-menu" aria-labelledby="menu-{{ item.slug }}">
                                         <li>

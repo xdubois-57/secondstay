@@ -6,6 +6,18 @@ const port = Number(process.env.SECONDSTAY_PORT || 8123);
 const host = process.env.SECONDSTAY_HOST || 'localhost';
 const baseURL = process.env.SECONDSTAY_BASE_URL || `http://${host}:${port}`;
 
+// Le serveur de test est démarré et arrêté par `global-setup.js` /
+// `global-teardown.js`, pas par l'option `webServer`. Deux raisons :
+//
+// 1. `dev-server.sh` détache le serveur puis rend la main ; Playwright, lui,
+//    attend un processus qui reste au premier plan et considère sinon que le
+//    serveur « s'est arrêté trop tôt ». C'est ce qui faisait échouer la
+//    campagne en intégration continue alors qu'elle passait en local, où
+//    `reuseExistingServer` masquait le problème ;
+// 2. le serveur doit tourner avec les fournisseurs factices, et c'est la
+//    préparation globale qui les connaît. Deux endroits qui démarrent le même
+//    serveur avec deux environnements différents finissent toujours par
+//    diverger.
 export default defineConfig({
     testDir: 'tests/e2e',
     globalSetup: './tests/e2e/global-setup.js',
@@ -53,25 +65,5 @@ export default defineConfig({
             use: { ...devices['iPhone 14'] },
             dependencies: ['install']
         }
-    ],
-    webServer: {
-        command: './scripts/dev-server.sh start',
-        // Transports factices : les parcours de compte, de notification et de
-        // paiement sont vérifiables sans SMTP, sans service de push, sans
-        // compte marchand et sans réseau sortant.
-        env: {
-            ...process.env,
-            SECONDSTAY_MAIL_TRANSPORT: 'fake',
-            SECONDSTAY_PUSH_PROVIDER: 'fake',
-            SECONDSTAY_PAYMENT_PROVIDER: 'fake',
-            SECONDSTAY_IMAP_PROVIDER: 'fake',
-            // Modèle factice et pages servies depuis le disque : le pipeline
-            // de contenu local est joué en entier, sans clé et sans réseau.
-            SECONDSTAY_LLM_PROVIDER: 'fake',
-            SECONDSTAY_HTTP_FETCHER: 'fixtures'
-        },
-        url: `${baseURL}/api/health`,
-        reuseExistingServer: !process.env.CI,
-        timeout: 60000
-    }
+    ]
 });

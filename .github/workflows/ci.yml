@@ -215,5 +215,9 @@ jobs:
           SERVER_PID=$!
           sleep 3
           curl -fsS http://127.0.0.1:8321/api/version | tee /dev/stderr | grep -q '"version"'
-          curl -fsS http://127.0.0.1:8321/de/ | grep -q 'Ihr Ferienhaus'
+          # Une archive fraîchement déployée n'est pas installée : elle doit
+          # conduire à l'assistant d'installation, dans la langue demandée.
+          # C'est aussi la preuve que les catalogues de traduction voyagent
+          # bien dans le ZIP.
+          curl -fsSL http://127.0.0.1:8321/de/ | grep -q 'SecondStay installieren'
           kill "$SERVER_PID"
