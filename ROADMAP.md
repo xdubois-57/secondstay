@@ -593,9 +593,17 @@ E2E : suite transverse complète.
 
 ## Consolidation — audit de fin de feuille de route
 
+### Livré (0.16.0)
+
 Une fois les quatorze itérations livrées, la relecture des spécifications
 contre le code a fait apparaître des exigences énoncées mais jamais servies.
 Elles sont traitées ici, dans l'ordre où leur absence se voit.
+
+Ce que ces manques avaient en commun : aucun ne produisait d'erreur. Un
+planificateur absent ne lève rien, il laisse simplement le courrier
+s'accumuler ; une clé de traduction inventée affiche un mot anglais dans les
+quatre langues ; un contraste à 4,45 s'affiche parfaitement. Ce sont des
+défauts que seule une mesure trouve.
 
 ### Planificateur de tâches périodiques
 
