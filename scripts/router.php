@@ -13,6 +13,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// Collecte de couverture pendant la campagne E2E. N'a d'effet que si
+// `SECONDSTAY_COVERAGE_DIR` est défini : en développement comme en
+// production, ce fichier ne fait rien.
+require __DIR__ . '/coverage-bootstrap.php';
+
 use SecondStay\Core\PublicPathPolicy;
 
 $root = dirname(__DIR__);

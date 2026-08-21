@@ -64,6 +64,20 @@ jobs:
       - name: Couverture JavaScript
         run: npm run test:coverage
 
+      # Les contrôleurs ne sont traversés que par la campagne E2E. Sans cette
+      # collecte, ils apparaissent comme non couverts alors que 481 scénarios
+      # les exercent : la mesure décrirait l'outillage, pas le produit.
+      - name: Navigateurs Playwright
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Couverture PHP — campagne E2E
+        run: ./scripts/check.sh --e2e
+        env:
+          SECONDSTAY_COVERAGE_DIR: ${{ github.workspace }}/build/coverage/e2e
+
+      - name: Fusion de la couverture E2E
+        run: php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
