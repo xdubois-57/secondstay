@@ -44,14 +44,14 @@ jobs:
 
       - name: Upload des rapports PHP
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: php-reports
           path: build/
           retention-days: 7
 
       - name: Couverture pour l'analyse
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-unit
           path: build/coverage/clover-unit.xml
@@ -96,7 +96,7 @@ jobs:
         run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml
 
       - name: Couverture pour l'analyse
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-database
           path: build/coverage/clover-database.xml
@@ -120,14 +120,14 @@ jobs:
 
       - name: Upload de la couverture JS
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: js-coverage
           path: coverage/
           retention-days: 7
 
       - name: Couverture pour l'analyse
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-js
           path: coverage/lcov.info
@@ -193,7 +193,7 @@ jobs:
         run: php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
 
       - name: Couverture pour l'analyse
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-e2e-${{ matrix.project }}
           path: build/coverage/clover-e2e.xml
@@ -201,7 +201,7 @@ jobs:
 
       - name: Upload du rapport Playwright
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.project }}
           path: |
