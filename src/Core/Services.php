@@ -114,6 +114,7 @@ use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TaskRepository;
 use SecondStay\Operations\TodoService;
 use SecondStay\Payment\FakePaymentProvider;
+use SecondStay\Stay\BlockIllustrations;
 use SecondStay\Stay\GuestLinkRepository;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
@@ -743,6 +744,9 @@ final class Services
 
         $container->set(GuestLinkRepository::class, static fn (Container $c): GuestLinkRepository
             => new GuestLinkRepository($c->get(Database::class)));
+
+        $container->set(BlockIllustrations::class, static fn (Container $c): BlockIllustrations
+            => new BlockIllustrations($c->get(MediaRepository::class)));
 
         $container->set(StayService::class, static fn (Container $c): StayService => new StayService(
             $c->get(StayInfoRepository::class),

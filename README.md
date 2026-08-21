@@ -466,6 +466,12 @@ Les codes d'accès — Wi-Fi, boîte à clés, alarme — sont chiffrés au repo
 n'apparaissent que **pendant** le séjour : un code publié un mois à l'avance
 ou resté lisible après le départ n'est plus un code d'accès.
 
+Chaque section du livret accepte une illustration choisie dans la médiathèque :
+une photo explique le tri des déchets, l'emplacement du local ou la manœuvre
+d'un appareil mieux qu'un paragraphe, et se lit dans toutes les langues. Seuls
+les médias publiés et non privés sont proposés — le livret est lu par des
+voyageurs, pas par des administrateurs.
+
 Cette page est la seule conçue pour fonctionner **hors ligne** : elle ne porte
 ni montant, ni document, ni action d'écriture. Le voyageur qui cherche le code
 de la boîte à clés devant la porte, sans réseau, le trouve quand même.

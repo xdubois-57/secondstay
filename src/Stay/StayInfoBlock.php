@@ -15,6 +15,13 @@ final class StayInfoBlock
         public readonly string $locale,
         public readonly string $title,
         public readonly string $body,
+        /**
+         * Illustration choisie dans la médiathèque (SPECIFICATIONS.md §55).
+         *
+         * Une image explique le tri des déchets ou la manœuvre d'un appareil
+         * mieux qu'un paragraphe, et se lit dans n'importe quelle langue.
+         */
+        public readonly ?int $mediaId,
         public readonly string $phase,
         public readonly int $position,
         public readonly bool $published,
@@ -42,6 +49,7 @@ final class StayInfoBlock
             (string) $row['locale'],
             (string) $row['title'],
             (string) ($row['body'] ?? ''),
+            isset($row['media_id']) ? (int) $row['media_id'] : null,
             (string) $row['phase'],
             (int) $row['position'],
             (bool) $row['published'],

@@ -7,6 +7,8 @@ namespace SecondStay\Controller\Admin;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\I18n\Locales;
+use SecondStay\Media\MediaItem;
+use SecondStay\Media\MediaRepository;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
 use SecondStay\Support\QrCode;
@@ -49,6 +51,7 @@ final class AdminStayController extends AdminController
                 'phase' => $definition['phase'],
                 'title' => $block === null ? '' : $block->title,
                 'body' => $block === null ? '' : $block->body,
+                'media_id' => $block?->mediaId,
                 'published' => $block === null ? true : $block->published,
                 'public' => $isPublic,
                 'url' => $url,
@@ -73,6 +76,16 @@ final class AdminStayController extends AdminController
             'locales' => Locales::ALL,
             'current_locale' => $locale,
             'fields' => $fields,
+            // Seuls les médias publiés et non privés sont proposés : le
+            // livret est lu par un voyageur qui n'est pas administrateur, et
+            // un média privé y produirait une image cassée.
+            'media' => array_map(
+                static fn (MediaItem $item): array => [
+                    'id' => $item->id,
+                    'label' => $item->caption($locale) !== '' ? $item->caption($locale) : $item->originalFilename,
+                ],
+                $this->container->get(MediaRepository::class)->published()
+            ),
             'secrets' => $secretFields,
             'completeness' => $blocks->completeness(),
         ]);
@@ -96,6 +109,7 @@ final class AdminStayController extends AdminController
                 (string) $context->request->input('body_' . $code, ''),
                 $context->request->input('published_' . $code) !== null,
                 $context->request->input('public_' . $code) !== null,
+                $this->mediaChoice($context, $code),
             );
         }
 
@@ -153,6 +167,25 @@ final class AdminStayController extends AdminController
         $this->flashSuccess('stay.admin.secrets_saved');
 
         return $this->redirectToRoute($context, 'admin.stay');
+    }
+
+    /**
+     * Illustration choisie pour un bloc, si elle existe encore.
+     *
+     * Une valeur inventée ou un média supprimé entre l'affichage du
+     * formulaire et son envoi laisse le bloc sans illustration plutôt que de
+     * casser l'enregistrement : le texte du bloc porte l'essentiel.
+     */
+    private function mediaChoice(RequestContext $context, string $code): ?int
+    {
+        $chosen = (int) ($context->request->input('media_' . $code, '0') ?? '0');
+        if ($chosen <= 0) {
+            return null;
+        }
+
+        $item = $this->container->get(MediaRepository::class)->findById($chosen);
+
+        return $item !== null && $item->isPublished && !$item->isPrivate ? $item->id : null;
     }
 
     /**

@@ -53,6 +53,18 @@
                         <textarea class="form-control" id="body_{{ field.code }}" name="body_{{ field.code }}"
                                   rows="4">{{ field.body }}</textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="media_{{ field.code }}">{{ t('stay.admin.illustration') }}</label>
+                        <select class="form-select" id="media_{{ field.code }}" name="media_{{ field.code }}">
+                            <option value="0">{{ t('stay.admin.no_illustration') }}</option>
+                            {% for item in media %}
+                                <option value="{{ item.id }}"
+                                        {{ field.media_id == item.id ? 'selected' : '' }}>{{ item.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="form-text mb-0">{{ t('stay.admin.illustration_help') }}</p>
+                    </div>
+
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="published_{{ field.code }}" name="published_{{ field.code }}" value="1"

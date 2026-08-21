@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SecondStay\Tests\Database;
 
+use SecondStay\Media\MediaRepository;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
 use SecondStay\Support\QrCode;
@@ -222,6 +223,121 @@ final class StayInfoPageTest extends InstalledAppTestCase
 
         // Et cette adresse est bien celle qui répond.
         self::assertSame(200, $this->request('/fr/info/waste')->status());
+    }
+
+    // --- Illustrations (SPECIFICATIONS.md §45 et §55) --------------------------------
+
+    /**
+     * Une photo explique le tri des déchets mieux qu'un paragraphe, et se lit
+     * dans n'importe quelle langue.
+     */
+    public function testAPublicBlockCarriesItsIllustration(): void
+    {
+        $mediaId = $this->media('poubelles.jpg');
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Le tri se fait au fond du jardin.', true, true, $mediaId);
+
+        $content = $this->request('/fr/info/waste')->content();
+
+        self::assertStringContainsString('data-block-illustration="waste"', $content);
+        self::assertStringContainsString('/media/large/poubelles.jpg', $content);
+        self::assertStringContainsString('alt="Le local à poubelles"', $content);
+    }
+
+    /**
+     * Le livret est lu par un voyageur qui n'est pas administrateur : un média
+     * privé y produirait une image cassée, c'est-à-dire une illustration qui
+     * n'illustre rien.
+     */
+    public function testAPrivateOrUnpublishedMediumIsNeverUsedAsAnIllustration(): void
+    {
+        $private = $this->media('privee.jpg', private: true);
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Texte du bloc.', true, true, $private);
+        self::assertStringNotContainsString('data-block-illustration', $this->request('/fr/info/waste')->content());
+
+        $unpublished = $this->media('brouillon.jpg', published: false);
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Texte du bloc.', true, true, $unpublished);
+        self::assertStringNotContainsString('data-block-illustration', $this->request('/fr/info/waste')->content());
+    }
+
+    /**
+     * Supprimer un média retire l'illustration ; il ne fait pas disparaître le
+     * texte, qui porte l'essentiel de l'information.
+     */
+    public function testDeletingTheMediumLeavesTheBlockIntact(): void
+    {
+        $mediaId = $this->media('poubelles.jpg');
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Le tri se fait au fond du jardin.', true, true, $mediaId);
+
+        $this->database->delete('media', ['id' => $mediaId]);
+
+        $response = $this->request('/fr/info/waste');
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('Le tri se fait au fond du jardin.', $response->content());
+        self::assertStringNotContainsString('data-block-illustration', $response->content());
+        self::assertNull($this->blocks->find('waste', 'fr')?->mediaId);
+    }
+
+    public function testAnIllustrationChosenOutsideThePublishedLibraryIsRefused(): void
+    {
+        $private = $this->media('privee.jpg', private: true);
+
+        $this->loginAs();
+        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'Texte du bloc.',
+            'published_waste' => '1',
+            'media_waste' => (string) $private,
+        ]));
+
+        self::assertNull($this->blocks->find('waste', 'fr')?->mediaId);
+    }
+
+    /**
+     * Un média sans texte alternatif traduit retombe sur sa légende, puis sur
+     * le titre du bloc : une image sans alternative n'existe pas pour qui ne
+     * la voit pas.
+     */
+    public function testTheAlternativeTextFallsBackRatherThanBeingEmpty(): void
+    {
+        $mediaId = $this->media('sans-alt.jpg', altText: '', caption: 'Le fond du jardin');
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Texte du bloc.', true, true, $mediaId);
+
+        self::assertStringContainsString('alt="Le fond du jardin"', $this->request('/fr/info/waste')->content());
+
+        $this->database->delete('media_translation', ['media_id' => $mediaId]);
+
+        self::assertStringContainsString('alt="Déchets"', $this->request('/fr/info/waste')->content());
+    }
+
+    private function media(
+        string $filename,
+        bool $published = true,
+        bool $private = false,
+        string $altText = 'Le local à poubelles',
+        string $caption = 'Poubelles',
+    ): int {
+        $repository = new MediaRepository($this->database);
+
+        $id = $repository->create([
+            'filename' => $filename,
+            'original_filename' => $filename,
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 1024,
+            'width' => 900,
+            'height' => 600,
+            'category' => 'general',
+            'season' => 'all',
+            'position' => 0,
+            'is_published' => $published ? 1 : 0,
+            'is_private' => $private ? 1 : 0,
+            'hash' => str_repeat('a', 64),
+        ]);
+
+        $repository->saveTranslation($id, 'fr', $caption, $altText);
+
+        return $id;
     }
 
     private function settings(): SettingsService

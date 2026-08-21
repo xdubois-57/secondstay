@@ -733,3 +733,29 @@ dans les conditions réelles où l'on cherche le code du portail.
 La correction réutilise les jetons `--bs-*-text-emphasis` de Bootstrap plutôt
 que d'inscrire des couleurs en dur : ils passent le seuil et basculent avec le
 thème sombre, qui est le thème par défaut d'une bonne partie des téléphones.
+
+### Illustrations du livret
+
+`SPECIFICATIONS.md §55` demande une section déchets « configurable et sourcée :
+types, lieux, carte, horaires, **photos**, consignes ». Le livret était
+entièrement textuel : les photos manquaient, partout, depuis l'itération 10.
+
+Chaque bloc accepte désormais une illustration choisie dans la médiathèque
+existante — le traitement d'image, la suppression des métadonnées GPS, les
+variantes et les légendes traduites y sont déjà faits une fois pour toutes.
+Elle s'affiche dans « Mon séjour », derrière un lien invité et sur la page
+ouverte depuis un QR.
+
+Deux règles la tiennent :
+
+- **seuls les médias publiés et non privés** sont proposés. Le livret est lu
+  par un voyageur qui n'est pas administrateur, et par un visiteur anonyme sur
+  les pages QR : un média privé y produirait une image cassée, c'est-à-dire une
+  illustration qui n'illustre rien ;
+- **le texte alternatif retombe** sur la légende traduite, puis sur le titre du
+  bloc. Une image sans alternative textuelle n'existe pas pour qui ne la voit
+  pas — et une photo de local à poubelles s'adresse justement à quelqu'un qui
+  cherche.
+
+Supprimer un média retire l'illustration et laisse le texte : c'est lui qui
+porte l'essentiel de l'information.

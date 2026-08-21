@@ -1534,7 +1534,23 @@ Le QR code du lien est rendu **en ligne** dans la page, pas servi par une
 seconde requête : le jeton n'apparaît ainsi dans aucune URL d'image, et il n'y
 a rien à mettre en cache par erreur (SPECIFICATIONS.md §47).
 
-### 39.6 QR physiques et adresses stables
+### 39.6 Illustrations
+
+Un bloc du livret peut porter une image, choisie dans la médiathèque plutôt que
+téléversée à part : le traitement d'image, la suppression des métadonnées GPS,
+les variantes et les légendes traduites y sont déjà résolus une fois pour
+toutes, et un second chemin de téléversement finirait par diverger du premier.
+
+La résolution se fait dans `BlockIllustrations`, une fois pour l'ensemble des
+blocs affichés : un gabarit ne va pas chercher un média en base. Elle écarte les
+médias privés ou dépubliés — le livret est lu par un voyageur qui n'est pas
+administrateur, et par un visiteur anonyme sur les pages QR, où un média privé
+produirait une image cassée.
+
+Le lien est `ON DELETE SET NULL` : supprimer un média retire l'illustration, il
+ne fait pas disparaître le texte du bloc, qui porte l'essentiel.
+
+### 39.7 QR physiques et adresses stables
 
 Un lien invité est nominatif et expire ; un autocollant collé sur la machine à
 laver, non. Les deux ne peuvent donc pas partager la même adresse.
@@ -1564,7 +1580,7 @@ Un bloc absent dans la langue demandée est servi dans la langue du logement,
 avec une mention qui le dit : une information dans la mauvaise langue reste
 utile, une page absente non.
 
-### 39.7 Hors ligne : ce qui est permis, ce qui ne l'est pas
+### 39.8 Hors ligne : ce qui est permis, ce qui ne l'est pas
 
 La spécification (§44) est explicite, et le service worker l'applique :
 

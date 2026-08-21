@@ -69,6 +69,9 @@ return [
         'banner' => 'Vous consultez ce séjour avec un lien invité.',
     ],
     'admin' => [
+        'illustration' => 'Illustration',
+        'no_illustration' => 'Aucune',
+        'illustration_help' => 'Choisie dans la médiathèque, parmi les médias publiés et non privés. Une photo explique le tri des déchets ou la manœuvre d’un appareil mieux qu’un paragraphe, et se lit dans toutes les langues.',
         'public' => 'Adresse publique pour QR',
         'public_help' => 'Publie ce bloc à une adresse fixe, lisible sans compte ni séjour. N’activez ce réglage que pour un texte qui peut être lu par n’importe qui : n’y laissez ni code d’accès, ni mot de passe Wi-Fi.',
         'public_url' => 'Adresse à encoder dans le QR',

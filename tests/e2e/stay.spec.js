@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
+import { pngBuffer } from './helpers/image.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
@@ -91,7 +92,11 @@ test.describe('mon séjour', () => {
             // Les deux projets Playwright partagent une installation : chacun
             // publie son propre bloc, faute de quoi le second trouverait
             // déjà publié ce que le premier a ouvert (TESTING.md §31.5).
-            const code = suffix === 'mobile' ? 'rules' : 'waste';
+            //
+            // Ni « welcome » ni « waste » : ces deux blocs portent le texte
+            // que le scénario hors ligne relit plus bas, et le réécrire ici
+            // ferait échouer un test qui ne parle pas des QR.
+            const code = suffix === 'mobile' ? 'appliances' : 'safety';
             const text = `Bloc public de la campagne ${suffix}.`;
 
             await page.goto('/fr/admin/stay?locale=fr');
@@ -101,7 +106,27 @@ test.describe('mon séjour', () => {
             const anonymous = await anonymousContext(browser);
             expect((await anonymous.request.get(`/fr/info/${code}`)).status()).toBe(404);
 
+            // SPECIFICATIONS.md §55 — une photo explique le tri des déchets
+            // mieux qu'un paragraphe, et se lit dans toutes les langues. Le
+            // scénario téléverse la sienne pour ne dépendre d'aucun autre.
+            await page.goto('/fr/admin/media');
+            await page.setInputFiles('#media', {
+                name: `livret-${suffix}.png`,
+                mimeType: 'image/png',
+                buffer: pngBuffer(240, 180, [90, 140, 60])
+            });
+            await page.fill('#category', `livret-${suffix}`);
+            await page.selectOption('#upload_season', 'all');
+            await page.click('[data-testid="upload-form"] button[type="submit"]');
+            await expect(page).toHaveURL(/\/fr\/admin\/media\/\d+$/);
+            await page.fill('#caption_fr', `Photo du livret ${suffix}`);
+            await page.fill('#alt_fr', `Photo du livret ${suffix}`);
+            await page.click('[data-testid="save-media"]');
+            await expect(page).toHaveURL(/\/fr\/admin\/media$/);
+
+            await page.goto('/fr/admin/stay?locale=fr');
             await page.fill(`#body_${code}`, text);
+            await page.selectOption(`#media_${code}`, { label: `Photo du livret ${suffix}` });
             await page.check(`#public_${code}`);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
@@ -117,6 +142,9 @@ test.describe('mon séjour', () => {
             await scanned.goto(new URL(printed).pathname);
             await expect(scanned.locator('[data-testid="stay-info-page"]')).toBeVisible();
             await expect(scanned.locator('[data-testid="info-body"]')).toContainText(text);
+            await expect(scanned.locator(`[data-block-illustration="${code}"]`)).toBeVisible();
+            await expect(scanned.locator(`[data-block-illustration="${code}"]`))
+                .toHaveAttribute('alt', `Photo du livret ${suffix}`);
             await expect(scanned.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
             // Le mot de passe Wi-Fi n'y figure jamais.
@@ -124,6 +152,7 @@ test.describe('mon séjour', () => {
 
             // L'état de départ est rendu : dépublier referme l'adresse.
             await page.goto('/fr/admin/stay?locale=fr');
+            await page.selectOption(`#media_${code}`, '0');
             await page.uncheck(`#public_${code}`);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();

@@ -23,6 +23,15 @@
 
             <h1 class="h3 mb-3">{{ info.title ?: t(info.labelKey) }}</h1>
 
+            {% if illustration %}
+                <img class="img-fluid rounded mb-3"
+                     src="{{ base_path }}/media/large/{{ illustration.filename }}"
+                     alt="{{ illustration.alt }}"
+                     width="{{ illustration.width }}"
+                     height="{{ illustration.height }}"
+                     data-block-illustration="{{ info.code }}">
+            {% endif %}
+
             {# Le texte du livret est saisi par le propriétaire et échappé :
                aucun HTML n'y est interprété. #}
             <p class="mb-4" style="white-space: pre-line;" data-testid="info-body">{{ info.body }}</p>

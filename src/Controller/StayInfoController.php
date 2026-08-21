@@ -8,6 +8,7 @@ use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\I18n\Locales;
+use SecondStay\Stay\BlockIllustrations;
 use SecondStay\Stay\StayInfoRepository;
 
 /**
@@ -63,6 +64,8 @@ final class StayInfoController extends AbstractController
             'meta_title' => $block->title !== '' ? $block->title : $this->trans($block->labelKey()),
             // Nommée `info` et non `block` : `block` est un mot de Twig.
             'info' => $block,
+            'illustration' => $this->container->get(BlockIllustrations::class)
+                ->forBlock($block, $block->locale),
             'requested_locale' => $context->locale,
             // Un autocollant dans une cuisine n'a pas vocation à être indexé :
             // la page est publique parce qu'il le faut, pas parce qu'on la

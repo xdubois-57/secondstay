@@ -91,12 +91,14 @@ final class StayInfoRepository
         string $body,
         bool $published = true,
         bool $public = false,
+        ?int $mediaId = null,
     ): void {
         $definition = self::BLOCKS[$code] ?? ['phase' => StayPhase::ANY, 'position' => 900];
 
         $data = [
             'title' => mb_substr($title, 0, 190),
             'body' => $body === '' ? null : $body,
+            'media_id' => $mediaId,
             'phase' => $definition['phase'],
             'position' => $definition['position'],
             'published' => $published ? 1 : 0,

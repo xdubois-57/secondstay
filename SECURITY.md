@@ -1054,6 +1054,12 @@ du séjour. Le contrôleur des pages publiques ne les lit pas, et la campagne le
 vérifie en enregistrant un mot de passe Wi-Fi puis en le cherchant dans les
 réponses.
 
+**Une illustration de bloc ne contourne pas la visibilité des médias.** Seuls
+les médias publiés et non privés sont proposés à la sélection, et la
+résolution les revérifie à l'affichage : un média rendu privé après coup cesse
+d'illustrer le bloc, il ne devient pas lisible parce qu'un bloc le référence.
+Le contrôle d'accès reste celui de l'endpoint média, qui n'a pas changé.
+
 **Le texte d'un bloc n'est jamais interprété.** Il est saisi par le
 propriétaire et rendu échappé, comme dans « Mon séjour ». Les pages portent
 `noindex` et `robots.txt` refuse `/{langue}/info/` : publiques par nécessité,

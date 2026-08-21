@@ -1150,7 +1150,15 @@ ceux des autres scénarios qui l'occupent.
   est relu par un décodeur écrit indépendamment de l'encodeur, et l'adresse
   décodée est ensuite demandée au produit.
 
-### 32.5 Diagnostics
+### 32.5 Illustrations du livret
+
+- qu'un média privé ou dépublié illustre un bloc, à la sélection comme à
+  l'affichage ;
+- qu'une image parte sans texte alternatif : il retombe sur la légende
+  traduite, puis sur le titre du bloc ;
+- que supprimer un média emporte le texte du bloc avec l'illustration.
+
+### 32.6 Diagnostics
 
 - qu'un secret apparaisse dans un résultat ;
 - qu'afficher la page ouvre une connexion sortante ;
