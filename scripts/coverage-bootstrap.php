@@ -19,11 +19,16 @@ declare(strict_types=1);
  *
  * 1. **la liste des sources est mise en cache.** Parcourir `src/` à chaque
  *    requête coûtait trois cents appels système pour un résultat invariant ;
- * 2. **ce qui est écrit est réduit au strict nécessaire** — par fichier, les
+ * 2. **l'analyse statique est mise en cache sur disque.** Pour distinguer une
+ *    ligne exécutable d'une accolade, la bibliothèque analyse le code source
+ *    des fichiers atteints. Sans cache, elle recommençait à chaque requête —
+ *    quelques dizaines de fichiers analysés des milliers de fois, ce qui
+ *    dominait très largement le coût de la mesure ;
+ * 3. **ce qui est écrit est réduit au strict nécessaire** — par fichier, les
  *    seules lignes réellement exécutées. Sérialiser l'objet de couverture
- *    entier écrivait aussi son filtre, ses caches d'analyse statique,
- *    l'identité des tests et les lignes exécutables des trois cents fichiers
- *    du filtre : cinquante fois plus d'octets pour la même information.
+ *    entier écrivait aussi son filtre, ses caches, l'identité des tests et les
+ *    lignes exécutables des trois cents fichiers du filtre : cinquante fois
+ *    plus d'octets pour la même information.
  *
  * Le serveur intégré traite les requêtes dans des processus distincts et sans
  * état partagé : chaque requête écrit donc son propre fichier, qu'un fichier
@@ -60,6 +65,14 @@ use SebastianBergmann\CodeCoverage\Filter;
         // Aucun pilote de couverture : la campagne doit tourner quand même,
         // sans mesure. Un échec ici ne dit rien du produit.
         return;
+    }
+
+    // Le cache d'analyse statique est partagé par toutes les requêtes : le
+    // serveur intégré repart d'un état vierge à chaque fois, seul le disque
+    // survit d'une requête à l'autre.
+    $cache = $directory . '/analyse';
+    if (is_dir($cache) || mkdir($cache, 0o750, true) || is_dir($cache)) {
+        $coverage->cacheStaticAnalysis($cache);
     }
 
     $coverage->start('e2e');
