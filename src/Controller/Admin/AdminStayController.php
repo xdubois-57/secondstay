@@ -9,6 +9,7 @@ use SecondStay\Core\RequestContext;
 use SecondStay\I18n\Locales;
 use SecondStay\Media\MediaItem;
 use SecondStay\Media\MediaRepository;
+use SecondStay\Stay\StayBlockReferences;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
 use SecondStay\Support\QrCode;
@@ -52,6 +53,10 @@ final class AdminStayController extends AdminController
                 'title' => $block === null ? '' : $block->title,
                 'body' => $block === null ? '' : $block->body,
                 'media_id' => $block?->mediaId,
+                'link_url' => $block === null ? '' : $block->references->linkUrl,
+                'link_label' => $block === null ? '' : $block->references->linkLabel,
+                'source_url' => $block === null ? '' : $block->references->sourceUrl,
+                'source_checked_on' => $block === null ? '' : ($block->references->checkedOn ?? ''),
                 'published' => $block === null ? true : $block->published,
                 'public' => $isPublic,
                 'url' => $url,
@@ -101,6 +106,30 @@ final class AdminStayController extends AdminController
         $locale = $this->currentLocale($context);
         $blocks = $this->container->get(StayInfoRepository::class);
 
+        // Les adresses sont validées avant la première écriture : un livret
+        // à moitié enregistré, dont un bloc porte l'ancienne carte et le
+        // suivant la nouvelle, est plus difficile à rattraper qu'un refus.
+        $references = [];
+        foreach (array_keys(StayInfoRepository::BLOCKS) as $code) {
+            $result = StayBlockReferences::fromInput(
+                (string) $context->request->input('link_url_' . $code, ''),
+                (string) $context->request->input('link_label_' . $code, ''),
+                (string) $context->request->input('source_url_' . $code, ''),
+                (string) $context->request->input('source_checked_on_' . $code, ''),
+            );
+
+            if (!$result['ok']) {
+                $this->flashError($result['error']);
+
+                return $this->redirect(
+                    $context->request->basePath
+                    . $this->router()->path('admin.stay', ['locale' => $locale], $context->locale)
+                );
+            }
+
+            $references[$code] = $result['value'];
+        }
+
         foreach (array_keys(StayInfoRepository::BLOCKS) as $code) {
             $blocks->save(
                 $code,
@@ -110,6 +139,7 @@ final class AdminStayController extends AdminController
                 $context->request->input('published_' . $code) !== null,
                 $context->request->input('public_' . $code) !== null,
                 $this->mediaChoice($context, $code),
+                $references[$code],
             );
         }
 

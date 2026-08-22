@@ -1,0 +1,30 @@
+{# Carte et source d'un bloc du livret (SPECIFICATIONS.md §55).
+
+   Le lien est ouvrable — carte, plan d'accès, horaires officiels d'un
+   service — parce qu'« au bout de la rue à gauche » ne se suit pas depuis un
+   téléphone. La source est datée parce que les jours de collecte et les
+   arrêtés municipaux changent, et qu'un livret qui affirme sans dire d'où
+   vient l'information vieillit sans prévenir.
+
+   Ces adresses ne sont jamais récupérées par le serveur : `rel` coupe le lien
+   avec la page d'origine, `target` ouvre à côté pour ne pas perdre le livret. #}
+{% if references.hasLink or references.hasSource %}
+    <div class="small mt-2" data-block-references="{{ code }}">
+        {% if references.hasLink %}
+            <p class="mb-1">
+                <a href="{{ references.linkUrl }}" target="_blank" rel="noopener noreferrer"
+                   data-block-link="{{ code }}">{{ references.linkText }}</a>
+            </p>
+        {% endif %}
+        {% if references.hasSource %}
+            <p class="mb-0 text-body-secondary">
+                {{ t('stay.source.label') }}
+                <a href="{{ references.sourceUrl }}" target="_blank" rel="noopener noreferrer"
+                   data-block-source="{{ code }}">{{ references.sourceHost }}</a>
+                {% if references.checkedOnDate %}
+                    — {{ t('stay.source.checked_on', {'date': references.checkedOnDate|daymonth}) }}
+                {% endif %}
+            </p>
+        {% endif %}
+    </div>
+{% endif %}

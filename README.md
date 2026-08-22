@@ -472,6 +472,15 @@ d'un appareil mieux qu'un paragraphe, et se lit dans toutes les langues. Seuls
 les médias publiés et non privés sont proposés — le livret est lu par des
 voyageurs, pas par des administrateurs.
 
+Chaque section accepte aussi un **lien ouvrable** et une **source datée**. Le
+lien mène là où le texte ne suffit pas — la carte du local à poubelles, un plan
+d'accès, les horaires officiels d'un service : « au bout de la rue à gauche » ne
+se suit pas depuis un téléphone, dans le noir, avec une valise. La source dit
+d'où vient l'information et quand elle a été vérifiée : les jours de collecte et
+les arrêtés municipaux changent, et un livret qui affirme sans le dire vieillit
+sans prévenir. Les deux se règlent par bloc et par langue ; une adresse qui
+n'est pas en `http` ou `https` est refusée.
+
 Cette page est la seule conçue pour fonctionner **hors ligne** : elle ne porte
 ni montant, ni document, ni action d'écriture. Le voyageur qui cherche le code
 de la boîte à clés devant la porte, sans réseau, le trouve quand même.

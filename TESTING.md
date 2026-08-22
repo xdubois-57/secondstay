@@ -1177,7 +1177,23 @@ Un groupe joué en série est **rejoué depuis le début** quand l'un de ses tes
   traduite, puis sur le titre du bloc ;
 - que supprimer un média emporte le texte du bloc avec l'illustration.
 
-### 32.7 Diagnostics
+### 32.7 Carte et source d'un bloc
+
+- qu'une adresse qui n'est pas en `http` ou `https` devienne un lien du livret
+  — `javascript:` dans un `href` serait une injection, pas une carte ;
+- qu'une adresse trop longue soit tronquée en silence : un lien coupé est un
+  lien mort qui a l'air bon, il est refusé ;
+- qu'un refus laisse le livret à moitié enregistré — les huit blocs sont
+  validés avant la première écriture, et un rejet ne change rien ;
+- qu'une source soit affichée sans date de vérification, ou qu'une date sans
+  source laisse croire à une vérification qui n'a pas eu lieu ;
+- qu'un lien externe rende la main à la page d'origine : la carte et la source
+  portent toutes deux `rel="noopener noreferrer"` ;
+- que la carte d'une langue déborde sur une autre : les quatre champs vivent
+  par bloc **et** par langue ;
+- qu'un champ vidé laisse subsister l'ancien lien.
+
+### 32.8 Diagnostics
 
 - qu'un secret apparaisse dans un résultat ;
 - qu'afficher la page ouvre une connexion sortante ;

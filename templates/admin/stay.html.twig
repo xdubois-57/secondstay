@@ -65,6 +65,48 @@
                         <p class="form-text mb-0">{{ t('stay.admin.illustration_help') }}</p>
                     </div>
 
+                    {# Carte et source (SPECIFICATIONS.md §55). Les deux
+                       adresses ne sont jamais récupérées par le serveur :
+                       elles ne deviennent qu'un lien dans le livret. #}
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-7">
+                            <label class="form-label" for="link_url_{{ field.code }}">{{ t('stay.admin.link_url') }}</label>
+                            <input class="form-control" type="url" inputmode="url"
+                                   id="link_url_{{ field.code }}" name="link_url_{{ field.code }}"
+                                   maxlength="500" value="{{ field.link_url }}"
+                                   placeholder="https://">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label class="form-label" for="link_label_{{ field.code }}">{{ t('stay.admin.link_label') }}</label>
+                            <input class="form-control" id="link_label_{{ field.code }}"
+                                   name="link_label_{{ field.code }}" maxlength="120"
+                                   value="{{ field.link_label }}">
+                        </div>
+                        <div class="col-12">
+                            <p class="form-text mb-0">{{ t('stay.admin.link_help') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-7">
+                            <label class="form-label" for="source_url_{{ field.code }}">{{ t('stay.admin.source_url') }}</label>
+                            <input class="form-control" type="url" inputmode="url"
+                                   id="source_url_{{ field.code }}" name="source_url_{{ field.code }}"
+                                   maxlength="500" value="{{ field.source_url }}"
+                                   placeholder="https://">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label class="form-label" for="source_checked_on_{{ field.code }}">{{ t('stay.admin.source_checked_on') }}</label>
+                            <input class="form-control" type="date"
+                                   id="source_checked_on_{{ field.code }}"
+                                   name="source_checked_on_{{ field.code }}"
+                                   value="{{ field.source_checked_on }}">
+                        </div>
+                        <div class="col-12">
+                            <p class="form-text mb-0">{{ t('stay.admin.source_help') }}</p>
+                        </div>
+                    </div>
+
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="published_{{ field.code }}" name="published_{{ field.code }}" value="1"

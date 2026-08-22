@@ -22,6 +22,13 @@ final class StayInfoBlock
          * mieux qu'un paragraphe, et se lit dans n'importe quelle langue.
          */
         public readonly ?int $mediaId,
+        /**
+         * Carte et source du bloc (SPECIFICATIONS.md §55).
+         *
+         * Un lien ouvrable pour aller sur place, et la provenance datée d'une
+         * règle locale qui change.
+         */
+        public readonly StayBlockReferences $references,
         public readonly string $phase,
         public readonly int $position,
         public readonly bool $published,
@@ -50,6 +57,7 @@ final class StayInfoBlock
             (string) $row['title'],
             (string) ($row['body'] ?? ''),
             isset($row['media_id']) ? (int) $row['media_id'] : null,
+            StayBlockReferences::fromRow($row),
             (string) $row['phase'],
             (int) $row['position'],
             (bool) $row['published'],

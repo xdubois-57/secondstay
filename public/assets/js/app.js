@@ -2,6 +2,7 @@
  * SecondStay — point d'entrée client (module ES, aucune étape de build).
  */
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
+import { focusFirstInvalid } from './modules/forms.js';
 import { evaluatePassword, levelClass } from './modules/password.js';
 import { initCalendar } from './modules/calendar.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
@@ -75,6 +76,9 @@ function ready(callback) {
 ready(() => {
     initTheme();
     initPasswordStrength();
+    // Un formulaire renvoyé en erreur place le curseur sur le champ refusé :
+    // sur un téléphone, il est souvent hors de l'écran.
+    focusFirstInvalid(document);
     initGalleryLightbox(document, document);
     initCalendar(document, window);
     initPasskeyRegistration(document, window);

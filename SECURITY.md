@@ -1054,6 +1054,16 @@ du séjour. Le contrôleur des pages publiques ne les lit pas, et la campagne le
 vérifie en enregistrant un mot de passe Wi-Fi puis en le cherchant dans les
 réponses.
 
+**Un lien de bloc reste un lien, jamais une récupération.** La carte et la
+source d'un bloc du livret (§55) sont saisies par le propriétaire, stockées
+telles quelles et **jamais demandées par le serveur** : elles ne deviennent
+qu'un `href` rendu avec `rel="noopener noreferrer"`. Il n'y a donc pas de
+surface SSRF, et `UrlGuard` — qui protège les récupérations sortantes — n'a pas
+à intervenir. En revanche le schéma est contrôlé : seuls `http` et `https` sont
+acceptés, parce que `javascript:` ou `data:` dans un `href` serait une injection
+déguisée en commodité. Une adresse trop longue est refusée plutôt que tronquée :
+une URL coupée est un lien mort qui a l'air bon.
+
 **Une illustration de bloc ne contourne pas la visibilité des médias.** Seuls
 les médias publiés et non privés sont proposés à la sélection, et la
 résolution les revérifie à l'affichage : un média rendu privé après coup cesse

@@ -34,9 +34,11 @@
 
             {# Le texte du livret est saisi par le propriétaire et échappé :
                aucun HTML n'y est interprété. #}
-            <p class="mb-4" style="white-space: pre-line;" data-testid="info-body">{{ info.body }}</p>
+            <p class="mb-2" style="white-space: pre-line;" data-testid="info-body">{{ info.body }}</p>
 
-            <p class="text-body-secondary small mb-0">{{ t('stay.info.notice') }}</p>
+            {% include 'stay/_block-references.html.twig' with {'references': info.references, 'code': info.code} only %}
+
+            <p class="text-body-secondary small mt-4 mb-0">{{ t('stay.info.notice') }}</p>
         </div>
     </section>
 {% endblock %}
