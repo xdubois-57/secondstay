@@ -1162,7 +1162,12 @@ Un groupe joué en série est **rejoué depuis le début** quand l'un de ses tes
   numéro de tentative ;
 - **une page d'arrivée s'attend.** Cliquer sur « se connecter » puis lire
   aussitôt le DOM exécute le script sur la page encore affichée. Sur un petit
-  écran, c'est aussi ce qui déplace une case à cocher sous le doigt.
+  écran, c'est aussi ce qui déplace une case à cocher sous le doigt ;
+- **une écriture se confirme là où elle se produit.** Un scénario qui bascule
+  un interrupteur, enregistre, puis interroge le site public trois lignes plus
+  bas, ne dit pas pourquoi il échoue : il montre un « 200 au lieu de 404 » sans
+  révéler que la case n'avait pas été décochée. L'état de la case et le message
+  de confirmation s'affirment sur place.
 
 ### 32.6 Illustrations du livret
 
