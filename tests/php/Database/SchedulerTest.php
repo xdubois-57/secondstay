@@ -190,12 +190,12 @@ final class SchedulerTest extends DatabaseTestCase
 
     public function testLastSuccessfulRunIgnoresTasksThatNeverRan(): void
     {
-        self::assertNull($this->states->lastSuccessfulRun());
+        self::assertNull($this->states->lastRunAt());
 
         $this->scheduler->register(ScheduledTask::Retention, static fn (): TaskOutcome => TaskOutcome::ok());
         $this->scheduler->runNow(ScheduledTask::Retention);
 
-        self::assertNotNull($this->states->lastSuccessfulRun());
+        self::assertNotNull($this->states->lastRunAt());
     }
 
     /**

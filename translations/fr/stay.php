@@ -69,6 +69,7 @@ return [
         'banner' => 'Vous consultez ce séjour avec un lien invité.',
     ],
     'admin' => [
+        'not_saved' => 'Le livret n’a pas été enregistré : corrigez les champs signalés.',
         'link_url' => 'Lien utile ou carte',
         'link_label' => 'Intitulé du lien',
         'link_help' => 'Une adresse ouvrable : carte du local à poubelles, plan d’accès, horaires officiels d’un service. « Au bout de la rue à gauche » ne se suit pas depuis un téléphone, dans le noir, avec une valise. Laissez vide s’il n’y a rien à ouvrir.',

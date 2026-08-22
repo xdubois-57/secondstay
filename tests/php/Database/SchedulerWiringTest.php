@@ -168,7 +168,7 @@ final class SchedulerWiringTest extends InstalledAppTestCase
 
         $states = new TaskStateRepository($this->database);
 
-        self::assertNotNull($states->lastSuccessfulRun());
+        self::assertNotNull($states->lastRunAt());
         self::assertSame('ok', $states->state(ScheduledTask::Retention)->lastStatus);
     }
 }

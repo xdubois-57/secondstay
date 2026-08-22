@@ -830,3 +830,99 @@ Trois règles les tiennent :
 Les quatre champs vivent par bloc **et par langue**, comme le reste du livret :
 une commune néerlandophone et une commune francophone ne publient pas la même
 page de collecte, et un lien vers la mauvaise est pire qu'aucun lien.
+
+## Revue de code de la relecture
+
+### Livré (0.17.1)
+
+Relecture adverse du code écrit pendant les deux passes précédentes : non pas
+« est-ce que ça marche », mais « qu'est-ce qui casse en silence ». Douze
+défauts, dont trois sérieux — et aucun ne se signalait par une erreur, ce qui
+est exactement pourquoi ils avaient traversé la validation.
+
+### Un rappel perdu par une panne de courrier ne repartait jamais
+
+`hasBeenSent()` comptait une tentative **en échec** comme un envoi. Une panne
+SMTP d'une heure au moment du passage nocturne perdait donc le rappel
+définitivement — et, plus grave, le rendait irrattrapable : relancer la tâche
+une fois le serveur rétabli ne faisait plus rien du tout, puisque le message
+était réputé parti.
+
+Une tentative ratée n'est pas une décision. Seuls comptent désormais l'envoi
+réussi et le canal volontairement désactivé. Le compromis est assumé : un
+courrier effectivement remis mais rapporté en échec — un délai d'attente
+dépassé — sera envoyé deux fois. Recevoir deux fois le rappel de son séjour est
+un désagrément ; ne pas le recevoir du tout est une porte close devant laquelle
+quelqu'un attend.
+
+### Dépublier un bloc dans une langue ne fermait pas son adresse
+
+Le repli de langue s'appliquait dès que la langue demandée ne rendait rien —
+**y compris quand le propriétaire avait explicitement retiré ce bloc-là du web
+ouvert**. Le scénario est concret : il s'aperçoit que son texte allemand
+contient le code de la boîte à clés, décoche « adresse publique » sur
+l'allemand, et `/de/info/access` continue de répondre 200 avec le bloc
+français. Il croit avoir fermé une porte.
+
+Le repli comble désormais une **lacune** — bloc jamais traduit, ou traduit puis
+vidé — et ne défait pas une **décision**. Un bloc renseigné puis retiré répond
+404 dans sa langue. C'est ce qui donne son sens au réglage langue par langue,
+que `SECURITY.md` annonçait sans que le code le tienne.
+
+### Une adresse fautive emportait tout le livret saisi
+
+L'écran du livret porte huit zones de texte. Une faute de frappe dans une
+adresse de carte redirigeait avec un message d'erreur, et la page revenait à
+son état enregistré : toute la saisie perdue, pour une erreur sans rapport avec
+ce qui avait été écrit. Le refus revient maintenant en 422 avec la saisie
+intacte, le champ fautif marqué et le message posé **à côté de ce champ** — une
+erreur affichée au mauvais endroit ne vaut pas mieux qu'une erreur absente. Le
+focus du premier champ invalide (§10), inopérant sur cet écran faute
+d'`is-invalid`, y fonctionne enfin.
+
+### Les autres
+
+- **un rappel partait pour une demande non confirmée.** « Votre séjour commence
+  dans sept jours » engageait le propriétaire à sa place ;
+- **le schéma d'un lien n'était garanti que par le formulaire.** Twig échappe le
+  contenu d'un attribut, pas son schéma : le contrôle est rejoué à l'affichage,
+  de sorte qu'aucun chemin d'écriture futur ne puisse produire un `href`
+  exécutable ;
+- **les illustrations coûtaient seize requêtes** là où le commentaire en
+  promettait une. Un test compte désormais les requêtes réellement servies :
+  deux pour huit blocs, zéro pour un livret sans image ;
+- **`robots.txt` codait les quatre langues en dur**, seul endroit de
+  `SeoBuilder` à ne pas dériver de `Locales::ALL` — une cinquième langue serait
+  devenue indexable sans que rien ne le signale ;
+- **la pastille du courrier non rattaché plafonnait à cinquante**, alors que la
+  règle posée est qu'un compte est un nombre d'éléments à traiter ;
+- **`lastSuccessfulRun()` ne rendait pas la dernière réussite** mais la dernière
+  exécution — le comportement était le bon, le nom mentait ;
+- **`abandon()` n'était appelé de nulle part**, et `Migrator::pending()` était
+  interrogé deux fois par affichage du tableau « À faire ».
+
+### Un cron horaire ne doit pas allumer un voyant rouge
+
+`README.md` promettait la fréquence de cron « que l'hébergement autorise ». Le
+diagnostic, lui, exigeait un passage toutes les trente minutes — trois
+intervalles de `booking_holds`. Sur une bonne partie des hébergements mutualisés,
+qui n'offrent qu'un cron horaire, l'écran de diagnostics affichait donc « cron
+silencieux » la moitié de chaque heure, sur une installation qui fonctionne.
+
+Un écran rouge en permanence est un écran qu'on cesse de lire, ce qui coûte plus
+cher que l'absence de diagnostic. `staleAfterMinutes()` porte désormais un
+plancher de trois heures : au-delà, même un cron horaire a réellement cessé de
+passer. Les tâches lentes gardent leurs trois intervalles. Et la documentation
+dit maintenant ce que le produit attend vraiment — une fois par heure au
+minimum, toutes les dix minutes de préférence — au lieu de promettre une
+tolérance qu'il n'avait pas.
+
+### Le jeton du planificateur, dit franchement
+
+Le commentaire affirmait que le jeton n'était « jamais journalisé ». C'est vrai
+du produit, faux du serveur web de l'hébergeur, qui écrit l'URL complète dans
+son journal d'accès. L'en-tête `X-Scheduler-Token` est donc accepté et préféré ;
+le paramètre d'URL reste admis parce que beaucoup d'hébergements n'offrent qu'un
+champ « adresse à appeler », et que leur fermer la porte reviendrait à les
+priver de sauvegarde et de purge. Le risque résiduel est nommé dans
+`SECURITY.md` plutôt que passé sous silence.

@@ -168,15 +168,18 @@ final class SeoBuilder
             // Le planificateur n'a rien à indexer, et une URL déclenchable
             // n'a rien à faire dans un index public même fermée par jeton.
             'Disallow: /tasks/',
-            // Les pages ouvertes depuis un QR collé dans le logement sont
-            // publiques par nécessité, pas pour être trouvées depuis un
-            // moteur de recherche (SPECIFICATIONS.md §47).
-            'Disallow: /fr/info/',
-            'Disallow: /en/info/',
-            'Disallow: /nl/info/',
-            'Disallow: /de/info/',
-            'Allow: /',
         ];
+
+        // Les pages ouvertes depuis un QR collé dans le logement sont
+        // publiques par nécessité, pas pour être trouvées depuis un moteur de
+        // recherche (SPECIFICATIONS.md §47). La liste est dérivée des langues
+        // réelles : écrite en dur, elle laisserait une cinquième langue
+        // indexable sans que rien ne le signale.
+        foreach (Locales::ALL as $locale) {
+            $lines[] = 'Disallow: /' . $locale . '/info/';
+        }
+
+        $lines[] = 'Allow: /';
 
         $base = $this->baseUrl();
         if ($base !== '') {

@@ -8,6 +8,7 @@ use SecondStay\Auth\User;
 use SecondStay\Auth\UserRepository;
 use SecondStay\Booking\Booking;
 use SecondStay\Booking\BookingRepository;
+use SecondStay\Booking\BookingStatus;
 use SecondStay\Settings\SettingsService;
 
 /**
@@ -25,7 +26,11 @@ use SecondStay\Settings\SettingsService;
  *   les heures ne doit pas produire une rafale ;
  * - **rien n'est envoyé rétroactivement.** Une installation dont le cron n'a
  *   pas tourné pendant une semaine ne doit pas réveiller sept jours de rappels
- *   d'un coup : seuls le jour même et la date de rappel exacte comptent.
+ *   d'un coup : seuls le jour même et la date de rappel exacte comptent ;
+ * - **seul un séjour réellement engagé est annoncé.** Une demande encore en
+ *   attente de réponse n'est pas un séjour : écrire « votre séjour commence
+ *   dans sept jours » à quelqu'un dont la demande n'a pas été acceptée
+ *   l'engage à la place du propriétaire.
  */
 final class StayReminderService
 {
@@ -65,6 +70,10 @@ final class StayReminderService
         $skipped = 0;
 
         foreach ($this->bookings->arrivingBetween($reminderDay, $reminderDay) as $booking) {
+            if (!self::isCommitted($booking)) {
+                continue;
+            }
+
             match ($this->send($booking, NotificationEvent::StayReminder)) {
                 self::SENT => $reminders++,
                 self::NO_RECIPIENT => $skipped++,
@@ -124,6 +133,19 @@ final class StayReminderService
         ], $reference);
 
         return self::SENT;
+    }
+
+    /**
+     * Le séjour est-il engagé de part et d'autre ?
+     *
+     * `arrivingBetween()` sert aussi la préparation des séjours, où une
+     * demande en attente a toute sa place : le filtre est donc posé ici, au
+     * seul endroit qui écrit au voyageur.
+     */
+    private static function isCommitted(Booking $booking): bool
+    {
+        return $booking->status === BookingStatus::Confirmed
+            || $booking->status === BookingStatus::InProgress;
     }
 
     private function recipient(Booking $booking): ?User

@@ -43,13 +43,40 @@ final class SchedulerStateTest extends TestCase
         self::assertTrue($state->isDue('2026-05-01 04:00:00'));
     }
 
-    public function testStalenessNeedsThreeMissedIntervals(): void
+    /**
+     * Trois intervalles manqués font une panne — mais jamais avant trois
+     * heures.
+     *
+     * Le plancher n'est pas une commodité : une bonne partie des hébergements
+     * mutualisés n'offre qu'un cron **horaire**, et la relève de courrier veut
+     * passer toutes les quinze minutes. Sans plancher, ces installations
+     * afficheraient une alerte permanente alors qu'elles fonctionnent — et un
+     * écran de diagnostics rouge en permanence est un écran qu'on cesse de
+     * lire, ce qui coûte plus cher que l'absence de diagnostic.
+     */
+    public function testStalenessNeverFiresBeforeAnHourlyCronCouldHavePassed(): void
     {
         $state = $this->state(ScheduledTask::InboundMail, '2026-05-01 03:00:00');
 
-        // Quinze minutes d'intervalle : un passage manqué n'est pas une panne.
-        self::assertFalse($state->isStale('2026-05-01 03:30:00'));
-        self::assertTrue($state->isStale('2026-05-01 03:45:00'));
+        // Un cron horaire vient de passer : rien à signaler.
+        self::assertFalse($state->isStale('2026-05-01 04:00:00'));
+        // Deux heures et demie de silence restent tolérables.
+        self::assertFalse($state->isStale('2026-05-01 05:30:00'));
+        // Trois heures : même un cron horaire a cessé de passer.
+        self::assertTrue($state->isStale('2026-05-01 06:00:00'));
+    }
+
+    /**
+     * Pour les tâches lentes, ce sont bien trois intervalles qui comptent :
+     * le plancher ne les rend pas plus permissives.
+     */
+    public function testASlowTaskIsStaleAfterThreeOfItsOwnIntervals(): void
+    {
+        $state = $this->state(ScheduledTask::Backup, '2026-05-01 03:00:00');
+
+        self::assertSame(1440 * 3, ScheduledTask::Backup->staleAfterMinutes());
+        self::assertFalse($state->isStale('2026-05-03 03:00:00'));
+        self::assertTrue($state->isStale('2026-05-04 03:00:00'));
     }
 
     public function testALockInThePastIsNoLongerALock(): void
@@ -76,6 +103,11 @@ final class SchedulerStateTest extends TestCase
         foreach (ScheduledTask::all() as $task) {
             self::assertGreaterThan(0, $task->intervalMinutes(), $task->value);
             self::assertGreaterThan($task->intervalMinutes(), $task->staleAfterMinutes(), $task->value);
+            self::assertGreaterThanOrEqual(
+                ScheduledTask::MINIMUM_STALE_MINUTES,
+                $task->staleAfterMinutes(),
+                $task->value . ' : un cron horaire ne doit jamais déclencher d’alerte.'
+            );
             self::assertGreaterThan(0, $task->lockMinutes(), $task->value);
             self::assertSame('scheduler.task.' . $task->value, $task->labelKey());
         }

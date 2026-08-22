@@ -30,6 +30,14 @@ use SecondStay\Stay\StayInfoRepository;
  * Ce qui est servi ici ne contient jamais de secret : les codes d'accès vivent
  * dans `stay_secret`, chiffrés, et ne sont rendus que dans « Mon séjour »
  * pendant la fenêtre du séjour. Cette page ne les lit pas.
+ *
+ * Le repli de langue obéit à la même logique : il comble une **lacune**, il ne
+ * défait pas une décision. Un bloc jamais traduit est servi dans la langue du
+ * logement, parce qu'une information dans la mauvaise langue vaut mieux qu'une
+ * page absente ; un bloc renseigné puis retiré du web ouvert, ou dépublié du
+ * livret, répond 404 dans cette langue-là. Sans cette distinction, retirer le
+ * bloc allemand parce qu'il contenait le code de la boîte à clés laisserait
+ * l'adresse allemande ouverte sur le bloc français.
  */
 final class StayInfoController extends AbstractController
 {
@@ -45,13 +53,16 @@ final class StayInfoController extends AbstractController
         }
 
         $blocks = $this->container->get(StayInfoRepository::class);
-        $block = $blocks->findPublic($code, $context->locale);
+        $requested = $blocks->find($code, $context->locale);
+        $block = $requested !== null && $requested->isPubliclyReadable() ? $requested : null;
 
-        if ($block === null) {
-            // Repli sur la langue par défaut : un voyageur néerlandophone qui
-            // scanne un autocollant ne doit pas tomber sur une page vide parce
-            // que le bloc n'a été traduit qu'en français. Une information dans
-            // la mauvaise langue reste utile ; une page absente, non.
+        // Repli sur la langue du logement, mais **seulement** quand cette
+        // langue-ci n'a rien à montrer : bloc jamais traduit, ou traduit puis
+        // vidé. Un bloc renseigné que le propriétaire a retiré du web ouvert
+        // — ou du livret — est une décision, pas une lacune : la servir dans
+        // une autre langue rouvrirait une adresse qu'il croit fermée, et le
+        // texte de repli peut porter exactement ce qu'il voulait retirer.
+        if ($block === null && ($requested === null || $requested->isEmpty())) {
             $fallback = $this->settings()->string('site.default_locale');
             $block = Locales::isSupported($fallback) ? $blocks->findPublic($code, $fallback) : null;
         }

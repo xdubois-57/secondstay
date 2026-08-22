@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SecondStay\Tests\Database;
 
+use SecondStay\I18n\Locales;
 use SecondStay\Media\MediaRepository;
 use SecondStay\Stay\StayBlockReferences;
 use SecondStay\Stay\StayInfoRepository;
@@ -142,8 +143,10 @@ final class StayInfoPageTest extends InstalledAppTestCase
             $this->request('/fr/info/waste')->content()
         );
 
+        // La liste suit les langues réelles du produit : écrite en dur, elle
+        // laisserait une cinquième langue indexable sans que rien ne le dise.
         $robots = $this->request('/robots.txt')->content();
-        foreach (['fr', 'en', 'nl', 'de'] as $locale) {
+        foreach (Locales::ALL as $locale) {
             self::assertStringContainsString('Disallow: /' . $locale . '/info/', $robots);
         }
     }
@@ -425,7 +428,7 @@ final class StayInfoPageTest extends InstalledAppTestCase
         $this->blocks->save('waste', 'fr', 'Déchets', 'Texte d’origine.', true, true);
 
         $this->loginAs();
-        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+        $response = $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
             'locale' => 'fr',
             'title_waste' => 'Déchets réécrits',
             'body_waste' => 'Texte réécrit.',
@@ -439,6 +442,101 @@ final class StayInfoPageTest extends InstalledAppTestCase
         self::assertSame('Texte d’origine.', $block->body, 'Un refus ne doit rien enregistrer.');
         self::assertFalse($block->references->hasLink());
         self::assertStringNotContainsString('javascript:', $this->request('/fr/info/waste')->content());
+
+        // Le refus revient à l'écran, pas par une redirection : le champ
+        // fautif est marqué, et le message le désigne (SPECIFICATIONS.md §10).
+        self::assertSame(422, $response->status());
+        self::assertMatchesRegularExpression(
+            '/id="link_url_waste"[^>]*/',
+            $response->content()
+        );
+        self::assertStringContainsString('is-invalid', $response->content());
+    }
+
+    /**
+     * Une adresse fautive ne doit pas emporter la saisie.
+     *
+     * L'écran porte huit zones de texte. Les renvoyer à leur état enregistré
+     * parce qu'une adresse de carte comportait une faute de frappe punit le
+     * propriétaire d'une erreur sans rapport avec ce qu'il a écrit — et il ne
+     * s'en aperçoit qu'après avoir tout retapé.
+     */
+    public function testARefusalGivesTheOwnerBackWhatHeTyped(): void
+    {
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Texte d’origine.', true, false);
+
+        $this->loginAs();
+        $response = $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'La collecte a lieu le mardi, sortez le bac la veille au soir.',
+            'published_waste' => '1',
+            'title_rules' => 'Règles',
+            'body_rules' => 'Pas de fête après 22 h.',
+            'source_url_waste' => 'commune-sans-schema.example/collecte',
+        ]));
+
+        $content = $response->content();
+
+        self::assertSame(422, $response->status());
+        self::assertStringContainsString('data-testid="stay-errors"', $content);
+        self::assertStringContainsString('sortez le bac la veille au soir', $content);
+        self::assertStringContainsString('Pas de fête après 22 h.', $content);
+        self::assertStringContainsString('commune-sans-schema.example/collecte', $content);
+    }
+
+    /**
+     * Une erreur affichée à côté du mauvais champ ne vaut pas mieux qu'une
+     * erreur absente : le propriétaire corrigerait ce qui n'est pas faux.
+     */
+    public function testEachErrorIsShownNextToTheFieldThatCarriesIt(): void
+    {
+        $this->loginAs();
+        $content = $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'Texte.',
+            'source_checked_on_waste' => '14/03/2026',
+            'source_url_waste' => 'https://commune.example/collecte',
+            'link_url_rules' => 'ftp://exemple.test/reglement.pdf',
+        ]))->content();
+
+        self::assertMatchesRegularExpression(
+            '/id="source_checked_on_waste"(?:(?!<\/div>).)*is-invalid|is-invalid(?:(?!<\/div>).)*id="source_checked_on_waste"/s',
+            $content
+        );
+        self::assertSame(
+            2,
+            substr_count($content, 'invalid-feedback'),
+            'Exactement deux champs sont en cause : la date et le lien.'
+        );
+    }
+
+    /**
+     * Une adresse hostile entrée par un autre chemin que le formulaire ne doit
+     * pas devenir un lien cliquable : Twig échappe le contenu d'un attribut,
+     * pas son schéma.
+     */
+    public function testAHostileSchemeAlreadyInTheRowIsNeverRendered(): void
+    {
+        $this->blocks->save(
+            'waste',
+            'fr',
+            'Déchets',
+            'La collecte a lieu le mardi.',
+            true,
+            true,
+            null,
+            new StayBlockReferences('javascript:alert(1)', 'Carte', 'data:text/html,<script>', '2026-03-14'),
+        );
+
+        $content = $this->request('/fr/info/waste')->content();
+
+        self::assertSame(200, $this->request('/fr/info/waste')->status());
+        self::assertStringNotContainsString('javascript:', $content);
+        self::assertStringNotContainsString('data:text/html', $content);
+        self::assertStringNotContainsString('data-block-link', $content);
+        self::assertStringNotContainsString('data-block-source', $content);
     }
 
     /**
@@ -524,6 +622,71 @@ final class StayInfoPageTest extends InstalledAppTestCase
 
         self::assertFalse($this->blocks->find('waste', 'fr')?->references->hasLink());
         self::assertStringNotContainsString('data-block-link', $this->request('/fr/info/waste')->content());
+    }
+
+    // --- Repli de langue : combler une lacune, pas défaire une décision ------------
+
+    /**
+     * Retirer un bloc du web ouvert dans **une** langue ferme cette adresse-là.
+     *
+     * C'est la raison d'être du réglage langue par langue : le propriétaire
+     * qui s'aperçoit que son texte allemand contient le code de la boîte à
+     * clés décoche « adresse publique » sur l'allemand. Si le repli servait
+     * alors le bloc français à cette adresse, il croirait avoir fermé une
+     * porte restée ouverte — et le texte de repli peut porter exactement ce
+     * qu'il voulait retirer.
+     */
+    public function testWithdrawingOneLanguageClosesItsOwnAddress(): void
+    {
+        $this->blocks->save('access', 'fr', 'Accès', 'La clé est sous le pot.', true, true);
+        $this->blocks->save('access', 'de', 'Zugang', 'Der Schlüssel liegt unter dem Topf.', true, true);
+
+        self::assertSame(200, $this->request('/de/info/access')->status());
+
+        $this->blocks->save('access', 'de', 'Zugang', 'Der Schlüssel liegt unter dem Topf.', true, false);
+
+        $response = $this->request('/de/info/access');
+
+        self::assertSame(404, $response->status());
+        self::assertStringNotContainsString('sous le pot', $response->content());
+
+        // L'adresse française, elle, n'a pas été touchée.
+        self::assertSame(200, $this->request('/fr/info/access')->status());
+    }
+
+    /**
+     * Même règle pour la dépublication du livret : elle vaut aussi pour
+     * l'adresse publique de cette langue.
+     */
+    public function testUnpublishingOneLanguageClosesItsOwnAddress(): void
+    {
+        $this->blocks->save('rules', 'fr', 'Règles', 'Pas de fête après 22 h.', true, true);
+        $this->blocks->save('rules', 'nl', 'Regels', 'Geen feest na 22 uur.', true, true);
+
+        $this->blocks->save('rules', 'nl', 'Regels', 'Geen feest na 22 uur.', false, true);
+
+        self::assertSame(404, $this->request('/nl/info/rules')->status());
+    }
+
+    /**
+     * En revanche une **lacune** se comble : un bloc jamais traduit, ou
+     * traduit puis vidé, est servi dans la langue du logement. Le voyageur
+     * debout devant la machine à laver préfère un texte dans la mauvaise
+     * langue à une page absente.
+     */
+    public function testAnEmptyTranslationStillFallsBack(): void
+    {
+        $this->settings()->setMany(['site.default_locale' => 'fr']);
+        $this->blocks->save('appliances', 'fr', 'Équipements', 'Le lave-linge est au sous-sol.', true, true);
+        // La langue existe en base mais n'a jamais été remplie : c'est l'état
+        // normal d'un livret qu'on vient d'ouvrir dans une nouvelle langue.
+        $this->blocks->save('appliances', 'nl', '', '', true, false);
+
+        $response = $this->request('/nl/info/appliances');
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('Le lave-linge est au sous-sol.', $response->content());
+        self::assertStringContainsString('data-testid="info-fallback"', $response->content());
     }
 
     private function media(

@@ -19,6 +19,7 @@ use SecondStay\Logging\Logger;
 use SecondStay\Mail\FakeMailTransport;
 use SecondStay\Mail\MailRepository;
 use SecondStay\Mail\MailService;
+use SecondStay\Notification\NotificationChannel;
 use SecondStay\Notification\NotificationEvent;
 use SecondStay\Notification\NotificationPreferenceRepository;
 use SecondStay\Notification\NotificationRepository;
@@ -221,6 +222,66 @@ final class StayReminderServiceTest extends DatabaseTestCase
         ]);
 
         self::assertSame(1, $this->reminders->dispatch('2026-07-15')['arrivals']);
+    }
+
+    /**
+     * Une panne de courrier ne doit pas **consommer** le rappel.
+     *
+     * C'est le pire des deux mondes : le voyageur ne reçoit rien, et le
+     * propriétaire ne peut rien y faire — relancer la tâche une fois le
+     * serveur rétabli ne renverrait pas un rappel réputé parti. Une tentative
+     * en échec n'est pas une décision, c'est un incident : elle se rejoue.
+     */
+    public function testAFailedSendIsRetriedOnceTheMailServerIsBack(): void
+    {
+        $this->booking('2026-07-15', '2026-07-22');
+
+        $this->mail->shouldFail = true;
+        self::assertSame(1, $this->reminders->dispatch('2026-07-15')['arrivals']);
+        self::assertSame([], $this->mail->messages(), 'Rien n’est réellement parti.');
+        self::assertFalse($this->journal->hasBeenSent(NotificationEvent::Arrival, 'arrival:1'));
+
+        // Le serveur de courrier revient, le propriétaire relance la tâche.
+        $this->mail->shouldFail = false;
+        $this->reminders->dispatch('2026-07-15');
+
+        self::assertCount(1, $this->mail->messages());
+        self::assertTrue($this->journal->hasBeenSent(NotificationEvent::Arrival, 'arrival:1'));
+
+        // Et une fois parti, il ne repart pas.
+        $this->reminders->dispatch('2026-07-15');
+        self::assertCount(1, $this->mail->messages());
+    }
+
+    /**
+     * Un canal volontairement désactivé, lui, compte comme traité : ce n'est
+     * pas un incident, c'est un choix du voyageur, et le réessayer chaque nuit
+     * ne changerait rien.
+     */
+    public function testADeliberatelyDisabledChannelIsNotRetried(): void
+    {
+        $this->booking('2026-07-15', '2026-07-22');
+
+        (new NotificationPreferenceRepository($this->database))
+            ->set($this->client->id, NotificationChannel::Email, false);
+
+        $this->reminders->dispatch('2026-07-15');
+
+        self::assertSame([], $this->mail->messages());
+        self::assertTrue($this->journal->hasBeenSent(NotificationEvent::Arrival, 'arrival:1'));
+    }
+
+    /**
+     * Une demande encore en attente de réponse n'est pas un séjour : écrire
+     * « votre séjour commence dans sept jours » engagerait le propriétaire à
+     * sa place.
+     */
+    public function testAnUnconfirmedRequestIsNeverReminded(): void
+    {
+        $this->booking('2026-07-15', '2026-07-22', BookingStatus::ToConfirm);
+
+        self::assertSame(0, $this->reminders->dispatch('2026-07-08')['reminders']);
+        self::assertSame([], $this->mail->messages());
     }
 
     public function testTheLeadTimeStaysWithinItsBounds(): void

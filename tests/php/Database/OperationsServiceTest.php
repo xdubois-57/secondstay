@@ -505,6 +505,35 @@ final class OperationsServiceTest extends DatabaseTestCase
         self::assertContains('update_available', array_column($this->fullTodo()->items(), 'code'));
     }
 
+    /**
+     * La pastille du courrier non rattaché compte la boîte entière.
+     *
+     * Une pastille plafonnée à la taille d'une page annoncerait « 50 » à une
+     * boîte qui en compte deux cents : le propriétaire croirait avoir fini
+     * bien avant la fin, et cesserait de regarder.
+     */
+    public function testTheUnlinkedMailBadgeCountsTheWholeMailboxNotAPage(): void
+    {
+        for ($index = 0; $index < 60; $index++) {
+            $this->database->insert('mail_message', [
+                'direction' => 'inbound',
+                'booking_id' => null,
+                'user_id' => null,
+                'message_id' => 'msg-' . $index . '@example.test',
+                'from_address' => 'inconnu' . $index . '@example.test',
+                'to_address' => 'contact@example.test',
+                'subject' => 'Sujet ' . $index,
+                'body_text' => 'Corps du message.',
+                'status' => 'received',
+                'created_at' => gmdate('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $items = array_column($this->todo->items(), 'count', 'code');
+
+        self::assertSame(60, $items['mail_unlinked'] ?? 0);
+    }
+
     private function fullTodo(): TodoService
     {
         return new TodoService(

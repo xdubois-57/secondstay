@@ -1143,6 +1143,12 @@ ceux des autres scénarios qui l'occupent.
 
 - qu'un bloc soit lisible publiquement sans décision explicite ;
 - qu'un bloc dépublié du livret reste lisible par une adresse oubliée ;
+- **qu'un repli de langue rouvre ce que le propriétaire vient de fermer.**
+  Retirer le bloc allemand du web ouvert doit fermer l'adresse allemande, pas
+  la faire répondre avec le bloc français. C'est ce qui donne son sens au
+  réglage langue par langue, et le scénario le vérifie en fermant **une** des
+  deux langues ; la lacune, elle, se comble toujours — un bloc jamais traduit,
+  ou vidé, retombe sur la langue du logement ;
 - qu'un QR ouvre une page vide ;
 - qu'un code d'accès ou un mot de passe Wi-Fi apparaisse dans la réponse ;
 - que le texte saisi par le propriétaire soit interprété comme du balisage ;
@@ -1163,6 +1169,14 @@ Un groupe joué en série est **rejoué depuis le début** quand l'un de ses tes
 - **une page d'arrivée s'attend.** Cliquer sur « se connecter » puis lire
   aussitôt le DOM exécute le script sur la page encore affichée. Sur un petit
   écran, c'est aussi ce qui déplace une case à cocher sous le doigt ;
+- **un interrupteur se bascule puis se confirme sur place.** Sur une page
+  longue — l'écran du livret porte huit blocs de six champs — le navigateur
+  remet en page pendant que le script clique : Playwright rapporte « l'élément
+  n'est pas stable », ou pire, un clic qui ne change rien. Attendre le marqueur
+  de fin de script, amener le contrôle sous le doigt, puis vérifier qu'il a
+  bougé rend l'interaction déterministe **et** fait échouer le scénario là où
+  le problème se produit, au lieu de trois lignes plus bas sur une assertion
+  qui n'a rien à voir ;
 - **une écriture se confirme là où elle se produit.** Un scénario qui bascule
   un interrupteur, enregistre, puis interroge le site public trois lignes plus
   bas, ne dit pas pourquoi il échoue : il montre un « 200 au lieu de 404 » sans
@@ -1191,9 +1205,40 @@ Un groupe joué en série est **rejoué depuis le début** quand l'un de ses tes
   portent toutes deux `rel="noopener noreferrer"` ;
 - que la carte d'une langue déborde sur une autre : les quatre champs vivent
   par bloc **et** par langue ;
-- qu'un champ vidé laisse subsister l'ancien lien.
+- qu'un champ vidé laisse subsister l'ancien lien ;
+- **qu'un refus emporte la saisie.** L'écran porte huit zones de texte : les
+  renvoyer à leur état enregistré parce qu'une adresse comportait une faute de
+  frappe punit le propriétaire d'une erreur sans rapport avec ce qu'il a écrit.
+  Le refus revient en 422, avec sa saisie, le champ fautif marqué et le message
+  posé à côté de **ce** champ — une erreur affichée au mauvais endroit ne vaut
+  pas mieux qu'une erreur absente ;
+- **qu'une adresse hostile entrée autrement que par le formulaire devienne un
+  lien.** Le contrôle de schéma est rejoué à l'affichage.
 
-### 32.8 Diagnostics
+### 32.8 Rappels et notifications
+
+- **qu'une panne de courrier consomme le rappel.** Une tentative en échec n'est
+  pas une décision : elle se rejoue, et relancer la tâche une fois le serveur
+  rétabli renvoie réellement le message. Le compromis est assumé — un courrier
+  parti mais rapporté en échec sera envoyé deux fois, ce qui vaut mieux que pas
+  du tout ;
+- qu'un canal volontairement désactivé soit réessayé chaque nuit : c'est un
+  choix du voyageur, pas un incident ;
+- qu'une demande encore en attente de réponse reçoive « votre séjour commence
+  dans sept jours ».
+
+### 32.9 Coût des écrans les plus fréquentés
+
+Ce qui se mesure ici n'est pas un rendu mais un **nombre de requêtes**. Une
+résolution bloc par bloc ne casse aucun test fonctionnel : la page devient
+simplement plus lente à chaque illustration ajoutée, et personne ne s'en
+aperçoit avant que ce soit le voyageur, debout devant une porte, avec une
+barre de réseau.
+
+- huit blocs illustrés coûtent deux requêtes, pas seize ;
+- un livret sans illustration n'en coûte aucune.
+
+### 32.10 Diagnostics
 
 - qu'un secret apparaisse dans un résultat ;
 - qu'afficher la page ouvre une connexion sortante ;

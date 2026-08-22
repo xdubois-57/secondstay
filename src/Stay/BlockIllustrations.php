@@ -11,7 +11,7 @@ use SecondStay\Media\MediaRepository;
  * Illustrations des blocs du livret (SPECIFICATIONS.md §45 et §55).
  *
  * Un gabarit ne doit pas aller chercher un média en base : la résolution se
- * fait ici, une fois, pour l'ensemble des blocs affichés.
+ * fait ici, **en une requête** pour l'ensemble des blocs affichés.
  *
  * Seuls les médias **publiés et non privés** sont retenus. Ce n'est pas une
  * précaution de principe : le livret est lu par un voyageur qui n'est pas
@@ -32,10 +32,22 @@ final class BlockIllustrations
      */
     public function forBlocks(array $blocks, string $locale): array
     {
-        $illustrations = [];
-
+        // Une seule requête pour tous les blocs : « Mon séjour » en affiche
+        // jusqu'à huit, et les résoudre un par un ferait seize allers-retours
+        // en base sur la page que le voyageur ouvre justement avec une barre
+        // de réseau.
+        $ids = [];
         foreach ($blocks as $block) {
-            $entry = $this->forBlock($block, $locale);
+            if ($block->mediaId !== null) {
+                $ids[] = $block->mediaId;
+            }
+        }
+
+        $items = $this->media->findManyById($ids);
+
+        $illustrations = [];
+        foreach ($blocks as $block) {
+            $entry = $this->describe($block, $locale, $block->mediaId === null ? null : ($items[$block->mediaId] ?? null));
             if ($entry !== null) {
                 $illustrations[$block->code] = $entry;
             }
@@ -53,7 +65,14 @@ final class BlockIllustrations
             return null;
         }
 
-        $item = $this->media->findById($block->mediaId);
+        return $this->describe($block, $locale, $this->media->findById($block->mediaId));
+    }
+
+    /**
+     * @return array{filename: string, alt: string, width: int, height: int}|null
+     */
+    private function describe(StayInfoBlock $block, string $locale, ?MediaItem $item): ?array
+    {
         if (!$item instanceof MediaItem || !$item->isPublished || $item->isPrivate) {
             return null;
         }

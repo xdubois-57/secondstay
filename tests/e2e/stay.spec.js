@@ -4,6 +4,35 @@ import { pngBuffer } from './helpers/image.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
+ * Bascule un interrupteur et **confirme sur place** son nouvel état.
+ *
+ * L'écran du livret porte huit blocs de six champs : sur un petit écran, la
+ * page est longue et le navigateur la remet en page pendant que le script
+ * clique. Playwright rapporte alors « l'élément n'est pas stable », ou pire,
+ * un clic qui ne change rien — et l'échec s'affiche trois lignes plus bas, sur
+ * une assertion qui n'a rien à voir (TESTING.md §31.5 et §32.5).
+ *
+ * Attendre le marqueur de fin de script, amener l'interrupteur sous le doigt,
+ * puis vérifier qu'il a bougé rend l'interaction déterministe et fait échouer
+ * le scénario là où le problème se produit.
+ */
+async function toggle(page, selector, expected) {
+    await page.waitForSelector('html[data-js-ready="true"]');
+
+    const control = page.locator(selector);
+    await control.scrollIntoViewIfNeeded();
+    await expect(control).toBeEnabled();
+
+    if (expected) {
+        await control.check();
+    } else {
+        await control.uncheck();
+    }
+
+    await expect(control).toBeChecked({ checked: expected });
+}
+
+/**
  * Scénario critique « mobile offline → informations utiles dans langue
  * choisie » (ROADMAP.md itération 10, SPECIFICATIONS.md §44 à §47).
  *
@@ -134,7 +163,7 @@ test.describe('mon séjour', () => {
             await page.fill(`#link_label_${code}`, `Y aller (${suffix})`);
             await page.fill(`#source_url_${code}`, `https://commune.example/${suffix}`);
             await page.fill(`#source_checked_on_${code}`, '2026-03-14');
-            await page.check(`#public_${code}`);
+            await toggle(page, `#public_${code}`, true);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
 
@@ -144,7 +173,13 @@ test.describe('mon séjour', () => {
             await page.goto('/fr/admin/stay?locale=fr');
             await page.fill(`#link_url_${code}`, 'javascript:alert(1)');
             await page.click('[data-testid="stay-save"]');
-            await expect(page.locator('[data-flash-type="danger"]')).toBeVisible();
+            await expect(page.locator('[data-testid="stay-errors"]')).toBeVisible();
+            // La saisie revient telle quelle, le champ fautif est marqué : une
+            // faute de frappe ne doit pas emporter huit zones de texte.
+            await expect(page.locator(`#link_url_${code}`)).toHaveValue('javascript:alert(1)');
+            await expect(page.locator(`#link_url_${code}`)).toHaveClass(/is-invalid/);
+
+            // Et rien n'a été enregistré : l'adresse d'origine est intacte.
             await page.goto('/fr/admin/stay?locale=fr');
             await expect(page.locator(`#link_url_${code}`))
                 .toHaveValue(`https://carte.example/${suffix}`);
@@ -183,7 +218,7 @@ test.describe('mon séjour', () => {
             await page.fill(`#link_label_${code}`, '');
             await page.fill(`#source_url_${code}`, '');
             await page.fill(`#source_checked_on_${code}`, '');
-            await page.uncheck(`#public_${code}`);
+            await toggle(page, `#public_${code}`, false);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
             expect((await anonymous.request.get(`/fr/info/${code}`)).status()).toBe(404);

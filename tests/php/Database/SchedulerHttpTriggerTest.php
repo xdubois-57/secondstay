@@ -91,7 +91,37 @@ final class SchedulerHttpTriggerTest extends InstalledAppTestCase
         self::assertStringContainsString('booking_holds ok', $response->content());
 
         // Les tâches ont réellement tourné, pas seulement répondu.
-        self::assertNotNull((new TaskStateRepository($this->database))->lastSuccessfulRun());
+        self::assertNotNull((new TaskStateRepository($this->database))->lastRunAt());
+    }
+
+    /**
+     * Un jeton passé dans l'URL est écrit dans le journal d'accès du serveur
+     * web, que le produit ne contrôle pas. L'en-tête est donc accepté, et
+     * préféré : l'hébergement dont le cron sait en poser un garde le secret
+     * hors des journaux.
+     */
+    public function testTheTokenIsAcceptedInAHeaderRatherThanInTheUrl(): void
+    {
+        $this->registerToken();
+
+        $response = $this->request('/tasks/run', 'GET', [], [
+            'HTTP_X_SCHEDULER_TOKEN' => self::TOKEN,
+        ]);
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('booking_holds ok', $response->content());
+        self::assertNotNull((new TaskStateRepository($this->database))->lastRunAt());
+    }
+
+    public function testAWrongHeaderIsAsMuteAsAWrongUrlToken(): void
+    {
+        $this->registerToken();
+
+        $response = $this->request('/tasks/run', 'GET', [], [
+            'HTTP_X_SCHEDULER_TOKEN' => str_repeat('x', 48),
+        ]);
+
+        self::assertSame(404, $response->status());
     }
 
     /**

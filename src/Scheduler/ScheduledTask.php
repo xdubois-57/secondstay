@@ -60,14 +60,31 @@ enum ScheduledTask: string
     }
 
     /**
+     * Retard en deçà duquel aucune tâche n'est jamais signalée.
+     *
+     * Trois intervalles suffisent pour les tâches lentes, mais pas pour les
+     * rapides : `booking_holds` veut passer toutes les dix minutes, or une
+     * bonne partie des hébergements mutualisés n'offre qu'un cron **horaire**.
+     * Le seuil brut de trente minutes y produirait une alerte permanente sur
+     * une installation qui fonctionne — et un écran de diagnostics rouge en
+     * permanence est un écran qu'on cesse de lire, ce qui coûte plus cher que
+     * l'absence de diagnostic.
+     *
+     * Trois heures est donc le plancher : au-delà, même un cron horaire a
+     * réellement cessé de passer.
+     */
+    public const MINIMUM_STALE_MINUTES = 180;
+
+    /**
      * Retard à partir duquel la tâche est signalée comme en souffrance.
      *
-     * Trois intervalles : un cron qui passe une fois est un incident
-     * d'hébergement banal, trois fois de suite est une panne.
+     * Trois intervalles — un cron qui passe une fois est un incident
+     * d'hébergement banal, trois fois de suite est une panne — sans jamais
+     * descendre sous le plancher qui rend un cron horaire acceptable.
      */
     public function staleAfterMinutes(): int
     {
-        return $this->intervalMinutes() * 3;
+        return max($this->intervalMinutes() * 3, self::MINIMUM_STALE_MINUTES);
     }
 
     /**

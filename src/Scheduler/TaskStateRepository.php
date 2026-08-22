@@ -97,24 +97,17 @@ final class TaskStateRepository
     }
 
     /**
-     * Libère un verrou sans enregistrer d'exécution.
+     * Horodatage de la dernière exécution, toutes tâches confondues, quel
+     * qu'en soit le résultat.
      *
-     * Utilisé lorsque la tâche n'a pas pu démarrer : compter cela comme une
-     * exécution donnerait à l'écran d'exploitation un cron en bonne santé
-     * alors que rien ne s'est produit.
+     * C'est bien la dernière **exécution** et non la dernière réussite : la
+     * question posée est « le cron passe-t-il ? », à laquelle une tâche qui
+     * échoue répond oui. « Telle tâche est-elle en bonne santé ? » est une
+     * autre question, et les diagnostics la posent séparément — les confondre
+     * afficherait un cron mort sur une installation dont une seule tâche
+     * échoue en boucle.
      */
-    public function abandon(ScheduledTask $task): void
-    {
-        $this->database->update('scheduled_task', ['locked_until' => null], ['code' => $task->value]);
-    }
-
-    /**
-     * Horodatage de la dernière exécution réussie, toutes tâches confondues.
-     *
-     * C'est l'indicateur que lisent les diagnostics : il répond à « le cron
-     * tourne-t-il ? », question distincte de « telle tâche est-elle à jour ? ».
-     */
-    public function lastSuccessfulRun(): ?string
+    public function lastRunAt(): ?string
     {
         $value = $this->database->fetchValue(
             'SELECT MAX(`last_run_at`) FROM `scheduled_task` WHERE `last_status` <> :never',

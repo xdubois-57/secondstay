@@ -41,13 +41,29 @@ final class NotificationRepository
         ]);
     }
 
+    /** Statut d'une tentative qui n'a rien délivré. */
+    public const FAILED = 'failed';
+
     /**
-     * Un envoi a-t-il déjà eu lieu pour cet événement et cette référence ?
+     * Un envoi a-t-il déjà été **traité** pour cet événement et cette
+     * référence ?
      *
      * Les tâches périodiques repassent tous les jours sur les mêmes séjours :
      * sans cette question, un rappel de séjour partirait chaque nuit jusqu'à
      * l'arrivée. Un envoi ignoré compte comme traité — le voyageur a désactivé
      * le canal, ce n'est pas une raison de réessayer indéfiniment.
+     *
+     * Un envoi **en échec**, lui, ne compte pas. Une panne SMTP d'une heure
+     * n'est pas une décision : compter la tentative ratée comme un envoi
+     * perdrait le rappel définitivement, et surtout le rendrait irrattrapable
+     * — relancer la tâche depuis l'écran d'exploitation, une fois le courrier
+     * rétabli, ne ferait plus rien du tout.
+     *
+     * Le compromis est assumé : un courrier effectivement parti mais rapporté
+     * en échec — un délai d'attente dépassé après remise — sera envoyé deux
+     * fois. Recevoir deux fois le rappel de son séjour est un désagrément ; ne
+     * pas le recevoir du tout est une porte close devant laquelle quelqu'un
+     * attend.
      */
     public function hasBeenSent(NotificationEvent $event, string $reference): bool
     {
@@ -56,8 +72,13 @@ final class NotificationRepository
         }
 
         return $this->database->fetchOne(
-            'SELECT `id` FROM `notification` WHERE `event` = :event AND `reference` = :reference LIMIT 1',
-            ['event' => $event->value, 'reference' => mb_substr($reference, 0, 190)]
+            'SELECT `id` FROM `notification` WHERE `event` = :event AND `reference` = :reference '
+            . 'AND `status` <> :failed LIMIT 1',
+            [
+                'event' => $event->value,
+                'reference' => mb_substr($reference, 0, 190),
+                'failed' => self::FAILED,
+            ]
         ) !== null;
     }
 
