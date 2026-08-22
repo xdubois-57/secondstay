@@ -434,6 +434,51 @@ Jobs courts/idempotents via cron :
 - update check ;
 - diagnostics heartbeat.
 
+### Ce que porte le produit et ce que porte l'hébergeur
+
+L'hébergeur ne porte qu'une chose : une entrée cron, appelée aussi souvent
+qu'il l'autorise.
+
+```cron
+*/10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php
+```
+
+Tout le reste vit dans le produit. Le calendrier de chaque tâche est porté par
+`ScheduledTask`, son état par la table `scheduled_task`, et `Scheduler` décide
+à chaque passage de ce qui est dû. Ce partage n'est pas un détail
+d'installation : mettre le calendrier dans la table cron de l'hébergeur
+obligerait à recopier huit lignes différentes, à les tenir à jour, et rendrait
+le comportement du produit dépendant d'une configuration qu'il ne peut ni lire
+ni vérifier.
+
+Le planificateur ne survit pas d'un appel à l'autre — c'est la conséquence
+directe de l'absence de worker. Trois choix en découlent :
+
+1. **l'état est entièrement en base.** Dernière exécution, résultat, verrou :
+   rien n'est gardé en mémoire, puisqu'il n'y a pas de mémoire ;
+2. **le verrou est un verrou à échéance**, pris par un `UPDATE` conditionnel —
+   seule primitive atomique disponible sans dépendance. Deux passages qui se
+   chevauchent ne relèvent pas la même boîte deux fois, et un processus tué par
+   l'hébergeur ne condamne pas sa tâche : son verrou expire ;
+3. **une tâche qui échoue n'arrête pas les autres.** Une boîte IMAP injoignable
+   ne doit pas empêcher la sauvegarde de la nuit.
+
+Le détail rapporté par une tâche est **toujours une clé de traduction**, jamais
+un message de fournisseur : l'écran d'exploitation parle quatre langues, et un
+message brut peut porter un hôte, un chemin ou un identifiant.
+
+`src/Scheduler/cron.php` vit sous `src/` et non à la racine ou sous `public/` :
+`src/` est refusé par le `.htaccess` **et** par `PublicPathPolicy`, et le
+fichier refuse lui-même de répondre hors CLI. Un planificateur ne doit jamais
+devenir une URL déclenchable par accident.
+
+Une porte HTTP existe malgré tout — `GET /tasks/run?token=…` — parce qu'une
+partie des hébergements mutualisés ne propose de cron que par URL, et qu'une
+installation sans tâches périodiques est une installation qui se dégrade sans
+que personne le voie. Elle est fermée par défaut : sans jeton enregistré, elle
+répond 404 comme un chemin inexistant, ne se signale pas, et le jeton présenté
+est comparé en temps constant après limitation de débit.
+
 ## 24. Backups
 
 Pure PHP.
@@ -1489,7 +1534,53 @@ Le QR code du lien est rendu **en ligne** dans la page, pas servi par une
 seconde requête : le jeton n'apparaît ainsi dans aucune URL d'image, et il n'y
 a rien à mettre en cache par erreur (SPECIFICATIONS.md §47).
 
-### 39.6 Hors ligne : ce qui est permis, ce qui ne l'est pas
+### 39.6 Illustrations
+
+Un bloc du livret peut porter une image, choisie dans la médiathèque plutôt que
+téléversée à part : le traitement d'image, la suppression des métadonnées GPS,
+les variantes et les légendes traduites y sont déjà résolus une fois pour
+toutes, et un second chemin de téléversement finirait par diverger du premier.
+
+La résolution se fait dans `BlockIllustrations`, une fois pour l'ensemble des
+blocs affichés : un gabarit ne va pas chercher un média en base. Elle écarte les
+médias privés ou dépubliés — le livret est lu par un voyageur qui n'est pas
+administrateur, et par un visiteur anonyme sur les pages QR, où un média privé
+produirait une image cassée.
+
+Le lien est `ON DELETE SET NULL` : supprimer un média retire l'illustration, il
+ne fait pas disparaître le texte du bloc, qui porte l'essentiel.
+
+### 39.7 QR physiques et adresses stables
+
+Un lien invité est nominatif et expire ; un autocollant collé sur la machine à
+laver, non. Les deux ne peuvent donc pas partager la même adresse.
+`/{langue}/info/{bloc}` est dérivée du seul code du bloc — ni identifiant, ni
+jeton, ni date — parce que l'autocollant, lui, ne se met pas à jour : une
+adresse qui bouge devient un lien mort dans la cuisine de quelqu'un.
+
+Cette page est **publique au sens strict** : celui qui scanne n'a ni compte, ni
+lien invité, ni séjour en cours. C'est exactement pourquoi la publication est
+refusée par défaut et se décide **bloc par bloc et langue par langue** : le
+livret contient des choses qui n'ont rien à faire sur le web ouvert, à
+commencer par un code d'accès que le propriétaire aurait recopié dans le texte
+du bloc « accès ». Un réglage global, ou un défaut à « publié », transformerait
+une commodité en fuite.
+
+Trois conditions doivent tenir ensemble pour qu'une adresse réponde : le bloc
+est marqué public, il est publié dans le livret, et il n'est pas vide. La
+deuxième évite qu'un bloc retiré survive à une adresse oubliée ; la troisième
+évite qu'un QR ouvre une page blanche devant quelqu'un qui cherche comment
+faire marcher un appareil.
+
+Aucun secret n'y transite jamais : les codes d'accès vivent chiffrés dans
+`stay_secret` et ne sont rendus que dans « Mon séjour », pendant la fenêtre du
+séjour. Cette page ne les lit pas.
+
+Un bloc absent dans la langue demandée est servi dans la langue du logement,
+avec une mention qui le dit : une information dans la mauvaise langue reste
+utile, une page absente non.
+
+### 39.8 Hors ligne : ce qui est permis, ce qui ne l'est pas
 
 La spécification (§44) est explicite, et le service worker l'applique :
 

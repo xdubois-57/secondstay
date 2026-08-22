@@ -69,6 +69,13 @@ return [
         'banner' => 'You are viewing this stay through a guest link.',
     ],
     'admin' => [
+        'illustration' => 'Illustration',
+        'no_illustration' => 'None',
+        'illustration_help' => 'Picked from the media library, among published and non-private items. A photo explains waste sorting or how an appliance works better than a paragraph, and reads in any language.',
+        'public' => 'Public address for a QR code',
+        'public_help' => 'Publishes this block at a fixed address, readable without an account or a stay. Only enable it for text anyone may read: leave no access code and no Wi-Fi password in it.',
+        'public_url' => 'Address to encode in the QR code',
+        'qr_alt' => 'QR code of the public page',
         'title' => 'Welcome book',
         'intro' => 'These texts appear in “My stay” and behind guest links. They are available offline.',
         'block_title' => 'Title',
@@ -83,6 +90,10 @@ return [
         'not_set' => 'Not set',
         'completeness' => 'Completeness',
         'language' => 'Language',
+    ],
+    'info' => [
+        'fallback' => 'This text does not exist in your language yet; it is shown in the property’s language.',
+        'notice' => 'Property information page. It carries no booking data.',
     ],
     'error' => [
         'not_active' => 'This stay is no longer active.',

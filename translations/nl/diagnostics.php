@@ -36,6 +36,12 @@ return [
         'inactive' => 'Site open',
     ],
     'check' => [
+        'payment_provider' => 'Betaalprovider',
+        'llm_provider' => 'Model voor lokale inhoud',
+        'scheduler_cron' => 'Geplande taken (cron)',
+        'scheduler_tasks' => 'Toestand van de taken',
+        'backup_state' => 'Back-ups',
+        'update_channel' => 'Updates',
         'php_version' => 'PHP-versie',
         'app_version' => 'SecondStay-versie',
         'ext_pdo_mysql' => 'PDO MySQL-extensie',
@@ -101,5 +107,34 @@ return [
         'reachable' => 'IMAP-verbinding geslaagd',
         'reply_ok' => 'Antwoordadres geconfigureerd',
         'reply_missing' => 'Geen antwoordadres ingesteld: antwoorden worden zo goed mogelijk gekoppeld',
+    ],
+    'payment' => [
+        'disabled' => 'Geen provider: elk voorschot wordt handmatig gecontroleerd',
+        'not_configured' => 'Provider gekozen maar sleutel ontbreekt',
+        'configured' => 'Provider geconfigureerd',
+    ],
+    'llm' => [
+        'disabled' => 'Lokale inhoud uitgeschakeld',
+        'not_configured' => 'Lokale inhoud ingeschakeld zonder sleutel of provider',
+        'ready' => 'Generatie van lokale inhoud gereed',
+    ],
+    'scheduler' => [
+        'never' => 'De cron heeft nooit gelopen: voeg de cron-regel toe',
+        'running' => 'De cron loopt',
+        'silent' => 'De cron loopt niet meer',
+        'unknown' => 'Toestand van de cron niet vast te stellen',
+        'tasks_ok' => 'Alle taken zijn bij',
+        'late' => 'Sommige taken lopen achter',
+        'failing' => 'Sommige taken mislukken',
+    ],
+    'backup' => [
+        'none' => 'Geen back-up',
+        'fresh' => 'Back-ups zijn bij',
+        'stale' => 'Laatste back-up is te oud',
+        'unknown' => 'Back-ups onleesbaar',
+    ],
+    'update' => [
+        'manual' => 'Updates worden handmatig geïnstalleerd',
+        'automatic' => 'Updates worden automatisch geïnstalleerd',
     ],
 ];

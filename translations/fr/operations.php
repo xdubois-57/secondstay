@@ -9,6 +9,13 @@ declare(strict_types=1);
 return [
     'title' => 'Exploitation',
     'todo' => [
+        'maintenance_active' => 'Le mode maintenance est actif',
+        'property_name' => 'Le nom du logement n’est pas renseigné',
+        'contracts_pending' => 'Contrats non signés',
+        'backup_missing' => 'Aucune sauvegarde',
+        'backup_stale' => 'Sauvegarde trop ancienne',
+        'errors_recent' => 'Erreurs des dernières 24 h',
+        'update_available' => 'Mise à jour disponible',
         'title' => 'À faire',
         'empty' => 'Rien ne réclame votre attention.',
         'bookings_to_confirm' => 'Demandes à valider',

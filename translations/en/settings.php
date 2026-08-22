@@ -172,7 +172,17 @@ return [
             'help' => 'Internal note explaining the reason for maintenance.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Scheduler call token',
+            'help' => 'Set this only if your host offers cron by URL alone. Left empty, the trigger URL does not exist.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatic backup',
+            'help' => 'Lets the scheduler create a backup every day.',
+        ],
         'retention_count' => [
             'label' => 'Backups kept',
             'help' => 'Number of backups kept before automatic deletion.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'The token must be at least 32 characters long.',
         'required' => 'This setting is required.',
         'unknown' => 'Unknown setting.',
         'integer' => 'Enter a whole number.',
@@ -223,6 +234,7 @@ return [
         'iban' => 'Invalid IBAN: check the check digits.',
         'bic' => 'Invalid BIC (8 or 11 characters).',
         'currency' => 'Invalid currency: a three-letter ISO 4217 code is expected.',
+        'color' => 'Invalid colour: use the #rrggbb format.',
         'too_long' => 'Value is too long.',
         'too_small' => 'Value is too small.',
         'too_large' => 'Value is too large.',
@@ -266,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Stay reminder (days before arrival)',
+            'help' => 'Number of days between sending the reminder and the guest’s arrival.',
+        ],
         'push_enabled' => [
             'label' => 'Push notifications',
             'help' => 'Lets browsers receive notifications. Email is still sent in every case.',
@@ -478,6 +494,10 @@ return [
             'label' => 'Refresh (days)',
             'help' => 'Interval between two regenerations, up to the stay.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Theme colour', 'help' => 'Tint of the system bar once the app is installed. Format #rrggbb.'],
+        'background_color' => ['label' => 'Background colour', 'help' => 'Shown at launch, before the first render. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Media quota (MB)', 'help' => 'Zero means no limit.'],

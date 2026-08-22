@@ -19,6 +19,10 @@ use SecondStay\Core\RequestContext;
 use SecondStay\Http\UrlGuard;
 use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TodoService;
+use SecondStay\Scheduler\ScheduledTask;
+use SecondStay\Scheduler\SchedulerFactory;
+use SecondStay\Scheduler\TaskState;
+use SecondStay\Scheduler\TaskStateRepository;
 
 /**
  * Exploitation : « À faire », séjours à préparer, affectation du responsable,
@@ -66,6 +70,10 @@ final class AdminOperationsController extends AdminController
             ),
             'imports' => $this->container->get(ExternalCalendarRepository::class)->all(),
             'providers' => ExternalCalendar::PROVIDERS,
+            // L'état du planificateur se lit ici parce que c'est ici qu'on
+            // regarde quand quelque chose n'est pas arrivé : le courrier qui
+            // n'est pas relevé, la sauvegarde qui manque.
+            'tasks' => $user->role === Role::LocalManager ? [] : $this->taskStates(),
         ]);
     }
 
@@ -306,6 +314,62 @@ final class AdminOperationsController extends AdminController
             $user->email
         );
         $this->flashSuccess('calendar.import.deleted');
+
+        return $this->redirectToRoute($context, 'admin.operations');
+    }
+
+    /**
+     * État des tâches périodiques, prêt pour l'affichage.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function taskStates(): array
+    {
+        $now = gmdate('Y-m-d H:i:s');
+
+        return array_map(
+            static fn (TaskState $state): array => $state->toArray() + ['stale' => $state->isStale($now)],
+            $this->container->get(TaskStateRepository::class)->all()
+        );
+    }
+
+    /**
+     * Exécute une tâche périodique à la demande.
+     *
+     * Un propriétaire doit pouvoir relever son courrier ou lancer sa
+     * sauvegarde sans attendre le prochain passage du cron — et doit surtout
+     * pouvoir vérifier qu'une tâche fonctionne avant de compter dessus.
+     *
+     * @param array<string, string> $params
+     */
+    public function runTask(RequestContext $context, array $params = []): Response
+    {
+        $user = $this->requireAdministrator();
+
+        $task = ScheduledTask::tryFromCode($context->request->input('task', '') ?? '');
+        if ($task === null) {
+            throw new NotFoundException('Tâche inconnue.');
+        }
+
+        $result = SchedulerFactory::build($this->container)->runNow($task);
+
+        $this->audit()->record(
+            'scheduler.run',
+            'scheduled_task',
+            $task->value,
+            null,
+            ['status' => $result['status']],
+            $user->id,
+            $user->email
+        );
+
+        if ($result['status'] === 'error') {
+            $this->flashWarning('scheduler.flash.failed');
+        } elseif ($result['status'] === 'skipped') {
+            $this->flashWarning('scheduler.flash.skipped');
+        } else {
+            $this->flashSuccess('scheduler.flash.done');
+        }
 
         return $this->redirectToRoute($context, 'admin.operations');
     }

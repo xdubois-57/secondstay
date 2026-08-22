@@ -105,8 +105,19 @@ test.describe('contenus éditoriaux multilingues', () => {
         test('une page dépubliée disparaît du site public', async ({ page }) => {
             await page.goto('/fr/admin/content');
             await page.click(`[data-page-slug="${slug}"] a`);
+
+            // Le formulaire doit être posé avant qu'on touche à l'interrupteur,
+            // et l'enregistrement confirmé avant qu'on interroge le site
+            // public : sans ces deux points d'appui, une page restée publiée
+            // ne se manifeste que trois lignes plus bas, par un 200 qui ne dit
+            // pas pourquoi.
+            await expect(page.locator('[data-testid="page-form"]')).toBeVisible();
+            await page.locator('#is_published').scrollIntoViewIfNeeded();
             await page.uncheck('#is_published');
+            await expect(page.locator('#is_published')).not.toBeChecked();
+
             await page.click('[data-testid="save-page"]');
+            await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
 
             const response = await page.goto(`/fr/${slug}`);
             expect(response?.status()).toBe(404);

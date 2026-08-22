@@ -32,9 +32,15 @@
         <div class="card-header">{{ t('admin.dashboard.todo') }}</div>
         <ul class="list-group list-group-flush" data-testid="todo-list">
             {% for item in todo %}
-                <li class="list-group-item d-flex justify-content-between align-items-center" data-todo="{{ item.key }}">
-                    <span>{{ t(item.key, {'count': item.count}) }}</span>
-                    <a class="btn btn-sm btn-outline-primary" href="{{ path(item.route) }}">{{ t('common.continue') }}</a>
+                {# Même identifiant que sur l'écran d'exploitation : les deux
+                   écrans montrent la même liste, ils doivent se désigner de la
+                   même façon. #}
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-todo="{{ item.code }}">
+                    <span class="d-flex align-items-center gap-2">
+                        <span class="badge text-bg-{{ item.severity }}">{{ item.count }}</span>
+                        {{ t(item.key, {'count': item.count}) }}
+                    </span>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ path(item.route, item.params) }}">{{ t('common.continue') }}</a>
                 </li>
             {% else %}
                 <li class="list-group-item text-body-secondary" data-todo="none">{{ t('admin.dashboard.todo_empty') }}</li>

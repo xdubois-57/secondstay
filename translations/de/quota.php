@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Speicherkontingente (SPECIFICATIONS.md §67).
+ * Speicherkontingente (ROADMAP.md Iteration 14).
  */
 
 return [

@@ -90,15 +90,19 @@ final class StayInfoRepository
         string $title,
         string $body,
         bool $published = true,
+        bool $public = false,
+        ?int $mediaId = null,
     ): void {
         $definition = self::BLOCKS[$code] ?? ['phase' => StayPhase::ANY, 'position' => 900];
 
         $data = [
             'title' => mb_substr($title, 0, 190),
             'body' => $body === '' ? null : $body,
+            'media_id' => $mediaId,
             'phase' => $definition['phase'],
             'position' => $definition['position'],
             'published' => $published ? 1 : 0,
+            'public' => $public ? 1 : 0,
             'updated_at' => gmdate('Y-m-d H:i:s'),
         ];
 
@@ -109,6 +113,37 @@ final class StayInfoRepository
         }
 
         $this->database->update('stay_info', $data, ['code' => $code, 'locale' => $locale]);
+    }
+
+    /**
+     * Bloc lisible à son adresse publique stable (SPECIFICATIONS.md §47).
+     *
+     * Rien n'est servi qui ne soit explicitement public **et** publié **et**
+     * renseigné : un QR ne doit jamais ouvrir une page vide, et un bloc retiré
+     * du livret ne doit pas survivre à une adresse oubliée.
+     */
+    public function findPublic(string $code, string $locale): ?StayInfoBlock
+    {
+        $block = $this->find($code, $locale);
+
+        return $block !== null && $block->isPubliclyReadable() ? $block : null;
+    }
+
+    /**
+     * Codes publiés à une adresse publique, quelle que soit la langue.
+     *
+     * @return list<string>
+     */
+    public function publicCodes(): array
+    {
+        $codes = [];
+        foreach ($this->database->fetchAll(
+            'SELECT DISTINCT `code` FROM `stay_info` WHERE `public` = 1 AND `published` = 1'
+        ) as $row) {
+            $codes[] = (string) $row['code'];
+        }
+
+        return $codes;
     }
 
     /**

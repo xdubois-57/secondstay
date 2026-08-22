@@ -36,6 +36,12 @@ return [
         'inactive' => 'Site open',
     ],
     'check' => [
+        'payment_provider' => 'Payment provider',
+        'llm_provider' => 'Local content model',
+        'scheduler_cron' => 'Scheduled tasks (cron)',
+        'scheduler_tasks' => 'Task health',
+        'backup_state' => 'Backups',
+        'update_channel' => 'Updates',
         'php_version' => 'PHP version',
         'app_version' => 'SecondStay version',
         'ext_pdo_mysql' => 'PDO MySQL extension',
@@ -101,5 +107,34 @@ return [
         'reachable' => 'IMAP connection succeeded',
         'reply_ok' => 'Reply address configured',
         'reply_missing' => 'No reply address configured: replies will be attached as best they can',
+    ],
+    'payment' => [
+        'disabled' => 'No provider: every deposit is checked by hand',
+        'not_configured' => 'Provider selected but key missing',
+        'configured' => 'Provider configured',
+    ],
+    'llm' => [
+        'disabled' => 'Local content disabled',
+        'not_configured' => 'Local content enabled without key or provider',
+        'ready' => 'Local content generation ready',
+    ],
+    'scheduler' => [
+        'never' => 'Cron has never run: add the cron entry',
+        'running' => 'Cron is running',
+        'silent' => 'Cron has stopped running',
+        'unknown' => 'Cron state cannot be determined',
+        'tasks_ok' => 'All tasks are up to date',
+        'late' => 'Some tasks are overdue',
+        'failing' => 'Some tasks are failing',
+    ],
+    'backup' => [
+        'none' => 'No backup',
+        'fresh' => 'Backups up to date',
+        'stale' => 'Latest backup is too old',
+        'unknown' => 'Backups unreadable',
+    ],
+    'update' => [
+        'manual' => 'Updates installed manually',
+        'automatic' => 'Updates installed automatically',
     ],
 ];

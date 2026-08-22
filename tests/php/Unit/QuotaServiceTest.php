@@ -13,7 +13,7 @@ use SecondStay\Settings\SettingsService;
 use SecondStay\Tests\Support\InMemorySettingsRepository;
 
 /**
- * Quotas de stockage (SPECIFICATIONS.md §67).
+ * Quotas de stockage (ROADMAP.md itération 14).
  *
  * Un disque plein casse tout, y compris la sauvegarde qui aurait permis de
  * s'en sortir. Le produit refuse donc d'écrire **avant** la limite, et un

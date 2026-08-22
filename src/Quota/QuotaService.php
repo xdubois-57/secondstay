@@ -8,7 +8,7 @@ use SecondStay\Core\Paths;
 use SecondStay\Settings\SettingsService;
 
 /**
- * Quotas de stockage (ROADMAP.md itération 14, SPECIFICATIONS.md §67).
+ * Quotas de stockage (ROADMAP.md itération 14).
  *
  * Un hébergement mutualisé a un disque fini, et un disque plein casse tout —
  * y compris la sauvegarde qui aurait permis de s'en sortir. Le produit mesure

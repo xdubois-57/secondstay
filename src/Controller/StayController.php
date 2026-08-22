@@ -10,6 +10,7 @@ use SecondStay\Core\Exception\NotFoundException;
 use SecondStay\Core\Http\Response;
 use SecondStay\Core\RequestContext;
 use SecondStay\LocalContent\LocalContentService;
+use SecondStay\Stay\BlockIllustrations;
 use SecondStay\Stay\GuestLinkRepository;
 use SecondStay\Stay\StayService;
 use SecondStay\Stay\StayView;
@@ -147,6 +148,10 @@ final class StayController extends AbstractController
                 ->activitiesFor($view->booking, $view->locale),
             'meta_title' => $this->trans('stay.title'),
             'stay' => $view,
+            // Les illustrations sont résolues ici, une fois : un gabarit ne
+            // va pas chercher un média en base.
+            'illustrations' => $this->container->get(BlockIllustrations::class)
+                ->forBlocks($view->visibleBlocks(), $view->locale),
             'booking' => $view->booking,
             'guest_url' => $token === '' ? '' : $this->guestUrl($context, $token),
             // Le QR est rendu en ligne plutôt que servi par une seconde

@@ -36,6 +36,12 @@ return [
         'inactive' => 'Website geöffnet',
     ],
     'check' => [
+        'payment_provider' => 'Zahlungsanbieter',
+        'llm_provider' => 'Modell für lokale Inhalte',
+        'scheduler_cron' => 'Geplante Aufgaben (Cron)',
+        'scheduler_tasks' => 'Zustand der Aufgaben',
+        'backup_state' => 'Sicherungen',
+        'update_channel' => 'Aktualisierungen',
         'php_version' => 'PHP-Version',
         'app_version' => 'SecondStay-Version',
         'ext_pdo_mysql' => 'PDO-MySQL-Erweiterung',
@@ -101,5 +107,34 @@ return [
         'reachable' => 'IMAP-Verbindung erfolgreich',
         'reply_ok' => 'Antwortadresse konfiguriert',
         'reply_missing' => 'Keine Antwortadresse konfiguriert: Antworten werden bestmöglich zugeordnet',
+    ],
+    'payment' => [
+        'disabled' => 'Kein Anbieter: Jede Anzahlung wird von Hand geprüft',
+        'not_configured' => 'Anbieter gewählt, Schlüssel fehlt',
+        'configured' => 'Anbieter konfiguriert',
+    ],
+    'llm' => [
+        'disabled' => 'Lokale Inhalte deaktiviert',
+        'not_configured' => 'Lokale Inhalte aktiviert ohne Schlüssel oder Anbieter',
+        'ready' => 'Erzeugung lokaler Inhalte bereit',
+    ],
+    'scheduler' => [
+        'never' => 'Der Cron lief noch nie: Cron-Eintrag hinzufügen',
+        'running' => 'Der Cron läuft',
+        'silent' => 'Der Cron läuft nicht mehr',
+        'unknown' => 'Zustand des Cron nicht feststellbar',
+        'tasks_ok' => 'Alle Aufgaben sind aktuell',
+        'late' => 'Einige Aufgaben sind überfällig',
+        'failing' => 'Einige Aufgaben schlagen fehl',
+    ],
+    'backup' => [
+        'none' => 'Keine Sicherung',
+        'fresh' => 'Sicherungen aktuell',
+        'stale' => 'Letzte Sicherung ist zu alt',
+        'unknown' => 'Sicherungen nicht lesbar',
+    ],
+    'update' => [
+        'manual' => 'Aktualisierungen werden manuell installiert',
+        'automatic' => 'Aktualisierungen werden automatisch installiert',
     ],
 ];

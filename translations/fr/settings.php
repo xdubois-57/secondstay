@@ -172,7 +172,17 @@ return [
             'help' => 'Note interne expliquant la raison de la maintenance.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Jeton d’appel du planificateur',
+            'help' => 'À renseigner uniquement si votre hébergeur ne propose de cron que par URL. Vide, l’URL de déclenchement n’existe pas.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Sauvegarde automatique',
+            'help' => 'Laisse le planificateur créer une sauvegarde chaque jour.',
+        ],
         'retention_count' => [
             'label' => 'Sauvegardes conservées',
             'help' => 'Nombre de sauvegardes gardées avant suppression automatique.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Le jeton doit compter au moins 32 caractères.',
         'required' => 'Ce réglage est obligatoire.',
         'unknown' => 'Réglage inconnu.',
         'integer' => 'Saisissez un nombre entier.',
@@ -223,6 +234,7 @@ return [
         'iban' => 'IBAN invalide : vérifiez la clé de contrôle.',
         'bic' => 'BIC invalide (8 ou 11 caractères).',
         'currency' => 'Devise invalide : code ISO 4217 à trois lettres attendu.',
+        'color' => 'Couleur invalide : utilisez le format #rrggbb.',
         'too_long' => 'Valeur trop longue.',
         'too_small' => 'Valeur trop petite.',
         'too_large' => 'Valeur trop grande.',
@@ -266,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Rappel de séjour (jours avant l’arrivée)',
+            'help' => 'Nombre de jours entre l’envoi du rappel et l’arrivée du voyageur.',
+        ],
         'push_enabled' => [
             'label' => 'Notifications push',
             'help' => 'Autorise les navigateurs à recevoir des notifications. L’e-mail reste envoyé dans tous les cas.',
@@ -478,6 +494,10 @@ return [
             'label' => 'Rafraîchissement (jours)',
             'help' => 'Intervalle entre deux régénérations, jusqu’au séjour.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Couleur du thème', 'help' => 'Teinte de la barre système une fois l’application installée. Format #rrggbb.'],
+        'background_color' => ['label' => 'Couleur de fond', 'help' => 'Fond affiché au lancement, avant le premier rendu. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quota médias (Mo)', 'help' => 'Zéro signifie aucune limite.'],

@@ -110,6 +110,15 @@ final class SettingRegistry
             new SettingDefinition('site.public_url', SettingType::Url, '', 'site'),
             new SettingDefinition('site.season', SettingType::Enum, 'auto', 'site', enumValues: ['auto', 'summer', 'winter']),
 
+            // --- Application installable ----------------------------------
+            //
+            // Les couleurs du manifeste sont la seule part de l'application
+            // installable qui change réellement d'un logement à l'autre :
+            // c'est la teinte de la barre système une fois l'icône posée sur
+            // l'écran d'accueil.
+            new SettingDefinition('pwa.theme_color', SettingType::String, '#0d6efd', 'pwa', max: 7),
+            new SettingDefinition('pwa.background_color', SettingType::String, '#f8f9fa', 'pwa', max: 7),
+
             // --- Réservation ----------------------------------------------
             new SettingDefinition('booking.min_nights', SettingType::Integer, 2, 'booking', min: 1, max: 90),
             new SettingDefinition('booking.max_guests', SettingType::Integer, 6, 'booking', min: 1, max: 40),
@@ -284,6 +293,10 @@ final class SettingRegistry
             // --- Notifications ----------------------------------------------
             new SettingDefinition('notification.push_enabled', SettingType::Bool, false, 'notification'),
             new SettingDefinition('notification.retention_days', SettingType::Integer, 180, 'notification', min: 7, max: 3650),
+            // Combien de jours avant l'arrivée part le rappel de séjour. Une
+            // semaine laisse le temps de s'organiser sans que le message soit
+            // oublié d'ici l'arrivée.
+            new SettingDefinition('notification.reminder_days', SettingType::Integer, 7, 'notification', min: 1, max: 60),
             new SettingDefinition('push.subject', SettingType::String, '', 'notification', max: 190),
             // Générées par l'installation, jamais versionnées.
             new SettingDefinition('push.vapid_public', SettingType::String, '', 'notification', max: 255),
@@ -299,6 +312,10 @@ final class SettingRegistry
             new SettingDefinition('maintenance.message', SettingType::Text, '', 'maintenance'),
             new SettingDefinition('backup.retention_count', SettingType::Integer, 7, 'backup', min: 1, max: 100),
             new SettingDefinition('backup.include_media', SettingType::Bool, true, 'backup'),
+            // Sauvegarde déclenchée par le planificateur. Elle est active par
+            // défaut : une installation dont personne ne s'occupe est
+            // précisément celle qui a le plus besoin d'être sauvegardée.
+            new SettingDefinition('backup.auto_enabled', SettingType::Bool, true, 'backup'),
 
             // --- Mise à jour ----------------------------------------------
             new SettingDefinition('update.channel', SettingType::Enum, 'stable', 'update', enumValues: ['stable', 'prerelease']),
@@ -310,6 +327,12 @@ final class SettingRegistry
                 'update',
                 max: 190
             ),
+
+            // --- Planificateur ---------------------------------------------
+            // Jeton d'appel HTTP du planificateur, vide par défaut : sur un
+            // hébergement offrant un cron en ligne de commande — le cas
+            // général — aucune URL déclenchable n'a besoin d'exister.
+            new SettingDefinition('scheduler.http_token', SettingType::Secret, null, 'scheduler'),
 
             // --- Journalisation -------------------------------------------
             new SettingDefinition(

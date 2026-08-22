@@ -11,7 +11,7 @@ use SecondStay\Reporting\ReportPeriod;
 use SecondStay\Reporting\ReportService;
 
 /**
- * Reporting et quotas (SPECIFICATIONS.md §66 et §67).
+ * Reporting (SPECIFICATIONS.md §66) et quotas (ROADMAP.md itération 14).
  *
  * L'écran compte ; il ne conseille pas. L'avertissement est affiché, et il
  * voyage aussi dans le classeur exporté.

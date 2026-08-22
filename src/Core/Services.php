@@ -36,6 +36,7 @@ use SecondStay\Diagnostics\DiagnosticRunner;
 use SecondStay\Diagnostics\MailDnsChecker;
 use SecondStay\Diagnostics\MailboxDiagnostics;
 use SecondStay\Diagnostics\NotificationDiagnostics;
+use SecondStay\Diagnostics\OperationsDiagnostics;
 use SecondStay\Compliance\ComplianceRepository;
 use SecondStay\Compliance\ComplianceService;
 use SecondStay\Incident\IncidentRepository;
@@ -61,6 +62,7 @@ use SecondStay\LocalContent\PromptBuilder;
 use SecondStay\Legal\BookingConsentRepository;
 use SecondStay\Legal\LegalDocumentRepository;
 use SecondStay\Legal\LegalService;
+use SecondStay\Logging\LogRepository;
 use SecondStay\Logging\Logger;
 use SecondStay\Media\ImageProcessor;
 use SecondStay\Media\MediaRepository;
@@ -112,6 +114,7 @@ use SecondStay\Operations\ChecklistService;
 use SecondStay\Operations\TaskRepository;
 use SecondStay\Operations\TodoService;
 use SecondStay\Payment\FakePaymentProvider;
+use SecondStay\Stay\BlockIllustrations;
 use SecondStay\Stay\GuestLinkRepository;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
@@ -128,6 +131,9 @@ use SecondStay\Police\PoliceRecordService;
 use SecondStay\Dispute\DisputeRepository;
 use SecondStay\Dispute\DisputeService;
 use SecondStay\Privacy\RetentionService;
+use SecondStay\Scheduler\Scheduler;
+use SecondStay\Scheduler\TaskStateRepository;
+use SecondStay\Notification\StayReminderService;
 use SecondStay\Quota\QuotaService;
 use SecondStay\Reporting\ReportService;
 use SecondStay\Tax\TouristTaxCalculator;
@@ -160,6 +166,9 @@ final class Services
 
             return $logger->withDatabase(self::optionalDatabase($c));
         });
+
+        $container->set(LogRepository::class, static fn (Container $c): LogRepository
+            => new LogRepository($c->get(Database::class)));
 
         $container->set(InstallationState::class, static fn (Container $c): InstallationState
             => new InstallationState($c->get(Paths::class)));
@@ -449,6 +458,28 @@ final class Services
                 $c->get(Logger::class),
             ));
 
+        $container->set(StayReminderService::class, static fn (Container $c): StayReminderService
+            => new StayReminderService(
+                $c->get(BookingRepository::class),
+                $c->get(UserRepository::class),
+                $c->get(NotificationService::class),
+                $c->get(NotificationRepository::class),
+                $c->get(SettingsService::class),
+            ));
+
+        // --- Tâches périodiques (ARCHITECTURE.md §23) ----------------------
+        // Le planificateur n'est qu'un ordonnanceur : il ne connaît aucune
+        // tâche par lui-même, `SchedulerFactory` les lui branche au moment de
+        // l'exécution afin qu'une tâche non due ne construise rien.
+        $container->set(TaskStateRepository::class, static fn (Container $c): TaskStateRepository
+            => new TaskStateRepository($c->get(Database::class)));
+
+        $container->set(Scheduler::class, static fn (Container $c): Scheduler => new Scheduler(
+            $c->get(TaskStateRepository::class),
+            $c->get(Logger::class),
+            $c->get(AuditTrail::class),
+        ));
+
         // --- Application installable --------------------------------------
         $container->set(ManifestBuilder::class, static function (Container $c): ManifestBuilder {
             $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
@@ -697,6 +728,11 @@ final class Services
             $c->get(IncidentRepository::class),
             $c->get(ComplianceService::class),
             $c->get(DisputeRepository::class),
+            $c->get(BackupService::class),
+            $c->get(LogRepository::class),
+            $c->get(TaskStateRepository::class),
+            $c->get(MaintenanceMode::class),
+            $c->get(SettingsService::class),
         ));
 
         // --- Mon séjour et liens invité ------------------------------------
@@ -708,6 +744,9 @@ final class Services
 
         $container->set(GuestLinkRepository::class, static fn (Container $c): GuestLinkRepository
             => new GuestLinkRepository($c->get(Database::class)));
+
+        $container->set(BlockIllustrations::class, static fn (Container $c): BlockIllustrations
+            => new BlockIllustrations($c->get(MediaRepository::class)));
 
         $container->set(StayService::class, static fn (Container $c): StayService => new StayService(
             $c->get(StayInfoRepository::class),
@@ -978,6 +1017,17 @@ final class Services
                     $c->get(PushProvider::class),
                     $c->get(PushSubscriptionRepository::class),
                     $probe,
+                ));
+
+                // Paiement, IA, cron, sauvegarde et mise à jour : tous ces
+                // contrôles se lisent localement, sans un seul appel sortant.
+                $runner->register(new OperationsDiagnostics(
+                    $settings,
+                    $c->get(PaymentProvider::class),
+                    $c->get(LlmProvider::class),
+                    $c->get(TaskStateRepository::class),
+                    $c->get(BackupService::class),
+                    $c->get(UpdateService::class),
                 ));
 
                 // Comme la sonde SMTP, la connexion IMAP n'est ouverte que

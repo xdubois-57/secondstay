@@ -172,7 +172,17 @@ return [
             'help' => 'Interne notitie met de reden voor het onderhoud.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Token voor de planner',
+            'help' => 'Vul dit alleen in als uw hostingprovider cron enkel via een URL aanbiedt. Leeg bestaat de start-URL niet.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatische back-up',
+            'help' => 'Laat de planner elke dag een back-up maken.',
+        ],
         'retention_count' => [
             'label' => 'Bewaarde back-ups',
             'help' => 'Aantal back-ups dat wordt bewaard vóór automatische verwijdering.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Het token moet minstens 32 tekens lang zijn.',
         'required' => 'Deze instelling is verplicht.',
         'unknown' => 'Onbekende instelling.',
         'integer' => 'Voer een geheel getal in.',
@@ -223,6 +234,7 @@ return [
         'iban' => 'Ongeldig IBAN: controleer het controlegetal.',
         'bic' => 'Ongeldige BIC (8 of 11 tekens).',
         'currency' => 'Ongeldige valuta: een ISO 4217-code van drie letters wordt verwacht.',
+        'color' => 'Ongeldige kleur: gebruik het formaat #rrggbb.',
         'too_long' => 'Waarde is te lang.',
         'too_small' => 'Waarde is te klein.',
         'too_large' => 'Waarde is te groot.',
@@ -266,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Herinnering verblijf (dagen voor aankomst)',
+            'help' => 'Aantal dagen tussen het versturen van de herinnering en de aankomst van de gast.',
+        ],
         'push_enabled' => [
             'label' => 'Pushmeldingen',
             'help' => 'Laat browsers meldingen ontvangen. E-mail wordt in elk geval verstuurd.',
@@ -478,6 +494,10 @@ return [
             'label' => 'Verversing (dagen)',
             'help' => 'Interval tussen twee generaties, tot aan het verblijf.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Themakleur', 'help' => 'Tint van de systeembalk zodra de app is geïnstalleerd. Formaat #rrggbb.'],
+        'background_color' => ['label' => 'Achtergrondkleur', 'help' => 'Wordt bij het starten getoond, vóór de eerste weergave. Formaat #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quotum media (MB)', 'help' => 'Nul betekent geen limiet.'],

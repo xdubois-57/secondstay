@@ -172,7 +172,17 @@ return [
             'help' => 'Interne Notiz zur Begründung der Wartung.',
         ],
     ],
+    'scheduler' => [
+        'http_token' => [
+            'label' => 'Token für den Planer',
+            'help' => 'Nur ausfüllen, wenn Ihr Hoster Cron ausschließlich per URL anbietet. Leer existiert die Auslöse-URL nicht.',
+        ],
+    ],
     'backup' => [
+        'auto_enabled' => [
+            'label' => 'Automatische Sicherung',
+            'help' => 'Lässt den Planer täglich eine Sicherung erstellen.',
+        ],
         'retention_count' => [
             'label' => 'Aufbewahrte Sicherungen',
             'help' => 'Anzahl der Sicherungen vor automatischer Löschung.',
@@ -207,6 +217,7 @@ return [
         ],
     ],
     'error' => [
+        'token_too_short' => 'Das Token muss mindestens 32 Zeichen lang sein.',
         'required' => 'Diese Einstellung ist erforderlich.',
         'unknown' => 'Unbekannte Einstellung.',
         'integer' => 'Geben Sie eine ganze Zahl ein.',
@@ -223,6 +234,7 @@ return [
         'iban' => 'Ungültige IBAN: Prüfziffer kontrollieren.',
         'bic' => 'Ungültiger BIC (8 oder 11 Zeichen).',
         'currency' => 'Ungültige Währung: dreistelliger ISO-4217-Code erwartet.',
+        'color' => 'Ungültige Farbe: Verwenden Sie das Format #rrggbb.',
         'too_long' => 'Wert ist zu lang.',
         'too_small' => 'Wert ist zu klein.',
         'too_large' => 'Wert ist zu groß.',
@@ -266,6 +278,10 @@ return [
         ],
     ],
     'notification' => [
+        'reminder_days' => [
+            'label' => 'Erinnerung an den Aufenthalt (Tage vor Anreise)',
+            'help' => 'Anzahl der Tage zwischen dem Versand der Erinnerung und der Anreise des Gastes.',
+        ],
         'push_enabled' => [
             'label' => 'Push-Benachrichtigungen',
             'help' => 'Erlaubt Browsern, Benachrichtigungen zu empfangen. Die E-Mail wird in jedem Fall versendet.',
@@ -478,6 +494,10 @@ return [
             'label' => 'Aktualisierung (Tage)',
             'help' => 'Abstand zwischen zwei Generierungen bis zum Aufenthalt.',
         ],
+    ],
+    'pwa' => [
+        'theme_color' => ['label' => 'Themenfarbe', 'help' => 'Farbton der Systemleiste, sobald die App installiert ist. Format #rrggbb.'],
+        'background_color' => ['label' => 'Hintergrundfarbe', 'help' => 'Wird beim Start angezeigt, vor der ersten Darstellung. Format #rrggbb.'],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Kontingent Medien (MB)', 'help' => 'Null bedeutet keine Grenze.'],

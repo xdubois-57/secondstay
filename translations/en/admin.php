@@ -44,11 +44,6 @@ return [
     ],
     'todo' => [
         'diagnostics_error' => '{count} diagnostic(s) in error',
-        'pending_migrations' => '{count} pending migration(s)',
-        'no_backup' => 'No backup exists yet',
-        'maintenance_active' => 'Maintenance mode is active',
-        'property_name' => 'The property name is not set',
-        'update_available' => 'An update is available',
     ],
     'settings' => [
         'title' => 'Configuration',
@@ -74,7 +69,9 @@ return [
             'legal' => 'Legal notices',
             'operations' => 'Operations',
             'llm' => 'Local content',
+            'pwa' => 'Installable app',
             'quota' => 'Quotas',
+            'scheduler' => 'Scheduler',
             'logging' => 'Logging',
         ],
         'value' => [

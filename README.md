@@ -259,6 +259,47 @@ Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la b
 devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
 rouvrir l'installation d'une instance existante.
 
+### Tâches périodiques
+
+Une dernière étape reste manuelle parce qu'elle vit chez l'hébergeur : la ligne
+cron. Sans elle, le produit fonctionne — mais rien de ce qui doit arriver
+*seul* n'arrive : le courrier n'est pas relevé, les calendriers externes ne se
+synchronisent pas, les rappels ne partent pas, les sauvegardes ne se font pas,
+et les verrous de réservation abandonnés continuent d'occuper des nuits.
+
+```cron
+*/10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php >/dev/null 2>&1
+```
+
+Une seule entrée suffit, à la fréquence que l'hébergement autorise : le produit
+porte lui-même le calendrier de chaque tâche et n'exécute que ce qui est dû. Un
+passage manqué n'a pas de conséquence, deux passages simultanés non plus — la
+tâche est verrouillée le temps de son exécution.
+
+L'écran **Exploitation** liste les tâches, leur dernière exécution, leur
+résultat, et permet de lancer chacune à la demande — c'est ainsi qu'on vérifie
+qu'une tâche fonctionne avant de compter dessus. Une tâche qui accuse trois
+intervalles de retard y est signalée, et les diagnostics le disent aussi.
+
+Sur les hébergements dont le cron n'appelle que des URLs, enregistrez un jeton
+dans **Réglages → Planificateur** et faites appeler
+`https://votre-site/tasks/run?token=…`. Tant qu'aucun jeton n'est enregistré,
+cette adresse répond 404 comme n'importe quel chemin inexistant.
+
+### Le tableau « À faire »
+
+Le tableau de bord et l'écran d'exploitation affichent la même liste, et elle
+ne contient que ce qui réclame une décision : une demande à valider, une
+échéance dépassée, une caution à restituer, un contrat non signé, un courrier
+qu'aucune règle n'a su rattacher, un incident ou un litige ouvert, un sujet de
+conformité à vérifier, une sauvegarde absente ou trop ancienne, une erreur des
+dernières vingt-quatre heures, une mise à jour disponible, une migration en
+attente, le site fermé pour maintenance.
+
+Rien de tout cela ne demande d'appel réseau : ces deux écrans sont les plus
+fréquentés de l'administration, et les rendre dépendants d'un service distant
+les rendrait aussi lents et aussi fragiles que lui.
+
 ## Site public
 
 L'installation crée un site complet, traduit dans les quatre langues :
@@ -294,8 +335,10 @@ plusieurs niveaux. La présentation s'adapte à la saison configurée
 /fr/admin/users        plusieurs administrateurs et responsables locaux
 /fr/admin/backups      création, vérification, téléchargement, restauration
 /fr/admin/updates      vérification et installation des GitHub Releases
-/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, exploitation,
-                       remise à zéro des compteurs de limitation de débit
+/fr/admin/diagnostics  plateforme, stockage, base, chiffrement, e-mail, DNS,
+                       boîte de réception, paiement, IA, tâches périodiques,
+                       sauvegardes, mise à jour ; remise à zéro des compteurs
+                       de limitation de débit
 /fr/admin/logs         journal technique filtrable et purgeable
 /fr/admin/audit        journal des actions sensibles
 ```
@@ -423,6 +466,12 @@ Les codes d'accès — Wi-Fi, boîte à clés, alarme — sont chiffrés au repo
 n'apparaissent que **pendant** le séjour : un code publié un mois à l'avance
 ou resté lisible après le départ n'est plus un code d'accès.
 
+Chaque section du livret accepte une illustration choisie dans la médiathèque :
+une photo explique le tri des déchets, l'emplacement du local ou la manœuvre
+d'un appareil mieux qu'un paragraphe, et se lit dans toutes les langues. Seuls
+les médias publiés et non privés sont proposés — le livret est lu par des
+voyageurs, pas par des administrateurs.
+
 Cette page est la seule conçue pour fonctionner **hors ligne** : elle ne porte
 ni montant, ni document, ni action d'écriture. Le voyageur qui cherche le code
 de la boîte à clés devant la porte, sans réseau, le trouve quand même.
@@ -430,6 +479,29 @@ de la boîte à clés devant la porte, sans réseau, le trouve quand même.
 Un lien invité donne accès à ces informations pratiques — et à rien d'autre.
 Il expire peu après le départ, se révoque, et s'accompagne d'un QR à imprimer
 pour l'afficher dans le logement.
+
+### QR physiques
+
+Un lien invité expire ; un autocollant collé sur la machine à laver, non.
+Chaque bloc du livret peut donc être publié à une adresse qui ne change jamais,
+faite pour être imprimée en QR et posée là où la question se pose :
+
+```text
+/fr/info/waste       le tri, sur le local à poubelles
+/fr/info/appliances  les appareils, sur la machine à laver
+/fr/info/wifi        le Wi-Fi, dans le salon
+```
+
+Cette publication est **refusée par défaut** et se décide bloc par bloc, dans
+chaque langue, depuis l'écran du livret — qui affiche alors l'adresse et le QR
+à imprimer. C'est délibéré : la page est lisible par quiconque en connaît
+l'adresse, et le livret contient des choses qui n'ont rien à faire sur le web
+ouvert. N'y mettez ni code de boîte à clés, ni mot de passe Wi-Fi : ceux-là
+restent chiffrés et réservés à « Mon séjour ».
+
+Ces pages fonctionnent hors ligne une fois vues, ne sont pas indexées, et
+tombent sur la langue du logement quand le bloc n'existe pas encore dans celle
+du visiteur.
 
 ## États des lieux et incidents
 
@@ -509,8 +581,16 @@ suivies automatiquement ; seules celles qui demandent une action humaine se
 cochent.
 
 Le tableau « À faire » ne montre que ce qui réclame une décision : demandes à
-valider, échéances dépassées, cautions à restituer, courriers non rattachés,
-séjours proches encore à préparer, incidents ouverts, conformité à vérifier.
+valider, échéances dépassées, cautions à restituer, contrats non signés,
+courriers non rattachés, séjours proches encore à préparer, incidents et
+litiges ouverts, conformité à vérifier, sauvegarde absente ou trop ancienne,
+erreurs récentes, mise à jour disponible. C'est la même liste que sur le
+tableau de bord.
+
+L'écran d'exploitation porte aussi l'état des tâches périodiques : dernière
+exécution, résultat, retard éventuel, et un bouton pour lancer chacune à la
+demande — c'est ainsi qu'on vérifie qu'une tâche fonctionne avant de compter
+dessus.
 
 ## Calendriers privés
 

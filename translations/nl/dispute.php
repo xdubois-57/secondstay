@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Geschillen verbonden aan een verblijf (SPECIFICATIONS.md §68).
+ * Geschillen verbonden aan een verblijf (ROADMAP.md iteratie 14).
  */
 
 return [

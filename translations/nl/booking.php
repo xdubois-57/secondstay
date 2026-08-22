@@ -161,6 +161,7 @@ return [
         'incident_reported' => 'Incident gemeld',
     ],
     'admin' => [
+        'all' => 'Alle',
         'reference' => 'Referentie',
         'title' => 'Reserveringen',
         'none' => 'Geen reservering.',

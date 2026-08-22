@@ -49,8 +49,15 @@ const NEVER_CACHED = [
     /\/incident(\/|$)/
 ];
 
-/** Pages dont la version hors ligne a un sens. */
-const OFFLINE_FIRST = [/\/stay\/[A-Z0-9-]+$/i, /\/guest\/[a-f0-9]{64}$/];
+/**
+ * Pages dont la version hors ligne a un sens.
+ *
+ * Les pages ouvertes depuis un QR collé dans le logement en font partie : le
+ * réseau mobile est souvent mauvais dans une buanderie ou un local à
+ * poubelles, et ce sont précisément les textes que la spécification autorise
+ * hors ligne — livret, Wi-Fi, règles, déchets, sécurité (§44 et §47).
+ */
+const OFFLINE_FIRST = [/\/stay\/[A-Z0-9-]+$/i, /\/guest\/[a-f0-9]{64}$/, /\/info\/[a-z]{4,32}$/];
 
 /** Au-delà, on considère que le réseau ne répondra pas à temps. */
 const NETWORK_TIMEOUT_MS = 3000;

@@ -9,6 +9,13 @@ declare(strict_types=1);
 return [
     'title' => 'Exploitatie',
     'todo' => [
+        'maintenance_active' => 'De onderhoudsmodus is actief',
+        'property_name' => 'De naam van de woning is niet ingevuld',
+        'contracts_pending' => 'Niet-ondertekende contracten',
+        'backup_missing' => 'Geen back-up',
+        'backup_stale' => 'Back-up te oud',
+        'errors_recent' => 'Fouten in de laatste 24 uur',
+        'update_available' => 'Update beschikbaar',
         'title' => 'Te doen',
         'empty' => 'Er vraagt niets uw aandacht.',
         'bookings_to_confirm' => 'Aanvragen te bevestigen',

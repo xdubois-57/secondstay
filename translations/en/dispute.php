@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Disputes attached to a stay (SPECIFICATIONS.md §68).
+ * Disputes attached to a stay (ROADMAP.md iteration 14).
  */
 
 return [

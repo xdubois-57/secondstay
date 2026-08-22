@@ -44,11 +44,6 @@ return [
     ],
     'todo' => [
         'diagnostics_error' => '{count} diagnostic(s) en erreur',
-        'pending_migrations' => '{count} migration(s) en attente',
-        'no_backup' => 'Aucune sauvegarde n’existe encore',
-        'maintenance_active' => 'Le mode maintenance est actif',
-        'property_name' => 'Le nom du logement n’est pas renseigné',
-        'update_available' => 'Une mise à jour est disponible',
     ],
     'settings' => [
         'title' => 'Configuration',
@@ -74,7 +69,9 @@ return [
             'legal' => 'Mentions légales',
             'operations' => 'Exploitation',
             'llm' => 'Contenu local',
+            'pwa' => 'Application installable',
             'quota' => 'Quotas',
+            'scheduler' => 'Planificateur',
             'logging' => 'Journalisation',
         ],
         'value' => [

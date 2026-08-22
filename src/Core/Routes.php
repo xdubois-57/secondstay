@@ -43,9 +43,11 @@ use SecondStay\Controller\MediaController;
 use SecondStay\Controller\PageController;
 use SecondStay\Controller\CalendarController;
 use SecondStay\Controller\StayController;
+use SecondStay\Controller\StayInfoController;
 use SecondStay\Controller\DocumentController;
 use SecondStay\Controller\PaymentController;
 use SecondStay\Controller\PwaController;
+use SecondStay\Controller\SchedulerController;
 use SecondStay\Controller\QuoteController;
 use SecondStay\Controller\SeoController;
 use SecondStay\Controller\WebhookController;
@@ -166,6 +168,12 @@ final class Routes
         // dans le logement (SPECIFICATIONS.md §47).
         $router->get('/guest/{token:[a-f0-9]{64}}', [StayController::class, 'guest'], 'stay.guest');
 
+        // QR physiques : une adresse par bloc du livret, stable et dérivée du
+        // seul code du bloc — l'autocollant ne se met pas à jour. La page
+        // n'existe que si le propriétaire l'a explicitement rendue publique
+        // (SPECIFICATIONS.md §47).
+        $router->get('/info/{code:[a-z]{4,32}}', [StayInfoController::class, 'show'], 'stay.info');
+
         // --- États des lieux --------------------------------------------------
         // Ces pages écrivent — un constat, une photo : elles ne sont donc
         // jamais servies depuis le cache (SPECIFICATIONS.md §53).
@@ -223,6 +231,11 @@ final class Routes
         // Notification fournisseur : hors langue, authentifiée par relecture
         // de l'état chez le fournisseur, donc exemptée de CSRF (Kernel).
         $router->post('/webhook/payment', [WebhookController::class, 'payment'], 'payment.webhook', false);
+
+        // Déclenchement HTTP du planificateur, pour les hébergements dont le
+        // cron n'appelle que des URLs. Fermé tant qu'aucun jeton n'est
+        // enregistré : sans jeton, la route répond 404 (SchedulerController).
+        $router->get('/tasks/run', [SchedulerController::class, 'run'], 'scheduler.run', false);
 
         // --- Devis en direct ------------------------------------------------
         $router->get('/api/quote', [QuoteController::class, 'quote'], 'api.quote', false);
@@ -321,6 +334,11 @@ final class Routes
             '/admin/bookings/{id:\d+}/task',
             [AdminOperationsController::class, 'toggleTask'],
             'admin.operations.task'
+        );
+        $router->post(
+            '/admin/tasks/run',
+            [AdminOperationsController::class, 'runTask'],
+            'admin.tasks.run'
         );
         $router->post(
             '/admin/calendars',

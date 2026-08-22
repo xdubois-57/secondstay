@@ -31,8 +31,23 @@ test.describe('cycle de vie administrateur', () => {
         await page.goto('/fr/admin/backups');
         const initialCount = await page.locator('[data-backup-id]').count();
 
+        // SPECIFICATIONS.md §50 — une installation sans aucune sauvegarde le
+        // dit dans le tableau « À faire », là où le propriétaire regarde,
+        // plutôt que de le taire jusqu'au jour où il en aura besoin.
+        if (initialCount === 0) {
+            await page.goto('/fr/admin/operations');
+            await expect(page.locator('[data-todo="backup_missing"]')).toBeVisible();
+            await page.goto('/fr/admin/backups');
+        }
+
         await page.click('[data-testid="create-backup"]');
         await expect(page.locator('[data-backup-id]')).toHaveCount(initialCount + 1);
+
+        // Une fois la sauvegarde faite, l'entrée disparaît : le tableau ne
+        // liste que ce qui réclame encore une décision.
+        await page.goto('/fr/admin/operations');
+        await expect(page.locator('[data-todo="backup_missing"]')).toHaveCount(0);
+        await page.goto('/fr/admin/backups');
 
         // Les sauvegardes sont listées de la plus récente à la plus ancienne.
         const backupId = await page.locator('[data-backup-id]').first().getAttribute('data-backup-id');
@@ -90,6 +105,28 @@ test.describe('cycle de vie administrateur', () => {
         await expect(page.locator('[data-diagnostic="crypto_sodium"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-diagnostic="storage_backups"][data-status="ok"]')).toBeVisible();
         await expect(page.locator('[data-testid="schema-version"]')).toHaveText(/^\d{4}$/);
+
+        // SPECIFICATIONS.md §18 — paiement, IA, cron, sauvegarde et mise à
+        // jour figurent au même titre que PHP, la base et le chiffrement.
+        for (const check of [
+            'payment_provider',
+            'llm_provider',
+            'scheduler_cron',
+            'scheduler_tasks',
+            'backup_state',
+            'update_channel'
+        ]) {
+            await expect(page.locator(`[data-diagnostic="${check}"]`)).toBeVisible();
+        }
+
+        // Aucune tâche ne doit être en échec. L'état exact du cron dépend de
+        // ce que la campagne a déjà déclenché — les deux projets Playwright
+        // partagent une installation — et n'est donc pas assertable ici ; il
+        // l'est en PHP, où l'état de départ est maîtrisé.
+        await expect(page.locator('[data-diagnostic="scheduler_tasks"]')).not.toHaveAttribute(
+            'data-status',
+            'error'
+        );
     });
 
     test('le secret d’un réglage n’est jamais réaffiché', async ({ page }) => {

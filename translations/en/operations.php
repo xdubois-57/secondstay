@@ -9,6 +9,13 @@ declare(strict_types=1);
 return [
     'title' => 'Operations',
     'todo' => [
+        'maintenance_active' => 'Maintenance mode is active',
+        'property_name' => 'The property name is not set',
+        'contracts_pending' => 'Unsigned contracts',
+        'backup_missing' => 'No backup',
+        'backup_stale' => 'Backup too old',
+        'errors_recent' => 'Errors in the last 24 h',
+        'update_available' => 'Update available',
         'title' => 'To do',
         'empty' => 'Nothing needs your attention.',
         'bookings_to_confirm' => 'Requests to approve',

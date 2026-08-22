@@ -69,6 +69,13 @@ return [
         'banner' => 'Vous consultez ce séjour avec un lien invité.',
     ],
     'admin' => [
+        'illustration' => 'Illustration',
+        'no_illustration' => 'Aucune',
+        'illustration_help' => 'Choisie dans la médiathèque, parmi les médias publiés et non privés. Une photo explique le tri des déchets ou la manœuvre d’un appareil mieux qu’un paragraphe, et se lit dans toutes les langues.',
+        'public' => 'Adresse publique pour QR',
+        'public_help' => 'Publie ce bloc à une adresse fixe, lisible sans compte ni séjour. N’activez ce réglage que pour un texte qui peut être lu par n’importe qui : n’y laissez ni code d’accès, ni mot de passe Wi-Fi.',
+        'public_url' => 'Adresse à encoder dans le QR',
+        'qr_alt' => 'QR code de la page publique',
         'title' => 'Livret d’accueil',
         'intro' => 'Ces textes s’affichent dans « Mon séjour » et derrière les liens invité. Ils sont consultables hors ligne.',
         'block_title' => 'Titre',
@@ -83,6 +90,10 @@ return [
         'not_set' => 'Non renseigné',
         'completeness' => 'Complétude',
         'language' => 'Langue',
+    ],
+    'info' => [
+        'fallback' => 'Ce texte n’existe pas encore dans votre langue ; il est affiché dans celle du logement.',
+        'notice' => 'Page d’information du logement. Elle ne contient aucune donnée de réservation.',
     ],
     'error' => [
         'not_active' => 'Ce séjour n’est plus actif.',

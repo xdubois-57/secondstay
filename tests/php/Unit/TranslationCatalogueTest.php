@@ -84,6 +84,82 @@ final class TranslationCatalogueTest extends TestCase
         }
     }
 
+    /**
+     * Toute clé écrite littéralement dans le code ou les gabarits existe.
+     *
+     * La parité entre catalogues ne suffit pas : une clé inventée dans un
+     * gabarit est absente des quatre langues à la fois, donc parfaitement
+     * symétrique. Elle ne casse rien de visible non plus — le traducteur rend
+     * le dernier segment lisible, et « All » s'affiche dans les quatre langues
+     * sans que personne s'en aperçoive. C'est exactement le genre de défaut
+     * qu'une relecture humaine ne voit pas et qu'une machine voit toujours
+     * (TESTING.md §9).
+     */
+    public function testEveryLiteralKeyUsedInTheProductExists(): void
+    {
+        $catalogue = self::translator()->catalogue(Locales::FALLBACK);
+
+        $missing = [];
+        foreach (self::literalKeys() as $key => $origin) {
+            if (!array_key_exists($key, $catalogue)) {
+                $missing[] = $key . ' (' . $origin . ')';
+            }
+        }
+
+        sort($missing);
+        self::assertSame([], $missing, 'Clés de traduction inexistantes');
+    }
+
+    /**
+     * Clés citées littéralement, avec le fichier où elles apparaissent.
+     *
+     * Les préfixes de concaténation — `t('stay.block.' ~ code)` — se
+     * reconnaissent à leur fin : un point ou un tiret bas. Ils sont écartés,
+     * faute de quoi ce contrôle ne signalerait que des faux positifs et
+     * finirait par être ignoré.
+     *
+     * @return array<string, string> clé => fichier
+     */
+    private static function literalKeys(): array
+    {
+        $root = dirname(__DIR__, 3);
+        $keys = [];
+
+        foreach ([$root . '/src', $root . '/templates'] as $directory) {
+            /** @var iterable<\SplFileInfo> $files */
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($files as $file) {
+                if (!$file->isFile()) {
+                    continue;
+                }
+
+                $contents = (string) file_get_contents($file->getPathname());
+                $found = preg_match_all(
+                    "/\\b(?:t|trans|transChoice|flashSuccess|flashError|flashWarning)\\(\\s*'([a-z0-9_.]+)'/i",
+                    $contents,
+                    $matches
+                );
+
+                if ($found === false || $found === 0) {
+                    continue;
+                }
+
+                foreach ($matches[1] as $key) {
+                    if (str_ends_with($key, '.') || str_ends_with($key, '_')) {
+                        continue;
+                    }
+
+                    $keys[$key] ??= str_replace($root . '/', '', $file->getPathname());
+                }
+            }
+        }
+
+        return $keys;
+    }
+
     public function testAllFirstClassLocalesAreCovered(): void
     {
         self::assertSame(['fr', 'en', 'nl', 'de'], Locales::ALL);

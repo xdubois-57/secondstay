@@ -93,6 +93,17 @@
             {% for block in stay.visibleBlocks %}
                 <div class="card mb-3" data-block="{{ block.code }}">
                     <div class="card-header">{{ block.title ?: t(block.labelKey) }}</div>
+                    {% if illustrations[block.code] is defined %}
+                        {# L'illustration précède le texte : le voyageur est
+                           devant la chose, il reconnaît avant de lire. #}
+                        <img class="card-img-top"
+                             src="{{ base_path }}/media/large/{{ illustrations[block.code].filename }}"
+                             alt="{{ illustrations[block.code].alt }}"
+                             width="{{ illustrations[block.code].width }}"
+                             height="{{ illustrations[block.code].height }}"
+                             loading="lazy"
+                             data-block-illustration="{{ block.code }}">
+                    {% endif %}
                     <div class="card-body">
                         {# Le texte du livret est saisi par le propriétaire et
                            échappé : aucun HTML n'y est interprété. #}

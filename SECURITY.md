@@ -990,3 +990,77 @@ sans montant borné et sans explication. L'historique est en ajout seul : une
 ne change pas la règle : ce qui est effacé automatiquement laisse une trace,
 et les pièces contractuelles — séjours, paiements, contrats acceptés, états des
 lieux — ne sont jamais purgées sans décision humaine.
+
+## 38. Tâches périodiques et pages d'information publiques
+
+**Le point d'entrée du planificateur n'est pas atteignable par le web.**
+`src/Scheduler/cron.php` vit sous `src/`, refusé à la fois par le `.htaccess` de
+la racine et par `PublicPathPolicy`, et refuse lui-même de répondre hors CLI.
+Trois mécanismes indépendants, parce qu'un planificateur devenu URL par accident
+donnerait à n'importe qui le pouvoir de déclencher une sauvegarde, une purge et
+une relève de courrier en boucle. La campagne vérifie que ce chemin est refusé,
+au même titre que `src/Core/Kernel.php`.
+
+**La porte HTTP existe, fermée.** Une partie des hébergements mutualisés ne
+propose de cron que par URL ; sans porte, ces installations n'auraient ni
+sauvegarde, ni purge, ni relève — et personne ne verrait cette absence.
+`GET /tasks/run` est donc servie, mais :
+
+- **elle n'existe pas sans jeton.** Tant qu'aucun jeton n'est enregistré, elle
+  répond 404, comme un chemin inventé : elle ne signale pas sa présence, et il
+  n'y a rien à forcer sur une installation qui ne s'en sert pas ;
+- **le jeton fait au moins trente-deux caractères**, refusé plus court à la
+  saisie, et il est comparé en temps constant ;
+- **la limitation de débit porte sur l'adresse d'appel**, et non sur le jeton
+  présenté. Celui qui balaie essaie précisément un jeton différent à chaque
+  coup : un compteur indexé sur le jeton lui ouvrirait un compteur neuf à
+  chaque essai, et ne limiterait rien. L'adresse, elle, ne change pas — et la
+  table des compteurs ne porte alors rien d'autre qu'une adresse IP, jamais la
+  liste des secrets tentés. Un appel valide remet le compteur à zéro, faute de
+  quoi un cron appelé toutes les cinq minutes finirait par se limiter
+  lui-même ;
+- **un jeton faux se lit comme un jeton absent** — 404 dans les deux cas.
+
+**Une tâche ne s'exécute jamais deux fois en parallèle.** Le verrou est pris en
+base par un `UPDATE` conditionnel, seule primitive atomique disponible sans
+dépendance. C'est une propriété de sûreté : deux relèves simultanées
+importeraient deux fois les mêmes pièces jointes, et deux purges concurrentes
+travailleraient sur un état qu'elles modifient l'une pour l'autre. Le verrou est
+à échéance, pour qu'un processus tué par l'hébergeur ne condamne pas sa tâche.
+
+**Une tâche en échec ne dit rien de plus que nécessaire.** Le message
+d'exception peut porter un hôte, un chemin ou un identifiant : il part au
+journal, déjà assaini, et l'écran d'exploitation ne reçoit qu'une clé de
+traduction. Le déclenchement manuel d'une tâche est audité.
+
+**Les diagnostics n'ouvrent aucune connexion sortante à l'affichage.** Paiement,
+modèle, cron, sauvegarde et mise à jour sont lus localement. Une page de
+diagnostics qui interroge trois services externes à chaque visite devient une
+page qui tombe quand l'un d'eux tombe — et une page qu'on cesse de consulter.
+Les sondes SMTP et IMAP restent déclenchées explicitement.
+
+**Une page d'information publique est refusée par défaut.** Les adresses
+`/{langue}/info/{bloc}` sont lisibles sans compte ni séjour : c'est leur raison
+d'être, un QR collé sur une machine à laver s'adresse à quelqu'un qui n'a rien
+ouvert. La publication se décide donc bloc par bloc et langue par langue, et
+jamais globalement — le livret contient des choses qui n'ont rien à faire sur le
+web ouvert, à commencer par un code de boîte à clés recopié dans le texte d'un
+bloc. Trois conditions doivent tenir ensemble : bloc marqué public, publié dans
+le livret, et non vide.
+
+**Aucun secret ne transite par ces pages.** Les codes d'accès vivent chiffrés
+dans `stay_secret` et ne sont rendus que dans « Mon séjour », pendant la fenêtre
+du séjour. Le contrôleur des pages publiques ne les lit pas, et la campagne le
+vérifie en enregistrant un mot de passe Wi-Fi puis en le cherchant dans les
+réponses.
+
+**Une illustration de bloc ne contourne pas la visibilité des médias.** Seuls
+les médias publiés et non privés sont proposés à la sélection, et la
+résolution les revérifie à l'affichage : un média rendu privé après coup cesse
+d'illustrer le bloc, il ne devient pas lisible parce qu'un bloc le référence.
+Le contrôle d'accès reste celui de l'endpoint média, qui n'a pas changé.
+
+**Le texte d'un bloc n'est jamais interprété.** Il est saisi par le
+propriétaire et rendu échappé, comme dans « Mon séjour ». Les pages portent
+`noindex` et `robots.txt` refuse `/{langue}/info/` : publiques par nécessité,
+elles n'ont pas à être trouvées depuis un moteur de recherche.

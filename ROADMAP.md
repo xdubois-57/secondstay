@@ -590,3 +590,172 @@ E2E : suite transverse complète.
   public en visiteur anonyme, reporting, export, litige complet, quota atteint
   puis relevé), tests PHP `OperationsClosingTest`, `IcsParserTest`,
   `XlsxWriterTest`, `ReportingTest`, `DisputeTest`, `QuotaServiceTest`.
+
+## Consolidation — audit de fin de feuille de route
+
+### Livré (0.16.0)
+
+Une fois les quatorze itérations livrées, la relecture des spécifications
+contre le code a fait apparaître des exigences énoncées mais jamais servies.
+Elles sont traitées ici, dans l'ordre où leur absence se voit.
+
+Ce que ces manques avaient en commun : aucun ne produisait d'erreur. Un
+planificateur absent ne lève rien, il laisse simplement le courrier
+s'accumuler ; une clé de traduction inventée affiche un mot anglais dans les
+quatre langues ; un contraste à 4,45 s'affiche parfaitement. Ce sont des
+défauts que seule une mesure trouve.
+
+### Planificateur de tâches périodiques
+
+`ARCHITECTURE.md §23` décrit depuis le début des travaux courts et idempotents
+lancés par cron, et `SPECIFICATIONS.md §18` demande un diagnostic « cron ». Ni
+l'un ni l'autre n'existait : la relève IMAP, l'import ICS, la génération de
+contenu local et la purge n'étaient joignables que par un clic dans
+l'administration, les sauvegardes n'étaient jamais automatiques, les rappels de
+séjour — pourtant traduits dans les quatre langues — ne partaient jamais, et
+`releaseExpiredHolds()` n'était appelé par personne : un panier abandonné
+gardait ses nuits indéfiniment.
+
+Livré :
+
+- `ScheduledTask`, `Scheduler`, `TaskState` et `TaskStateRepository` : le
+  calendrier et l'état vivent dans le produit, l'hébergeur ne porte qu'une
+  ligne cron ;
+- verrou à échéance pris par `UPDATE` conditionnel : deux passages qui se
+  chevauchent ne relèvent pas deux fois la même boîte, un processus tué
+  n'immobilise pas sa tâche ;
+- isolement des échecs : une boîte injoignable n'empêche pas la sauvegarde ;
+- huit tâches branchées — verrous expirés, IMAP, ICS, contenu local, rappels,
+  purge, sauvegarde, contrôle de mise à jour ;
+- `StayReminderService` : rappel avant l'arrivée, arrivée et départ, une fois
+  chacun, sans rattrapage rétroactif ;
+- `src/Scheduler/cron.php`, hors de portée du serveur web par trois mécanismes
+  indépendants, et porte HTTP `GET /tasks/run?token=…` fermée par défaut pour
+  les hébergements sans cron en ligne de commande ;
+- écran d'exploitation listant l'état de chaque tâche, exécution à la demande,
+  retard signalé ;
+- tests `SchedulerStateTest`, `SchedulerTest`, `StayReminderServiceTest`, et
+  E2E dans `operations.spec.js` et `security-paths.spec.js`.
+
+### Diagnostics complets
+
+`SPECIFICATIONS.md §18` énumère seize contrôles ; cinq manquaient — Mollie,
+LLM, cron, sauvegarde et mise à jour. Ils sont d'autant plus utiles qu'ils
+portent sur ce dont l'absence ne se voit pas autrement : un fournisseur de
+paiement choisi mais sans clé, une génération de contenu activée sans modèle,
+un cron qui a cessé de passer, une sauvegarde qui date de trois semaines.
+
+`OperationsDiagnostics` les rend tous **sans un seul appel sortant** : ouvrir
+la page ne parle ni au fournisseur de paiement, ni au modèle, ni à GitHub. Une
+page de diagnostics qui interroge le monde extérieur devient lente, puis
+inutilisée, puis rouge le jour où le monde extérieur tombe — alors que
+l'installation, elle, va bien.
+
+Le cron donne lieu à deux contrôles et non un seul : « le cron passe-t-il ? »
+et « une tâche est-elle en souffrance ? ». Les confondre afficherait vert une
+installation dont une tâche échoue en boucle, ou rouge une installation neuve
+dont la ligne cron n'est simplement pas encore posée.
+
+### Tableau « À faire » complet
+
+`SPECIFICATIONS.md §50` énumère huit sujets ; quatre manquaient — contrat,
+sauvegarde, erreur, mise à jour. Ils rejoignent le tableau :
+
+- **contrat** : les séjours confirmés ou en cours, non terminés, dont le
+  contrat n'est pas signé. Le décompte porte sur la table entière et non sur
+  une page, sans quoi une installation active annoncerait toujours « 100 » ;
+- **sauvegarde** : l'absence de toute sauvegarde et le vieillissement de la
+  plus récente, à des gravités différentes — n'en avoir aucune est une bombe à
+  retardement, en avoir une trop ancienne est une perte bornée ;
+- **erreur** : les entrées de gravité au moins « erreur » des dernières
+  vingt-quatre heures, une panne critique comptant parmi elles ;
+- **mise à jour** : lue dans le résultat de la tâche périodique, jamais
+  demandée à GitHub — ce tableau s'affiche sur deux écrans très fréquentés, et
+  le rendre dépendant du réseau le rendrait aussi lent et aussi fragile que lui.
+
+Le tableau de bord tenait en réalité **sa propre liste** en plus de celle du
+service, avec ses propres libellés : « aucune sauvegarde », « mise à jour
+disponible » et « migrations en attente » y étaient recalculées d'une façon qui
+divergeait de l'écran d'exploitation, et la mise à jour y était vérifiée par un
+appel à GitHub **à chaque affichage** — pour alimenter une variable de vue que
+plus aucun gabarit ne lisait. Les deux écrans partagent désormais la liste et
+les identifiants ; le tableau de bord n'ajoute que le nombre de diagnostics en
+erreur, qu'il est seul à connaître puisqu'il calcule déjà ce résumé pour ses
+indicateurs. Le site fermé pour maintenance et le logement sans nom rejoignent
+la liste commune, et se voient donc sur les deux écrans.
+
+Au passage, `LogRepository` remplace le SQL écrit directement dans le
+contrôleur des journaux — deux endroits interrogeant `app_log` auraient dérivé
+l'un de l'autre — et corrige la recherche : un `%` saisi par l'humain n'est plus
+interprété comme un joker SQL.
+
+### QR physiques
+
+`SPECIFICATIONS.md §47` demande des URLs stables vers le Wi-Fi, les déchets,
+les appareils, les règles. Seul le lien invité existait — et il ne peut pas
+tenir ce rôle : il est nominatif et il expire, alors qu'un autocollant collé
+sur la machine à laver, non.
+
+Chaque bloc du livret est donc publiable à `/{langue}/info/{bloc}`, adresse
+dérivée du seul code du bloc. La publication est **refusée par défaut** et se
+décide bloc par bloc et langue par langue : la page est lisible par quiconque
+en connaît l'adresse, et le livret contient des choses qui n'ont rien à faire
+sur le web ouvert — à commencer par un code d'accès recopié dans le texte d'un
+bloc. Un réglage global aurait transformé une commodité en fuite.
+
+Trois conditions doivent tenir pour qu'une adresse réponde — bloc public,
+publié, non vide — et aucun secret n'y transite : les codes d'accès restent
+chiffrés et réservés à « Mon séjour ». Un bloc absent dans la langue demandée
+est servi dans celle du logement, en le disant. L'écran du livret affiche
+l'adresse et le QR à imprimer, la page n'est pas indexée, et le service worker
+la garde hors ligne — c'est un texte que `§44` autorise, et le réseau est
+souvent mauvais dans une buanderie.
+
+Le QR imprimé est relu dans les tests par un décodeur écrit indépendamment de
+l'encodeur : un QR juste à un caractère près est un lien mort découvert un
+dimanche par un voyageur.
+
+### Accessibilité mesurée, et non supposée
+
+`TESTING.md §10` demande une analyse automatisée via axe, avec l'objectif
+WCAG 2.2 AA. La dépendance `@axe-core/playwright` était installée depuis le
+début et n'était appelée nulle part : l'outil était présent, la mesure absente.
+
+La campagne l'exécute désormais sur les trois familles de pages — contenu,
+formulaire, administration — dans les deux thèmes. Elle a immédiatement trouvé
+un défaut réel et généralisé : les variantes « outline » de Bootstrap écrivent
+leur texte dans la couleur de marque, ce qui donne 4,45 pour le gris sur fond
+tertiaire et 1,63 pour le jaune. Les liens du pied de page étaient dans le même
+cas. L'écart ne se voit pas depuis un écran de développeur ; il se voit d'un
+téléphone en plein soleil, ou d'un œil de plus de cinquante ans — c'est-à-dire
+dans les conditions réelles où l'on cherche le code du portail.
+
+La correction réutilise les jetons `--bs-*-text-emphasis` de Bootstrap plutôt
+que d'inscrire des couleurs en dur : ils passent le seuil et basculent avec le
+thème sombre, qui est le thème par défaut d'une bonne partie des téléphones.
+
+### Illustrations du livret
+
+`SPECIFICATIONS.md §55` demande une section déchets « configurable et sourcée :
+types, lieux, carte, horaires, **photos**, consignes ». Le livret était
+entièrement textuel : les photos manquaient, partout, depuis l'itération 10.
+
+Chaque bloc accepte désormais une illustration choisie dans la médiathèque
+existante — le traitement d'image, la suppression des métadonnées GPS, les
+variantes et les légendes traduites y sont déjà faits une fois pour toutes.
+Elle s'affiche dans « Mon séjour », derrière un lien invité et sur la page
+ouverte depuis un QR.
+
+Deux règles la tiennent :
+
+- **seuls les médias publiés et non privés** sont proposés. Le livret est lu
+  par un voyageur qui n'est pas administrateur, et par un visiteur anonyme sur
+  les pages QR : un média privé y produirait une image cassée, c'est-à-dire une
+  illustration qui n'illustre rien ;
+- **le texte alternatif retombe** sur la légende traduite, puis sur le titre du
+  bloc. Une image sans alternative textuelle n'existe pas pour qui ne la voit
+  pas — et une photo de local à poubelles s'adresse justement à quelqu'un qui
+  cherche.
+
+Supprimer un média retire l'illustration et laisse le texte : c'est lui qui
+porte l'essentiel de l'information.

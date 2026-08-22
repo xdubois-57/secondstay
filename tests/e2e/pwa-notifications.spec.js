@@ -18,7 +18,14 @@ test.describe('notifications et application installable', () => {
 
     test.beforeAll(({}, testInfo) => {
         suffix = testInfo.project.name === 'mobile-safari' ? 'mobile' : 'desktop';
-        email = `notif.${suffix}@example.test`;
+        // Le numéro de tentative entre dans l'adresse : ce groupe est joué en
+        // série, et une reprise rejoue l'inscription depuis le début. Avec une
+        // adresse fixe, le compte existerait déjà, aucun nouveau courrier de
+        // confirmation ne partirait, et la reprise échouerait sur un jeton
+        // déjà consommé — masquant la panne d'origine derrière une seconde,
+        // sans rapport.
+        const attempt = testInfo.retry > 0 ? `.r${testInfo.retry}` : '';
+        email = `notif.${suffix}${attempt}@example.test`;
     });
 
     // --- Application installable ------------------------------------------
@@ -203,6 +210,14 @@ test.describe('notifications et application installable', () => {
         await page.fill('#password', PASSWORD);
         await page.click('[data-testid="login-form"] button[type="submit"]');
 
+        // La page d'arrivée doit être posée avant qu'on touche à une case :
+        // sur un petit écran, une case encore en cours de mise en page se
+        // déplace sous le doigt, et le clic atterrit sur le bouton
+        // d'enregistrement placé juste en dessous.
+        await expect(page).toHaveURL(/\/nl\/account$/);
+        await expect(page.locator('[data-testid="notifications"]')).toBeVisible();
+        await page.locator('#channel_email').scrollIntoViewIfNeeded();
+
         await page.uncheck('#channel_email');
         await page.click('[data-testid="save-notifications"]');
         await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
@@ -210,6 +225,7 @@ test.describe('notifications et application installable', () => {
         await expect(page.locator('#channel_email')).not.toBeChecked();
 
         // On rétablit la préférence pour ne pas piéger les scénarios suivants.
+        await page.locator('#channel_email').scrollIntoViewIfNeeded();
         await page.check('#channel_email');
         await page.click('[data-testid="save-notifications"]');
         await expect(page.locator('#channel_email')).toBeChecked();
@@ -311,6 +327,12 @@ test.describe('notifications et application installable', () => {
         await page.fill('#email', email);
         await page.fill('#password', PASSWORD);
         await page.click('[data-testid="login-form"] button[type="submit"]');
+
+        // La page d'arrivée doit être posée avant qu'on lise son DOM : sans
+        // cette attente, le script s'exécute sur la page de connexion encore
+        // affichée et n'y trouve rien.
+        await expect(page).toHaveURL(/\/nl\/account$/);
+        await expect(page.locator('[data-push-controls]')).toBeAttached();
 
         const result = await page.evaluate(async () => {
             const csrf = document.querySelector('[data-push-controls]').dataset.csrf;

@@ -69,6 +69,13 @@ return [
         'banner' => 'Sie sehen diesen Aufenthalt über einen Gästelink.',
     ],
     'admin' => [
+        'illustration' => 'Abbildung',
+        'no_illustration' => 'Keine',
+        'illustration_help' => 'Aus der Mediathek gewählt, unter den veröffentlichten und nicht privaten Dateien. Ein Foto erklärt die Mülltrennung oder die Bedienung eines Geräts besser als ein Absatz — und in jeder Sprache.',
+        'public' => 'Öffentliche Adresse für QR',
+        'public_help' => 'Veröffentlicht diesen Block unter einer festen Adresse, lesbar ohne Konto und ohne Aufenthalt. Aktivieren Sie das nur für Text, den jeder lesen darf: kein Zugangscode, kein WLAN-Passwort.',
+        'public_url' => 'Adresse für den QR-Code',
+        'qr_alt' => 'QR-Code der öffentlichen Seite',
         'title' => 'Willkommensmappe',
         'intro' => 'Diese Texte erscheinen in „Mein Aufenthalt“ und hinter Gästelinks. Sie sind offline verfügbar.',
         'block_title' => 'Titel',
@@ -83,6 +90,10 @@ return [
         'not_set' => 'Nicht gesetzt',
         'completeness' => 'Vollständigkeit',
         'language' => 'Sprache',
+    ],
+    'info' => [
+        'fallback' => 'Dieser Text gibt es noch nicht in Ihrer Sprache; er wird in der Sprache der Unterkunft angezeigt.',
+        'notice' => 'Informationsseite der Unterkunft. Sie enthält keine Buchungsdaten.',
     ],
     'error' => [
         'not_active' => 'Dieser Aufenthalt ist nicht mehr aktiv.',

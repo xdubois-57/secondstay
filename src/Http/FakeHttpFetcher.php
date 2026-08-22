@@ -33,7 +33,11 @@ final class FakeHttpFetcher implements HttpFetcher
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * Toutes les API ne répondent pas par un objet : les releases GitHub, par
+     * exemple, renvoient une liste à la racine. Le type reste donc `array`
+     * tout court, comme la valeur que `getJson()` sait rendre.
+     *
+     * @param array<mixed> $payload
      */
     public function addJsonResponse(string $url, array $payload, int $status = 200): void
     {

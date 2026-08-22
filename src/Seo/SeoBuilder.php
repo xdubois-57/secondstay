@@ -165,6 +165,16 @@ final class SeoBuilder
             'Disallow: /login',
             'Disallow: /install',
             'Disallow: /api/',
+            // Le planificateur n'a rien à indexer, et une URL déclenchable
+            // n'a rien à faire dans un index public même fermée par jeton.
+            'Disallow: /tasks/',
+            // Les pages ouvertes depuis un QR collé dans le logement sont
+            // publiques par nécessité, pas pour être trouvées depuis un
+            // moteur de recherche (SPECIFICATIONS.md §47).
+            'Disallow: /fr/info/',
+            'Disallow: /en/info/',
+            'Disallow: /nl/info/',
+            'Disallow: /de/info/',
             'Allow: /',
         ];
 
