@@ -1019,7 +1019,15 @@ sauvegarde, ni purge, ni relève — et personne ne verrait cette absence.
   liste des secrets tentés. Un appel valide remet le compteur à zéro, faute de
   quoi un cron appelé toutes les cinq minutes finirait par se limiter
   lui-même ;
-- **un jeton faux se lit comme un jeton absent** — 404 dans les deux cas.
+- **un jeton faux se lit comme un jeton absent** — 404 dans les deux cas ;
+- **le jeton s'envoie de préférence dans un en-tête**, `X-Scheduler-Token`.
+  C'est le seul risque résiduel de cette porte, et il faut le nommer : une URL
+  est écrite dans le journal d'accès du serveur web, que le produit ne contrôle
+  pas. Un hébergement dont le cron par URL sait poser un en-tête garde donc le
+  secret hors des journaux. Le paramètre d'URL reste accepté parce que beaucoup
+  n'offrent qu'un champ « adresse à appeler », et fermer la porte à ceux-là
+  reviendrait à les priver de sauvegarde et de purge. Le jeton se régénère
+  depuis les réglages, ce qui reste la réponse à un journal partagé par erreur.
 
 **Une tâche ne s'exécute jamais deux fois en parallèle.** Le verrou est pris en
 base par un `UPDATE` conditionnel, seule primitive atomique disponible sans
@@ -1062,7 +1070,21 @@ surface SSRF, et `UrlGuard` — qui protège les récupérations sortantes — n
 à intervenir. En revanche le schéma est contrôlé : seuls `http` et `https` sont
 acceptés, parce que `javascript:` ou `data:` dans un `href` serait une injection
 déguisée en commodité. Une adresse trop longue est refusée plutôt que tronquée :
-une URL coupée est un lien mort qui a l'air bon.
+une URL coupée est un lien mort qui a l'air bon. Le contrôle de schéma est
+refait **à l'affichage** et pas seulement à la saisie : Twig échappe le contenu
+d'un attribut mais pas son schéma, et une ligne écrite autrement que par le
+formulaire — reprise de base, migration — ne doit pas pouvoir produire un
+`href` exécutable.
+
+**Le repli de langue comble une lacune, il ne défait pas une décision.** Un
+bloc jamais traduit — ou traduit puis vidé — est servi dans la langue du
+logement : une information dans la mauvaise langue vaut mieux qu'une page
+absente devant quelqu'un qui cherche comment faire marcher un appareil. Mais un
+bloc **renseigné** que le propriétaire a retiré du web ouvert, ou dépublié du
+livret, répond 404 dans cette langue-là, et le repli ne s'applique pas. C'est
+ce qui donne son sens au réglage langue par langue : celui qui s'aperçoit que
+son texte allemand contient le code de la boîte à clés le retire, et l'adresse
+allemande se ferme — au lieu de rouvrir sur le texte français.
 
 **Une illustration de bloc ne contourne pas la visibilité des médias.** Seuls
 les médias publiés et non privés sont proposés à la sélection, et la

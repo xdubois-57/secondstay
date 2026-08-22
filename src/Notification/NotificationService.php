@@ -118,7 +118,7 @@ final class NotificationService
             $this->notifications->record(
                 $event,
                 NotificationChannel::Email,
-                'failed',
+                NotificationRepository::FAILED,
                 $user->id,
                 $locale,
                 '',
@@ -133,7 +133,7 @@ final class NotificationService
         $this->notifications->record(
             $event,
             NotificationChannel::Email,
-            $result['ok'] ? 'sent' : 'failed',
+            $result['ok'] ? 'sent' : NotificationRepository::FAILED,
             $user->id,
             $locale,
             $this->translator->trans($event->subjectKey(), $this->parameters($context, $user), $locale),
@@ -215,7 +215,7 @@ final class NotificationService
             $this->notifications->record(
                 $event,
                 NotificationChannel::Push,
-                $result['ok'] ? 'sent' : 'failed',
+                $result['ok'] ? 'sent' : NotificationRepository::FAILED,
                 $user->id,
                 $locale,
                 $message->title,

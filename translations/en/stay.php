@@ -69,6 +69,7 @@ return [
         'banner' => 'You are viewing this stay through a guest link.',
     ],
     'admin' => [
+        'not_saved' => 'The guide was not saved: correct the fields flagged below.',
         'link_url' => 'Useful link or map',
         'link_label' => 'Link label',
         'link_help' => 'An openable address: a map of the bin store, an access plan, a service’s official opening hours. “Down the road on the left” cannot be followed from a phone, in the dark, with a suitcase. Leave empty when there is nothing to open.',

@@ -45,6 +45,42 @@ final class MediaRepository
         return $row === null ? null : $this->hydrate([$row])[0];
     }
 
+    /**
+     * Plusieurs médias en une fois, indexés par identifiant.
+     *
+     * Le livret affiche jusqu'à huit blocs illustrés : les résoudre un par un
+     * ferait seize requêtes sur la page la plus consultée par les voyageurs,
+     * et celle qu'ils ouvrent avec une barre de réseau.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, MediaItem>
+     */
+    public function findManyById(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        $parameters = [];
+        foreach ($ids as $index => $id) {
+            $placeholders[] = ':id' . $index;
+            $parameters['id' . $index] = $id;
+        }
+
+        $items = [];
+        foreach ($this->hydrate($this->database->fetchAll(
+            'SELECT * FROM `media` WHERE `id` IN (' . implode(', ', $placeholders) . ')',
+            $parameters
+        )) as $item) {
+            $items[$item->id] = $item;
+        }
+
+        return $items;
+    }
+
     public function findByFilename(string $filename): ?MediaItem
     {
         $row = $this->database->fetchOne('SELECT * FROM `media` WHERE `filename` = :filename', ['filename' => $filename]);

@@ -69,6 +69,7 @@ return [
         'banner' => 'U bekijkt dit verblijf via een gastenlink.',
     ],
     'admin' => [
+        'not_saved' => 'De gids is niet opgeslagen: corrigeer de gemarkeerde velden.',
         'link_url' => 'Nuttige link of kaart',
         'link_label' => 'Opschrift van de link',
         'link_help' => 'Een adres dat opengaat: een kaart van het afvallokaal, een toegangsplan, de officiële openingsuren van een dienst. “Aan het einde van de straat links” volg je niet vanaf een telefoon, in het donker, met een koffer. Laat leeg als er niets te openen valt.',

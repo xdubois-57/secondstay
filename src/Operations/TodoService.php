@@ -92,9 +92,12 @@ final class TodoService
             $items[] = $this->item('deposits_to_return', 'warning', count($held), 'admin.payments');
         }
 
-        $unlinked = $this->mails->unlinked(50);
-        if ($unlinked !== []) {
-            $items[] = $this->item('mail_unlinked', 'info', count($unlinked), 'admin.mailbox');
+        // Le décompte porte sur la table entière, jamais sur une page : une
+        // pastille plafonnée annoncerait « 50 » à une boîte qui en compte deux
+        // cents, et le propriétaire croirait avoir fini bien avant la fin.
+        $unlinked = $this->mails->countUnlinked();
+        if ($unlinked > 0) {
+            $items[] = $this->item('mail_unlinked', 'info', $unlinked, 'admin.mailbox');
         }
 
         $unprepared = $this->unpreparedStays($today);
@@ -156,8 +159,11 @@ final class TodoService
             $items[] = $this->item('property_name', 'info', 1, 'admin.settings');
         }
 
-        if ($this->migrator !== null && $this->migrator->pending() !== []) {
-            $items[] = $this->item('migrations_pending', 'danger', count($this->migrator->pending()), 'admin.diagnostics');
+        // Appelé une seule fois : `pending()` lit le disque **et** la base, et
+        // ce tableau s'affiche sur les deux écrans les plus fréquentés.
+        $pendingMigrations = $this->migrator?->pending() ?? [];
+        if ($pendingMigrations !== []) {
+            $items[] = $this->item('migrations_pending', 'danger', count($pendingMigrations), 'admin.diagnostics');
         }
 
         return $items;

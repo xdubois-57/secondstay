@@ -185,6 +185,42 @@ final class StayBlockReferencesTest extends TestCase
         self::assertSame('2026-03-14', $result['value']->checkedOn);
     }
 
+    /**
+     * L'invariant tient aussi pour une ligne qui n'est pas passée par
+     * `fromInput()` — reprise de base, migration, appel direct au dépôt. Twig
+     * échappe le contenu d'un attribut, mais pas son schéma : `javascript:`
+     * traverserait l'échappement intact.
+     */
+    public function testAnUnvalidatedAddressIsNeverHandedToAnHref(): void
+    {
+        $references = new StayBlockReferences(
+            'javascript:alert(1)',
+            'Carte',
+            'data:text/html;base64,PHNjcmlwdD4=',
+            '2026-03-14',
+        );
+
+        self::assertSame('', $references->safeLinkUrl());
+        self::assertSame('', $references->safeSourceUrl());
+        self::assertFalse($references->hasLink());
+        self::assertFalse($references->hasSource());
+    }
+
+    public function testASoundAddressPassesTheRenderTimeGuard(): void
+    {
+        $references = new StayBlockReferences(
+            'https://maps.example/local',
+            'Le local',
+            'http://commune.example/collecte',
+            '2026-03-14',
+        );
+
+        self::assertSame('https://maps.example/local', $references->safeLinkUrl());
+        self::assertSame('http://commune.example/collecte', $references->safeSourceUrl());
+        self::assertTrue($references->hasLink());
+        self::assertTrue($references->hasSource());
+    }
+
     public function testARowFromTheDatabaseIsReadBack(): void
     {
         $references = StayBlockReferences::fromRow([

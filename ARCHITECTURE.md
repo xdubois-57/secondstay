@@ -436,12 +436,21 @@ Jobs courts/idempotents via cron :
 
 ### Ce que porte le produit et ce que porte l'hébergeur
 
-L'hébergeur ne porte qu'une chose : une entrée cron, appelée aussi souvent
-qu'il l'autorise.
+L'hébergeur ne porte qu'une chose : une entrée cron, **au moins horaire**.
 
 ```cron
 */10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php
 ```
+
+Le plancher horaire n'est pas cosmétique, et il gouverne un seuil du code.
+`booking_holds` veut passer toutes les dix minutes ; trois intervalles manqués
+feraient trente minutes, or une bonne partie des hébergements mutualisés
+n'offre qu'un cron horaire. Signaler ces installations en souffrance produirait
+un écran de diagnostics rouge en permanence — c'est-à-dire un écran qu'on cesse
+de lire, ce qui coûte plus cher que l'absence de diagnostic.
+`staleAfterMinutes()` porte donc un **plancher de trois heures** : au-delà, même
+un cron horaire a réellement cessé de passer. Les tâches lentes gardent leurs
+trois intervalles, que le plancher ne rend pas plus permissives.
 
 Tout le reste vit dans le produit. Le calendrier de chaque tâche est porté par
 `ScheduledTask`, son état par la table `scheduled_task`, et `Scheduler` décide
@@ -1589,6 +1598,14 @@ qu'un `href`, rendu avec `rel="noopener noreferrer"`. Il n'y a donc pas de
 surface SSRF ici, et `UrlGuard` — qui protège les récupérations sortantes — n'a
 pas à intervenir.
 
+Le contrôle de schéma est refait **à l'affichage**, par `safeLinkUrl()` et
+`safeSourceUrl()`, et pas seulement à la saisie. `fromInput()` tient
+l'invariant pour ce qui passe par le formulaire, mais pas pour une ligne écrite
+autrement — reprise de base, migration à venir, appel direct au dépôt. Or Twig
+échappe le contenu d'un attribut et **non son schéma** : `javascript:` dans un
+`href` traverserait l'échappement intact. Deux lignes au rendu valent mieux
+qu'une confiance placée dans tous les appelants futurs.
+
 Les quatre champs vivent **par bloc et par langue**, comme le reste de la table :
 une commune néerlandophone et une commune francophone ne publient pas la même
 page.
@@ -1622,6 +1639,15 @@ séjour. Cette page ne les lit pas.
 Un bloc absent dans la langue demandée est servi dans la langue du logement,
 avec une mention qui le dit : une information dans la mauvaise langue reste
 utile, une page absente non.
+
+Ce repli comble une **lacune**, il ne défait pas une **décision**. Il joue quand
+la langue demandée n'a rien à montrer — bloc jamais traduit, ou traduit puis
+vidé. Il ne joue pas quand le bloc est renseigné et que le propriétaire l'a
+retiré du web ouvert, ou dépublié du livret : cette langue-là répond alors 404.
+Sans cette distinction, le réglage langue par langue serait une illusion —
+retirer le bloc allemand parce qu'il contenait le code de la boîte à clés
+laisserait l'adresse allemande ouverte sur le bloc français, et le propriétaire
+croirait avoir fermé une porte.
 
 ### 39.9 Hors ligne : ce qui est permis, ce qui ne l'est pas
 

@@ -116,6 +116,21 @@ final class InboundMailRepository
     }
 
     /**
+     * Nombre de courriers entrants qu'aucune règle n'a su rattacher.
+     *
+     * Distinct de `unlinked()`, qui rend une page : le tableau « À faire »
+     * affiche une quantité, et une quantité plafonnée à la taille d'une page
+     * ferait croire au propriétaire qu'il a fini bien avant la fin.
+     */
+    public function countUnlinked(): int
+    {
+        return (int) $this->database->fetchValue(
+            'SELECT COUNT(*) FROM `mail_message` WHERE `direction` = :direction AND `booking_id` IS NULL',
+            ['direction' => 'inbound']
+        );
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function recentInbound(int $limit = 100): array

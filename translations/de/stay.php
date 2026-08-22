@@ -69,6 +69,7 @@ return [
         'banner' => 'Sie sehen diesen Aufenthalt über einen Gästelink.',
     ],
     'admin' => [
+        'not_saved' => 'Das Handbuch wurde nicht gespeichert: Bitte die markierten Felder korrigieren.',
         'link_url' => 'Nützlicher Link oder Karte',
         'link_label' => 'Beschriftung des Links',
         'link_help' => 'Eine Adresse, die sich öffnen lässt: eine Karte zum Müllraum, ein Anfahrtsplan, die offiziellen Öffnungszeiten einer Dienststelle. „Die Straße runter, dann links“ folgt niemand vom Telefon aus, im Dunkeln, mit einem Koffer. Leer lassen, wenn es nichts zu öffnen gibt.',

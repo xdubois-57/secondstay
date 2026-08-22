@@ -25,7 +25,8 @@ use SecondStay\Settings\SettingsService;
  *
  * - **fermée par défaut.** Sans jeton enregistré, la route répond 404 : elle
  *   n'existe pas plus qu'un chemin inventé, et ne signale pas sa présence ;
- * - **jeton long, comparé en temps constant**, jamais journalisé ;
+ * - **jeton long, comparé en temps constant**, que le produit ne journalise
+ *   jamais lui-même ;
  * - **limitée en débit par adresse d'appel**, et non par jeton présenté : un
  *   balayage essaie précisément un jeton différent à chaque coup, un compteur
  *   indexé sur le jeton lui ouvrirait donc un compteur neuf à chaque essai. La
@@ -33,11 +34,27 @@ use SecondStay\Settings\SettingsService;
  *   la liste des secrets tentés ;
  * - **muette sur l'état du produit** : la réponse dit ce qui a tourné, jamais
  *   pourquoi un jeton est refusé.
+ *
+ * Un risque résiduel subsiste et il faut le nommer : **un jeton passé dans
+ * l'URL est écrit dans le journal d'accès du serveur web**, que le produit ne
+ * contrôle pas. C'est pourquoi l'en-tête `X-Scheduler-Token` est accepté et
+ * préféré : un hébergement dont le cron par URL sait poser un en-tête garde le
+ * secret hors des journaux. Le paramètre d'URL reste admis parce que beaucoup
+ * n'offrent qu'un champ « adresse à appeler », et qu'une porte fermée à ceux-là
+ * revient à les priver de sauvegarde et de purge. Le jeton se régénère depuis
+ * les réglages, ce qui reste la réponse à un journal partagé par erreur.
  */
 final class SchedulerController extends AbstractController
 {
     /** Appels autorisés par fenêtre de limitation. */
     private const MAX_ATTEMPTS = 30;
+
+    /**
+     * En-tête portant le jeton, préféré au paramètre d'URL.
+     *
+     * Une URL est journalisée par le serveur web ; un en-tête ne l'est pas.
+     */
+    public const TOKEN_HEADER = 'X-Scheduler-Token';
 
     /**
      * @param array<string, string> $params
@@ -50,7 +67,12 @@ final class SchedulerController extends AbstractController
             return $this->closed();
         }
 
-        $presented = $context->request->query('token', '') ?? '';
+        // L'en-tête prime sur l'URL : c'est le seul des deux canaux qui ne
+        // laisse pas le secret dans le journal d'accès de l'hébergeur.
+        $presented = $context->request->header(self::TOKEN_HEADER)
+            ?? $context->request->query('token', '')
+            ?? '';
+
         if ($presented === '') {
             return $this->closed();
         }

@@ -117,14 +117,35 @@ final class StayBlockReferences
         ];
     }
 
+    /**
+     * Adresse de la carte, **si elle est ouvrable sans danger**.
+     *
+     * Le contrôle est refait ici, à l'affichage, et pas seulement à la saisie.
+     * `fromInput()` garantit l'invariant pour ce qui passe par le formulaire ;
+     * ce n'est pas le cas d'une ligne écrite autrement — une reprise de base,
+     * une migration à venir, un appel direct au dépôt. Or Twig échappe le
+     * contenu d'un attribut mais **pas son schéma** : `javascript:` dans un
+     * `href` traverserait l'échappement intact. Deux lignes ici valent mieux
+     * qu'une confiance placée dans tous les appelants futurs.
+     */
+    public function safeLinkUrl(): string
+    {
+        return self::isOpenableUrl($this->linkUrl) ? $this->linkUrl : '';
+    }
+
+    public function safeSourceUrl(): string
+    {
+        return self::isOpenableUrl($this->sourceUrl) ? $this->sourceUrl : '';
+    }
+
     public function hasLink(): bool
     {
-        return $this->linkUrl !== '';
+        return $this->safeLinkUrl() !== '';
     }
 
     public function hasSource(): bool
     {
-        return $this->sourceUrl !== '';
+        return $this->safeSourceUrl() !== '';
     }
 
     /**
@@ -167,7 +188,7 @@ final class StayBlockReferences
      */
     private static function isOpenableUrl(string $url): bool
     {
-        if (strlen($url) > self::URL_MAX_LENGTH) {
+        if ($url === '' || strlen($url) > self::URL_MAX_LENGTH) {
             return false;
         }
 

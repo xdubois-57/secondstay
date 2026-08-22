@@ -12,14 +12,14 @@
     <div class="small mt-2" data-block-references="{{ code }}">
         {% if references.hasLink %}
             <p class="mb-1">
-                <a href="{{ references.linkUrl }}" target="_blank" rel="noopener noreferrer"
+                <a href="{{ references.safeLinkUrl }}" target="_blank" rel="noopener noreferrer"
                    data-block-link="{{ code }}">{{ references.linkText }}</a>
             </p>
         {% endif %}
         {% if references.hasSource %}
             <p class="mb-0 text-body-secondary">
                 {{ t('stay.source.label') }}
-                <a href="{{ references.sourceUrl }}" target="_blank" rel="noopener noreferrer"
+                <a href="{{ references.safeSourceUrl }}" target="_blank" rel="noopener noreferrer"
                    data-block-source="{{ code }}">{{ references.sourceHost }}</a>
                 {% if references.checkedOnDate %}
                     — {{ t('stay.source.checked_on', {'date': references.checkedOnDate|daymonth}) }}

@@ -271,10 +271,17 @@ et les verrous de réservation abandonnés continuent d'occuper des nuits.
 */10 * * * * php /chemin/vers/secondstay/src/Scheduler/cron.php >/dev/null 2>&1
 ```
 
-Une seule entrée suffit, à la fréquence que l'hébergement autorise : le produit
-porte lui-même le calendrier de chaque tâche et n'exécute que ce qui est dû. Un
-passage manqué n'a pas de conséquence, deux passages simultanés non plus — la
-tâche est verrouillée le temps de son exécution.
+Une seule entrée suffit : le produit porte lui-même le calendrier de chaque
+tâche et n'exécute que ce qui est dû. Un passage manqué n'a pas de conséquence,
+deux passages simultanés non plus — la tâche est verrouillée le temps de son
+exécution.
+
+**Une fois par heure au minimum.** Toutes les dix minutes est mieux : c'est
+l'intervalle auquel les verrous de réservation abandonnés sont rendus à la
+vente. En deçà d'un passage horaire, les diagnostics signalent le cron comme
+silencieux — et ils ont raison de le faire : un cron quotidien laisse une nuit
+verrouillée par un panier oublié invendable toute la journée, et la boîte de
+réception relevée une seule fois par jour.
 
 L'écran **Exploitation** liste les tâches, leur dernière exécution, leur
 résultat, et permet de lancer chacune à la demande — c'est ainsi qu'on vérifie
@@ -285,6 +292,10 @@ Sur les hébergements dont le cron n'appelle que des URLs, enregistrez un jeton
 dans **Réglages → Planificateur** et faites appeler
 `https://votre-site/tasks/run?token=…`. Tant qu'aucun jeton n'est enregistré,
 cette adresse répond 404 comme n'importe quel chemin inexistant.
+
+Si votre hébergeur sait poser un en-tête sur cet appel, préférez-le au
+paramètre d'URL : `X-Scheduler-Token: votre-jeton`. Une URL est écrite dans le
+journal d'accès du serveur web, un en-tête ne l'est pas.
 
 ### Le tableau « À faire »
 
@@ -511,6 +522,11 @@ restent chiffrés et réservés à « Mon séjour ».
 Ces pages fonctionnent hors ligne une fois vues, ne sont pas indexées, et
 tombent sur la langue du logement quand le bloc n'existe pas encore dans celle
 du visiteur.
+
+Ce repli comble une lacune, il ne défait pas une décision : si vous **retirez**
+un bloc du web ouvert dans une langue, cette adresse-là se ferme pour de bon.
+C'est ce qui rend le réglage utile — si vous vous apercevez que votre texte
+allemand contient un code d'accès, le retirer suffit.
 
 ## États des lieux et incidents
 

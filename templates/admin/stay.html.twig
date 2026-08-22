@@ -32,6 +32,15 @@
         </ul>
     </div>
 
+    {% if errors is defined and errors %}
+        {# Rendu ici et non par un message éphémère : un flash écrit pendant
+           cette requête ne serait lu qu'à la page suivante, loin de la saisie
+           qu'il concerne. #}
+        <div class="alert alert-danger" role="alert" data-testid="stay-errors">
+            {{ t('stay.admin.not_saved') }}
+        </div>
+    {% endif %}
+
     <form method="post" action="{{ path('admin.stay.save') }}" data-testid="stay-form">
         <input type="hidden" name="_csrf" value="{{ csrf_token }}">
         <input type="hidden" name="locale" value="{{ current_locale }}">
@@ -71,10 +80,14 @@
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-md-7">
                             <label class="form-label" for="link_url_{{ field.code }}">{{ t('stay.admin.link_url') }}</label>
-                            <input class="form-control" type="url" inputmode="url"
+                            <input class="form-control{{ field.link_error ? ' is-invalid' : '' }}"
+                                   type="url" inputmode="url"
                                    id="link_url_{{ field.code }}" name="link_url_{{ field.code }}"
                                    maxlength="500" value="{{ field.link_url }}"
                                    placeholder="https://">
+                            {% if field.link_error %}
+                                <div class="invalid-feedback">{{ t(field.link_error) }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12 col-md-5">
                             <label class="form-label" for="link_label_{{ field.code }}">{{ t('stay.admin.link_label') }}</label>
@@ -90,17 +103,25 @@
                     <div class="row g-2 mb-3">
                         <div class="col-12 col-md-7">
                             <label class="form-label" for="source_url_{{ field.code }}">{{ t('stay.admin.source_url') }}</label>
-                            <input class="form-control" type="url" inputmode="url"
+                            <input class="form-control{{ field.source_error ? ' is-invalid' : '' }}"
+                                   type="url" inputmode="url"
                                    id="source_url_{{ field.code }}" name="source_url_{{ field.code }}"
                                    maxlength="500" value="{{ field.source_url }}"
                                    placeholder="https://">
+                            {% if field.source_error %}
+                                <div class="invalid-feedback">{{ t(field.source_error) }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12 col-md-5">
                             <label class="form-label" for="source_checked_on_{{ field.code }}">{{ t('stay.admin.source_checked_on') }}</label>
-                            <input class="form-control" type="date"
+                            <input class="form-control{{ field.date_error ? ' is-invalid' : '' }}"
+                                   type="date"
                                    id="source_checked_on_{{ field.code }}"
                                    name="source_checked_on_{{ field.code }}"
                                    value="{{ field.source_checked_on }}">
+                            {% if field.date_error %}
+                                <div class="invalid-feedback">{{ t(field.date_error) }}</div>
+                            {% endif %}
                         </div>
                         <div class="col-12">
                             <p class="form-text mb-0">{{ t('stay.admin.source_help') }}</p>

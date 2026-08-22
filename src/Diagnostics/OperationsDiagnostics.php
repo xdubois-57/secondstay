@@ -148,7 +148,7 @@ final class OperationsDiagnostics
         // n'existe pas, et l'on ne cherche pas ce qu'on ne voit pas.
         try {
             $states = $this->tasks->all();
-            $lastRun = $this->tasks->lastSuccessfulRun();
+            $lastRun = $this->tasks->lastRunAt();
         } catch (Throwable) {
             return [
                 $this->schedulerResult('scheduler_cron', DiagnosticStatus::Warning, 'diagnostics.scheduler.unknown'),
