@@ -69,6 +69,12 @@ return [
         'banner' => 'U bekijkt dit verblijf via een gastenlink.',
     ],
     'admin' => [
+        'link_url' => 'Nuttige link of kaart',
+        'link_label' => 'Opschrift van de link',
+        'link_help' => 'Een adres dat opengaat: een kaart van het afvallokaal, een toegangsplan, de officiële openingsuren van een dienst. “Aan het einde van de straat links” volg je niet vanaf een telefoon, in het donker, met een koffer. Laat leeg als er niets te openen valt.',
+        'source_url' => 'Bron van deze informatie',
+        'source_checked_on' => 'Gecontroleerd op',
+        'source_help' => 'Waar deze informatie vandaan komt — de pagina van de gemeente, de afvalintercommunale, de netbeheerder. Ophaaldagen en gemeentelijke verordeningen veranderen: zonder gedateerde bron veroudert de gids ongemerkt. Zonder datum wordt die van vandaag genomen.',
         'illustration' => 'Illustratie',
         'no_illustration' => 'Geen',
         'illustration_help' => 'Gekozen uit de mediatheek, uit de gepubliceerde en niet-privé items. Een foto legt de afvalscheiding of de bediening van een apparaat beter uit dan een alinea, en leest in elke taal.',
@@ -91,11 +97,18 @@ return [
         'completeness' => 'Volledigheid',
         'language' => 'Taal',
     ],
+    'source' => [
+        'label' => 'Bron:',
+        'checked_on' => 'gecontroleerd op {date}',
+    ],
     'info' => [
         'fallback' => 'Deze tekst bestaat nog niet in uw taal; hij wordt getoond in de taal van de woning.',
         'notice' => 'Informatiepagina van de woning. Ze bevat geen reserveringsgegevens.',
     ],
     'error' => [
+        'link_url' => 'De nuttige link moet een volledig webadres zijn, in http of https.',
+        'source_url' => 'De bron moet een volledig webadres zijn, in http of https.',
+        'source_date' => 'De controledatum van de bron is ongeldig.',
         'not_active' => 'Dit verblijf is niet meer actief.',
         'link_not_found' => 'Gastenlink niet gevonden.',
         'not_found' => 'Verblijf niet gevonden.',

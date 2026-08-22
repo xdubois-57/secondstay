@@ -69,6 +69,12 @@ return [
         'banner' => 'Vous consultez ce séjour avec un lien invité.',
     ],
     'admin' => [
+        'link_url' => 'Lien utile ou carte',
+        'link_label' => 'Intitulé du lien',
+        'link_help' => 'Une adresse ouvrable : carte du local à poubelles, plan d’accès, horaires officiels d’un service. « Au bout de la rue à gauche » ne se suit pas depuis un téléphone, dans le noir, avec une valise. Laissez vide s’il n’y a rien à ouvrir.',
+        'source_url' => 'Source de l’information',
+        'source_checked_on' => 'Vérifiée le',
+        'source_help' => 'D’où vient cette information — page de la commune, du syndicat de déchets, du gestionnaire du réseau. Les jours de collecte et les arrêtés municipaux changent : sans source datée, le livret vieillit sans prévenir. La date du jour est prise si vous n’en indiquez pas.',
         'illustration' => 'Illustration',
         'no_illustration' => 'Aucune',
         'illustration_help' => 'Choisie dans la médiathèque, parmi les médias publiés et non privés. Une photo explique le tri des déchets ou la manœuvre d’un appareil mieux qu’un paragraphe, et se lit dans toutes les langues.',
@@ -91,11 +97,18 @@ return [
         'completeness' => 'Complétude',
         'language' => 'Langue',
     ],
+    'source' => [
+        'label' => 'Source :',
+        'checked_on' => 'vérifiée le {date}',
+    ],
     'info' => [
         'fallback' => 'Ce texte n’existe pas encore dans votre langue ; il est affiché dans celle du logement.',
         'notice' => 'Page d’information du logement. Elle ne contient aucune donnée de réservation.',
     ],
     'error' => [
+        'link_url' => 'Le lien utile doit être une adresse web complète, en http ou https.',
+        'source_url' => 'La source doit être une adresse web complète, en http ou https.',
+        'source_date' => 'La date de vérification de la source est invalide.',
         'not_active' => 'Ce séjour n’est plus actif.',
         'link_not_found' => 'Lien invité introuvable.',
         'not_found' => 'Séjour introuvable.',

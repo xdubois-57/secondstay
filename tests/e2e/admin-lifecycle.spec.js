@@ -96,6 +96,14 @@ test.describe('cycle de vie administrateur', () => {
         await page.click('[data-testid="settings-save"]');
 
         await expect(page.locator('[data-error-for="booking.max_guests"]')).toHaveText('Wert ist zu groß.');
+
+        // SPECIFICATIONS.md §10 — le curseur va sur le champ refusé, qui est
+        // souvent hors de l'écran sur un téléphone, et le champ se déclare
+        // invalide aux technologies d'assistance.
+        await page.waitForSelector('html[data-js-ready="true"]');
+        const field = page.locator('#setting_booking__max_guests');
+        await expect(field).toBeFocused();
+        await expect(field).toHaveAttribute('aria-invalid', 'true');
     });
 
     test('les diagnostics sont verts sur une installation neuve', async ({ page }) => {

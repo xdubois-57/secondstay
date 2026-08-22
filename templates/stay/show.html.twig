@@ -108,6 +108,7 @@
                         {# Le texte du livret est saisi par le propriétaire et
                            échappé : aucun HTML n'y est interprété. #}
                         <p class="mb-0" style="white-space: pre-line;">{{ block.body }}</p>
+                        {% include 'stay/_block-references.html.twig' with {'references': block.references, 'code': block.code} only %}
                     </div>
                 </div>
             {% endfor %}

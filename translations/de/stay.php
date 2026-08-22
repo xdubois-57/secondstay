@@ -69,6 +69,12 @@ return [
         'banner' => 'Sie sehen diesen Aufenthalt über einen Gästelink.',
     ],
     'admin' => [
+        'link_url' => 'Nützlicher Link oder Karte',
+        'link_label' => 'Beschriftung des Links',
+        'link_help' => 'Eine Adresse, die sich öffnen lässt: eine Karte zum Müllraum, ein Anfahrtsplan, die offiziellen Öffnungszeiten einer Dienststelle. „Die Straße runter, dann links“ folgt niemand vom Telefon aus, im Dunkeln, mit einem Koffer. Leer lassen, wenn es nichts zu öffnen gibt.',
+        'source_url' => 'Quelle dieser Angabe',
+        'source_checked_on' => 'Geprüft am',
+        'source_help' => 'Woher die Angabe stammt — die Seite der Gemeinde, des Abfallverbands, des Netzbetreibers. Abfuhrtage und kommunale Satzungen ändern sich: ohne datierte Quelle veraltet das Handbuch unbemerkt. Ohne Datum wird das heutige genommen.',
         'illustration' => 'Abbildung',
         'no_illustration' => 'Keine',
         'illustration_help' => 'Aus der Mediathek gewählt, unter den veröffentlichten und nicht privaten Dateien. Ein Foto erklärt die Mülltrennung oder die Bedienung eines Geräts besser als ein Absatz — und in jeder Sprache.',
@@ -91,11 +97,18 @@ return [
         'completeness' => 'Vollständigkeit',
         'language' => 'Sprache',
     ],
+    'source' => [
+        'label' => 'Quelle:',
+        'checked_on' => 'geprüft am {date}',
+    ],
     'info' => [
         'fallback' => 'Dieser Text gibt es noch nicht in Ihrer Sprache; er wird in der Sprache der Unterkunft angezeigt.',
         'notice' => 'Informationsseite der Unterkunft. Sie enthält keine Buchungsdaten.',
     ],
     'error' => [
+        'link_url' => 'Der nützliche Link muss eine vollständige Webadresse in http oder https sein.',
+        'source_url' => 'Die Quelle muss eine vollständige Webadresse in http oder https sein.',
+        'source_date' => 'Das Prüfdatum der Quelle ist ungültig.',
         'not_active' => 'Dieser Aufenthalt ist nicht mehr aktiv.',
         'link_not_found' => 'Gästelink nicht gefunden.',
         'not_found' => 'Aufenthalt nicht gefunden.',

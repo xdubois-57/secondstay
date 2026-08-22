@@ -69,6 +69,12 @@ return [
         'banner' => 'You are viewing this stay through a guest link.',
     ],
     'admin' => [
+        'link_url' => 'Useful link or map',
+        'link_label' => 'Link label',
+        'link_help' => 'An openable address: a map of the bin store, an access plan, a service’s official opening hours. “Down the road on the left” cannot be followed from a phone, in the dark, with a suitcase. Leave empty when there is nothing to open.',
+        'source_url' => 'Source of this information',
+        'source_checked_on' => 'Checked on',
+        'source_help' => 'Where this information comes from — the town’s page, the waste authority, the network operator. Collection days and municipal by-laws change: without a dated source, the guide ages without warning. Today’s date is used when you leave it empty.',
         'illustration' => 'Illustration',
         'no_illustration' => 'None',
         'illustration_help' => 'Picked from the media library, among published and non-private items. A photo explains waste sorting or how an appliance works better than a paragraph, and reads in any language.',
@@ -91,11 +97,18 @@ return [
         'completeness' => 'Completeness',
         'language' => 'Language',
     ],
+    'source' => [
+        'label' => 'Source:',
+        'checked_on' => 'checked on {date}',
+    ],
     'info' => [
         'fallback' => 'This text does not exist in your language yet; it is shown in the property’s language.',
         'notice' => 'Property information page. It carries no booking data.',
     ],
     'error' => [
+        'link_url' => 'The useful link must be a full web address, using http or https.',
+        'source_url' => 'The source must be a full web address, using http or https.',
+        'source_date' => 'The source verification date is invalid.',
         'not_active' => 'This stay is no longer active.',
         'link_not_found' => 'Guest link not found.',
         'not_found' => 'Stay not found.',

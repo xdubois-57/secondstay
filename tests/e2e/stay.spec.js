@@ -127,9 +127,27 @@ test.describe('mon séjour', () => {
             await page.goto('/fr/admin/stay?locale=fr');
             await page.fill(`#body_${code}`, text);
             await page.selectOption(`#media_${code}`, { label: `Photo du livret ${suffix}` });
+            // SPECIFICATIONS.md §55 — la section séjour est « sourcée » : un
+            // lien ouvrable pour aller sur place, et la provenance datée de la
+            // règle locale, qui change sans prévenir.
+            await page.fill(`#link_url_${code}`, `https://carte.example/${suffix}`);
+            await page.fill(`#link_label_${code}`, `Y aller (${suffix})`);
+            await page.fill(`#source_url_${code}`, `https://commune.example/${suffix}`);
+            await page.fill(`#source_checked_on_${code}`, '2026-03-14');
             await page.check(`#public_${code}`);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();
+
+            // Une adresse qui n'est pas ouvrable est refusée, et rien n'est
+            // enregistré : `javascript:` dans un lien du livret serait une
+            // injection déguisée en commodité.
+            await page.goto('/fr/admin/stay?locale=fr');
+            await page.fill(`#link_url_${code}`, 'javascript:alert(1)');
+            await page.click('[data-testid="stay-save"]');
+            await expect(page.locator('[data-flash-type="danger"]')).toBeVisible();
+            await page.goto('/fr/admin/stay?locale=fr');
+            await expect(page.locator(`#link_url_${code}`))
+                .toHaveValue(`https://carte.example/${suffix}`);
 
             await page.goto('/fr/admin/stay?locale=fr');
             const printed = (await page.locator(`[data-testid="qr-url-${code}"]`).innerText()).trim();
@@ -145,6 +163,14 @@ test.describe('mon séjour', () => {
             await expect(scanned.locator(`[data-block-illustration="${code}"]`)).toBeVisible();
             await expect(scanned.locator(`[data-block-illustration="${code}"]`))
                 .toHaveAttribute('alt', `Photo du livret ${suffix}`);
+            await expect(scanned.locator(`[data-block-link="${code}"]`))
+                .toHaveText(`Y aller (${suffix})`);
+            await expect(scanned.locator(`[data-block-link="${code}"]`))
+                .toHaveAttribute('href', `https://carte.example/${suffix}`);
+            await expect(scanned.locator(`[data-block-link="${code}"]`))
+                .toHaveAttribute('rel', 'noopener noreferrer');
+            await expect(scanned.locator(`[data-block-source="${code}"]`)).toHaveText('commune.example');
+            await expect(scanned.locator(`[data-block-references="${code}"]`)).toContainText('14');
             await expect(scanned.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
             // Le mot de passe Wi-Fi n'y figure jamais.
@@ -153,6 +179,10 @@ test.describe('mon séjour', () => {
             // L'état de départ est rendu : dépublier referme l'adresse.
             await page.goto('/fr/admin/stay?locale=fr');
             await page.selectOption(`#media_${code}`, '0');
+            await page.fill(`#link_url_${code}`, '');
+            await page.fill(`#link_label_${code}`, '');
+            await page.fill(`#source_url_${code}`, '');
+            await page.fill(`#source_checked_on_${code}`, '');
             await page.uncheck(`#public_${code}`);
             await page.click('[data-testid="stay-save"]');
             await expect(page.locator('[data-flash-type="success"]')).toBeVisible();

@@ -1484,6 +1484,7 @@ contredire.
 src/Stay/
 ├── StayPhase             avant, arrivée, pendant, départ, après
 ├── StayInfoBlock         un bloc du livret, dans une langue
+├── StayBlockReferences   carte ouvrable et source datée d'un bloc
 ├── StayInfoRepository    livret d'accueil, un enregistrement par bloc et langue
 ├── StaySecretRepository  codes d'accès, chiffrés au repos
 ├── GuestLink             lien invité
@@ -1550,7 +1551,49 @@ produirait une image cassée.
 Le lien est `ON DELETE SET NULL` : supprimer un média retire l'illustration, il
 ne fait pas disparaître le texte du bloc, qui porte l'essentiel.
 
-### 39.7 QR physiques et adresses stables
+### 39.7 Carte et source d'un bloc
+
+`SPECIFICATIONS.md §55` demande une section séjour « configurable et **sourcée**
+: types, lieux, **carte**, horaires, photos, consignes ». Le texte libre du bloc
+porte déjà les types, les horaires et les consignes ; deux choses lui échappent
+et ne peuvent pas être rendues par du texte :
+
+- une **carte**. « Le local à poubelles est au bout de la rue à gauche » ne se
+  suit pas depuis un téléphone, dans le noir, avec une valise. Un lien ouvrable
+  s'ouvre dans l'application de navigation du voyageur ;
+- une **source**. Les jours de collecte, les horaires de déchèterie et les
+  arrêtés municipaux changent. Un livret qui affirme sans dire d'où vient
+  l'information, ni quand elle a été vérifiée, vieillit sans prévenir. C'est la
+  même exigence que pour les activités locales (§58) et la conformité (§12).
+
+`StayBlockReferences` porte les quatre champs — lien, intitulé du lien, source,
+date de vérification — et **toute la validation**. Elle vit hors du dépôt et hors
+du contrôleur parce que les règles sont des règles métier, pas des détails de
+formulaire :
+
+- seuls `http` et `https` sont acceptés. Une adresse saisie devient un `href` :
+  `javascript:` ou `data:` y serait une injection déguisée en commodité ;
+- une adresse trop longue est **refusée, jamais tronquée** — une URL coupée est
+  un lien mort qui a l'air bon ;
+- une source sans date est datée du jour, comme pour la conformité : une source
+  non datée ne vérifie rien ;
+- une date sans source, ou un intitulé sans lien, sont écartés : ils ne
+  qualifient rien.
+
+L'écran d'administration valide **les huit blocs avant la première écriture** :
+un livret à moitié enregistré, dont un bloc porte l'ancienne carte et le suivant
+la nouvelle, est plus difficile à rattraper qu'un refus net.
+
+Ces adresses ne sont **jamais récupérées par le serveur** : elles ne deviennent
+qu'un `href`, rendu avec `rel="noopener noreferrer"`. Il n'y a donc pas de
+surface SSRF ici, et `UrlGuard` — qui protège les récupérations sortantes — n'a
+pas à intervenir.
+
+Les quatre champs vivent **par bloc et par langue**, comme le reste de la table :
+une commune néerlandophone et une commune francophone ne publient pas la même
+page.
+
+### 39.8 QR physiques et adresses stables
 
 Un lien invité est nominatif et expire ; un autocollant collé sur la machine à
 laver, non. Les deux ne peuvent donc pas partager la même adresse.
@@ -1580,7 +1623,7 @@ Un bloc absent dans la langue demandée est servi dans la langue du logement,
 avec une mention qui le dit : une information dans la mauvaise langue reste
 utile, une page absente non.
 
-### 39.8 Hors ligne : ce qui est permis, ce qui ne l'est pas
+### 39.9 Hors ligne : ce qui est permis, ce qui ne l'est pas
 
 La spécification (§44) est explicite, et le service worker l'applique :
 

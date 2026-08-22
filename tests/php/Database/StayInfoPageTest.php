@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SecondStay\Tests\Database;
 
 use SecondStay\Media\MediaRepository;
+use SecondStay\Stay\StayBlockReferences;
 use SecondStay\Stay\StayInfoRepository;
 use SecondStay\Stay\StaySecretRepository;
 use SecondStay\Support\QrCode;
@@ -309,6 +310,220 @@ final class StayInfoPageTest extends InstalledAppTestCase
         $this->database->delete('media_translation', ['media_id' => $mediaId]);
 
         self::assertStringContainsString('alt="Déchets"', $this->request('/fr/info/waste')->content());
+    }
+
+    // --- Carte et source (SPECIFICATIONS.md §55) ------------------------------------
+
+    /**
+     * « Le local à poubelles est au bout de la rue à gauche » ne se suit pas
+     * depuis un téléphone, dans le noir, avec une valise : le bloc porte un
+     * lien ouvrable, et la provenance datée de la règle locale.
+     */
+    public function testAPublicBlockCarriesItsMapLinkAndItsDatedSource(): void
+    {
+        $this->blocks->save(
+            'waste',
+            'fr',
+            'Déchets',
+            'La collecte a lieu le mardi.',
+            true,
+            true,
+            null,
+            new StayBlockReferences(
+                'https://maps.example/local-poubelles',
+                'Aller au local à poubelles',
+                'https://commune.example/collecte',
+                '2026-03-14',
+            ),
+        );
+
+        $content = $this->request('/fr/info/waste')->content();
+
+        self::assertStringContainsString('href="https://maps.example/local-poubelles"', $content);
+        self::assertStringContainsString('Aller au local à poubelles', $content);
+        self::assertStringContainsString('href="https://commune.example/collecte"', $content);
+        self::assertStringContainsString('commune.example', $content);
+        self::assertStringContainsString('data-block-link="waste"', $content);
+        self::assertStringContainsString('data-block-source="waste"', $content);
+    }
+
+    /**
+     * Un lien du livret ouvre un site tiers : il ne doit pas lui donner la
+     * main sur la page d'origine.
+     */
+    public function testAnExternalLinkNeverHandsOverTheOpenerWindow(): void
+    {
+        $this->blocks->save(
+            'waste',
+            'fr',
+            'Déchets',
+            'La collecte a lieu le mardi.',
+            true,
+            true,
+            null,
+            new StayBlockReferences('https://maps.example/local', '', 'https://commune.example/collecte', '2026-03-14'),
+        );
+
+        $content = $this->request('/fr/info/waste')->content();
+
+        self::assertSame(
+            2,
+            substr_count($content, 'rel="noopener noreferrer"'),
+            'La carte et la source doivent toutes deux couper le lien avec la page d’origine.'
+        );
+    }
+
+    public function testABlockWithoutReferencesShowsNoEmptySourceLine(): void
+    {
+        $this->blocks->save('waste', 'fr', 'Déchets', 'La collecte a lieu le mardi.', true, true);
+
+        $content = $this->request('/fr/info/waste')->content();
+
+        self::assertStringNotContainsString('data-block-references', $content);
+        self::assertStringNotContainsString('data-block-source', $content);
+    }
+
+    /**
+     * L'administration accepte une carte et une source, et les relit telles
+     * qu'elles ont été saisies.
+     */
+    public function testTheOwnerCanAttachAMapAndASourceFromTheAdminScreen(): void
+    {
+        $this->loginAs();
+        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'La collecte a lieu le mardi.',
+            'published_waste' => '1',
+            'link_url_waste' => 'https://maps.example/local-poubelles',
+            'link_label_waste' => 'Aller au local',
+            'source_url_waste' => 'https://commune.example/collecte',
+            'source_checked_on_waste' => '2026-03-14',
+        ]));
+
+        $references = $this->blocks->find('waste', 'fr')?->references;
+
+        self::assertNotNull($references);
+        self::assertSame('https://maps.example/local-poubelles', $references->linkUrl);
+        self::assertSame('Aller au local', $references->linkLabel);
+        self::assertSame('https://commune.example/collecte', $references->sourceUrl);
+        self::assertSame('2026-03-14', $references->checkedOn);
+
+        // Et le formulaire les réaffiche pour la prochaine modification.
+        $form = $this->request('/fr/admin/stay', 'GET', [], [], [], ['locale' => 'fr'])->content();
+        self::assertStringContainsString('value="https://maps.example/local-poubelles"', $form);
+        self::assertStringContainsString('value="https://commune.example/collecte"', $form);
+        self::assertStringContainsString('value="2026-03-14"', $form);
+    }
+
+    /**
+     * `javascript:` dans un `href` n'est pas une carte : c'est du code. Le
+     * livret entier est refusé plutôt qu'enregistré à moitié.
+     */
+    public function testAHostileSchemeIsRefusedAndNothingIsWritten(): void
+    {
+        $this->blocks->save('waste', 'fr', 'Déchets', 'Texte d’origine.', true, true);
+
+        $this->loginAs();
+        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets réécrits',
+            'body_waste' => 'Texte réécrit.',
+            'published_waste' => '1',
+            'link_url_waste' => 'javascript:alert(document.cookie)',
+        ]));
+
+        $block = $this->blocks->find('waste', 'fr');
+
+        self::assertNotNull($block);
+        self::assertSame('Texte d’origine.', $block->body, 'Un refus ne doit rien enregistrer.');
+        self::assertFalse($block->references->hasLink());
+        self::assertStringNotContainsString('javascript:', $this->request('/fr/info/waste')->content());
+    }
+
+    /**
+     * Une source saisie sans date n'est pas vérifiable : elle est datée du
+     * jour, jamais laissée sans repère.
+     */
+    public function testASourceSavedWithoutADateIsStampedWithToday(): void
+    {
+        $this->loginAs();
+        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'La collecte a lieu le mardi.',
+            'published_waste' => '1',
+            'source_url_waste' => 'https://commune.example/collecte',
+        ]));
+
+        self::assertSame(
+            gmdate('Y-m-d'),
+            $this->blocks->find('waste', 'fr')?->references->checkedOn
+        );
+    }
+
+    /**
+     * La carte et la source vivent par langue, comme le reste du bloc : une
+     * commune néerlandophone et une commune francophone ne publient pas la
+     * même page.
+     */
+    public function testEachLanguageCarriesItsOwnSource(): void
+    {
+        $this->blocks->save(
+            'waste',
+            'fr',
+            'Déchets',
+            'Collecte le mardi.',
+            true,
+            true,
+            null,
+            new StayBlockReferences('', '', 'https://commune.example/dechets', '2026-03-14'),
+        );
+        $this->blocks->save(
+            'waste',
+            'nl',
+            'Afval',
+            'Ophaling op dinsdag.',
+            true,
+            true,
+            null,
+            new StayBlockReferences('', '', 'https://gemeente.example/afval', '2026-03-20'),
+        );
+
+        self::assertStringContainsString('gemeente.example', $this->request('/nl/info/waste')->content());
+        self::assertStringNotContainsString('gemeente.example', $this->request('/fr/info/waste')->content());
+        self::assertStringContainsString('commune.example', $this->request('/fr/info/waste')->content());
+    }
+
+    /**
+     * Vider le champ retire le lien : le livret ne garde pas une carte que le
+     * propriétaire a effacée.
+     */
+    public function testClearingTheFieldRemovesTheLink(): void
+    {
+        $this->blocks->save(
+            'waste',
+            'fr',
+            'Déchets',
+            'Collecte le mardi.',
+            true,
+            true,
+            null,
+            new StayBlockReferences('https://maps.example/local', 'Le local', '', null),
+        );
+
+        $this->loginAs();
+        $this->request('/fr/admin/stay', 'POST', $this->withCsrf([
+            'locale' => 'fr',
+            'title_waste' => 'Déchets',
+            'body_waste' => 'Collecte le mardi.',
+            'published_waste' => '1',
+            'public_waste' => '1',
+            'link_url_waste' => '',
+        ]));
+
+        self::assertFalse($this->blocks->find('waste', 'fr')?->references->hasLink());
+        self::assertStringNotContainsString('data-block-link', $this->request('/fr/info/waste')->content());
     }
 
     private function media(

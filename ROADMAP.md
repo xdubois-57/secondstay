@@ -759,3 +759,74 @@ Deux règles la tiennent :
 
 Supprimer un média retire l'illustration et laisse le texte : c'est lui qui
 porte l'essentiel de l'information.
+
+## Relecture intégrale des spécifications
+
+### Livré (0.17.0)
+
+La consolidation précédente avait été guidée par la feuille de route. Celle-ci
+part du texte des spécifications, section par section, des 76. Soixante-treize
+étaient servies. Trois ne l'étaient pas, et aucune ne se signalait par une
+erreur — c'est la marque des exigences qu'on n'implémente pas : rien ne casse,
+il manque seulement quelque chose à quelqu'un qui n'est pas là pour le dire.
+
+### Le premier champ invalide prend le focus
+
+`SPECIFICATIONS.md §10` demande que la première erreur d'un formulaire reçoive
+le focus. Le produit marquait les champs en rouge et affichait le message, mais
+laissait le curseur là où il était : sur un formulaire long, l'erreur pouvait
+se trouver hors de l'écran, et le message annonçait un problème invisible.
+
+`focusFirstInvalid()` place le focus sur le premier champ invalide au chargement
+et pose `aria-invalid="true"` sur les contrôles concernés — un lecteur d'écran
+annonce alors l'erreur, il ne se contente pas d'une bordure rouge. Le focus
+n'est jamais volé : si l'utilisateur a déjà commencé à saisir ailleurs, la
+fonction ne fait rien. Le document est déduit de la racine reçue, jamais pris
+dans le global, de sorte que la fonction se teste sans navigateur.
+
+### Le journal fichier tourne
+
+`SPECIFICATIONS.md §16` fixe une rétention au journal. Elle était appliquée aux
+lignes en base, mais le fichier `storage/logs/app.log` grossissait sans limite :
+sur un hébergement mutualisé, un quota disque saturé par un journal met le site
+hors service — et le fait au pire moment, celui où quelque chose journalise
+beaucoup.
+
+Le fichier tourne désormais à 2 Mio, sur trois générations, et la purge de
+rétention emporte les générations trop anciennes en même temps que les lignes en
+base. Rien n'est supprimé sans avoir été conservé : la rotation décale avant
+d'écrire, jamais l'inverse.
+
+### Carte et source des blocs du livret
+
+`SPECIFICATIONS.md §55` demande une section séjour « configurable et **sourcée**
+: types, lieux, **carte**, horaires, photos, consignes ». Les photos étaient
+arrivées avec la consolidation précédente. Le texte libre portait les types, les
+lieux, les horaires et les consignes. Deux mots restaient sans réponse.
+
+Chaque bloc porte désormais un **lien ouvrable** et une **source datée** :
+
+- le lien mène là où le texte ne suffit pas — carte du local à poubelles, plan
+  d'accès, horaires officiels d'un service. « Au bout de la rue à gauche » ne se
+  suit pas depuis un téléphone, dans le noir, avec une valise ;
+- la source dit d'où vient l'information et quand elle a été vérifiée. Les jours
+  de collecte, les horaires de déchèterie et les arrêtés municipaux changent ;
+  un livret qui affirme sans le dire vieillit sans prévenir. C'est déjà
+  l'exigence des activités locales (§58) et de la conformité (§12).
+
+Trois règles les tiennent :
+
+- **seuls `http` et `https` sont acceptés.** Une adresse saisie devient un
+  `href` : `javascript:` ou `data:` y serait une injection déguisée en
+  commodité. Une adresse trop longue est refusée, jamais tronquée — une URL
+  coupée est un lien mort qui a l'air bon ;
+- **les huit blocs sont validés avant la première écriture.** Un livret à moitié
+  enregistré, dont un bloc porte l'ancienne carte et le suivant la nouvelle, est
+  plus difficile à rattraper qu'un refus net ;
+- **rien n'est jamais récupéré par le serveur.** Ces adresses ne deviennent
+  qu'un lien rendu avec `rel="noopener noreferrer"` : il n'y a pas de surface
+  SSRF ici, et `UrlGuard` n'a pas à intervenir.
+
+Les quatre champs vivent par bloc **et par langue**, comme le reste du livret :
+une commune néerlandophone et une commune francophone ne publient pas la même
+page de collecte, et un lien vers la mauvaise est pire qu'aucun lien.

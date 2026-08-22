@@ -83,6 +83,9 @@ final class StayInfoRepository
 
     /**
      * Enregistre un bloc, en le créant au besoin.
+     *
+     * `$references` porte la carte et la source (SPECIFICATIONS.md §55) ; son
+     * absence les efface, comme un champ de formulaire vidé.
      */
     public function save(
         string $code,
@@ -92,6 +95,7 @@ final class StayInfoRepository
         bool $published = true,
         bool $public = false,
         ?int $mediaId = null,
+        ?StayBlockReferences $references = null,
     ): void {
         $definition = self::BLOCKS[$code] ?? ['phase' => StayPhase::ANY, 'position' => 900];
 
@@ -104,7 +108,7 @@ final class StayInfoRepository
             'published' => $published ? 1 : 0,
             'public' => $public ? 1 : 0,
             'updated_at' => gmdate('Y-m-d H:i:s'),
-        ];
+        ] + ($references ?? StayBlockReferences::none())->toRow();
 
         if ($this->find($code, $locale) === null) {
             $this->database->insert('stay_info', $data + ['code' => $code, 'locale' => $locale]);
