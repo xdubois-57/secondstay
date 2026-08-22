@@ -1150,7 +1150,21 @@ ceux des autres scénarios qui l'occupent.
   est relu par un décodeur écrit indépendamment de l'encodeur, et l'adresse
   décodée est ensuite demandée au produit.
 
-### 32.5 Illustrations du livret
+### 32.5 Ce qu'une campagne en série impose aux scénarios
+
+Un groupe joué en série est **rejoué depuis le début** quand l'un de ses tests
+échoue. Deux conséquences, qui se paient en diagnostics trompeurs :
+
+- **une identité consommable ne doit pas être fixe.** Une inscription rejouée
+  avec la même adresse ne recrée pas de compte, n'envoie pas de nouveau
+  courrier de confirmation, et échoue sur un jeton déjà utilisé — la panne
+  affichée n'est alors plus celle qui a tout déclenché. L'adresse porte donc le
+  numéro de tentative ;
+- **une page d'arrivée s'attend.** Cliquer sur « se connecter » puis lire
+  aussitôt le DOM exécute le script sur la page encore affichée. Sur un petit
+  écran, c'est aussi ce qui déplace une case à cocher sous le doigt.
+
+### 32.6 Illustrations du livret
 
 - qu'un média privé ou dépublié illustre un bloc, à la sélection comme à
   l'affichage ;
@@ -1158,7 +1172,7 @@ ceux des autres scénarios qui l'occupent.
   traduite, puis sur le titre du bloc ;
 - que supprimer un média emporte le texte du bloc avec l'illustration.
 
-### 32.6 Diagnostics
+### 32.7 Diagnostics
 
 - qu'un secret apparaisse dans un résultat ;
 - qu'afficher la page ouvre une connexion sortante ;

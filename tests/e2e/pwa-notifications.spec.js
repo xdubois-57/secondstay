@@ -18,7 +18,14 @@ test.describe('notifications et application installable', () => {
 
     test.beforeAll(({}, testInfo) => {
         suffix = testInfo.project.name === 'mobile-safari' ? 'mobile' : 'desktop';
-        email = `notif.${suffix}@example.test`;
+        // Le numéro de tentative entre dans l'adresse : ce groupe est joué en
+        // série, et une reprise rejoue l'inscription depuis le début. Avec une
+        // adresse fixe, le compte existerait déjà, aucun nouveau courrier de
+        // confirmation ne partirait, et la reprise échouerait sur un jeton
+        // déjà consommé — masquant la panne d'origine derrière une seconde,
+        // sans rapport.
+        const attempt = testInfo.retry > 0 ? `.r${testInfo.retry}` : '';
+        email = `notif.${suffix}${attempt}@example.test`;
     });
 
     // --- Application installable ------------------------------------------
@@ -320,6 +327,12 @@ test.describe('notifications et application installable', () => {
         await page.fill('#email', email);
         await page.fill('#password', PASSWORD);
         await page.click('[data-testid="login-form"] button[type="submit"]');
+
+        // La page d'arrivée doit être posée avant qu'on lise son DOM : sans
+        // cette attente, le script s'exécute sur la page de connexion encore
+        // affichée et n'y trouve rien.
+        await expect(page).toHaveURL(/\/nl\/account$/);
+        await expect(page.locator('[data-push-controls]')).toBeAttached();
 
         const result = await page.evaluate(async () => {
             const csrf = document.querySelector('[data-push-controls]').dataset.csrf;
