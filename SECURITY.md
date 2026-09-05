@@ -1179,6 +1179,15 @@ que la réponse porte l'en-tête HSTS et un cookie de session `Secure`. Si la
 preuve échoue, la campagne s'arrête là. Un scan sur un harnais mal câblé
 produit un rapport faux, ce qui est pire que pas de rapport.
 
+La preuve **suit les redirections**, et ce détail n'en est pas un : sur une
+instance fraîche, l'application n'est pas encore installée et toute page
+publique redirige vers l'assistant — lequel est la première page à ouvrir une
+session, donc à poser le cookie. S'arrêter au premier 302 n'observerait jamais
+ce cookie, et la preuve échouerait en annonçant un défaut de l'application là
+où il n'y en a pas. Seules les redirections vers la même origine sont suivies,
+et au plus trois : suivre une redirection sortante ferait porter la preuve sur
+un autre serveur.
+
 La preuve porte sur le cookie **nommé**, et c'est le sujet. Elle acceptait
 d'abord n'importe quel `Set-Cookie` contenant « secure » ; la préférence de
 langue en pose un, si bien qu'elle était verte alors que le cookie de session

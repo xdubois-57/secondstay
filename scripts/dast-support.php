@@ -46,6 +46,14 @@ declare(strict_types=1);
  */
 const DAST_RISK_ORDER = ['Informational', 'Low', 'Medium', 'High'];
 
+/**
+ * Redirections suivies par la preuve HTTPS. Trois suffisent largement à la
+ * seule chaîne réelle — page publique vers assistant d'installation — et la
+ * borne existe pour qu'une boucle de redirection échoue en disant ce qui ne va
+ * pas plutôt qu'en tournant sans fin.
+ */
+const DAST_ASSERT_MAX_HOPS = 3;
+
 if (PHP_SAPI !== 'cli') {
     fwrite(STDERR, "dast-support.php est un script en ligne de commande.\n");
     exit(1);
@@ -320,6 +328,41 @@ function dastSessionCookieIsSecure(array $headers, string $sessionCookieName): b
     return false;
 }
 
+/**
+ * La cible d'une redirection, ramenée à une URL absolue sur la même origine.
+ *
+ * Rester sur l'origine n'est pas de la prudence de principe : suivre une
+ * redirection sortante ferait porter la preuve sur un autre serveur, dont les
+ * en-têtes ne disent rien de l'instance qu'on s'apprête à scanner.
+ *
+ * @param array{status: int, body: string, headers: list<string>} $response
+ */
+function dastRedirectTarget(array $response, string $baseUrl): ?string
+{
+    if ($response['status'] < 300 || $response['status'] > 399) {
+        return null;
+    }
+
+    $location = null;
+    foreach ($response['headers'] as $header) {
+        if (stripos($header, 'Location:') === 0) {
+            $location = trim(substr($header, strlen('Location:')));
+        }
+    }
+
+    if ($location === null || $location === '') {
+        return null;
+    }
+
+    $origin = rtrim($baseUrl, '/');
+
+    if (str_starts_with($location, '/')) {
+        return $origin . $location;
+    }
+
+    return str_starts_with($location, $origin . '/') || $location === $origin ? $location : null;
+}
+
 function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondstay_session'): void
 {
     $reached = false;
@@ -327,38 +370,51 @@ function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondsta
     $hasSecureCookie = false;
     $sessionCookieSeen = false;
 
-    // Deux pages, parce que les deux protections ne se voient pas au même
-    // endroit : l'en-tête HSTS accompagne toute réponse, le cookie de session
-    // n'est posé que par une page qui ouvre une session. La racine redirige
-    // vers la langue ; c'est la page de connexion qui pose le cookie.
+    // Les deux protections ne se voient pas au même endroit : l'en-tête HSTS
+    // accompagne toute réponse, y compris une redirection, tandis que le
+    // cookie de session n'est posé que par une page qui **ouvre** une session
+    // — c'est-à-dire qui y écrit quelque chose, un jeton CSRF typiquement.
+    //
+    // Les redirections sont donc suivies, et c'est le fond du sujet : sur une
+    // instance fraîche, l'application n'est pas encore installée et *toute*
+    // page publique redirige vers l'assistant. S'arrêter au premier 302
+    // n'observerait jamais de cookie de session, et cette preuve échouerait en
+    // annonçant un défaut de l'application là où il n'y en a pas.
     foreach (['/fr/login', '/fr/'] as $path) {
-        $response = dastHttpGet(rtrim($baseUrl, '/') . $path, 20);
-        if ($response === null) {
-            continue;
-        }
-        $reached = true;
+        $url = rtrim($baseUrl, '/') . $path;
 
-        foreach ($response['headers'] as $header) {
-            if (stripos($header, 'Strict-Transport-Security:') === 0) {
-                $hasHsts = true;
+        for ($hop = 0; $hop < DAST_ASSERT_MAX_HOPS; $hop++) {
+            $response = dastHttpGet($url, 20);
+            if ($response === null) {
+                break;
             }
-        }
+            $reached = true;
 
-        foreach ($response['headers'] as $header) {
-            if (stripos($header, 'Set-Cookie:') === 0
-                && str_starts_with(trim(substr($header, strlen('Set-Cookie:'))), $sessionCookieName . '=')) {
-                $sessionCookieSeen = true;
+            foreach ($response['headers'] as $header) {
+                if (stripos($header, 'Strict-Transport-Security:') === 0) {
+                    $hasHsts = true;
+                }
+                if (stripos($header, 'Set-Cookie:') === 0
+                    && str_starts_with(trim(substr($header, strlen('Set-Cookie:'))), $sessionCookieName . '=')) {
+                    $sessionCookieSeen = true;
+                }
             }
-        }
 
-        if (dastSessionCookieIsSecure($response['headers'], $sessionCookieName)) {
-            $hasSecureCookie = true;
-        }
+            if (dastSessionCookieIsSecure($response['headers'], $sessionCookieName)) {
+                $hasSecureCookie = true;
+            }
 
-        if ($hasHsts && $hasSecureCookie) {
-            echo "DAST : HSTS et cookie de session Secure confirmés — le câblage HTTPS est vivant.\n";
+            if ($hasHsts && $hasSecureCookie) {
+                echo "DAST : HSTS et cookie de session Secure confirmés — le câblage HTTPS est vivant.\n";
 
-            return;
+                return;
+            }
+
+            $next = dastRedirectTarget($response, $baseUrl);
+            if ($next === null) {
+                break;
+            }
+            $url = $next;
         }
     }
 
