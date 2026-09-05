@@ -55,14 +55,28 @@ test.describe('mon séjour', () => {
     test.beforeAll(async ({ browser }, testInfo) => {
         suffix = testInfo.project.name === 'mobile-safari' ? 'mobile' : 'desktop';
 
+        // Ce groupe est `serial` : un seul échec le rejoue **en entier**,
+        // inscription et réservation comprises. Avec une adresse et des dates
+        // fixes, la reprise repartait sur un compte déjà inscrit et sur un
+        // séjour déjà réservé — l'inscription échouait, `waitForMail`
+        // retrouvait le courriel de la tentative précédente, la confirmation
+        // ne connectait personne, et le scénario attendait six minutes un
+        // bouton que la page ne propose ni à un visiteur anonyme ni sur des
+        // dates indisponibles. Une reprise ne réparait donc rien : elle
+        // remplaçait un échec net par un blocage long.
+        //
+        // Chaque tentative repart donc d'un compte neuf et d'un mois libre.
+        // Le décalage est de deux mois par reprise pour que les deux projets,
+        // qui partent de 14 et 15, ne se croisent jamais.
         const base = new Date();
         base.setUTCHours(0, 0, 0, 0);
-        // Un mois par projet, distinct de tous les autres scénarios.
-        base.setUTCMonth(base.getUTCMonth() + (suffix === 'mobile' ? 15 : 14), 1);
+        // Un mois par projet et par tentative, distinct de tous les autres
+        // scénarios.
+        base.setUTCMonth(base.getUTCMonth() + (suffix === 'mobile' ? 15 : 14) + testInfo.retry * 2, 1);
         const month = base.toISOString().slice(0, 7);
 
         stayDates = { arrival: `${month}-09`, departure: `${month}-16` };
-        client = `stay.${suffix}@example.test`;
+        client = `stay.${suffix}${testInfo.retry > 0 ? `.r${testInfo.retry}` : ''}@example.test`;
 
         await clearRateLimits(browser);
     });

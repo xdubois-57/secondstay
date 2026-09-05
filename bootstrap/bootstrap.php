@@ -22,9 +22,15 @@ declare(strict_types=1);
  * release livre déjà son `.htaccess` racine et son `public/.htaccess`
  * (`ReleaseArtifactPolicy::REQUIRED_ENTRIES`), écrits pour l'arborescence
  * unique décrite par ARCHITECTURE.md. Le bootstrap copie cette arborescence
- * telle quelle et n'écrit **aucune** règle de serveur : s'il en écrivait, il
- * existerait deux sources de vérité pour la protection du dépôt et elles
- * divergeraient au premier changement.
+ * telle quelle et n'écrit **aucune** règle de serveur pour l'installation
+ * livrée : s'il en écrivait, il existerait deux sources de vérité pour la
+ * protection du dépôt et elles divergeraient au premier changement.
+ *
+ * La seule exception, et elle ne contredit pas l'invariant : le dossier
+ * temporaire de travail reçoit un `.htaccess` qui refuse tout. Ce dossier
+ * existe **avant** l'artefact et disparaît **avec** lui ; la règle protège
+ * l'archive téléchargée pendant les quelques secondes où elle est sous la
+ * racine du document, et rien de ce qui reste installé ne s'y réfère.
  *
  * Il ne déploie rien non plus : il n'y a pas de miroir, pas de `deploy.sh`,
  * pas de clé SSH. Le seul canal est HTTPS sortant vers GitHub.
@@ -53,6 +59,14 @@ const BOOTSTRAP_REPO_NAME = 'secondstay';
 const BOOTSTRAP_USER_AGENT = 'SecondStay-Bootstrap';
 const BOOTSTRAP_HTTP_TIMEOUT = 20;
 const BOOTSTRAP_DOWNLOAD_TIMEOUT = 300;
+
+/**
+ * Sauts de redirection admis pendant le téléchargement. GitHub en fait un
+ * (l'API vers le service de stockage), parfois deux. Au-delà, ce n'est plus
+ * une redirection, c'est une boucle ou un détour — et chaque saut est de toute
+ * façon revérifié en HTTPS.
+ */
+const BOOTSTRAP_MAX_REDIRECTS = 5;
 const BOOTSTRAP_STATE_FILE = '.bootstrap-state.php';
 const BOOTSTRAP_LOCK_FILE = '.bootstrap.lock';
 const BOOTSTRAP_LOCK_STALE_SECONDS = 600;
@@ -313,15 +327,42 @@ function bootstrap_already_installed(string $docRoot): bool
 // =============================================================================
 
 /**
+ * Extrait l'empreinte SHA-256 d'un champ `digest` de l'API GitHub, écrit
+ * `sha256:<64 hexadécimaux>`.
+ *
+ * Tout ce qui n'est pas exactement cette forme rend une chaîne vide, c'est-à-
+ * dire « pas d'empreinte » — et non « empreinte vide », qu'une comparaison
+ * naïve confondrait avec une vérification réussie. Un autre algorithme un jour
+ * publié par GitHub tombe ici, et l'installeur dira qu'il n'a pas vérifié
+ * plutôt que de prétendre le contraire.
+ */
+function bootstrap_sha256_from_digest(string $digest): string
+{
+    if (preg_match('/^sha256:([0-9a-f]{64})$/i', trim($digest), $matches) !== 1) {
+        return '';
+    }
+
+    return strtolower($matches[1]);
+}
+
+/**
  * L'artefact est choisi par son nom (suffixe `.zip`), jamais par sa position :
  * GitHub ne conserve pas l'ordre des fichiers passés à `gh release create` et
  * trie les assets alphabétiquement, si bien que `bootstrap.php` — publié comme
  * asset lui aussi — se retrouve avant `secondstay-X.Y.Z.zip`. Prendre
  * `assets[0]` reviendrait à télécharger ce fichier-ci.
  *
+ * GitHub publie, pour chaque asset, l'empreinte SHA-256 des octets qu'il
+ * stocke (`digest`). Elle arrive par `api.github.com`, en HTTPS vérifié, sur
+ * une connexion **distincte** de celle qui sert l'archive et de la chaîne de
+ * redirections qui y mène. C'est ce qui en fait une preuve utile : elle ne
+ * vient pas de la même source que ce qu'elle atteste. Le `zipball_url` de
+ * repli n'en a pas — l'absence est donc rapportée, jamais confondue avec une
+ * vérification réussie.
+ *
  * @param array<string, mixed> $release
  *
- * @return array{url: string, size: int, source: 'asset'|'zipball'}
+ * @return array{url: string, size: int, source: 'asset'|'zipball', digest: string}
  */
 function bootstrap_resolve_archive_url(array $release): array
 {
@@ -341,12 +382,13 @@ function bootstrap_resolve_archive_url(array $release): array
                 'url' => (string) $asset['browser_download_url'],
                 'size' => (int) ($asset['size'] ?? 0),
                 'source' => 'asset',
+                'digest' => bootstrap_sha256_from_digest((string) ($asset['digest'] ?? '')),
             ];
         }
     }
 
     if (!empty($release['zipball_url'])) {
-        return ['url' => (string) $release['zipball_url'], 'size' => 0, 'source' => 'zipball'];
+        return ['url' => (string) $release['zipball_url'], 'size' => 0, 'source' => 'zipball', 'digest' => ''];
     }
 
     throw new RuntimeException("Impossible de déterminer l'URL de l'archive de la dernière version publiée.");
@@ -603,6 +645,27 @@ function bootstrap_verify_artifact(string $sourceRoot): array
 // =============================================================================
 
 /**
+ * Un échec survenu alors que des entrées avaient **déjà** été écrites à la
+ * racine du site.
+ *
+ * Elle existe pour une seule raison : porter cette liste jusqu'au gestionnaire
+ * d'erreur. Sans elle, `$state['installed_entries']` reste absent, le
+ * gestionnaire conclut que rien n'a été copié, `bootstrap_rollback_install()`
+ * n'est pas appelé — et les fichiers restent, invisibles à l'annulation comme
+ * au bouton « Annuler l'installation et nettoyer », qui relit le même état.
+ */
+final class BootstrapPartialInstall extends RuntimeException
+{
+    /**
+     * @param list<string> $copied entrées de premier niveau déjà écrites
+     */
+    public function __construct(string $message, public readonly array $copied, ?Throwable $previous = null)
+    {
+        parent::__construct($message, 0, $previous);
+    }
+}
+
+/**
  * Copie chaque entrée de premier niveau de `$source` vers `$destination`,
  * sauf celles listées dans `$excludeTopLevel`.
  *
@@ -610,12 +673,28 @@ function bootstrap_verify_artifact(string $sourceRoot): array
  * les fichiers cachés, et `.htaccess` est précisément ce que cette
  * installation ne peut pas se permettre de perdre.
  *
+ * `$copied` est renseigné **au fur et à mesure**, et c'est ce qui compte : si
+ * la copie s'interrompt en cours de route — quota atteint, disque plein,
+ * `max_execution_time` expiré au milieu de `vendor/` — la valeur de retour
+ * n'existe jamais, et une liste construite localement partirait avec
+ * l'exception. Les entrées déjà écrites à la racine, dont `src/`, resteraient
+ * alors en place sans qu'aucune annulation ne sache les nommer : reprise
+ * refusée par « déjà installé », bouton « Annuler » sans effet, et plus que le
+ * FTP pour s'en sortir. Le paramètre par référence survit à l'exception ; le
+ * `return` ne le fait pas.
+ *
  * @param list<string> $excludeTopLevel
+ * @param list<string> $copied entrées effectivement copiées, renseigné même en
+ *                             cas d'interruption
  *
  * @return list<string> entrées effectivement copiées, pour l'annulation
  */
-function bootstrap_copy_tree(string $source, string $destination, array $excludeTopLevel = []): array
-{
+function bootstrap_copy_tree(
+    string $source,
+    string $destination,
+    array $excludeTopLevel = [],
+    array &$copied = []
+): array {
     if (!is_dir($destination) && !@mkdir($destination, 0o755, true) && !is_dir($destination)) {
         throw new RuntimeException('Impossible de créer le dossier de destination.');
     }
@@ -949,6 +1028,12 @@ function bootstrap_evaluate_control_probe(int $httpStatus, string $fetchedBody, 
  * B2 — PHP s'exécute. Si Apache sert `public/index.php` en clair, le corps de
  * la réponse contient la balise d'ouverture PHP. C'est la panne la plus grave
  * possible : tout le code source, y compris le jeton, deviendrait lisible.
+ *
+ * La sonde vise l'assistant **avec son jeton**, et non « / ». Le navigateur
+ * suit les redirections : « / » mène à `/{locale}/install`, que le portail à
+ * jeton refuse en 403 sans jeton. Cette sonde rejetait alors une installation
+ * parfaitement saine et déclenchait l'annulation complète — un contrôle qui
+ * condamne ce qu'il est censé protéger. Voir `bootstrap_write_gate_probes()`.
  */
 function bootstrap_evaluate_php_execution_probe(int $httpStatus, string $fetchedBody): bool
 {
@@ -1024,36 +1109,147 @@ function bootstrap_read_state(string $path): array
 }
 
 /**
+ * Écrit l'état, et **ne laisse aucune donnée fermer le commentaire**.
+ *
+ * Les données vivent entre `/*` et le `*` suivi de `/` qui le referme. Une
+ * valeur d'état qui contiendrait cette séquence — un chemin, un message
+ * d'erreur d'hébergeur, un nom d'entrée d'archive — refermerait le commentaire
+ * par le milieu, et tout ce qui suit deviendrait du PHP exécutable dans un
+ * fichier posé à la racine du document. C'est le fichier lui-même qui
+ * deviendrait l'injection.
+ *
+ * `JSON_UNESCAPED_SLASHES` est donc retiré : JSON écrit alors chaque barre
+ * oblique `\/`, l'octet `/` n'apparaît plus nulle part dans la charge, et la
+ * séquence de fermeture devient impossible à construire. Les octets UTF-8
+ * gardés bruts par `JSON_UNESCAPED_UNICODE` ne peuvent pas la reformer non
+ * plus : une continuation UTF-8 vaut toujours 0x80 ou plus. `json_decode()`
+ * relit `\/` comme `/` sans rien perdre.
+ *
+ * La vérification qui suit n'est donc pas censée pouvoir échouer. Elle est là
+ * parce qu'un invariant de sécurité qui repose sur un raisonnement sur les
+ * options d'un encodeur mérite d'être vérifié plutôt que cru.
+ *
  * @param array<string, mixed> $state
  */
 function bootstrap_write_state(string $path, array $state): void
 {
-    $json = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $json = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($json === false || str_contains($json, '*/')) {
+        throw new RuntimeException("L'état de l'installation n'est pas encodable sans risque.");
+    }
+
     file_put_contents($path, "<?php\n/*\n{$json}\n*/\n");
+    bootstrap_restrict_permissions($path);
 }
 
 /**
- * La décision porte sur la date du verrou **maintenant**. `filemtime()` passe
- * par le cache de `stat()` de PHP, dont l'invalidation n'est pas la même
- * partout : sur du code identique, la jambe PHP 8.2 de la matrice a lu une
- * date que la jambe 8.4 a lue correctement. Le `clearstatcache()` ci-dessous
- * ne corrige pas une cause démontrée — il retire la dépendance à ce
- * comportement, ce qui est la seule chose que ce code peut garantir lui-même.
+ * Écrit l'état depuis un chemin d'erreur, sans jamais devenir l'erreur.
+ *
+ * `bootstrap_write_state()` lève quand la restriction des droits échoue, et
+ * c'est voulu sur le chemin normal : un jeton qu'on croit protégé et qui ne
+ * l'est pas est pire qu'un jeton dont on sait qu'il ne l'est pas. Mais lever
+ * **depuis un `catch`** remplacerait le message du premier échec par une
+ * erreur fatale, et le client n'aurait plus rien à lire — ni ce qui a échoué,
+ * ni comment reprendre. Le premier diagnostic prime.
+ *
+ * @param array<string, mixed> $state
+ */
+function bootstrap_write_state_quietly(string $path, array $state): void
+{
+    try {
+        bootstrap_write_state($path, $state);
+    } catch (Throwable) {
+        // Rien à faire de plus ici : le message qui compte part juste après.
+    }
+}
+
+/**
+ * Restreint un fichier au seul compte qui l'a écrit.
+ *
+ * `token.php` et `.bootstrap-state.php` naissent avec les droits de l'umask.
+ * Sur un hébergement mutualisé, une umask permissive les rend lisibles par les
+ * autres comptes de la machine — et `token.php` porte le jeton qui ouvre
+ * l'assistant d'installation. L'échec de la restriction est signalé plutôt que
+ * toléré : un jeton qu'on croit protégé et qui ne l'est pas est pire qu'un
+ * jeton dont on sait qu'il ne l'est pas.
+ */
+function bootstrap_restrict_permissions(string $path): void
+{
+    if (!@chmod($path, 0o600)) {
+        throw new RuntimeException(sprintf(
+            'Impossible de restreindre les droits de %s à son seul propriétaire.',
+            basename($path)
+        ));
+    }
+}
+
+/**
+ * Prend le verrou d'installation, ou échoue.
  *
  * L'enjeu justifie la prudence dans les deux sens : un verrou lu périmé alors
- * qu'il est frais laisse deux installations démarrer en parallèle ; lu frais
- * alors qu'il est périmé, il condamne toute reprise jusqu'à une intervention
- * FTP.
+ * qu'il est frais laisse deux installations démarrer en parallèle sur le même
+ * `docRoot` — copies entrelacées, `installed_entries` divergents de ce qui est
+ * réellement sur le disque, annulation partielle ; lu frais alors qu'il est
+ * périmé, il condamne toute reprise jusqu'à une intervention FTP.
+ *
+ * ## Pourquoi ce n'est pas trois appels
+ *
+ * Tester l'existence, lire la date, puis écrire, forme trois opérations
+ * distinctes : deux requêtes simultanées constatent toutes deux l'absence de
+ * verrou et l'écrivent toutes deux. `clearstatcache()` retirait la dépendance
+ * au cache de `stat()`, il ne rendait pas la prise atomique.
+ *
+ * La création se fait donc en **une** opération noyau : `fopen($path, 'x')`
+ * ouvre avec `O_CREAT | O_EXCL` et échoue si le fichier existe. Exactement une
+ * requête gagne.
+ *
+ * ## La reprise d'un verrou périmé est sérialisée
+ *
+ * Retirer un verrou périmé avant de recréer rouvrirait la course par la
+ * fenêtre : deux requêtes le retireraient toutes deux, et la seconde écraserait
+ * le verrou frais de la première. La reprise se fait donc sur place, sous
+ * `flock()` exclusif non bloquant, et la date est relue **sous ce verrou** :
+ * celle qui arrive seconde voit une date fraîche et renonce.
  */
 function bootstrap_acquire_lock(string $path): bool
 {
-    clearstatcache(true, $path);
+    $handle = @fopen($path, 'x');
+    if ($handle !== false) {
+        fwrite($handle, (string) getmypid());
+        fclose($handle);
 
-    if (is_file($path) && (time() - (int) @filemtime($path)) < BOOTSTRAP_LOCK_STALE_SECONDS) {
+        return true;
+    }
+
+    // Le verrou existe. Reste à savoir s'il est abandonné, et une seule
+    // requête à la fois a le droit de poser la question.
+    $handle = @fopen($path, 'r+');
+    if ($handle === false) {
         return false;
     }
 
-    return @file_put_contents($path, (string) getmypid()) !== false;
+    if (!flock($handle, LOCK_EX | LOCK_NB)) {
+        fclose($handle);
+
+        return false;
+    }
+
+    clearstatcache(true, $path);
+    if ((time() - (int) @filemtime($path)) < BOOTSTRAP_LOCK_STALE_SECONDS) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+
+        return false;
+    }
+
+    ftruncate($handle, 0);
+    rewind($handle);
+    fwrite($handle, (string) getmypid());
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    return true;
 }
 
 function bootstrap_release_lock(string $path): void
@@ -1135,6 +1331,7 @@ function bootstrap_step_resolve(string $docRoot, array $state): array
     $state['version'] = ltrim((string) ($release['tag_name'] ?? '0.0.0'), 'v');
     $state['archive_url'] = $archive['url'];
     $state['archive_size'] = $archive['size'];
+    $state['archive_digest'] = $archive['digest'];
     $state['source_type'] = $archive['source'];
     $state['disk_check'] = $diskCheck;
     $state['label'] = 'Résolution de la dernière version';
@@ -1172,6 +1369,15 @@ function bootstrap_step_download(string $docRoot, array $state): array
     if ((int) filesize($artifactPath) < 4 || $header !== 'PK') {
         throw new RuntimeException("Le fichier téléchargé n'est pas une archive ZIP.");
     }
+
+    // L'empreinte vient d'`api.github.com`, l'archive vient du service de
+    // stockage au bout d'une chaîne de redirections : deux canaux, et c'est
+    // ce qui rend la comparaison utile. Sans empreinte publiée, on le dit —
+    // « non vérifiée » et « vérifiée » ne sont pas la même réponse.
+    $state['integrity'] = bootstrap_verify_archive_digest(
+        $artifactPath,
+        (string) ($state['archive_digest'] ?? '')
+    );
 
     $state['temp_dir'] = $temporaryDirectory;
     $state['artifact_path'] = $artifactPath;
@@ -1237,7 +1443,14 @@ function bootstrap_step_install(string $docRoot, array $state): array
     // `storage/` et `VERSION` sont exclus : le premier est créé à l'étape
     // suivante avec les bons droits, le second est écrit depuis le tag de la
     // release, qui fait foi sur ce que l'on vient réellement d'installer.
-    $copied = bootstrap_copy_tree((string) $state['source_root'], $docRoot, ['storage', 'VERSION']);
+    $copied = [];
+    try {
+        bootstrap_copy_tree((string) $state['source_root'], $docRoot, ['storage', 'VERSION'], $copied);
+    } catch (Throwable $throwable) {
+        // Ce qui est déjà à la racine doit remonter avec l'échec, sinon
+        // personne ne pourra plus le retirer. Voir BootstrapPartialInstall.
+        throw new BootstrapPartialInstall($throwable->getMessage(), $copied, $throwable);
+    }
 
     $state['install_target'] = $docRoot;
     $state['installed_entries'] = $copied;
@@ -1323,6 +1536,7 @@ function bootstrap_step_gate_prepare(string $docRoot, array $state): array
     if (@file_put_contents($docRoot . '/' . BOOTSTRAP_TOKEN_FILE, bootstrap_token_file_content($token)) === false) {
         throw new RuntimeException("Impossible d'écrire token.php à la racine du site.");
     }
+    bootstrap_restrict_permissions($docRoot . '/' . BOOTSTRAP_TOKEN_FILE);
     $state['token'] = $token;
 
     $state['probes'] = bootstrap_write_gate_probes($docRoot, $state);
@@ -1366,10 +1580,23 @@ function bootstrap_write_gate_probes(string $docRoot, array $state): array
         'file' => $controlFile,
     ];
 
-    // B2 — PHP s'exécute. La racine du site, sans jeton : elle redirige vers
-    // l'assistant, ce qui suffit largement à distinguer « PHP tourne » de
-    // « Apache sert le source ».
-    $probes[] = ['id' => 'B2', 'kind' => 'php_exec', 'url' => '/', 'expected' => null, 'file' => null];
+    // B2 — PHP s'exécute. L'URL porte le jeton, pour la même raison que F1
+    // plus bas ne demande pas « / » : le navigateur suit les redirections, « / »
+    // mène à `/{locale}/install`, et le portail à jeton y répond 403 sans
+    // jeton. La sonde lisait ce 403 comme « PHP ne s'exécute pas » et faisait
+    // annuler une installation saine.
+    //
+    // B2 et F1 partagent donc l'adresse et n'y cherchent pas la même chose :
+    // B2 échoue si le corps contient du source PHP — la fuite la plus grave
+    // possible — et F1 échoue si l'assistant n'est pas là. Deux pannes
+    // distinctes, deux messages distincts, et l'opérateur sait laquelle il a.
+    $probes[] = [
+        'id' => 'B2',
+        'kind' => 'php_exec',
+        'url' => '/fr/install?' . BOOTSTRAP_TOKEN_PARAMETER . '=' . (string) $state['token'],
+        'expected' => null,
+        'file' => null,
+    ];
 
     foreach ([
         'B3' => 'src',
@@ -1834,20 +2061,171 @@ function bootstrap_default_http_get(string $url, array $headers = []): array
 
 function bootstrap_default_downloader(string $url, string $destination): void
 {
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'header' => 'User-Agent: ' . BOOTSTRAP_USER_AGENT . "\r\n",
-            'timeout' => BOOTSTRAP_DOWNLOAD_TIMEOUT,
-            'follow_location' => 1,
-            'ignore_errors' => true,
-        ],
-        'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-    ]);
+    $current = $url;
 
-    if (!@copy($url, $destination, $context)) {
-        throw new RuntimeException('Le téléchargement a échoué.');
+    for ($hop = 0; $hop <= BOOTSTRAP_MAX_REDIRECTS; $hop++) {
+        if (!bootstrap_url_is_https($current)) {
+            throw new RuntimeException(
+                'Le téléchargement quitte HTTPS : refusé. Le seul canal admis vers GitHub est chiffré.'
+            );
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => 'User-Agent: ' . BOOTSTRAP_USER_AGENT . "\r\n",
+                'timeout' => BOOTSTRAP_DOWNLOAD_TIMEOUT,
+                // `follow_location => 0` : PHP suivrait sinon une redirection
+                // vers `http://` sans rien signaler. Les options `ssl`
+                // ci-dessous ne protègent que les sauts qui restent en TLS —
+                // elles n'ont rien à dire d'un saut qui n'en fait plus partie.
+                'follow_location' => 0,
+                'ignore_errors' => true,
+            ],
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+        ]);
+
+        $stream = @fopen($current, 'rb', false, $context);
+        if ($stream === false) {
+            throw new RuntimeException('Le téléchargement a échoué.');
+        }
+
+        // PHP renseigne cette variable dans la portée locale à chaque
+        // ouverture réussie par l'enveloppe HTTP — et le schéma vient d'être
+        // contrôlé, donc c'est bien cette enveloppe qui a servi.
+        /** @var list<string> $responseHeaders */
+        $responseHeaders = $http_response_header;
+        $status = bootstrap_status_from_headers($responseHeaders);
+
+        if ($status >= 300 && $status < 400) {
+            fclose($stream);
+            $location = bootstrap_header_value($responseHeaders, 'location');
+            if ($location === null) {
+                throw new RuntimeException('Le téléchargement a été redirigé sans destination.');
+            }
+            $current = bootstrap_resolve_redirect($current, $location);
+            continue;
+        }
+
+        if ($status !== 200) {
+            fclose($stream);
+            throw new RuntimeException(sprintf('Le téléchargement a échoué (statut HTTP %d).', $status));
+        }
+
+        $out = @fopen($destination, 'wb');
+        if ($out === false) {
+            fclose($stream);
+            throw new RuntimeException("Impossible d'écrire l'archive téléchargée.");
+        }
+
+        $copied = stream_copy_to_stream($stream, $out);
+        fclose($stream);
+        fclose($out);
+
+        if ($copied === false) {
+            throw new RuntimeException('Le téléchargement a échoué.');
+        }
+
+        return;
     }
+
+    throw new RuntimeException('Le téléchargement a été redirigé trop de fois.');
+}
+
+/**
+ * Compare les octets réellement reçus à l'empreinte publiée par l'API.
+ *
+ * Trois issues, et elles se distinguent : vérifiée, non publiée, ou fausse.
+ * La dernière lève — une archive dont l'empreinte ne correspond pas n'est pas
+ * une archive dégradée, c'est une archive dont on ne sait pas d'où elle vient.
+ *
+ * @return string ce que l'opérateur lira dans le rapport
+ */
+function bootstrap_verify_archive_digest(string $path, string $expected): string
+{
+    if ($expected === '') {
+        return "non vérifiée — cette release ne publie pas d'empreinte pour son archive";
+    }
+
+    $actual = hash_file('sha256', $path);
+    if (!is_string($actual) || !hash_equals($expected, $actual)) {
+        throw new RuntimeException(
+            "L'archive téléchargée ne correspond pas à l'empreinte publiée par GitHub. "
+            . 'Installation interrompue.'
+        );
+    }
+
+    return 'vérifiée (SHA-256)';
+}
+
+function bootstrap_url_is_https(string $url): bool
+{
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+
+    return is_string($scheme) && strtolower($scheme) === 'https';
+}
+
+/**
+ * @param list<string> $headers
+ */
+function bootstrap_status_from_headers(array $headers): int
+{
+    // Une chaîne de redirections empile les lignes de statut : la dernière est
+    // celle de la réponse qu'on tient réellement.
+    $status = 0;
+    foreach ($headers as $header) {
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches) === 1) {
+            $status = (int) $matches[1];
+        }
+    }
+
+    return $status;
+}
+
+/**
+ * @param list<string> $headers
+ */
+function bootstrap_header_value(array $headers, string $name): ?string
+{
+    $needle = strtolower($name) . ':';
+    $value = null;
+    foreach ($headers as $header) {
+        if (str_starts_with(strtolower($header), $needle)) {
+            $value = trim(substr($header, strlen($needle)));
+        }
+    }
+
+    return $value === '' ? null : $value;
+}
+
+/**
+ * Résout une destination de redirection contre l'adresse qui l'a produite.
+ *
+ * Une destination absolue est prise telle quelle — et repassera par le
+ * contrôle de schéma. Une destination relative hérite de l'origine courante,
+ * donc de son HTTPS : une redirection relative ne peut pas faire sortir du
+ * chiffrement, et une redirection absolue vers `http://` est refusée au tour
+ * suivant.
+ */
+function bootstrap_resolve_redirect(string $current, string $location): string
+{
+    if (parse_url($location, PHP_URL_SCHEME) !== null) {
+        return $location;
+    }
+
+    $parts = parse_url($current);
+    if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
+        return $location;
+    }
+
+    $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    if (str_starts_with($location, '/')) {
+        return $origin . $location;
+    }
+
+    $path = (string) ($parts['path'] ?? '/');
+
+    return $origin . substr($path, 0, (int) strrpos($path, '/') + 1) . $location;
 }
 
 function bootstrap_default_https_probe(): bool
@@ -1888,7 +2266,7 @@ function bootstrap_public_state(array $state): array
         'label', 'percent', 'version', 'done', 'done_gate', 'gate_passed', 'gate_aborted_at',
         'error', 'failed_step', 's_checks', 'b_checks', 'f_checks', 'probes', 'awaiting_gate_report',
         'token_written', 'token_write_warning', 'token_manual_content', 'wizard_url', 'self_deleted',
-        'cleanup_warning', 'disk_check', 'environment', 'gate_report',
+        'cleanup_warning', 'disk_check', 'environment', 'gate_report', 'integrity',
     ];
 
     $public = [];
@@ -2028,6 +2406,18 @@ function bootstrap_handle_step_request(string $docRoot, string $stateFile): void
         $state['error'] = bootstrap_sanitize_error_for_client($throwable->getMessage(), $docRoot);
         $state['failed_step'] = $step;
 
+        if ($throwable instanceof BootstrapPartialInstall) {
+            // L'étape 6 s'est interrompue en pleine copie. Ce qu'elle avait
+            // déjà écrit n'est jamais passé par sa valeur de retour : c'est
+            // ici, et seulement ici, qu'il entre dans l'état — donc dans le
+            // périmètre de l'annulation et du bouton « Annuler ».
+            $state['install_target'] = $docRoot;
+            $state['installed_entries'] = array_values(array_unique(array_merge(
+                array_map('strval', (array) ($state['installed_entries'] ?? [])),
+                $throwable->copied
+            )));
+        }
+
         if (!empty($state['install_target']) && !empty($state['installed_entries'])) {
             // Quelque chose a réellement été copié : on annule, quel que soit
             // le numéro d'étape de la requête **courante**. Une reprise peut
@@ -2040,7 +2430,7 @@ function bootstrap_handle_step_request(string $docRoot, string $stateFile): void
             bootstrap_remove_directory((string) $state['temp_dir']);
         }
 
-        bootstrap_write_state($stateFile, $state);
+        bootstrap_write_state_quietly($stateFile, $state);
         bootstrap_release_lock($lockFile);
         bootstrap_send_json(['done' => true, 'error' => $state['error'], 'step' => $step]);
     }
@@ -2110,11 +2500,128 @@ function bootstrap_handle_gate_report(string $docRoot, string $stateFile): void
     } catch (Throwable $throwable) {
         $state['error'] = bootstrap_sanitize_error_for_client($throwable->getMessage(), $docRoot);
         bootstrap_rollback_install($docRoot, $state);
-        bootstrap_write_state($stateFile, $state);
+        bootstrap_write_state_quietly($stateFile, $state);
         bootstrap_release_lock($lockFile);
         bootstrap_send_json(['done' => true, 'error' => $state['error']]);
     }
 }
+
+// =============================================================================
+// Origine des requêtes POST
+// =============================================================================
+
+/**
+ * Ramène une origine à ce qui l'identifie : son hôte et son port.
+ *
+ * Le schéma est délibérément écarté de la comparaison. Cet installeur tourne
+ * une fois, sur un hébergement dont personne ici ne sait rien, souvent
+ * derrière un terminateur TLS qui ne renseigne ni `HTTPS` ni
+ * `X-Forwarded-Proto`. Exiger l'égalité des schémas ferait refuser des
+ * requêtes parfaitement légitimes, et l'opérateur n'aurait aucun moyen de
+ * comprendre pourquoi. Ce qu'une falsification de requête inter-site ne peut
+ * pas contourner, c'est l'hôte : un attaquant ne sert pas de contenu depuis le
+ * nom de domaine de sa victime. C'est donc l'hôte qui décide.
+ *
+ * Les deux ports par défaut du web, 80 et 443, sont retirés — les deux, et
+ * pas seulement celui du schéma courant, par cohérence avec la décision
+ * ci-dessus. Un navigateur écrit `https://exemple.fr` là où `HTTP_HOST` peut
+ * porter `exemple.fr:443` : c'est le même endroit, et le schéma qu'on
+ * n'utilise pas pour comparer les hôtes ne doit pas revenir départager les
+ * ports. Tout autre port reste distinctif : `exemple.fr:8080` n'est pas
+ * `exemple.fr`.
+ */
+function bootstrap_normalise_origin_host(string $host, ?int $port): string
+{
+    $host = strtolower(trim($host));
+    if ($host === '') {
+        return '';
+    }
+
+    if ($port === null || $port === 80 || $port === 443) {
+        return $host;
+    }
+
+    return $host . ':' . $port;
+}
+
+/**
+ * L'hôte que le navigateur dit avoir contacté, lu dans `Origin` puis, à
+ * défaut, dans `Referer`.
+ *
+ * `null` signifie « la requête ne dit pas d'où elle vient ». Les navigateurs
+ * envoient `Origin` sur toute requête POST, y compris de même origine ; une
+ * requête POST muette n'est donc pas un cas normal, et elle est refusée plus
+ * bas plutôt qu'acceptée par défaut.
+ *
+ * @param array<string, mixed> $server
+ */
+function bootstrap_request_origin_host(array $server): ?string
+{
+    foreach (['HTTP_ORIGIN', 'HTTP_REFERER'] as $header) {
+        $value = trim((string) ($server[$header] ?? ''));
+        if ($value === '' || $value === 'null') {
+            continue;
+        }
+
+        $parts = parse_url($value);
+        if (!is_array($parts) || !isset($parts['host'])) {
+            continue;
+        }
+
+        return bootstrap_normalise_origin_host(
+            (string) $parts['host'],
+            isset($parts['port']) ? (int) $parts['port'] : null
+        );
+    }
+
+    return null;
+}
+
+/**
+ * L'hôte que cette installation croit être, lu dans `Host`.
+ *
+ * @param array<string, mixed> $server
+ */
+function bootstrap_expected_origin_host(array $server): string
+{
+    $host = trim((string) ($server['HTTP_HOST'] ?? ''));
+    if ($host === '') {
+        return '';
+    }
+
+    $parts = parse_url('//' . $host);
+    if (!is_array($parts) || !isset($parts['host'])) {
+        return '';
+    }
+
+    return bootstrap_normalise_origin_host(
+        (string) $parts['host'],
+        isset($parts['port']) ? (int) $parts['port'] : null
+    );
+}
+
+/**
+ * Les trois actions POST changent le disque : `step` copie, `gate-report`
+ * décide de l'annulation, `abort` supprime. Aucune n'est protégée par le jeton
+ * d'installation — il n'existe pas encore quand les premières partent, et il
+ * ne serait de toute façon pas un jeton anti-CSRF : il voyage dans une URL.
+ *
+ * Sans ce contrôle, un site tiers visité par l'opérateur pendant
+ * l'installation peut soumettre `POST bootstrap.php?action=abort` et faire
+ * effacer les fichiers déjà copiés, l'état et le verrou.
+ *
+ * @param array<string, mixed> $server
+ */
+function bootstrap_request_is_same_origin(array $server): bool
+{
+    $expected = bootstrap_expected_origin_host($server);
+    if ($expected === '') {
+        return false;
+    }
+
+    return bootstrap_request_origin_host($server) === $expected;
+}
+
 
 /**
  * Jette tout ce qui a déjà été mis en tampon. Un avertissement PHP imprimé
@@ -2313,6 +2820,12 @@ function bootstrap_render_ui(string $docRoot): void
       setProgress(step, 100);
       logLine((STEP_LABELS[step] || ('Étape ' + step)) + ' — terminé.');
 
+      // L'intégrité de l'archive est dite une fois, à l'étape qui la
+      // télécharge, et elle est dite même quand elle n'a pas pu être
+      // vérifiée : « non vérifiée » et « vérifiée » ne sont pas la même
+      // réponse, et l'opérateur a le droit de savoir laquelle il a.
+      if (step === 3 && data.integrity) { logLine('Archive : ' + data.integrity + '.'); }
+
       if (data.wizard_url) { wizardUrl = data.wizard_url; }
       if (step === 9) { handleGate(data); return; }
       if (step === TOTAL_STEPS) { showReport(data, true); return; }
@@ -2473,6 +2986,20 @@ function bootstrap_main(): void
 
     $action = $_GET['action'] ?? ($_POST['action'] ?? '');
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+    // Les trois actions ci-dessous écrivent ou effacent. Une requête POST qui
+    // ne vient pas de cette page n'a rien à y faire.
+    if ($method === 'POST' && in_array($action, ['step', 'gate-report', 'abort'], true)
+        && !bootstrap_request_is_same_origin($_SERVER)) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'error' => "Requête refusée : elle ne provient pas de cette page. Rechargez bootstrap.php "
+                . 'et relancez depuis l’onglet ouvert sur ce site.',
+        ], JSON_UNESCAPED_UNICODE);
+
+        return;
+    }
 
     if ($method === 'POST' && $action === 'step') {
         bootstrap_handle_step_request($docRoot, $stateFile);

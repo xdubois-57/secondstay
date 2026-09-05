@@ -17,42 +17,17 @@ final class Router
     /**
      * Niveau d'accès appliqué aux routes déclarées sans le préciser.
      *
-     * Il vaut `Public` hors de toute portée, et c'est délibéré : une route
-     * ajoutée sans y penser est déclarée publique, donc confrontée par la
-     * matrice d'autorisation au comportement le plus permissif possible. Si
-     * elle refuse un visiteur, la gate refuse — un oubli devient bruyant au
-     * lieu de passer inaperçu.
+     * Il vaut `Public`, et c'est délibéré : une route ajoutée sans y penser est
+     * déclarée publique, donc confrontée par la matrice d'autorisation au
+     * comportement le plus permissif possible. Si elle refuse un visiteur, la
+     * gate refuse — un oubli devient bruyant au lieu de passer inaperçu.
+     *
+     * Le choix inverse — un défaut restrictif — rendrait l'oubli silencieux :
+     * la route serait déclarée fermée, elle le serait effectivement, et la
+     * matrice n'aurait rien à signaler tant que personne n'aurait relu la
+     * table.
      */
-    private Access $scope = Access::Public;
-
-    /**
-     * Déclare un bloc de routes partageant le même niveau d'accès minimal.
-     *
-     * Annoter cent quatre-vingt-quatre routes une par une produirait une table
-     * que plus personne ne relit — et une table de routes illisible est un
-     * danger en soi. Les blocs suivent le découpage que ce fichier avait déjà.
-     *
-     * Une route peut toujours déclarer son propre niveau : le paramètre
-     * l'emporte sur la portée.
-     *
-     * @param callable(self): void $routes
-     */
-    public function scoped(Access $access, callable $routes): self
-    {
-        $previous = $this->scope;
-        $this->scope = $access;
-
-        try {
-            $routes($this);
-        } finally {
-            // Restauré même si la déclaration lève : une portée qui fuiterait
-            // ferait silencieusement hériter tout le reste du fichier d'un
-            // niveau d'accès qu'il n'a pas demandé.
-            $this->scope = $previous;
-        }
-
-        return $this;
-    }
+    private const DEFAULT_ACCESS = Access::Public;
 
     /**
      * @param array{0: class-string, 1: string} $handler
@@ -77,7 +52,7 @@ final class Router
             'handler' => $handler,
             'name' => $name,
             'localised' => $localised,
-            'access' => $access ?? $this->scope,
+            'access' => $access ?? self::DEFAULT_ACCESS,
         ];
         $this->named[$name] = ['pattern' => $normalised, 'localised' => $localised];
 

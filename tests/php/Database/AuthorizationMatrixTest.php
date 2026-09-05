@@ -146,6 +146,26 @@ final class AuthorizationMatrixTest extends InstalledAppTestCase
                 }
 
                 $status = $this->replay($route);
+
+                // Une erreur serveur n'est pas une autorisation. Sans ce
+                // contrôle, une route qui plante répond 500, la gate lit
+                // « non refusée », et une route cassée passe pour une route
+                // correctement ouverte — sur toute la moitié de la matrice
+                // qui vérifie l'accès accordé.
+                if (!$shouldBeDenied && $status >= 500) {
+                    $problems[] = sprintf(
+                        '%s %s (%s, déclarée %s) : erreur serveur %d en %s — une panne ne prouve aucun accès',
+                        $route['method'],
+                        $route['pattern'],
+                        $route['name'],
+                        $access->value,
+                        $status,
+                        $label
+                    );
+
+                    continue;
+                }
+
                 $denied = $status === 403;
 
                 if ($denied === $shouldBeDenied) {

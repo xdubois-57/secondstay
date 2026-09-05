@@ -642,13 +642,18 @@ Chaque étape est une requête POST courte, l'état étant persisté dans
 `.bootstrap-state.php` entre chacune : une installation complète en une seule
 requête dépasse le `max_execution_time` de la plupart des hébergements
 mutualisés. Un verrou (`.bootstrap.lock`, périmé après dix minutes) empêche
-deux tentatives simultanées.
+deux tentatives simultanées ; il est posé par une **création exclusive**, et sa
+reprise quand il est périmé est sérialisée (SECURITY.md §42.4).
+
+Les trois actions POST refusent une requête qui ne vient pas de cette page
+(SECURITY.md §42.2), et une copie interrompue fait remonter les entrées déjà
+écrites pour que l'annulation puisse les retirer (§42.5).
 
 | # | Étape | Ce qu'elle fait |
 |---|---|---|
 | 1 | Préflight | emplacement, version de PHP, extensions, HTTPS sortant, droits d'écriture, absence d'installation existante |
 | 2 | Résolution | dernière release publiée, choix de l'asset **par son nom**, espace disque |
-| 3 | Téléchargement | trois tentatives, certificat toujours vérifié, en-tête `PK` contrôlé |
+| 3 | Téléchargement | trois tentatives, redirections suivies **une par une** et refusées hors HTTPS, en-tête `PK` contrôlé, octets comparés à l'empreinte SHA-256 publiée par l'API (SECURITY.md §42.1) |
 | 4 | Extraction | archive validée **entièrement** avant le premier octet écrit (zip-slip, liens symboliques) |
 | 5 | Vérification | entrées obligatoires présentes, aucun `config/local.php` hérité |
 | 6 | Installation | copie préservant les fichiers cachés ; `storage/` et `VERSION` exclus |
@@ -670,7 +675,13 @@ l'opérateur va chercher chaque sonde et rapporte ce qu'il a obtenu.
   S'il n'est pas servi, « inaccessible » ne prouve plus rien et tous les autres
   contrôles sont déclarés non vérifiés.
 - `B2` prouve que PHP s'exécute : si le corps de la réponse contient une balise
-  d'ouverture PHP, tout le dépôt est lisible, jeton compris.
+  d'ouverture PHP, tout le dépôt est lisible, jeton compris. Elle demande
+  l'assistant **avec son jeton**, comme `F1`, et pour la même raison : le
+  navigateur suit les redirections, `/` mène à `/{locale}/install`, et le
+  portail à jeton y répond 403. Pointée sur `/`, la sonde lisait ce 403 comme
+  « PHP ne s'exécute pas » et faisait annuler une installation saine. Les deux
+  sondes partagent l'adresse et cherchent des pannes différentes : `B2` la
+  fuite de source, `F1` l'absence d'assistant.
 - `B3`-`B9` sondent `src/`, `config/`, `vendor/`, `storage/logs/`, un dossier de
   `storage/` **créé après l'installation**, un fichier caché, et `VERSION`.
   Le dossier créé après coup n'est pas décoratif : il distingue une règle de

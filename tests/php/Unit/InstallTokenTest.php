@@ -262,8 +262,14 @@ final class InstallTokenTest extends TestCase
     }
 
     /**
-     * Quatre erreurs ne verrouillent pas : le seuil est bien à cinq, et une
-     * réussite avant remet le compteur à zéro.
+     * Quatre erreurs ne verrouillent pas, **et** la réussite qui suit remet le
+     * compteur à zéro.
+     *
+     * La seconde moitié est ce que ce test ne vérifiait pas : il s'arrêtait à
+     * la réussite, qui n'apprend rien du compteur — quatre échecs sont sous le
+     * seuil de cinq, donc le jeton juste passait de toute façon. Le test
+     * portait donc un nom que rien ne soutenait, et le jour où la remise à
+     * zéro disparaîtrait, il resterait vert.
      */
     public function testASuccessBeforeTheThresholdClearsTheCounter(): void
     {
@@ -272,10 +278,25 @@ final class InstallTokenTest extends TestCase
         $gate = $this->gate($session);
 
         for ($attempt = 0; $attempt < 4; $attempt++) {
-            $gate->authorise($this->request(['jeton' => str_repeat('0', 64)]));
+            self::assertSame(
+                InstallTokenVerdict::Denied,
+                $gate->authorise($this->request(['jeton' => str_repeat('0', 64)]))
+            );
         }
 
         self::assertSame(InstallTokenVerdict::Accepted, $gate->authorise($this->request(['jeton' => $secret])));
+
+        // Et la remise à zéro elle-même, constatée là où elle a lieu.
+        //
+        // Elle ne se voit pas par un verdict : une fois la session marquée
+        // vérifiée, `authorise()` répond `Allowed` sans jamais redescendre au
+        // compteur. C'est de la défense en profondeur — aucun chemin actuel
+        // n'en dépend — et c'est justement pour cela qu'elle a besoin d'un
+        // test : rien d'autre ne dirait qu'elle a disparu. La clé est lue
+        // telle qu'elle est écrite en session, parce que ce qui est vérifié
+        // ici est précisément l'état persisté.
+        self::assertNull($session->int('_install_token_failures'));
+        self::assertTrue($session->get(InstallTokenGate::SESSION_VERIFIED_KEY));
     }
 
     // -------------------------------------------------------------------

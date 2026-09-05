@@ -106,6 +106,35 @@ function pinnedPublicKeys() {
 //    serveur avec deux environnements différents finissent toujours par
 //    diverger.
 /**
+ * Les drapeaux de lancement de Chromium, et la condition qui gouverne chacun.
+ *
+ * Chaque drapeau dépend de ce qu'il corrige, jamais du drapeau voisin. Les
+ * regrouper sous `usesTls` avait mis le contournement du proxy sous une
+ * condition qui ne le concerne pas : `proxyServer` se configure indépendamment
+ * de TLS, et un proxy en clair aurait donc laissé Chromium adresser la boucle
+ * locale en direct. ZAP n'aurait pas vu ce trafic, et la campagne aurait
+ * mesuré moins que ce qu'elle annonce — le vert qui ne prouve rien.
+ *
+ * @returns {string[]}
+ */
+function chromiumArgs() {
+    return [
+        // Précaution standard pour Chromium en intégration continue, où
+        // `/dev/shm` est petit. Elle ne dépend d'aucun harnais, et elle n'est
+        // pas ce qui a corrigé le plantage décrit plus bas : la campagne est
+        // morte de la même façon avec.
+        '--disable-dev-shm-usage',
+
+        // Le certificat épinglé n'existe que quand le harnais TLS tourne.
+        ...(usesTls ? [`--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`] : []),
+
+        // Sans cela, Chromium adresse `localhost` en direct et le proxy ne
+        // voit rien de la campagne — quel que soit le protocole.
+        ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
+    ];
+}
+
+/**
  * Quel binaire Chromium jouer.
  *
  * En temps normal, Playwright lance `chrome-headless-shell` : un binaire
@@ -199,22 +228,7 @@ export default defineConfig({
         // le navigateur fait exception pour ces deux clés, et pour aucune
         // autre.
         ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
-        ...(usesTls
-            ? {
-                launchOptions: {
-                    args: [
-                        `--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`,
-                        // Gardé, mais ce n'est pas ce qui corrigeait le
-                        // plantage décrit plus bas : la campagne est morte de
-                        // la même façon avec. C'est une précaution standard
-                        // pour Chromium en CI contraint, qui ne coûte rien —
-                        // pas une hypothèse encore en cours.
-                        '--disable-dev-shm-usage',
-                        ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
-                    ]
-                }
-            }
-            : {}),
+        launchOptions: { args: chromiumArgs() },
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

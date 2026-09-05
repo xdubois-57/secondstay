@@ -180,6 +180,7 @@ return [
             'create' => 'The backup failed.',
             'restore' => 'The restore failed.',
             'delete' => 'The deletion failed.',
+            'download' => 'That backup could not be found: it may have been deleted or rotated out by retention.',
         ],
     ],
     'updates' => [

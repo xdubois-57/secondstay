@@ -65,7 +65,7 @@ const VENDORED_UPSTREAM = [
  */
 function freshnessOfComposer(string $root): array
 {
-    $json = shellJson('cd ' . escapeshellarg($root) . ' && composer outdated --direct --format=json 2>/dev/null');
+    $json = shellJson('cd ' . escapeshellarg($root) . ' && composer outdated --direct --format=json');
     $stale = [];
     $deliberate = [];
 
@@ -94,8 +94,10 @@ function freshnessOfComposer(string $root): array
 function freshnessOfNpm(string $root): array
 {
     // `npm outdated` sort en 1 quand il trouve quelque chose : ce n'est pas
-    // une erreur, c'est son verdict. On lit donc sa sortie sans juger son code.
-    $json = shellJson('cd ' . escapeshellarg($root) . ' && npm outdated --json 2>/dev/null');
+    // une erreur, c'est son verdict — d'où le 1 dans les codes acceptés. Tout
+    // autre code reste une panne, et fait échouer la gate plutôt que de la
+    // laisser conclure « à jour » sur une sortie vide.
+    $json = shellJson('cd ' . escapeshellarg($root) . ' && npm outdated --json', [0, 1]);
     $stale = [];
     $deliberate = [];
 
@@ -228,29 +230,93 @@ function majorOf(string $version): string
 }
 
 /**
+ * Exécute une commande censée écrire du JSON, et **refuse de deviner**.
+ *
+ * La version précédente renvoyait `[]` dès que la sortie n'était pas du JSON.
+ * Les appelants lisaient alors une liste vide, imprimaient « à jour » et la
+ * release continuait — alors que le contrôle n'avait pas eu lieu. Composer
+ * absent, `node_modules` non installé, réseau coupé, JSON tronqué : tous ces
+ * cas donnaient un vert. C'est exactement le vert qui ne prouve rien que cette
+ * gate existe pour empêcher ailleurs.
+ *
+ * Un code de sortie inattendu ou un JSON illisible lève donc, et la gate
+ * échoue. Le seul silence toléré est une sortie vide sur un code 0, que `npm
+ * outdated` produit encore dans certaines versions quand il n'a rien à dire.
+ *
+ * @param list<int> $acceptedExitCodes codes de sortie qui sont un verdict et
+ *                                     non une panne — `npm outdated` sort en 1
+ *                                     quand il a trouvé quelque chose
+ *
  * @return array<mixed>
+ *
+ * @throws RuntimeException
  */
-function shellJson(string $command): array
+function shellJson(string $command, array $acceptedExitCodes = [0]): array
 {
-    $output = shell_exec($command);
-    if (!is_string($output) || trim($output) === '') {
+    $errorFile = tempnam(sys_get_temp_dir(), 'freshness-');
+    if ($errorFile === false) {
+        throw new RuntimeException("Impossible de créer le fichier temporaire de l'erreur standard.");
+    }
+
+    $lines = [];
+    $status = 0;
+    exec($command . ' 2>' . escapeshellarg($errorFile), $lines, $status);
+
+    $stderr = trim((string) @file_get_contents($errorFile));
+    @unlink($errorFile);
+
+    if (!in_array($status, $acceptedExitCodes, true)) {
+        throw new RuntimeException(sprintf(
+            "La commande a échoué (sortie %d) : %s\n%s",
+            $status,
+            $command,
+            $stderr === '' ? '(aucun message sur l\'erreur standard)' : $stderr
+        ));
+    }
+
+    $raw = trim(implode("\n", $lines));
+    if ($raw === '') {
+        if ($status !== 0) {
+            throw new RuntimeException(sprintf(
+                'La commande est sortie en %d sans rien écrire : %s',
+                $status,
+                $command
+            ));
+        }
+
         return [];
     }
 
-    $decoded = json_decode($output, true);
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException(sprintf(
+            "La commande n'a pas produit de JSON exploitable : %s\n%s",
+            $command,
+            substr($raw, 0, 500)
+        ));
+    }
 
-    return is_array($decoded) ? $decoded : [];
+    return $decoded;
 }
 
 // -----------------------------------------------------------------------------
 
 $root = dirname(__DIR__);
 
-$sections = [
-    'Composer (dépendances directes)' => freshnessOfComposer($root),
-    'npm (dépendances directes)' => freshnessOfNpm($root),
-    'Bibliothèques vendorisées' => freshnessOfVendored($root),
-];
+// Une gate qui ne peut pas mesurer ne conclut pas : elle échoue. Le message
+// nomme la commande fautive, parce que « impossible de lire la fraîcheur » est
+// un diagnostic et « à jour » sur un outil absent est un mensonge.
+try {
+    $sections = [
+        'Composer (dépendances directes)' => freshnessOfComposer($root),
+        'npm (dépendances directes)' => freshnessOfNpm($root),
+        'Bibliothèques vendorisées' => freshnessOfVendored($root),
+    ];
+} catch (RuntimeException $exception) {
+    fwrite(STDERR, "\nLa fraîcheur des dépendances n'a pas pu être établie.\n");
+    fwrite(STDERR, $exception->getMessage() . "\n");
+    exit(1);
+}
 
 $stale = [];
 $deliberate = [];

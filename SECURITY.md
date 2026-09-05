@@ -1322,3 +1322,83 @@ chargent. Il est là pour qu'une telle tentative coûte quelque chose.
 Dès que l'installation aboutit et qu'un administrateur existe, `token.php` est
 supprimé. La fenêtre qu'il protégeait est fermée ; le laisser en place serait un
 secret de plus sur le disque, pour rien.
+
+## 42. L'installeur autonome : ce qu'il refuse
+
+`bootstrap/bootstrap.php` tourne **avant** l'application : pas de `vendor/`, pas
+de noyau, pas de session. Rien de ce que SECURITY.md décrit ailleurs ne le
+protège, et il écrit à la racine du document d'un hébergement dont personne ici
+ne sait rien. Les protections ci-dessous sont donc les siennes.
+
+### 42.1 L'archive ne quitte jamais HTTPS, et elle est attestée
+
+Le téléchargement suit les redirections **lui-même**, un saut à la fois, et
+contrôle le schéma avant chacun. `follow_location => 1` suivait une redirection
+vers `http://` sans rien signaler : les options `ssl` du contexte de flux ne
+protègent que les sauts restés en TLS, elles n'ont rien à dire d'un saut qui
+n'en fait plus partie. L'archive pouvait donc arriver en clair, et seuls les
+contrôles de forme — la signature `PK`, la structure du ZIP — la séparaient de
+l'extraction.
+
+Les octets reçus sont ensuite comparés à l'empreinte SHA-256 que l'API de
+GitHub publie pour l'asset. Cette empreinte arrive par `api.github.com`, sur une
+connexion distincte de celle qui sert l'archive et de la chaîne de redirections
+qui y mène : c'est ce qui en fait une preuve, elle ne vient pas de la même
+source que ce qu'elle atteste. Une empreinte qui ne correspond pas interrompt
+l'installation.
+
+Une release qui n'en publie pas — le repli `zipball_url`, une release ancienne —
+est rapportée comme **non vérifiée** dans le journal de l'opérateur. « Non
+vérifiée » et « vérifiée » ne sont pas la même réponse, et les confondre serait
+la version installeur du vert qui ne prouve rien.
+
+### 42.2 Les trois actions POST refusent une origine étrangère
+
+`step` copie, `gate-report` décide de l'annulation, `abort` supprime. Aucune
+n'est protégée par le jeton d'installation : il n'existe pas encore quand les
+premières partent, et il voyage de toute façon dans une URL — ce n'est pas un
+jeton anti-CSRF. Sans contrôle d'origine, un site tiers visité par l'opérateur
+pendant l'installation pouvait soumettre `POST bootstrap.php?action=abort` et
+faire effacer les fichiers déjà copiés, l'état et le verrou.
+
+La comparaison porte sur l'**hôte** (`Origin`, à défaut `Referer`, contre
+`Host`), pas sur le schéma. L'installeur tourne souvent derrière un terminateur
+TLS qui ne renseigne ni `HTTPS` ni `X-Forwarded-Proto` ; exiger l'égalité des
+schémas ferait refuser des requêtes légitimes sans que l'opérateur puisse
+comprendre pourquoi. Ce qu'une falsification inter-site ne contourne pas, c'est
+l'hôte : un attaquant ne sert pas de contenu depuis le nom de domaine de sa
+victime.
+
+### 42.3 Le jeton et l'état ne sont lisibles que par leur propriétaire
+
+`token.php` et `.bootstrap-state.php` sont ramenés à `0600` après chaque
+écriture, et l'échec de cette restriction interrompt l'installation. Sur un
+hébergement mutualisé, une umask permissive les laisserait lisibles par les
+autres comptes de la machine — et `token.php` porte le secret qui ouvre
+l'assistant (§41).
+
+Le fichier d'état est du PHP inerte dont les données vivent dans un
+commentaire. Aucune valeur ne peut le refermer : les barres obliques sont
+échappées à l'encodage, si bien que la séquence de fermeture ne peut pas être
+construite. Sans cela, un chemin ou un message d'hébergeur contenant cette
+séquence aurait transformé le fichier d'état lui-même en injection de code.
+
+### 42.4 Une installation ne démarre jamais deux fois
+
+Le verrou est créé par une **création exclusive** (`fopen($path, 'x')`), en une
+opération noyau. Tester l'existence, lire la date, puis écrire laissait deux
+requêtes simultanées constater toutes deux l'absence du verrou et le poser
+toutes deux : deux installations sur le même dossier, copies entrelacées, état
+divergent du disque, annulation partielle. La reprise d'un verrou périmé est
+sérialisée par un `flock()` exclusif et la date est relue **sous** ce verrou :
+la requête qui arrive seconde voit une date fraîche et renonce.
+
+### 42.5 Une copie interrompue reste annulable
+
+Les entrées déjà écrites à la racine remontent avec l'échec, et non par la
+valeur de retour d'une fonction qui a levé. C'est ce qui permet à l'annulation
+— automatique ou déclenchée par le bouton « Annuler l'installation et
+nettoyer » — de les nommer, donc de les retirer. Sans cela, une copie
+interrompue au milieu de `vendor/` laissait `src/` en place, la reprise butait
+sur « déjà installé », le bouton d'annulation relisait un état vide et
+répondait « ok » sans rien faire : il ne restait que le FTP.

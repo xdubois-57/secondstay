@@ -252,10 +252,15 @@ jobs:
           # l'horloge les sépare. 60 s est très au-dessus des ~15 s d'un saut
           # et très en dessous des minutes d'une revue, donc aucun des deux
           # cas ne tombe près du seuil.
-          if [[ "${TOKEN_PRESENT}" != "true" ]]; then
-            verdict="**Aucune revue n'a eu lieu.** Le secret \`CLAUDE_CODE_OAUTH_TOKEN\` n'est pas configuré sur ce dépôt : le travail a été sauté plutôt que de laisser un rouge permanent. Créez-le avec \`claude setup-token\` puis rangez-le dans *Settings → Secrets and variables → Actions*. D'ici là, ce check vert ne dit rien du diff."
-          elif [[ "${REVIEW_RESULT}" != "success" ]]; then
+          # Le résultat du travail se teste EN PREMIER. `token_present` est
+          # produit par l'étape `guard` : un travail qui échoue ou qui est
+          # annulé avant elle laisse la sortie vide, et la lire d'abord ferait
+          # accuser un secret absent alors qu'il est là. Le mainteneur irait
+          # créer un secret qui existe déjà au lieu de lire l'échec.
+          if [[ "${REVIEW_RESULT}" != "success" ]]; then
             verdict="**La revue ne s'est pas terminée** (\`${REVIEW_RESULT}\`). Rien n'a été relu : considérez cette pull request comme non lue par Claude."
+          elif [[ "${TOKEN_PRESENT}" != "true" ]]; then
+            verdict="**Aucune revue n'a eu lieu.** Le secret \`CLAUDE_CODE_OAUTH_TOKEN\` n'est pas configuré sur ce dépôt : le travail a été sauté plutôt que de laisser un rouge permanent. Créez-le avec \`claude setup-token\` puis rangez-le dans *Settings → Secrets and variables → Actions*. D'ici là, ce check vert ne dit rien du diff."
           elif [[ "${seconds}" -ge 0 && "${seconds}" -lt 60 ]]; then
             verdict="**Vert sans revue.** Le travail a réussi en ${elapsed}, ce qui est la signature de l'action refusant de tourner — elle le fait quand ce workflow diffère de la copie sur \`main\`. Relisez le diff vous-même, ou fusionnez d'abord la modification du workflow puis relancez."
           else

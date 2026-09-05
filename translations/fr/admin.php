@@ -180,6 +180,7 @@ return [
             'create' => 'La sauvegarde a échoué.',
             'restore' => 'La restauration a échoué.',
             'delete' => 'La suppression a échoué.',
+            'download' => 'Cette sauvegarde est introuvable : elle a peut-être été supprimée ou remplacée par la rétention.',
         ],
     ],
     'updates' => [

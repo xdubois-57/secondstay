@@ -844,6 +844,21 @@ s'exécutent donc en série (`workers: 1`). Les scénarios doivent rester
 rejouables : ils ne supposent jamais l'absence de données créées par un projet
 précédent.
 
+**Un groupe `test.describe.configure({ mode: 'serial' })` est repris en
+entier** au premier échec, y compris les scénarios déjà verts. « Rejouable »
+prend alors un sens plus fort que « indépendant du projet précédent » : le
+groupe doit pouvoir se rejouer **après lui-même**. Une identité ou des dates
+figées dans le `beforeAll` ne le permettent pas — la reprise réinscrit une
+adresse qui existe déjà, réserve un séjour déjà pris, et le scénario attend un
+bouton que la page ne propose plus, jusqu'au délai maximal du test. La reprise
+ne répare alors rien : elle remplace un échec net par un blocage long, et c'est
+la campagne du scan dynamique qui l'a payé (`docs/quality-pipeline.md`, §
+*Scan dynamique*).
+
+La règle : tout ce qu'un groupe `serial` crée et qui doit être unique dérive de
+`testInfo.retry`. `tests/e2e/stay.spec.js` en est l'exemple — adresse de compte
+et mois du séjour.
+
 ### 19.3 Contextes anonymes
 
 `browser.newContext()` hérite du `storageState` déclaré par `test.use`. Pour

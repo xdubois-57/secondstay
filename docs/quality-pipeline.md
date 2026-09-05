@@ -51,16 +51,21 @@ de prétendre corriger une cause démontrée.
 ### Les deux moteurs de base
 
 La production cible **MySQL 8 ou MariaDB** (README § *Stack cible*,
-ARCHITECTURE.md §6). La CI joue donc la suite `database` deux fois :
+ARCHITECTURE.md §6). La CI joue donc les tests deux fois, sur les deux
+moteurs :
 
-- `database` — MySQL 8, avec couverture, qui alimente SonarCloud ;
-- `database-mariadb` — MariaDB 10.11, la suite entière, sans couverture.
+- `database` — MySQL 8, le groupe `database`, avec couverture, qui alimente
+  SonarCloud ;
+- `database-mariadb` — MariaDB 10.11, **toute** la suite (`unit` comprise),
+  sans couverture.
 
 L'asymétrie qui compte : **du code correct sur MySQL et faux sur MariaDB
 atteint la production**, parce que le premier travail est vert. L'inverse
-serait attrapé tout de suite. C'est pourquoi la seconde jambe joue la suite
-**entière** plutôt qu'un groupe : le jour où quelqu'un ajoute un test adossé à
-la base sans penser au marqueur, la version étroite le manquerait en silence.
+serait attrapé tout de suite. C'est pourquoi la seconde jambe ne passe aucun
+`--testsuite` : le jour où quelqu'un ajoute un test adossé à la base ailleurs
+que dans `tests/php/Database`, une version restreinte au groupe le manquerait
+en silence — et ce paragraphe aurait annoncé une couverture qui n'existait
+pas.
 
 ### Une base éteinte n'est pas une suite verte
 
@@ -106,6 +111,13 @@ Trois choses à savoir :
    agit : vérifier que `/admin/users/{id}/delete` n'est pas refusé en
    administrateur supprimerait un compte. Le sens dangereux — celui qui laisse
    passer — reste entièrement couvert.
+4. **Une erreur serveur n'est pas une autorisation.** Le verdict se lisait sur
+   le seul 403 : une route qui plantait répondait 500, la matrice lisait « non
+   refusée », et une route cassée passait pour une route correctement ouverte —
+   sur toute la moitié qui vérifie l'accès **accordé**. Le contrôle ajouté a
+   trouvé son premier cas le jour même : `GET /admin/backups/{id}/download`
+   rendait 500 sur un identifiant inconnu, ce que la rétention produit dès
+   qu'un écran resté ouvert propose un lien caduc.
 
 ### JavaScript — Vitest et `tsc`
 
@@ -137,6 +149,19 @@ Deux garde-fous portent le sens de cette gate :
   campagne a échoué » est traité comme un échec : un scan ne vaut que le trafic
   qu'on lui a donné.
 
+Cette exigence a une contrepartie : la campagne doit être **rejouable**. Les
+scénarios groupés en `serial` sont repris en entier au premier échec, et un
+groupe qui réinscrit la même adresse ou réserve les mêmes dates ne repart pas
+de zéro — il repart sur un compte déjà créé et un séjour déjà pris. La reprise
+ne réparait alors rien : elle remplaçait un échec net par une attente de six
+minutes sur un bouton que la page ne propose plus. Chaque tentative repart donc
+d'une identité et d'un mois neufs (`tests/e2e/stay.spec.js`).
+
+Et quand elle échoue quand même, le travail conserve les traces, captures et
+vidéos de Playwright (`dast-campaign-failure`). Sans elles, le journal donne le
+nom du scénario tombé et rien de ce qui s'est passé dans le navigateur — c'est
+le seul endroit où l'on voit ce que le proxy change à la campagne.
+
 ## Intégration continue
 
 `.github/workflows/checks.yml` définit les gates ; `ci.yml` et `release.yml`
@@ -149,7 +174,7 @@ nativement.
 | `PHP 8.2 / 8.4` | syntaxe, PHPStan, PHPUnit `unit` |
 | `Analyse statique — tsc` | `npm run typecheck` |
 | `Base de données` | suite `database`, MySQL 8, avec couverture |
-| `Base de données — MariaDB 10.11` | la même suite, MariaDB |
+| `Base de données — MariaDB 10.11` | la suite entière (`unit` + `database`), MariaDB |
 | `JavaScript — Vitest` | tests unitaires du navigateur |
 | `E2E — desktop-chromium / mobile-safari` | Playwright en HTTPS |
 | `Scan dynamique (passif)` | `scripts/dast.sh` |
@@ -203,6 +228,14 @@ montée que les contraintes autorisent déjà est à un `composer update` de
 distance et **refuse** la release ; une montée qui exige de changer la
 contrainte est une décision et **avertit**. Inventer un seuil — « plus de six
 mois » — aurait produit un chiffre indéfendable.
+
+Elle ne conclut jamais sur une mesure qu'elle n'a pas faite. Un code de sortie
+inattendu ou une sortie qui n'est pas du JSON exploitable font **échouer** la
+gate, en nommant la commande fautive. Auparavant, tout ce qui n'était pas du
+JSON donnait une liste vide, les appelants imprimaient « à jour » et la release
+continuait : Composer absent, `node_modules` non installé, réseau coupé, JSON
+tronqué — tous rendaient un vert. La seule exception est le code 1 de `npm
+outdated`, qui est son verdict et non une panne.
 
 Chaque `--skip-*` produit un avertissement nommant exactement ce qui n'a pas
 été vérifié, et la liste des dérogations est réaffichée avant la publication.

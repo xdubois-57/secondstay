@@ -96,7 +96,19 @@ final class AdminBackupController extends AdminController
         $user = $this->requireAdministrator();
         $backups = $this->container->get(BackupService::class);
 
-        $path = $backups->pathFor((string) ($params['id'] ?? ''));
+        // Un identifiant inconnu n'est pas une panne : la rétention supprime
+        // les anciennes sauvegardes, et un administrateur qui garde l'écran
+        // ouvert dans un second onglet clique un lien devenu caduc. Laisser
+        // remonter l'exception rendait 500 sur ce geste ordinaire — et la
+        // matrice d'autorisation lisait ce 500 comme « accès accordé », faute
+        // de distinguer une réponse d'une panne.
+        try {
+            $path = $backups->pathFor((string) ($params['id'] ?? ''));
+        } catch (Throwable) {
+            $this->flashError('admin.backups.error.download');
+
+            return $this->redirectToRoute($context, 'admin.backups');
+        }
 
         $this->audit()->record(
             'backup.downloaded',

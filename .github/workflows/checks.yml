@@ -348,7 +348,7 @@ jobs:
           "
 
       - name: Tests base de données
-        run: ./vendor/bin/phpunit --testsuite database --log-junit build/reports/phpunit-mariadb-junit.xml
+        run: ./vendor/bin/phpunit --log-junit build/reports/phpunit-mariadb-junit.xml
 
       - name: Preuves base de données MariaDB
         if: ${{ inputs.evidence }}
@@ -613,6 +613,23 @@ jobs:
           name: dast-report-failure
           path: dast-report/
           retention-days: 7
+
+      # Une campagne en échec fait échouer le scan, même sans le moindre
+      # constat de sécurité (`scripts/dast.sh`). Sans ces artefacts, cet échec
+      # n'était pas diagnosticable : le journal donne le nom du scénario tombé
+      # et rien de ce qui s'est passé dans le navigateur. Traces, captures et
+      # vidéos sont donc conservées — c'est le seul endroit où l'on voit ce que
+      # le proxy change à la campagne.
+      - name: Trace de la campagne en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-campaign-failure
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
 
   security:
     name: Sécurité — audit et fuites

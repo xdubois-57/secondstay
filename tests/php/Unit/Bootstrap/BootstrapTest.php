@@ -218,6 +218,102 @@ final class BootstrapTest extends TestCase
         self::assertFileExists($destination);
     }
 
+    /**
+     * Le téléchargement ne quitte jamais HTTPS.
+     *
+     * `follow_location => 1` suivait une redirection vers `http://` sans rien
+     * dire : les options `ssl` ne protègent que les sauts restés en TLS, elles
+     * n'ont rien à dire d'un saut qui n'en fait plus partie. L'archive
+     * arrivait alors en clair, et seuls les contrôles de forme (`PK`,
+     * structure du ZIP) la séparaient de l'extraction.
+     */
+    #[DataProvider('redirectTargets')]
+    public function testOnlyHttpsSurvivesARedirect(string $current, string $location, string $expected): void
+    {
+        $resolved = bootstrap_resolve_redirect($current, $location);
+
+        self::assertSame($expected, $resolved);
+        self::assertSame(str_starts_with($expected, 'https://'), bootstrap_url_is_https($resolved));
+    }
+
+    /**
+     * @return list<array{0: string, 1: string, 2: string}>
+     */
+    public static function redirectTargets(): array
+    {
+        return [
+            // Le saut que fait GitHub : l'API vers le service de stockage.
+            [
+                'https://api.github.com/repos/x/y/releases/assets/1',
+                'https://objects.githubusercontent.com/a.zip',
+                'https://objects.githubusercontent.com/a.zip',
+            ],
+            // Une destination absolue en clair est reprise telle quelle — et
+            // c'est le contrôle de schéma du tour suivant qui la refuse.
+            [
+                'https://exemple.test/a',
+                'http://exemple.test/b.zip',
+                'http://exemple.test/b.zip',
+            ],
+            // Une destination relative hérite de l'origine, donc du HTTPS :
+            // elle ne peut pas faire sortir du chiffrement.
+            ['https://exemple.test/releases/a', '/telechargement/b.zip', 'https://exemple.test/telechargement/b.zip'],
+            ['https://exemple.test/releases/a', 'b.zip', 'https://exemple.test/releases/b.zip'],
+            ['https://exemple.test:8443/r/a', '/b.zip', 'https://exemple.test:8443/b.zip'],
+        ];
+    }
+
+    public function testTheLastStatusLineIsTheOneThatCounts(): void
+    {
+        $headers = [
+            'HTTP/1.1 302 Found',
+            'Location: https://objects.example.test/a.zip',
+            'HTTP/1.1 200 OK',
+            'Content-Length: 12',
+        ];
+
+        self::assertSame(200, bootstrap_status_from_headers($headers));
+        self::assertSame('https://objects.example.test/a.zip', bootstrap_header_value($headers, 'location'));
+        self::assertNull(bootstrap_header_value($headers, 'etag'));
+        self::assertSame(0, bootstrap_status_from_headers([]));
+    }
+
+    /**
+     * L'empreinte publiée par l'API atteste les octets reçus par un **autre**
+     * canal. C'est ce qui en fait une preuve : `api.github.com` et le service
+     * de stockage au bout de la redirection ne sont pas la même source.
+     */
+    public function testTheArchiveIsCheckedAgainstThePublishedDigest(): void
+    {
+        $path = $this->temporaryDirectory . '/archive.zip';
+        file_put_contents($path, 'contenu');
+        $digest = hash_file('sha256', $path);
+        self::assertIsString($digest);
+
+        self::assertSame('vérifiée (SHA-256)', bootstrap_verify_archive_digest($path, $digest));
+
+        $this->expectException(RuntimeException::class);
+        bootstrap_verify_archive_digest($path, str_repeat('0', 64));
+    }
+
+    /**
+     * Une empreinte absente n'est pas une empreinte vide : dire « vérifiée »
+     * sur une release qui ne publie rien serait exactement le vert qui ne
+     * prouve rien.
+     */
+    public function testAnAbsentDigestIsReportedAndNeverPassedOffAsAVerification(): void
+    {
+        $path = $this->temporaryDirectory . '/archive.zip';
+        file_put_contents($path, 'contenu');
+
+        self::assertStringContainsString('non vérifiée', bootstrap_verify_archive_digest($path, ''));
+
+        self::assertSame(str_repeat('a', 64), bootstrap_sha256_from_digest('sha256:' . str_repeat('A', 64)));
+        self::assertSame('', bootstrap_sha256_from_digest(''));
+        self::assertSame('', bootstrap_sha256_from_digest('sha512:' . str_repeat('a', 128)));
+        self::assertSame('', bootstrap_sha256_from_digest(str_repeat('a', 64)));
+    }
+
     public function testAnEmptyDownloadIsAFailureAndNotASuccess(): void
     {
         $this->expectException(RuntimeException::class);
@@ -391,6 +487,94 @@ final class BootstrapTest extends TestCase
         self::assertDirectoryDoesNotExist($destination . '/storage');
     }
 
+    /**
+     * Une copie interrompue **nomme** ce qu'elle a déjà écrit.
+     *
+     * C'est la propriété dont l'absence était grave : la liste des entrées
+     * copiées ne remontait que par la valeur de retour, qui n'existe jamais
+     * quand la fonction lève. Quota atteint, disque plein,
+     * `max_execution_time` expiré au milieu de `vendor/` — et `src/` restait à
+     * la racine du site sans qu'aucune annulation ne sache le nommer. La
+     * reprise butait ensuite sur « déjà installé », et le bouton « Annuler
+     * l'installation et nettoyer » relisait le même état vide sans rien
+     * retirer : plus que le FTP pour s'en sortir.
+     *
+     * L'ordre de `DirectoryIterator` est celui du système de fichiers, pas un
+     * ordre trié. Ce test n'affirme donc pas *quelles* entrées ont été
+     * copiées, mais l'invariant qui vaut quel que soit l'ordre : **tout ce qui
+     * est arrivé sur le disque est nommé**.
+     */
+    public function testAnInterruptedCopyStillNamesWhatItWrote(): void
+    {
+        $source = $this->temporaryDirectory . '/src-tree';
+        mkdir($source . '/alpha', 0o700, true);
+        mkdir($source . '/beta', 0o700, true);
+        mkdir($source . '/gamma', 0o700, true);
+        file_put_contents($source . '/alpha/a.txt', 'a');
+        file_put_contents($source . '/beta/b.txt', 'b');
+        file_put_contents($source . '/gamma/c.txt', 'c');
+
+        // `beta` existe déjà à la destination, mais en tant que **fichier** :
+        // la création du dossier échouera, en plein milieu de la copie.
+        $destination = $this->temporaryDirectory . '/dest';
+        mkdir($destination, 0o700, true);
+        file_put_contents($destination . '/beta', 'un fichier, pas un dossier');
+
+        $copied = [];
+        $thrown = null;
+        try {
+            bootstrap_copy_tree($source, $destination, [], $copied);
+        } catch (RuntimeException $exception) {
+            $thrown = $exception;
+        }
+
+        self::assertNotNull($thrown, 'La copie devait échouer sur beta.');
+
+        $written = array_values(array_diff(scandir($destination) ?: [], ['.', '..', 'beta']));
+        sort($written);
+        $named = $copied;
+        sort($named);
+        self::assertSame($written, $named, 'Toute entrée écrite doit être nommée, et rien de plus.');
+    }
+
+    /**
+     * Et le chemin complet : l'étape d'installation fait remonter cette liste
+     * jusqu'au gestionnaire d'erreur, qui peut alors annuler pour de bon.
+     */
+    public function testAPartialInstallCarriesItsEntriesOutWithTheFailure(): void
+    {
+        $source = $this->temporaryDirectory . '/src-tree';
+        mkdir($source . '/alpha', 0o700, true);
+        mkdir($source . '/beta', 0o700, true);
+        file_put_contents($source . '/alpha/a.txt', 'a');
+        file_put_contents($source . '/beta/b.txt', 'b');
+
+        $docRoot = $this->temporaryDirectory . '/site';
+        mkdir($docRoot, 0o700, true);
+        file_put_contents($docRoot . '/beta', 'un fichier, pas un dossier');
+
+        try {
+            bootstrap_step_install($docRoot, ['source_root' => $source]);
+            self::fail("L'étape devait échouer.");
+        } catch (\BootstrapPartialInstall $exception) {
+            $written = array_values(array_diff(scandir($docRoot) ?: [], ['.', '..', 'beta']));
+            $named = $exception->copied;
+            sort($written);
+            sort($named);
+            self::assertSame($written, $named, "L'exception doit nommer exactement ce qui est sur le disque.");
+
+            // La preuve qui compte : l'annulation retire réellement ce qui a
+            // été écrit, parce qu'elle sait enfin le nommer. Il ne doit plus
+            // rester que le fichier qui a fait échouer la copie, et qui n'a
+            // jamais été copié par personne.
+            bootstrap_rollback_install($docRoot, [
+                'install_target' => $docRoot,
+                'installed_entries' => $exception->copied,
+            ]);
+            self::assertSame(['beta'], array_values(array_diff(scandir($docRoot) ?: [], ['.', '..'])));
+        }
+    }
+
     public function testRemovalTakesDotfilesAndNestedDirectoriesWithIt(): void
     {
         $tree = $this->temporaryDirectory . '/tree';
@@ -541,12 +725,46 @@ final class BootstrapTest extends TestCase
         self::assertStringContainsString('local.php', $result['detail']);
     }
 
+    /**
+     * S6 juge l'écriture, pas la présence.
+     *
+     * La version précédente de ce test créait `storage/` sans ses
+     * sous-dossiers : le contrôle échouait parce que `storage/logs` n'existait
+     * pas, jamais parce qu'il était en lecture seule. Le nom promettait donc
+     * une propriété que rien ne vérifiait — et S6 aurait pu cesser de regarder
+     * les droits sans qu'aucun test ne bouge.
+     *
+     * L'arborescence est donc créée complètement, puis `storage/logs` est
+     * fermé à l'écriture, et le contrôle doit basculer sur ce seul changement.
+     */
     public function testAStorageDirectoryThatCannotBeWrittenFailsTheGate(): void
     {
         $base = $this->temporaryDirectory . '/site';
-        mkdir($base . '/storage', 0o700, true);
+        mkdir($base, 0o700, true);
+        bootstrap_create_storage_dirs($base);
+
+        // La condition qui rend ce test valable — un compte capable d'écrire
+        // où qu'il aille (root en conteneur) ne peut rien prouver ici, et un
+        // test qui passerait quand même serait pire que pas de test.
+        self::assertTrue(bootstrap_check_s6($base)['ok'], 'L\'arborescence de départ doit être saine.');
+
+        $logs = $base . '/storage/logs';
+        self::assertTrue(chmod($logs, 0o500));
+        clearstatcache(true, $logs);
+
+        if (@file_put_contents($logs . '/temoin', 'x') !== false) {
+            @unlink($logs . '/temoin');
+            chmod($logs, 0o700);
+            self::markTestSkipped('Ce compte écrit dans un dossier en lecture seule : le contrôle est indécidable.');
+        }
 
         self::assertFalse(bootstrap_check_s6($base)['ok']);
+
+        // Rendu à nouveau inscriptible, le même contrôle repasse : c'est bien
+        // le droit d'écriture, et rien d'autre, qui a fait la différence.
+        chmod($logs, 0o700);
+        clearstatcache(true, $logs);
+        self::assertTrue(bootstrap_check_s6($base)['ok']);
     }
 
     public function testALeftoverTemporaryDirectoryFailsTheGate(): void
@@ -562,6 +780,54 @@ final class BootstrapTest extends TestCase
     // -------------------------------------------------------------------
     // Portail d'acceptation — partie navigateur
     // -------------------------------------------------------------------
+
+    /**
+     * Aucune sonde du navigateur ne demande une adresse que le portail à jeton
+     * refuserait.
+     *
+     * Le navigateur **suit les redirections** : `fetch('/')` finit sur
+     * `/{locale}/install`, où `installTokenGate()` répond 403 sans jeton. B2
+     * visait « / » et jugeait ce 403 comme « PHP ne s'exécute pas » : elle
+     * faisait annuler une installation parfaitement saine. Un contrôle qui
+     * condamne ce qu'il surveille est pire que pas de contrôle.
+     *
+     * La règle vérifiée ici est donc générale et pas seulement celle de B2 :
+     * toute sonde qui aboutit à l'assistant doit y arriver jeton en main.
+     */
+    public function testNoBrowserProbeLandsOnTheTokenGateWithoutItsToken(): void
+    {
+        [, $state] = $this->installedStateWithProbes();
+        $token = (string) $state['token'];
+
+        $gated = 0;
+        foreach ($state['probes'] as $probe) {
+            $url = (string) $probe['url'];
+            if (!str_contains($url, '/install')) {
+                continue;
+            }
+
+            $gated++;
+            self::assertStringContainsString(
+                BOOTSTRAP_TOKEN_PARAMETER . '=' . $token,
+                $url,
+                sprintf('La sonde %s atteint l’assistant sans jeton.', $probe['id'])
+            );
+        }
+
+        // B2 et F1 : si l'une des deux cessait de viser l'assistant, ce
+        // compte le dirait plutôt que de laisser la boucle ne rien vérifier.
+        self::assertSame(2, $gated);
+    }
+
+    /**
+     * Et la raison pour laquelle la règle ci-dessus est nécessaire : le refus
+     * du portail est un statut que la sonde B2 rejette. C'est correct — c'est
+     * l'adresse qui ne devait pas y mener.
+     */
+    public function testTheTokenGateRefusalIsNotEvidenceThatPhpRuns(): void
+    {
+        self::assertFalse(bootstrap_evaluate_php_execution_probe(403, '<html>Accès refusé</html>'));
+    }
 
     public function testThePositiveControlDemandsTheExactContent(): void
     {
@@ -810,6 +1076,52 @@ final class BootstrapTest extends TestCase
         self::assertSame($state, bootstrap_read_state($path));
     }
 
+    /**
+     * Aucune valeur d'état ne peut refermer le commentaire qui la contient.
+     *
+     * Les données vivent entre `/*` et sa fermeture. Une valeur portant cette
+     * séquence — un chemin, un message d'hébergeur, un nom d'entrée d'archive —
+     * refermerait le commentaire par le milieu, et la suite du fichier
+     * deviendrait du PHP exécutable posé à la racine du site. Le fichier
+     * d'état serait alors lui-même l'injection.
+     */
+    public function testNoStateValueCanCloseTheCommentThatHoldsIt(): void
+    {
+        $path = $this->temporaryDirectory . '/.bootstrap-state.php';
+        $state = [
+            'error' => "Quelque chose */ echo 'exécuté'; /*",
+            'installed_entries' => ['src', 'a*/b'],
+        ];
+
+        bootstrap_write_state($path, $state);
+
+        $raw = (string) file_get_contents($path);
+        self::assertStringNotContainsString('*/', substr($raw, 0, -5), 'Seule la fermeture finale subsiste.');
+
+        // Le fichier reste du PHP valide **et inerte**.
+        exec('php -l ' . escapeshellarg($path), $output, $code);
+        self::assertSame(0, $code, implode("\n", $output));
+        self::assertSame('', shell_exec('php ' . escapeshellarg($path)) ?? '');
+
+        // Et rien n'a été perdu au passage : c'est la contrepartie qu'un
+        // échappement doit toujours honorer.
+        self::assertSame($state, bootstrap_read_state($path));
+    }
+
+    /**
+     * Le fichier d'état et `token.php` portent le jeton d'installation. Sur un
+     * hébergement mutualisé, une umask permissive les rendrait lisibles par
+     * les autres comptes de la machine.
+     */
+    public function testTheStateFileIsReadableByItsOwnerAlone(): void
+    {
+        $path = $this->temporaryDirectory . '/.bootstrap-state.php';
+        bootstrap_write_state($path, ['version' => '1.0.0']);
+
+        clearstatcache(true, $path);
+        self::assertSame('0600', substr(sprintf('%o', (int) fileperms($path)), -4));
+    }
+
     public function testAnAbsentOrCorruptStateReadsAsEmpty(): void
     {
         self::assertSame([], bootstrap_read_state($this->temporaryDirectory . '/absent.php'));
@@ -842,6 +1154,109 @@ final class BootstrapTest extends TestCase
 
         bootstrap_release_lock($lock);
         self::assertFileDoesNotExist($lock);
+    }
+
+    /**
+     * La prise du verrou est **une** opération, et non trois.
+     *
+     * Tester l'existence, lire la date, puis écrire laissait deux requêtes
+     * simultanées constater toutes deux l'absence du verrou et le poser toutes
+     * deux : deux installations sur le même `docRoot`. Ce test ne peut pas
+     * jouer une vraie course dans un processus unique — il vérifie donc
+     * l'invariant qui la rend impossible : le verrou est créé par une création
+     * exclusive, et un fichier déjà présent et frais n'est **jamais** écrasé.
+     */
+    public function testAFreshLockIsNeverOverwritten(): void
+    {
+        $lock = $this->temporaryDirectory . '/.bootstrap.lock';
+
+        file_put_contents($lock, 'requete-precedente');
+        self::assertFalse(bootstrap_acquire_lock($lock));
+
+        // Le contenu est intact : la seconde tentative n'a pas écrit par-dessus
+        // le propriétaire du verrou, ce que `file_put_contents()` faisait.
+        self::assertSame('requete-precedente', file_get_contents($lock));
+    }
+
+    /**
+     * La reprise d'un verrou périmé remplace son contenu par le propriétaire
+     * courant : c'est ce qui permet à l'annulation suivante de savoir qui
+     * tient l'installation.
+     */
+    public function testTakingOverAStaleLockRecordsTheNewOwner(): void
+    {
+        $lock = $this->temporaryDirectory . '/.bootstrap.lock';
+
+        file_put_contents($lock, '999999');
+        self::assertTrue(touch($lock, time() - 86400));
+
+        self::assertTrue(bootstrap_acquire_lock($lock));
+        self::assertSame((string) getmypid(), file_get_contents($lock));
+    }
+
+    // -------------------------------------------------------------------
+    // Origine des requêtes POST
+    // -------------------------------------------------------------------
+
+    /**
+     * Les trois actions POST écrivent ou effacent, et aucune n'est protégée
+     * par le jeton d'installation : il n'existe pas encore quand les premières
+     * partent, et il voyage de toute façon dans une URL. Sans contrôle
+     * d'origine, un site tiers visité pendant l'installation peut soumettre
+     * `POST bootstrap.php?action=abort` et faire effacer ce qui a été copié,
+     * l'état et le verrou.
+     *
+     * @param array<string, mixed> $server
+     */
+    #[DataProvider('requestOrigins')]
+    public function testOnlyASameOriginPostIsAccepted(array $server, bool $accepted, string $why): void
+    {
+        self::assertSame($accepted, bootstrap_request_is_same_origin($server), $why);
+    }
+
+    /**
+     * @return list<array{0: array<string, mixed>, 1: bool, 2: string}>
+     */
+    public static function requestOrigins(): array
+    {
+        return [
+            [['HTTP_HOST' => 'exemple.test', 'HTTP_ORIGIN' => 'https://exemple.test'], true, 'la page elle-même'],
+            [
+                ['HTTP_HOST' => 'exemple.test', 'HTTP_ORIGIN' => 'http://exemple.test'],
+                true,
+                'même hôte, TLS terminé en amont',
+            ],
+            [
+                ['HTTP_HOST' => 'exemple.test', 'HTTP_REFERER' => 'https://exemple.test/bootstrap.php'],
+                true,
+                'Referer sert de repli quand Origin manque',
+            ],
+            [
+                ['HTTP_HOST' => 'exemple.test:8080', 'HTTP_ORIGIN' => 'http://exemple.test:8080'],
+                true,
+                'le port fait partie de l’origine',
+            ],
+            [['HTTP_HOST' => 'exemple.test:443', 'HTTP_ORIGIN' => 'https://exemple.test'], true, 'port par défaut'],
+
+            [
+                ['HTTP_HOST' => 'exemple.test', 'HTTP_ORIGIN' => 'https://attaquant.test'],
+                false,
+                'une autre origine : le cas que ce contrôle existe pour refuser',
+            ],
+            [
+                ['HTTP_HOST' => 'exemple.test', 'HTTP_ORIGIN' => 'https://exemple.test.attaquant.test'],
+                false,
+                'un hôte qui commence pareil n’est pas le même hôte',
+            ],
+            [
+                ['HTTP_HOST' => 'exemple.test:8080', 'HTTP_ORIGIN' => 'https://exemple.test'],
+                false,
+                'un autre port est une autre origine',
+            ],
+            [['HTTP_HOST' => 'exemple.test'], false, 'une requête POST muette n’est pas un cas normal'],
+            [['HTTP_HOST' => 'exemple.test', 'HTTP_ORIGIN' => 'null'], false, 'origine opaque'],
+            [['HTTP_ORIGIN' => 'https://exemple.test'], false, 'sans Host, rien à comparer'],
+        ];
     }
 
     // -------------------------------------------------------------------
