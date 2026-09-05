@@ -447,6 +447,18 @@ function bootstrap_fetch_latest_release(callable $httpGet): array
     throw $lastError;
 }
 
+/**
+ * Trois tentatives, et c'est le **dernier** échec qui est rapporté.
+ *
+ * Un hébergement mutualisé coupe une connexion sortante pour des raisons qui
+ * ne se reproduisent pas à la seconde suivante. Réessayer sans le dire
+ * masquerait une panne franche ; abandonner au premier refus rendrait
+ * l'installation impossible sur des hébergements où elle marche très bien au
+ * deuxième essai.
+ *
+ * `$downloader` est injecté pour que les tests décrivent une panne sans
+ * réseau.
+ */
 function bootstrap_download_with_retry(string $url, string $destination, callable $downloader): void
 {
     $attempts = 0;
@@ -715,6 +727,14 @@ function bootstrap_copy_tree(
     return $copied;
 }
 
+/**
+ * Copie une entrée, fichier ou dossier, en profondeur.
+ *
+ * Chaque échec lève au lieu d'être ignoré : une copie partiellement réussie
+ * qui se poursuit produit une installation dont il manque un morceau, et cela
+ * ne se découvrirait qu'à l'usage. `bootstrap_copy_tree()` fait remonter les
+ * entrées déjà écrites pour que l'annulation puisse les retirer.
+ */
 function bootstrap_copy_entry(string $source, string $destination): void
 {
     if (!is_dir($source)) {
@@ -747,6 +767,14 @@ function bootstrap_copy_entry(string $source, string $destination): void
     }
 }
 
+/**
+ * Supprime un chemin, quel qu'il soit — **sans jamais suivre un lien**.
+ *
+ * L'ordre des tests compte : `is_link()` d'abord, parce qu'un lien pointant
+ * sur un dossier satisfait aussi `is_dir()`. L'inverse effacerait la cible
+ * plutôt que le lien, c'est-à-dire potentiellement n'importe où sur
+ * l'hébergement.
+ */
 function bootstrap_remove_path(string $path): void
 {
     if (is_link($path)) {
@@ -758,6 +786,12 @@ function bootstrap_remove_path(string $path): void
     }
 }
 
+/**
+ * Supprime une arborescence entière, fichiers cachés compris.
+ *
+ * C'est l'outil de l'annulation : ce qu'elle ne sait pas retirer reste à la
+ * racine du site d'un hébergement où l'opérateur n'a que du FTP.
+ */
 function bootstrap_remove_directory(string $directory): void
 {
     if (!is_dir($directory)) {
@@ -810,6 +844,13 @@ function bootstrap_write_version(string $basePath, string $version): void
     file_put_contents($basePath . '/VERSION', $version . "\n");
 }
 
+/**
+ * 32 octets tirés du générateur cryptographique, rendus en hexadécimal.
+ *
+ * 256 bits : la force brute n'est pas un scénario, et c'est pour cela que le
+ * compteur d'essais de `InstallTokenGate` n'a pas à l'être non plus
+ * (SECURITY.md §41.3).
+ */
 function bootstrap_generate_token(): string
 {
     return bin2hex(random_bytes(32));
@@ -1252,6 +1293,11 @@ function bootstrap_acquire_lock(string $path): bool
     return true;
 }
 
+/**
+ * Rend le verrou. L'absence de fichier n'est pas une erreur : l'annulation et
+ * le chemin d'erreur appellent tous deux cette fonction, parfois après qu'elle
+ * a déjà été appelée.
+ */
 function bootstrap_release_lock(string $path): void
 {
     if (is_file($path)) {
@@ -2059,6 +2105,14 @@ function bootstrap_default_http_get(string $url, array $headers = []): array
     return ['status' => $status, 'headers' => $responseHeaders, 'body' => $body === false ? '' : $body];
 }
 
+/**
+ * Télécharge l'archive en suivant les redirections **soi-même**.
+ *
+ * `follow_location => 1` les suivait pour nous, y compris vers `http://`, sans
+ * rien signaler : les options `ssl` du contexte de flux ne protègent que les
+ * sauts restés en TLS. Chaque saut est donc contrôlé ici avant d'être suivi,
+ * et un saut hors HTTPS interrompt le téléchargement (SECURITY.md §42.1).
+ */
 function bootstrap_default_downloader(string $url, string $destination): void
 {
     $current = $url;
@@ -2158,6 +2212,10 @@ function bootstrap_verify_archive_digest(string $path, string $expected): string
     return 'vérifiée (SHA-256)';
 }
 
+/**
+ * Le seul schéma admis pour joindre GitHub. Vérifié à **chaque** saut de
+ * redirection, et pas seulement sur l'adresse de départ.
+ */
 function bootstrap_url_is_https(string $url): bool
 {
     $scheme = parse_url($url, PHP_URL_SCHEME);
@@ -2228,6 +2286,13 @@ function bootstrap_resolve_redirect(string $current, string $location): string
     return $origin . substr($path, 0, (int) strrpos($path, '/') + 1) . $location;
 }
 
+/**
+ * L'hébergement peut-il joindre GitHub en HTTPS ?
+ *
+ * Posée au préflight, avant que quoi que ce soit ne soit écrit : un
+ * hébergement sans sortie HTTPS ne peut pas être installé par ce fichier, et
+ * le découvrir à l'étape 3 laisserait un dossier temporaire derrière soi.
+ */
 function bootstrap_default_https_probe(): bool
 {
     $context = stream_context_create([
@@ -2318,6 +2383,19 @@ function bootstrap_preview_preflight(string $docRoot): array
     ];
 }
 
+/**
+ * Joue **une** étape et répond en JSON.
+ *
+ * Le découpage n'est pas une élégance : une installation complète en une seule
+ * requête dépasse le `max_execution_time` de la plupart des hébergements
+ * mutualisés. L'état est donc relu et réécrit à chaque appel, et le verrou
+ * tenu entre eux.
+ *
+ * Le `catch` est la moitié qui compte. Il annule ce qui a été copié — y
+ * compris ce qu'une copie interrompue a écrit sans jamais le retourner, voir
+ * `BootstrapPartialInstall` — puis répond un message lisible plutôt qu'une
+ * erreur fatale : le navigateur ne peut agir que sur ce qu'il reçoit.
+ */
 function bootstrap_handle_step_request(string $docRoot, string $stateFile): void
 {
     header('Content-Type: application/json; charset=utf-8');
@@ -2472,6 +2550,17 @@ function bootstrap_handle_abort_request(string $docRoot, string $stateFile): voi
     }
 }
 
+/**
+ * Reçoit ce que le navigateur a obtenu des sondes, et tranche.
+ *
+ * Les résultats viennent du client : ils sont donc traités comme des données,
+ * jamais comme un verdict. Une sonde absente compte comme un échec, et le
+ * témoin positif `B1` conditionne tous les autres — s'il n'est pas servi,
+ * « inaccessible » ne prouve plus rien et l'ensemble est déclaré non vérifié.
+ *
+ * Un portail en échec annule l'installation : c'est le seul moment où ce
+ * fichier peut encore le faire sans intervention FTP.
+ */
 function bootstrap_handle_gate_report(string $docRoot, string $stateFile): void
 {
     header('Content-Type: application/json; charset=utf-8');
@@ -2641,11 +2730,17 @@ function bootstrap_send_json(array $payload): void
     echo json_encode($payload);
 }
 
+/** Échappement HTML pour les quelques valeurs que les écrans de l'installeur affichent. */
 function bootstrap_html_escape(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * L'écran des refus qui précèdent toute écriture — mauvais emplacement,
+ * installation déjà présente, requête d'origine étrangère. Pas de JavaScript,
+ * pas d'état : à ce stade, il n'y a rien à reprendre.
+ */
 function bootstrap_render_error_page(string $message): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -2661,6 +2756,13 @@ function bootstrap_render_error_page(string $message): void
         . '</div></body></html>';
 }
 
+/**
+ * L'écran unique de l'installeur : progression, journal, rapport du portail,
+ * et le bouton d'annulation.
+ *
+ * Tout est en ligne — HTML, CSS, JavaScript. Il n'y a ni `vendor/`, ni assets,
+ * ni CDN au moment où cette page s'affiche : c'est le seul fichier présent.
+ */
 function bootstrap_render_ui(string $docRoot): void
 {
     header('Content-Type: text/html; charset=utf-8');
@@ -2865,6 +2967,7 @@ function bootstrap_render_ui(string $docRoot): void
     });
   }
 
+  /** Le bouton d'annulation, ajouté là où l'opérateur en a besoin. */
   function attachAbortButton(summary) {
     var abortBtn = document.createElement('button');
     abortBtn.textContent = "Annuler l'installation et nettoyer";
@@ -2893,6 +2996,15 @@ function bootstrap_render_ui(string $docRoot): void
     summary.insertAdjacentElement('afterend', abortBtn);
   }
 
+  /**
+   * Le recours quand le navigateur n'a pas su lire une réponse.
+   *
+   * Il ne peut jamais en conclure que l'étape a échoué : elle a très bien pu
+   * aboutir et laisser de vrais fichiers sur le disque, verrou tenu. Sans
+   * issue explicite, l'installation serait bloquée pour de bon — le contrôle
+   * « déjà installé » refuserait chaque reprise, et il n'y aurait aucun
+   * recours sans FTP.
+   */
   function showAbortRecovery() {
     showScreen('report');
     document.getElementById('report-table').innerHTML = '';
@@ -2904,6 +3016,14 @@ function bootstrap_render_ui(string $docRoot): void
     attachAbortButton(summary);
   }
 
+  /**
+   * Le rapport final, contrôle par contrôle.
+   *
+   * Il s'affiche aussi — surtout — quand l'installation a échoué : ce qui a
+   * été vérifié, ce qui ne l'a pas été, et pourquoi. Une réussite dont
+   * l'installeur n'a pas su se supprimer ne redirige jamais toute seule : le
+   * fichier à retirer est nommé, et l'opérateur continue lui-même.
+   */
   function showReport(data, passed) {
     showScreen('report');
     var container = document.getElementById('report-table');
@@ -2969,6 +3089,15 @@ function bootstrap_render_ui(string $docRoot): void
 HTML;
 }
 
+/**
+ * Le point d'entrée : refuse ce qui ne doit pas commencer, répartit les trois
+ * actions POST, et affiche l'écran par défaut.
+ *
+ * Les actions POST écrivent ou effacent, et sont donc refusées si elles ne
+ * viennent pas de cette page (SECURITY.md §42.2). La constante
+ * `BOOTSTRAP_TEST` empêche cet appel au chargement, ce qui rend tout ce qui
+ * précède testable.
+ */
 function bootstrap_main(): void
 {
     $docRoot = __DIR__;

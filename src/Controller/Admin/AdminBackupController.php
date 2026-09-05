@@ -17,6 +17,7 @@ use Throwable;
  */
 final class AdminBackupController extends AdminController
 {
+    /** La section d'administration mise en évidence dans la navigation. */
     protected function section(): string
     {
         return 'backups';

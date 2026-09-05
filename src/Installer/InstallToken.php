@@ -48,11 +48,16 @@ final class InstallToken
     {
     }
 
+    /**
+     * Le jeton vit à la racine du projet, là où `bootstrap.php` l'a écrit et
+     * où seul un accès FTP — donc le propriétaire du site — peut le lire.
+     */
     public static function forRoot(string $projectRoot): self
     {
         return new self(rtrim($projectRoot, '/') . '/' . self::FILE_NAME);
     }
 
+    /** Le chemin du fichier, pour les messages qui disent où le trouver. */
     public function path(): string
     {
         return $this->path;
@@ -69,6 +74,16 @@ final class InstallToken
         return $this->read() !== null;
     }
 
+    /**
+     * Comparaison en temps constant, et refus de tout ce qui n'a pas la forme
+     * attendue.
+     *
+     * `hash_equals()` plutôt que `===` : la durée de la comparaison ne doit
+     * rien dire du préfixe correct. Et un candidat plus court ou hors de
+     * l'alphabet n'est pas un jeton faible, c'est autre chose — `read()` ne
+     * rend un secret que s'il fait exactement 64 hexadécimaux, donc un tel
+     * candidat ne peut jamais correspondre.
+     */
     public function matches(string $candidate): bool
     {
         $expected = $this->read();
@@ -89,6 +104,18 @@ final class InstallToken
         }
     }
 
+    /**
+     * Lit le fichier **comme du texte**, jamais par inclusion.
+     *
+     * Son contenu vient du disque d'un hébergement dont l'application ne sait
+     * rien. L'inclure reviendrait à exécuter ce que le premier fichier déposé
+     * à la racine contient — le lire au format attendu ne coûte rien et ne
+     * donne aucune prise.
+     *
+     * `null` signifie « pas de jeton exploitable », que le fichier soit
+     * absent, illisible ou sans marqueur : voir `isConfigured()` pour pourquoi
+     * ces trois cas se valent.
+     */
     private function read(): ?string
     {
         if (!is_file($this->path)) {

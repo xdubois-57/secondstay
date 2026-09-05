@@ -212,6 +212,17 @@ if (generateBaseline) {
     process.exit(0);
 }
 
+/**
+ * Lit la baseline acceptée, si elle existe.
+ *
+ * L'absence de fichier rend `{}` — c'est-à-dire « rien n'est accepté », et
+ * c'est la politique du dépôt : vert signifie *aucun constat*, pas *aucun
+ * constat nouveau*. Le fichier, quand quelqu'un en crée un, s'ouvre sur des
+ * lignes `//` qui disent pourquoi ; elles sont retirées avant l'analyse
+ * puisque JSON n'a pas de commentaires.
+ *
+ * @returns {Record<string, string[]>}
+ */
 function loadBaseline() {
     if (!existsSync(baselinePath)) return {};
     return JSON.parse(readFileSync(baselinePath, 'utf8').replace(/^(\/\/.*\n)+/, ''));

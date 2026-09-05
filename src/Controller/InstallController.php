@@ -120,6 +120,13 @@ final class InstallController extends AbstractController
         return $this->redirectToRoute($context, 'admin.dashboard', [], $locale);
     }
 
+    /**
+     * Rassemble les identifiants de base saisis dans l'assistant.
+     *
+     * Rien n'est écrit à partir d'eux avant qu'une connexion n'ait réussi :
+     * un `config/local.php` écrit sur des identifiants faux laisserait une
+     * installation qui ne démarre plus et que l'assistant ne reprend pas.
+     */
     private function databaseConfigFromRequest(RequestContext $context): DatabaseConfig
     {
         $request = $context->request;

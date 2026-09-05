@@ -47,6 +47,21 @@ final class InstallTokenGate
         $this->now = $now ?? static fn (): int => time();
     }
 
+    /**
+     * Trois réponses, et elles ne veulent pas dire la même chose.
+     *
+     * `Allowed` — rien à présenter, ou déjà présenté : l'assistant s'affiche
+     * tel quel. `Accepted` — le jeton vient d'être reconnu, et l'appelant doit
+     * rediriger vers la même adresse **sans** le paramètre (§41.3).
+     * `Denied` — refus, qu'il soit dû au verrouillage, à l'absence de jeton ou
+     * à un jeton faux ; l'extérieur n'a pas à savoir lequel.
+     *
+     * L'ordre des contrôles est le contrat : le verrouillage est examiné avant
+     * le jeton, sans quoi il ne verrouillerait rien ; et une visite **sans**
+     * jeton ne consomme pas d'essai, parce que la première ouverture de
+     * l'assistant se fait sans, et que la compter épuiserait le budget avant
+     * que l'opérateur n'ait rien tenté.
+     */
     public function authorise(Request $request): InstallTokenVerdict
     {
         if (!$this->token->isConfigured()) {
@@ -100,6 +115,11 @@ final class InstallTokenGate
         return $url;
     }
 
+    /**
+     * Le verrou se lève de lui-même : un opérateur qui s'est trompé cinq fois
+     * ne reste pas dehors indéfiniment. L'horloge est injectable pour que les
+     * tests puissent constater cette levée sans attendre un quart d'heure.
+     */
     private function isLockedOut(): bool
     {
         $until = $this->session->int(self::SESSION_LOCKED_UNTIL_KEY);
@@ -107,6 +127,17 @@ final class InstallTokenGate
         return $until !== null && ($this->now)() < $until;
     }
 
+    /**
+     * Compte un essai manqué, et verrouille au cinquième.
+     *
+     * Le compteur repart de zéro **en même temps** que le verrou est posé :
+     * sans cela, chaque essai suivant le prolongerait, et une seule session
+     * malheureuse condamnerait l'installation bien au-delà du quart d'heure
+     * annoncé.
+     *
+     * Ce compteur n'est pas là pour arrêter une force brute — 256 bits s'en
+     * chargent — mais pour qu'une tentative coûte quelque chose.
+     */
     private function recordFailure(): void
     {
         $failures = ($this->session->int(self::SESSION_FAILURES_KEY) ?? 0) + 1;

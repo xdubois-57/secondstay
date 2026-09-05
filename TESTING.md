@@ -807,6 +807,18 @@ couverture, plus lente, a fait apparaître la course sur les clés d'accès.
 Les parcours « Mon séjour » et « états des lieux » doivent toujours être
 exécutés sur le projet mobile.
 
+**Un drapeau de lancement appartient à un moteur, jamais à la configuration
+partagée.** `--disable-dev-shm-usage`, `--ignore-certificate-errors-spki-list`
+et `--proxy-bypass-list` sont des options de Chromium ; posées dans le `use`
+partagé, elles atteignent aussi `mobile-safari`, et WebKit refuse de démarrer
+sur une option qu'il ne connaît pas — « Cannot parse arguments: Unknown option
+--disable-dev-shm-usage », et les cinquante-trois scénarios mobiles tombent sur
+le lancement du navigateur. La campagne du scan dynamique ne le montre pas :
+elle ne joue qu'un projet (`scripts/dast.sh`, `--project=desktop-chromium`).
+Ces drapeaux vivent donc dans `chromiumBinary()`, appliqué aux seuls projets
+Chromium. Le proxy, lui, reste partagé : `proxy` est une option de Playwright,
+comprise par les trois moteurs.
+
 ### 18.7 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque

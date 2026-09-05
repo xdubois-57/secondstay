@@ -202,6 +202,14 @@ function bannerVersion(string $directory): ?string
     return null;
 }
 
+/**
+ * La dernière version publiée en amont d'une bibliothèque vendorisée.
+ *
+ * `null` signifie « pas su demander » — réseau coupé, quota d'API atteint,
+ * dépôt renommé — et l'appelant l'affiche comme *non vérifiée* plutôt que de
+ * la compter à jour. C'est la même règle que `shellJson()` : une gate ne
+ * conclut pas sur une mesure qu'elle n'a pas faite.
+ */
 function latestUpstreamVersion(string $repository): ?string
 {
     $context = stream_context_create([
@@ -224,6 +232,11 @@ function latestUpstreamVersion(string $repository): ?string
     return preg_match('/(\d+\.\d+\.\d+)/', $tag, $matches) === 1 ? $matches[1] : null;
 }
 
+/**
+ * Le numéro majeur seul. Une bibliothèque vendorisée en retard d'un majeur est
+ * une décision — la migration se lit dans son journal de version — là où un
+ * retard de correctif est un oubli.
+ */
 function majorOf(string $version): string
 {
     return explode('.', $version)[0];

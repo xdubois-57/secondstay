@@ -106,35 +106,6 @@ function pinnedPublicKeys() {
 //    serveur avec deux environnements différents finissent toujours par
 //    diverger.
 /**
- * Les drapeaux de lancement de Chromium, et la condition qui gouverne chacun.
- *
- * Chaque drapeau dépend de ce qu'il corrige, jamais du drapeau voisin. Les
- * regrouper sous `usesTls` avait mis le contournement du proxy sous une
- * condition qui ne le concerne pas : `proxyServer` se configure indépendamment
- * de TLS, et un proxy en clair aurait donc laissé Chromium adresser la boucle
- * locale en direct. ZAP n'aurait pas vu ce trafic, et la campagne aurait
- * mesuré moins que ce qu'elle annonce — le vert qui ne prouve rien.
- *
- * @returns {string[]}
- */
-function chromiumArgs() {
-    return [
-        // Précaution standard pour Chromium en intégration continue, où
-        // `/dev/shm` est petit. Elle ne dépend d'aucun harnais, et elle n'est
-        // pas ce qui a corrigé le plantage décrit plus bas : la campagne est
-        // morte de la même façon avec.
-        '--disable-dev-shm-usage',
-
-        // Le certificat épinglé n'existe que quand le harnais TLS tourne.
-        ...(usesTls ? [`--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`] : []),
-
-        // Sans cela, Chromium adresse `localhost` en direct et le proxy ne
-        // voit rien de la campagne — quel que soit le protocole.
-        ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
-    ];
-}
-
-/**
  * Quel binaire Chromium jouer.
  *
  * En temps normal, Playwright lance `chrome-headless-shell` : un binaire
@@ -160,10 +131,46 @@ function chromiumArgs() {
  * — mieux ciblée que la précédente, pas démontrée pour autant. Si le plantage
  * survit à ce changement, c'est le binaire qu'il faut cesser de soupçonner.
  *
- * @returns {{ channel?: string }}
+ * ## Les drapeaux vivent ici, et nulle part ailleurs
+ *
+ * `--disable-dev-shm-usage`, `--ignore-certificate-errors-spki-list` et
+ * `--proxy-bypass-list` sont des options **de Chromium**. Posées dans le `use`
+ * partagé, elles atteignaient aussi `mobile-safari`, et WebKit refuse de
+ * démarrer sur une option qu'il ne connaît pas : « Cannot parse arguments:
+ * Unknown option --disable-dev-shm-usage », les cinquante-trois scénarios
+ * mobiles tombant sur le lancement du navigateur. La campagne du scan
+ * dynamique ne l'avait jamais montré parce qu'elle ne joue qu'un projet
+ * (`scripts/dast.sh`, `--project=desktop-chromium`).
+ *
+ * Chaque drapeau garde en revanche sa propre condition : `proxyServer` se
+ * configure indépendamment de `usesTls`, et lier le contournement du proxy à
+ * TLS aurait laissé un proxy en clair sans rien voir de la boucle locale —
+ * une campagne qui mesure moins que ce qu'elle annonce.
+ *
+ * @returns {{ channel?: string, launchOptions: { args: string[] } }}
  */
 function chromiumBinary() {
-    return proxyServer !== '' ? { channel: 'chromium' } : {};
+    return {
+        ...(proxyServer !== '' ? { channel: 'chromium' } : {}),
+        launchOptions: {
+            args: [
+                // Précaution standard pour Chromium en intégration continue,
+                // où `/dev/shm` est petit. Elle ne dépend d'aucun harnais, et
+                // elle n'est pas ce qui a corrigé le plantage décrit
+                // ci-dessus : la campagne est morte de la même façon avec.
+                '--disable-dev-shm-usage',
+
+                // Le certificat épinglé n'existe que quand le harnais TLS
+                // tourne.
+                ...(usesTls ? [`--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`] : []),
+
+                // Sans cela, Chromium adresse `localhost` en direct et le
+                // proxy ne voit rien de la campagne — quel que soit le
+                // protocole.
+                ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
+            ]
+        }
+    };
 }
 
 export default defineConfig({
@@ -228,7 +235,6 @@ export default defineConfig({
         // le navigateur fait exception pour ces deux clés, et pour aucune
         // autre.
         ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
-        launchOptions: { args: chromiumArgs() },
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

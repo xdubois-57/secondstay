@@ -59,6 +59,7 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
+/** Sortie unique en échec : un seul format de message pour tout le harnais. */
 function dastFail(string $message): never
 {
     fwrite(STDERR, "DAST : {$message}\n");
@@ -407,6 +408,17 @@ function dastRedirectTarget(array $response, string $baseUrl): ?string
     return str_starts_with($location, $origin . '/') || $location === $origin ? $location : null;
 }
 
+/**
+ * Prouve le câblage HTTPS **avant** que le scan ne commence.
+ *
+ * Deux protections de SecondStay sont conditionnées à l'arrivée en HTTPS :
+ * l'en-tête HSTS et le drapeau `Secure` du cookie de session. Un harnais TLS
+ * cassé les ferait rapporter absentes — deux constats faux à propos de code
+ * correct — et la correction tentante serait un filtre qui fait taire les deux
+ * règles, c'est-à-dire un rapport qui cesse d'être lu.
+ *
+ * Le harnais est donc constaté vivant, ici, et le scan ne démarre pas sinon.
+ */
 function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondstay_session'): void
 {
     $reached = false;

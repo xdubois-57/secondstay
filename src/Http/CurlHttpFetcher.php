@@ -263,6 +263,14 @@ final class CurlHttpFetcher implements HttpFetcher
         ];
     }
 
+    /**
+     * Reconstruit l'adresse d'une redirection relative.
+     *
+     * Elle est résolue ici plutôt que laissée à cURL parce que chaque saut
+     * doit repasser par le contrôle SSRF : une redirection est une adresse que
+     * le serveur distant choisit, et la suivre sans la revalider annulerait la
+     * validation faite sur l'adresse de départ.
+     */
     private function resolveRedirect(string $base, string $location): string
     {
         if (str_starts_with($location, 'http://') || str_starts_with($location, 'https://')) {
