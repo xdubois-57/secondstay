@@ -172,6 +172,17 @@ export default defineConfig({
                 launchOptions: {
                     args: [
                         `--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`,
+                        // Chromium place sa mémoire partagée dans /dev/shm et
+                        // meurt en SIGSEGV quand elle manque. Sous ZAP, trois
+                        // campagnes de suite sont mortes ainsi, sur trois tests
+                        // différents — donc pas un test en cause, mais le
+                        // processus. La cause exacte n'est pas établie ; ce
+                        // drapeau bascule Chromium sur /tmp, ce qui est le
+                        // remède habituel de ce plantage-là et ne coûte rien
+                        // ailleurs. S'il ne suffit pas, l'hypothèse tombe et
+                        // il faudra chercher du côté de la mémoire du runner,
+                        // que ZAP partage avec MySQL, PHP et le navigateur.
+                        '--disable-dev-shm-usage',
                         ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
                     ]
                 }
