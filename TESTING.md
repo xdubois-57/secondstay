@@ -539,7 +539,31 @@ mesurer une exigence, et la seule façon d'y répondre serait de casser la règl
 qu'ils servent. L'exclusion porte sur la **portée de la mesure**, jamais sur la
 règle, qui reste appliquée au code PHP, au JavaScript et aux gabarits.
 
-### 12.4 `codeql`
+### 12.4 Preuves SonarCloud
+
+`php scripts/sonar-evidence.php <répertoire>` récupère l'**analyse complète** :
+la Quality Gate condition par condition, toutes les mesures du projet, les
+mêmes par fichier, tous les constats ouverts et tous les *security hotspots* —
+plus une page de garde en Markdown.
+
+La Quality Gate seule dit « passé » ou « échoué ». Elle ne dit pas ce qui a été
+trouvé, ni quelle part du code a été couverte, et un pack de preuves dont le
+lecteur doit ouvrir un compte SonarCloud pour l'apprendre n'est pas une preuve.
+
+Les hotspots sont récupérés **délibérément** : ils vivent derrière leur propre
+endpoint, et un pack construit sur `issues/search` seul a l'air complet tout en
+omettant en silence la catégorie qu'un relecteur sécurité ouvre en premier.
+
+**Sans `SONAR_TOKEN`, le script écrit un marqueur `INDISPONIBLE` et sort en 0.**
+Un fichier manquant se lit comme un oubli ; un fichier qui dit « pas disponible,
+et voici pourquoi » se lit comme un fait — et une pull request issue d'un fork
+ne peut pas lire les secrets du dépôt.
+
+La clé de projet et l'organisation sont lues dans `sonar-project.properties`,
+jamais codées en dur : deux endroits où écrire la même chose finissent par ne
+plus dire la même.
+
+### 12.5 `codeql`
 
 CodeQL vit dans son propre workflow (`.github/workflows/codeql.yml`) et reste
 propriétaire de l'onglet Sécurité du dépôt.
