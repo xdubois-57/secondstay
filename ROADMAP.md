@@ -926,3 +926,49 @@ le paramètre d'URL reste admis parce que beaucoup d'hébergements n'offrent qu'
 champ « adresse à appeler », et que leur fermer la porte reviendrait à les
 priver de sauvegarde et de purge. Le risque résiduel est nommé dans
 `SECURITY.md` plutôt que passé sous silence.
+
+## Consolidation de la chaîne d'assurance
+
+### Livré
+
+Dix itérations d'alignement de la chaîne CI / tests / release, transposées
+depuis `iso20022-address-game` — la mécanique, pas les fichiers : les deux
+projets ne se ressemblent pas (MySQL contre SQLite, deux navigateurs contre un,
+PHP 8.2 contre 8.1, assistant d'installation joué en E2E).
+
+| # | Ce qui a changé |
+|---|---|
+| 1 | Les gates sortent de `ci.yml` dans `checks.yml`, réutilisable ; matrice PHP 8.2 / 8.4 ; mode preuve |
+| 2 | `tsc` comme vérificateur du JavaScript — jamais comme étape de build |
+| 3 | Alias Composer appelables un par un ; politique « zéro baseline » écrite |
+| 4 | La campagne E2E jouable en HTTPS, avec preuve du câblage |
+| 5 | Scan dynamique passif OWASP ZAP, la campagne servant de surface d'attaque |
+| 6 | `sonar-evidence.php` : l'analyse complète, pas le seul verdict |
+| 7 | `dependency-inventory.php` : l'inventaire généré, jamais rédigé |
+| 8 | `release.yml` : pack de preuves et attestation de provenance |
+| 9 | `release.sh` aligné — un seul chemin de publication |
+| 10 | Documentation et manifeste rendus vrais |
+
+### Ce que la campagne a trouvé en chemin
+
+Une consolidation d'outillage n'était pas censée toucher au produit. Elle a
+pourtant fait tomber trois défauts réels, tous invisibles depuis l'unique
+configuration que la CI jouait jusque-là :
+
+- **`CURLOPT_PROTOCOLS_STR` nommée en dur.** La constante n'existe que si PHP
+  est lié à libcurl ≥ 7.85 : sur un hébergement mutualisé plus ancien, *toute*
+  requête sortante échouait sur « Undefined constant » — import de calendrier,
+  webhooks, contenu local. Trouvé par la jambe PHP 8.2 que l'itération 1 venait
+  d'ajouter, c'est-à-dire exactement ce pour quoi elle existe ;
+- **trois extensions PHP exigées sans être déclarées** : `intl`, `sodium` et
+  `curl`. Sans l'une des trois, l'installation « fonctionnait » jusqu'à la
+  première page affichant un prix ;
+- **aucun en-tête HSTS.** La feuille de route le décrivait comme existant ; il
+  n'était nulle part. Il est désormais émis, et uniquement en HTTPS.
+
+### Ce qui reste hors périmètre
+
+Le déploiement. `iso20022-address-game` déploie par miroir `lftp` ; SecondStay
+est architecturé à l'inverse, autour d'un ZIP de Release et d'un updater qui
+sauvegarde, migre et sait revenir en arrière. **Décision prise : ne pas porter
+`deploy.sh`.**

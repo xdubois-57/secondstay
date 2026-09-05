@@ -530,6 +530,7 @@ Trois workflows, et un seul endroit où les gates sont définies :
 |---|---|
 | `.github/workflows/checks.yml` | **réutilisable** (`on: workflow_call`) — toutes les gates |
 | `.github/workflows/ci.yml` | boucle rapide : appelle `checks.yml`, puis SonarCloud |
+| `.github/workflows/release.yml` | passe lente : `checks.yml` en mode preuve, puis le pack et la Release au brouillon |
 | `.github/workflows/codeql.yml` | CodeQL, propriétaire de l'onglet Sécurité |
 
 `checks.yml` est appelé par la boucle rapide et le sera par la passe de
@@ -546,6 +547,8 @@ Jobs séparés, dans `checks.yml` :
 - JS unit ;
 - Playwright, un exécuteur par navigateur ;
 - dependency/security ;
+- scan dynamique passif (OWASP ZAP), la campagne Playwright servant de surface
+  d'attaque ;
 - release artifact validation.
 
 Puis, dans `ci.yml` : SonarCloud, par `needs` sur l'appel aux gates.
@@ -572,6 +575,37 @@ Exclut :
 - coverage ;
 - node_modules ;
 - IDE/agent local state.
+
+### 28.1 Le pack de preuves
+
+Une Release porte **deux** archives, et elles ne servent pas à la même chose :
+
+| Archive | Ce que c'est |
+|---|---|
+| `secondstay-<version>.zip` | l'unité installable — code de production et `vendor/` |
+| `evidence.zip` | la preuve que les gates ont tourné sur ce commit |
+
+`evidence.zip` est produit par `release.yml` et contient uniquement ce que
+chaque outil émet **nativement** : JUnit PHPUnit des deux versions de PHP,
+JUnit Vitest, rapport Playwright, PHPStan et `tsc` avec leur périmètre, SARIF
+CodeQL, analyse SonarCloud complète, les quatre couvertures Clover et le lcov,
+le rapport du scan dynamique, `manifest.json` et `SHA256SUMS`.
+
+Rien n'y est rédigé à la main : un résumé écrit une fois est un résumé que
+personne ne met à jour, et une preuve devenue fausse est pire qu'aucune preuve.
+
+L'attestation de provenance (`gh attestation verify`) est la seule pièce que le
+lecteur n'a pas à croire sur parole ; tout le reste est produit par ce dépôt.
+
+### 28.2 Ce que SecondStay ne fait pas : le déploiement par miroir
+
+Le ZIP de GitHub Release **est** l'unité installable, et l'updater intégré
+enchaîne téléchargement, validation, sauvegarde, maintenance, installation,
+migrations, `VERSION`, contrôle de santé et rollback (AGENTS.md §19).
+
+Un miroir FTP de l'arbre de travail contournerait les migrations, la sauvegarde
+préalable et le rollback. **C'est une décision, pas un oubli :** il n'existe
+pas de `deploy.sh` dans ce dépôt et il ne doit pas en apparaître.
 
 ## 29. Implémentation effective
 
@@ -602,7 +636,10 @@ scripts/                      check.sh, release.sh, dev-server.sh, router.php,
                               build-release-zip.sh, release-artifact.php,
                               check-secrets.sh, update-manifest.php,
                               js-typecheck.mjs, coverage-bootstrap.php,
-                              coverage-merge.php, e2e-reset.php
+                              coverage-merge.php, e2e-reset.php,
+                              sonar-evidence.php, dependency-inventory.php,
+                              dast.sh, dast-support.php, dast-tls-proxy.php,
+                              dast-https-prepend.php
 tests/php|js|e2e/             PHPUnit, Vitest, Playwright
 ```
 

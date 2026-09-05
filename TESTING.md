@@ -612,12 +612,25 @@ Une fonctionnalité est terminée si :
 - tests intégration pertinents ;
 - E2E pertinent ;
 - i18n FR/EN/NL/DE ;
-- docs à jour ;
+- docs à jour **dans le même commit** que le comportement décrit ;
 - security impact traité ;
-- PHPStan/Vitest/Playwright verts ;
+- `./scripts/check.sh --full` vert localement ;
+- PHPStan **sans baseline** vert — vert signifie *aucun constat*, pas
+  *aucun constat nouveau* ;
+- `tsc` **sans baseline** vert, aux mêmes conditions ;
+- Vitest et Playwright verts, la campagne Playwright passant aussi en HTTPS
+  lorsque le changement touche le transport ou l’en-tête HSTS ;
+- scan dynamique passif vert : aucune alerte ZAP au-dessus d’informatif, et la
+  carte du site couvre les chemins attendus ;
 - SonarCloud vert ;
 - CodeQL applicable vert ;
-- pas d’alerte dépendance bloquante.
+- pas d’alerte dépendance bloquante — `composer audit` et `npm audit` propres,
+  et toute dépendance de production ajoutée sous une licence hors MIT, BSD, ISC
+  ou Apache-2.0 est une décision à poser, pas à prendre en silence.
+
+Pour une release, s’y ajoute le pack de preuves : chaque outil dépose sa sortie
+native, l’archive est attestée, et un pack vide fait échouer le workflow plutôt
+que de publier une release sans preuve.
 
 ## 17. Itération indépendante
 
