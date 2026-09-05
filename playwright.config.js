@@ -1,4 +1,11 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
 import { defineConfig, devices } from '@playwright/test';
+
+const root = dirname(fileURLToPath(import.meta.url));
 
 const port = Number(process.env.SECONDSTAY_PORT || 8123);
 // `localhost` et non `127.0.0.1` : une adresse IP n'est pas une « relying
@@ -6,6 +13,40 @@ const port = Number(process.env.SECONDSTAY_PORT || 8123);
 const host = process.env.SECONDSTAY_HOST || 'localhost';
 const baseURL = process.env.SECONDSTAY_BASE_URL || `http://${host}:${port}`;
 const collectsCoverage = Boolean(process.env.SECONDSTAY_COVERAGE_DIR);
+
+// La campagne de scan dynamique sert l'application derrière un terminateur TLS
+// muni d'un certificat généré pour la durée de la campagne, à qui rien ne fait
+// confiance. `ignoreHTTPSErrors` est donc **conditionné** à cette campagne :
+// une campagne ordinaire qui se mettrait à ignorer les erreurs de certificat
+// cesserait de pouvoir en signaler une vraie.
+const usesTls = process.env.SECONDSTAY_E2E_TLS === '1';
+
+// Chaque requête traverse maintenant une poignée de main TLS, et bientôt un
+// proxy. Les scénarios font le même travail et portent les mêmes assertions :
+// seule la patience change. Sans cette mise à l'échelle, la latence du harnais
+// serait rapportée comme des échecs de l'application.
+const timeoutFactor = Number(process.env.SECONDSTAY_TIMEOUT_FACTOR || 1) || 1;
+
+/**
+ * Empreinte de la clé publique du certificat de la campagne.
+ *
+ * Le certificat est produit ici, et non par la préparation globale, parce que
+ * cette configuration est lue **avant** le lancement du navigateur : c'est le
+ * seul endroit d'où l'empreinte peut atteindre ses arguments de démarrage. La
+ * préparation globale réutilise ensuite le même fichier.
+ */
+function campaignCertificateSpki() {
+    const support = resolve(root, 'scripts/dast-support.php');
+    const certificate = process.env.SECONDSTAY_TLS_CERT || resolve(root, 'storage/temp', `tls-${port}.pem`);
+
+    mkdirSync(dirname(certificate), { recursive: true });
+    if (!existsSync(certificate)) {
+        execFileSync('php', [support, 'generate-cert', certificate, host], { cwd: root, stdio: 'inherit' });
+    }
+    process.env.SECONDSTAY_TLS_CERT = certificate;
+
+    return execFileSync('php', [support, 'cert-spki', certificate], { cwd: root, encoding: 'utf8' }).trim();
+}
 
 // Le serveur de test est démarré et arrêté par `global-setup.js` /
 // `global-teardown.js`, pas par l'option `webServer`. Deux raisons :
@@ -40,10 +81,39 @@ export default defineConfig({
     // et le serveur répond nettement plus lentement. Les assertions sont les
     // mêmes : seule la patience change, faute de quoi un scénario juste
     // échouerait pour une raison qui ne dit rien du produit.
-    timeout: collectsCoverage ? 90000 : 30000,
-    expect: { timeout: collectsCoverage ? 20000 : 7500 },
+    timeout: (collectsCoverage ? 90000 : 30000) * timeoutFactor,
+    expect: { timeout: (collectsCoverage ? 20000 : 7500) * timeoutFactor },
     use: {
         baseURL,
+        // `ignoreHTTPSErrors` suffit à traverser l'avertissement, mais pas à
+        // rendre l'origine **sûre** aux yeux de Chromium : un service worker
+        // refuse de s'enregistrer sur une origine dont le certificat n'est pas
+        // valide, et le scénario PWA resterait bloqué jusqu'à son délai.
+        // `ignoreHTTPSErrors` suffit à traverser l'avertissement, mais ne rend
+        // pas l'origine **sûre** aux yeux de Chromium : un service worker
+        // refuse de s'enregistrer sur une origine dont le certificat n'est pas
+        // valide, et le scénario PWA resterait bloqué jusqu'à son délai — un
+        // défaut du harnais rapporté comme un défaut du produit.
+        //
+        // Les deux drapeaux plus simples ne conviennent pas :
+        // `--allow-insecure-localhost` ne confère pas le statut d'origine sûre,
+        // et `--ignore-certificate-errors` le confère mais fait accepter
+        // n'importe quel certificat — au prix, constaté ici, d'un navigateur
+        // qui se ferme ou se bloque à la création d'un contexte.
+        //
+        // On épingle donc la clé publique de la campagne : le navigateur ne
+        // fait d'exception que pour ce certificat-là, généré à l'instant et
+        // vivant le temps d'une campagne. Conditionné, comme le reste — une
+        // campagne ordinaire doit rester capable de signaler un vrai défaut de
+        // certificat.
+        ignoreHTTPSErrors: usesTls,
+        ...(usesTls
+            ? {
+                launchOptions: {
+                    args: [`--ignore-certificate-errors-spki-list=${campaignCertificateSpki()}`]
+                }
+            }
+            : {}),
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',

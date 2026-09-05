@@ -181,7 +181,7 @@ final class Kernel
 
             return $this->finalise($response, $request, $container, $localePrefixPresent, $locale);
         } catch (Throwable $throwable) {
-            return $this->applySecurityHeaders($this->renderError($throwable, $request), $config);
+            return $this->applySecurityHeaders($this->renderError($throwable, $request), $config, $request);
         }
     }
 
@@ -203,7 +203,7 @@ final class Kernel
             $session->persist();
         }
 
-        return $this->applySecurityHeaders($response, $config);
+        return $this->applySecurityHeaders($response, $config, $request);
     }
 
     private function timezone(Container $container, Config $config, bool $installed): string
@@ -434,12 +434,29 @@ final class Kernel
         ]);
     }
 
-    private function applySecurityHeaders(Response $response, Config $config): Response
+    private function applySecurityHeaders(Response $response, Config $config, Request $request): Response
     {
         $response->withHeader('X-Content-Type-Options', 'nosniff');
         $response->withHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->withHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+        // HSTS, et **seulement en HTTPS**. L'émettre en clair ne protégerait
+        // rien — un attaquant capable de modifier la réponse peut aussi
+        // retirer l'en-tête — et l'émettre depuis une installation qui n'a pas
+        // de TLS rendrait le site injoignable pour la durée annoncée. Une
+        // installation servie en clair ne voit donc rien changer.
+        //
+        // La durée est configurable et vaut six mois par défaut : assez pour
+        // que la protection ait un sens, assez court pour qu'un hébergement
+        // qui perdrait son certificat ne condamne pas le site pour un an.
+        // Ni `includeSubDomains` ni `preload` : sur un hébergement mutualisé,
+        // les sous-domaines appartiennent souvent à autre chose, et `preload`
+        // est une décision qu'on ne défait pas en un jour.
+        $maxAge = $config->int('security.hsts_max_age', 15552000);
+        if ($maxAge > 0 && $request->isSecure()) {
+            $response->withHeader('Strict-Transport-Security', 'max-age=' . $maxAge);
+        }
 
         if (!$config->bool('app.debug')) {
             $response->withHeader(

@@ -1096,3 +1096,68 @@ Le contrôle d'accès reste celui de l'endpoint média, qui n'a pas changé.
 propriétaire et rendu échappé, comme dans « Mon séjour ». Les pages portent
 `noindex` et `robots.txt` refuse `/{langue}/info/` : publiques par nécessité,
 elles n'ont pas à être trouvées depuis un moteur de recherche.
+
+## 39. HSTS et transport
+
+`Strict-Transport-Security` est émis **uniquement lorsque la requête est
+arrivée en HTTPS**, avec une durée configurable (`security.hsts_max_age`,
+six mois par défaut ; `0` désactive l'en-tête).
+
+La condition n'est pas une prudence excessive, c'est le seul comportement
+correct pour un produit qui s'installe sur un hébergement mutualisé
+quelconque :
+
+- **en clair, l'en-tête ne protégerait rien.** Un attaquant capable de
+  modifier la réponse peut tout aussi bien retirer l'en-tête. Une protection
+  qui ne tient que si l'attaquant coopère n'en est pas une ;
+- **en clair, il ferait des dégâts.** Une installation servie en HTTP qui
+  annoncerait HSTS deviendrait injoignable pour la durée annoncée, depuis les
+  navigateurs qui l'ont vu passer une fois. Le propriétaire n'aurait aucun
+  moyen de revenir en arrière avant l'échéance.
+
+Ni `includeSubDomains` ni `preload` : sur un hébergement mutualisé, les
+sous-domaines appartiennent souvent à autre chose, et `preload` est une
+décision qu'on ne défait pas en un jour.
+
+L'en-tête suit `Request::isSecure()`, qui accepte `$_SERVER['HTTPS']` **et**
+`X-Forwarded-Proto`. Le second est ce que pose un répartiteur ou un
+terminateur TLS ; l'accepter est ce qui rend l'en-tête correct derrière un
+proxy, où l'application ne voit jamais le TLS elle-même. Le risque associé est
+inversé par rapport à l'intuition : un client qui forgerait
+`X-Forwarded-Proto: https` sur une connexion en clair obtiendrait des cookies
+`Secure` et un HSTS — c'est-à-dire un produit **plus** strict, et un navigateur
+qui refuserait ensuite de renvoyer ses propres cookies. Il n'y a rien à y
+gagner.
+
+## 40. Scan dynamique : pourquoi il exige du HTTPS
+
+Deux protections de SecondStay dépendent du transport : l'en-tête HSTS
+ci-dessus et le drapeau `Secure` du cookie de session. Un scan joué contre une
+instance en clair rapporterait « HSTS absent » et « cookie sans Secure » :
+**deux constats faux, à propos de code correct.**
+
+La correction tentante est un filtre d'alertes qui fait taire les deux règles.
+C'est précisément ainsi qu'un rapport cesse d'être lu : deux règles muettes
+pour un défaut de harnais sont deux règles que personne ne regarde le jour où
+l'une d'elles se déclenche pour de bon. **On répare le harnais, pas le
+rapport.**
+
+Le harnais tient en deux pièces, toutes deux sous `scripts/` — donc exclues de
+l'archive de release, et exécutées par aucun déploiement :
+
+- `dast-tls-proxy.php` termine TLS devant le serveur de test avec un
+  certificat généré pour la durée de la campagne, et pose
+  `X-Forwarded-Proto: https` **après avoir retiré toute copie envoyée par le
+  client**. Un terminateur qui relaierait l'en-tête du client serait lui-même
+  la vulnérabilité ;
+- `dast-https-prepend.php`, chargé par `auto_prepend_file` pour le seul
+  processus de test, traduit cet en-tête en `$_SERVER['HTTPS']`.
+
+Le certificat est émis pour **`localhost`** et non pour une adresse IP : une IP
+n'est pas une *relying party* WebAuthn valide, et les parcours de clés d'accès
+de la campagne seraient refusés par le navigateur.
+
+Le câblage est **prouvé vivant avant tout scan** : une requête, et l'assertion
+que la réponse porte l'en-tête HSTS et un cookie `Secure`. Si la preuve échoue,
+la campagne s'arrête là. Un scan sur un harnais mal câblé produit un rapport
+faux, ce qui est pire que pas de rapport.

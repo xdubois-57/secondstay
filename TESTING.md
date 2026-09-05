@@ -215,6 +215,42 @@ d'introduire.
 17. conformité/versioning légal ;
 18. i18n FR/EN/NL/DE.
 
+### 7.1 Campagne en HTTPS
+
+```bash
+SECONDSTAY_E2E_TLS=1 SECONDSTAY_BASE_URL=https://localhost:8443 \
+SECONDSTAY_PORT=8443 SECONDSTAY_BACKEND_PORT=8444 \
+    npx playwright test --project=desktop-chromium
+```
+
+`npm run e2e` en clair ne change pas : sans `SECONDSTAY_E2E_TLS=1`, rien de ce
+qui suit ne s'active.
+
+Avec, la préparation globale recule le serveur d'application sur un port
+interne en `127.0.0.1` et pose `scripts/dast-tls-proxy.php` devant lui, muni
+d'un certificat généré pour la campagne. `scripts/dast-https-prepend.php`,
+chargé par `auto_prepend_file` **pour ce processus seulement**, traduit
+l'en-tête du terminateur en `$_SERVER['HTTPS']` : l'application n'apprend rien
+et ne sait pas que la campagne existe.
+
+Deux détails qui ne se négocient pas :
+
+- le certificat est émis pour **`localhost`**, jamais pour une adresse IP —
+  une IP n'est pas une *relying party* WebAuthn valide, et les parcours de
+  clés d'accès seraient refusés par le navigateur ;
+- `ignoreHTTPSErrors` est **conditionné** à cette campagne. Une campagne
+  ordinaire qui ignorerait les erreurs de certificat cesserait de pouvoir en
+  signaler une vraie.
+
+La préparation **prouve** ensuite que l'instance se croit en HTTPS — en-tête
+HSTS et cookie de session `Secure` — et refuse de continuer sinon. Sans cette
+preuve, une campagne entière irait redécouvrir un défaut du harnais pour le
+rapporter comme un défaut du produit.
+
+`SECONDSTAY_TIMEOUT_FACTOR` multiplie tous les délais Playwright. Les scénarios
+font le même travail et portent les mêmes assertions : seule la patience
+change, parce que chaque requête traverse désormais une poignée de main TLS.
+
 ## 8. Fake providers
 
 Obligatoires :

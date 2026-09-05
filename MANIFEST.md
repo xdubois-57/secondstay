@@ -9,7 +9,7 @@ Fichiers de référence SecondStay :
 - `README.md` — 39230 bytes — sha256 `4b8c769e25810a59ceb1a2eb2f09c8aea254c2588e4eb735b491e797238d5d66`
 - `RELEASE.md` — 4531 bytes — sha256 `367f9fd6c1c6913145a7e9377cef567ffed7d7417ddced279c5a3980e1f2b018`
 - `ROADMAP.md` — 41595 bytes — sha256 `372ec7c9ad07994c19fd1a256c415717aa6ff103a49cb67f74be1cccefa45745`
-- `SECURITY.md` — 47415 bytes — sha256 `621e5875e77c78879c74021a233070a7ccfdeaf4c78a9d63854ae87902694e77`
+- `SECURITY.md` — 50869 bytes — sha256 `2f15b6f9036e0e2a5306787b1068f9344539c81c4b6f688795ebad6e1ec1cf3c`
 - `SPECIFICATIONS.md` — 14077 bytes — sha256 `17cc30e636cef434ac556ffa0fdf7b55208c4be54b257ded5194183881103b8a`
-- `TESTING.md` — 60010 bytes — sha256 `142312d67edc9228ddc1a276b460437ea8fa0de209140ec7eefbc9c95d74aab3`
+- `TESTING.md` — 61687 bytes — sha256 `699ba67967bbb2742fdcc25167a4fb2304c9055fe27d7a77ed915d02f704097c`
 - `VERSION` — 7 bytes — sha256 `cd81ec19767ffb807bada6d48578a18d77a29adb394e09e9cdfcd5ea9eebb6a2`
