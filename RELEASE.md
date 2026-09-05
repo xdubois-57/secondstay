@@ -119,6 +119,83 @@ gates tournent avant cette étape et non après.
 
 `scripts/release.sh` suit la philosophie de ScoutMagic : fail closed, gates avant création du tag, artefact production contrôlé, notes de release avec état des vérifications.
 
+### 4.1 Qui crée la Release
+
+**Le script ne la crée plus.** `release.yml` le fait, au brouillon, une fois
+toutes les gates jouées et le pack de preuves constitué. Le script pose le tag,
+attend ce verdict, attache le ZIP installable au brouillon, y met les notes,
+puis publie.
+
+Les deux ne peuvent pas créer la même Release : le workflow, arrivant en
+dernier, repasserait une Release publiée en brouillon. Un seul chemin de
+publication.
+
+Si une gate est rouge, le workflow ne crée **aucun** brouillon et le script
+s'arrête en le disant : le tag existe et ne pointe sur rien de publié. On le
+supprime et on le repousse.
+
+### 4.2 La gate SonarCloud : rien au-dessus de INFO
+
+Plus strict que la Quality Gate de SonarCloud, qui ne juge que le code neuf et
+reste donc verte pendant que des constats hérités s'accumulent.
+
+Un constat n'est acceptable que s'il est informationnel sur **les deux**
+échelles de sévérité que SonarCloud rapporte : la classique et celle du Clean
+Code. Un MINOR classique porte un impact LOW — se fier à une seule échelle
+laisserait passer ce que l'autre appelle un défaut.
+
+L'analyse doit porter **sur le commit publié**. Publier quelques minutes après
+une fusion est le cas normal et SonarCloud calcule encore : la gate **attend**,
+dix minutes au plus (`SONAR_WAIT_ATTEMPTS`, `SONAR_WAIT_SECONDS`). Si l'analyse
+n'arrive jamais, elle **refuse** — « pas encore analysé » et « analysé et
+propre » sont deux réponses différentes, et une seule est un succès.
+
+Les *security hotspots* à examiner sont vérifiés séparément : ils vivent
+derrière leur propre endpoint, et une gate qui ne regarde que les constats a
+l'air complète en manquant la catégorie qu'un relecteur sécurité ouvre en
+premier.
+
+Un constat qui ne vaut vraiment pas d'être corrigé se marque *won't fix* dans
+SonarCloud : c'est une décision avec un nom en face, et la gate l'honore
+puisqu'un constat résolu n'est plus ouvert. **Ne pas contourner la gate dans le
+script.**
+
+### 4.3 Les notes de release ne sont pas optionnelles
+
+`RELEASE_NOTES_FILE` doit pointer sur un fichier Markdown **rédigé**. Sans lui,
+le script refuse de publier : le brouillon reste, et GitHub garderait sinon une
+liste de commits qui dit ce qui a été touché et jamais ce que cela signifie.
+
+Cinq sections obligatoires, dans cet ordre, **vérifiées par le script** :
+
+1. **Ce qui change**, dans la langue d'un utilisateur du produit. Si rien n'est
+   visible, le dire exactement — c'est une information, pas une excuse ;
+2. **Corrections**, chacune formulée comme *le symptôme qui a disparu*, pas
+   comme le correctif ;
+3. **Compatibilité** : ce qu'une installation existante doit faire, ou
+   explicitement **« rien »**. Le silence est un oubli, pas une réponse ;
+4. **Tests** : un tableau à trois colonnes — la gate, **ce qu'elle vérifie
+   réellement en une ligne**, le résultat. La colonne du milieu n'est pas du
+   remplissage : une ligne « Vitest — 111 » n'apprend rien à quelqu'un qui
+   audite le projet. Nommer toute gate qui n'a pas tourné, et pourquoi ;
+5. **Vérifier la release** : la commande `gh attestation verify` et le contenu
+   du pack.
+
+Ce qu'un lecteur ne doit pas manquer — changement de licence, rupture de
+compatibilité, correctif de sécurité — va **tout en haut**, avec un marqueur.
+Supposer que la lecture s'arrête au premier écran.
+
+**Ne pas écrire de liste de dépendances à la main** :
+`scripts/dependency-inventory.php` en ajoute une, générée depuis les fichiers de
+verrouillage, donc disant ce qui est réellement parti plutôt que ce qu'une
+contrainte permettait.
+
+Les affirmations d'une note portent à conséquence : elles sont lues par des gens
+qui décident de mettre à jour. **Ne jamais annoncer un nombre de tests qu'on n'a
+pas vu, ni un comportement corrigé qu'aucun test ne couvre.**
+
+Les bypass d'urgence restent explicites et sont reportés dans les notes.
+
 ## 5. Étapes du script
 
 Ordre recommandé :

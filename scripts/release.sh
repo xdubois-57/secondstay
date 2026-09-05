@@ -6,8 +6,57 @@
 # du tag. Aucun bypass n'est silencieux : chaque `--skip-*` produit un
 # avertissement et apparaît dans les notes de release.
 #
+# QUI CRÉE LA RELEASE
+# ---------------------------------------------------------------------------
+# **Ce script ne crée plus la Release.** `.github/workflows/release.yml` le
+# fait, au brouillon, une fois toutes les gates jouées et le pack de preuves
+# constitué. Ce script pose le tag, attend ce verdict, attache le ZIP
+# installable au brouillon, y met les notes, puis publie.
+#
+# Les deux ne peuvent pas créer la même Release : le workflow, arrivant en
+# dernier, repasserait une Release publiée en brouillon. Un seul chemin de
+# publication.
+#
+# LES NOTES DE RELEASE NE SONT PAS OPTIONNELLES
+# ---------------------------------------------------------------------------
+# `RELEASE_NOTES_FILE` doit pointer sur un fichier Markdown **rédigé**. Sans
+# lui, ce script refuse de publier : le brouillon reste, et GitHub garderait
+# sinon une liste de commits qui dit ce qui a été touché et jamais ce que cela
+# signifie.
+#
+# Cinq sections obligatoires, dans cet ordre, écrites pour la personne qui lit
+# la page Releases et non pour celle qui a écrit le diff :
+#
+#   1. « Ce qui change », dans la langue d'un utilisateur du produit. Si rien
+#      n'est visible, le dire exactement — c'est une information, pas une
+#      excuse ;
+#   2. « Corrections », chacune formulée comme le symptôme qui a disparu, pas
+#      comme le correctif ;
+#   3. « Compatibilité » : ce qu'une installation existante doit faire, ou
+#      explicitement « rien ». Le silence est un oubli, pas une réponse ;
+#   4. « Tests » : un tableau à trois colonnes — la gate, ce qu'elle vérifie
+#      réellement en une ligne, le résultat. La colonne du milieu n'est pas du
+#      remplissage : une ligne « Vitest — 111 » n'apprend rien à quelqu'un qui
+#      audite le projet ;
+#   5. « Vérifier la release » : la commande `gh attestation verify` et le
+#      contenu du pack.
+#
+# Ce qu'un lecteur ne doit pas manquer — changement de licence, rupture de
+# compatibilité, correctif de sécurité — va tout en haut, avec un marqueur.
+# Supposer que la lecture s'arrête au premier écran.
+#
+# **Ne pas écrire de liste de dépendances à la main** :
+# `scripts/dependency-inventory.php` en ajoute une, générée depuis les fichiers
+# de verrouillage.
+#
+# Les affirmations d'une note portent à conséquence : elles sont lues par des
+# gens qui décident de mettre à jour. Ne jamais annoncer un nombre de tests
+# qu'on n'a pas vu, ni un comportement corrigé qu'aucun test ne couvre.
+#
 # Usage :
 #   ./scripts/release.sh patch|minor|major [options]
+#
+#   RELEASE_NOTES_FILE=notes.md ./scripts/release.sh minor
 #
 # Options :
 #   --dry-run             n'écrit rien, ne pousse rien, ne publie rien
@@ -139,17 +188,119 @@ else
 fi
 
 # ------------------------------------------------------- 10. Gate Sonar ------
+# **Rien au-dessus de INFO.** Plus strict que la Quality Gate de SonarCloud,
+# qui ne juge que le code neuf et reste donc verte pendant que des constats
+# hérités s'accumulent.
+#
+# Un constat n'est acceptable que s'il est informationnel sur **les deux**
+# échelles de sévérité que SonarCloud rapporte : la classique
+# (INFO/MINOR/MAJOR/CRITICAL/BLOCKER) et celle du Clean Code
+# (INFO/LOW/MEDIUM/HIGH/BLOCKER, par impact). Un MINOR classique porte un
+# impact LOW : se fier à une seule échelle laisserait passer ce que l'autre
+# appelle un défaut.
+#
+# Un constat marqué *won't fix* ou *faux positif* est résolu, donc non rendu
+# par l'API : décliner un constat est une décision avec un nom en face, et
+# cette gate l'honore plutôt que de la refaire.
+SONAR_WAIT_ATTEMPTS="${SONAR_WAIT_ATTEMPTS:-20}"
+SONAR_WAIT_SECONDS="${SONAR_WAIT_SECONDS:-30}"
+
+sonar_get() {
+    if [ -n "${SONAR_TOKEN:-}" ]; then
+        curl -fsS --max-time 30 -u "$SONAR_TOKEN:" "https://sonarcloud.io/api/$1"
+    else
+        curl -fsS --max-time 30 "https://sonarcloud.io/api/$1"
+    fi
+}
+
+sonar_wait_budget() {
+    local total=$((SONAR_WAIT_ATTEMPTS * SONAR_WAIT_SECONDS))
+    if [ "$total" -lt 60 ]; then printf '%s seconde(s)' "$total"
+    else printf '%s minute(s)' "$((total / 60))"; fi
+}
+
 info "10/23 Gate SonarCloud"
 if [ $SKIP_SONAR -eq 1 ]; then
     bypass "gate SonarCloud ignorée"
-elif [ -z "${SONAR_TOKEN:-}" ]; then
-    die "SONAR_TOKEN absent : impossible de vérifier la Quality Gate (ou --skip-sonar)."
 else
-    QG="$(curl -fsS -u "$SONAR_TOKEN:" \
-        "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$SONAR_PROJECT_KEY" \
-        | php -r 'echo json_decode(stream_get_contents(STDIN), true)["projectStatus"]["status"] ?? "UNKNOWN";')"
-    [ "$QG" = "OK" ] || die "Quality Gate SonarCloud : $QG"
-    ok "Quality Gate SonarCloud OK"
+    # L'analyse doit porter SUR LE COMMIT publié. En lire une plus ancienne
+    # serait pire que ne rien vérifier : elle décrit du code qui n'est pas
+    # celui qui part, et elle le décrit comme un succès.
+    #
+    # Attendue plutôt que refusée d'emblée : publier quelques minutes après une
+    # fusion est le cas normal et SonarCloud calcule encore. Échouer
+    # immédiatement ferait de cette gate quelque chose qu'on apprend à relancer
+    # deux fois, ce qui est à mi-chemin d'apprendre à la sauter.
+    #
+    # L'attente est bornée. Si l'analyse n'arrive jamais, la gate refuse :
+    # « pas encore analysé » et « analysé et propre » sont deux réponses
+    # différentes, et une seule est un succès.
+    ANALYSED_SHA=""
+    for attempt in $(seq 1 "$SONAR_WAIT_ATTEMPTS"); do
+        ANALYSED_SHA="$(sonar_get "project_analyses/search?project=$SONAR_PROJECT_KEY&ps=1" \
+            | php -r '$d = json_decode(stream_get_contents(STDIN), true);
+                      echo $d["analyses"][0]["revision"] ?? "";' 2>/dev/null || true)"
+        [ "$ANALYSED_SHA" = "$LOCAL" ] && break
+        if [ "$attempt" -eq "$SONAR_WAIT_ATTEMPTS" ]; then
+            printf 'À publier : %s\nAnalysé   : %s\n' "$LOCAL" "${ANALYSED_SHA:-(aucune analyse lisible)}" >&2
+            die "SonarCloud n'a pas analysé ce commit (attendu $(sonar_wait_budget))."
+        fi
+        [ "$attempt" -eq 1 ] && info "  attente de l'analyse de ${LOCAL:0:7} (jusqu'à $(sonar_wait_budget))..."
+        sleep "$SONAR_WAIT_SECONDS"
+    done
+
+    SONAR_ISSUES="$(sonar_get "issues/search?componentKeys=$SONAR_PROJECT_KEY&statuses=OPEN,CONFIRMED,REOPENED&ps=500")" \
+        || die "Constats SonarCloud illisibles."
+
+    SONAR_BLOCKING="$(printf '%s' "$SONAR_ISSUES" | php -r '
+        $d = json_decode(stream_get_contents(STDIN), true);
+        if (!is_array($d) || !isset($d["issues"])) { echo "-1"; exit; }
+        $blocking = 0;
+        foreach ($d["issues"] as $i) {
+            $informational = ($i["severity"] ?? "") === "INFO";
+            foreach (($i["impacts"] ?? []) as $impact) {
+                if (($impact["severity"] ?? "") !== "INFO") { $informational = false; }
+            }
+            if (!$informational) { $blocking++; }
+        }
+        echo $blocking;
+    ')"
+
+    [ "$SONAR_BLOCKING" -ge 0 ] 2>/dev/null || die "Constats SonarCloud illisibles."
+
+    if [ "$SONAR_BLOCKING" -gt 0 ]; then
+        printf '%s' "$SONAR_ISSUES" | php -r '
+            $d = json_decode(stream_get_contents(STDIN), true);
+            foreach (($d["issues"] ?? []) as $i) {
+                $informational = ($i["severity"] ?? "") === "INFO";
+                foreach (($i["impacts"] ?? []) as $impact) {
+                    if (($impact["severity"] ?? "") !== "INFO") { $informational = false; }
+                }
+                if ($informational) { continue; }
+                $impacts = [];
+                foreach (($i["impacts"] ?? []) as $impact) {
+                    $impacts[] = ($impact["softwareQuality"] ?? "?") . " " . ($impact["severity"] ?? "?");
+                }
+                printf("  %-9s %-24s %s:%s\n    %s\n",
+                    $i["severity"] ?? "?",
+                    $impacts ? implode(", ", $impacts) : ($i["type"] ?? "?"),
+                    explode(":", $i["component"] ?? "?", 2)[1] ?? "?",
+                    $i["line"] ?? "-", $i["message"] ?? "");
+            }' >&2
+        warn "INFO est acceptable ; LOW et au-dessus ne le sont pas."
+        warn "Un constat qui ne vaut vraiment pas d'être corrigé se marque « won't fix »"
+        warn "dans SonarCloud : c'est une décision avec un nom en face, et la gate l'honore."
+        die "$SONAR_BLOCKING constat(s) SonarCloud au niveau LOW ou au-dessus."
+    fi
+
+    # Les hotspots vivent derrière leur propre endpoint. Une gate qui ne
+    # regarde que les constats a l'air complète et manque la catégorie qu'un
+    # relecteur sécurité ouvre en premier.
+    SONAR_HOTSPOTS="$(sonar_get "hotspots/search?projectKey=$SONAR_PROJECT_KEY&status=TO_REVIEW&ps=100" \
+        | php -r '$d = json_decode(stream_get_contents(STDIN), true); echo count($d["hotspots"] ?? []);')"
+    [ "$SONAR_HOTSPOTS" = "0" ] || die "$SONAR_HOTSPOTS security hotspot(s) à examiner dans SonarCloud."
+
+    ok "SonarCloud : rien au-dessus de INFO, 0 hotspot à examiner, analysé sur ${LOCAL:0:7}"
 fi
 
 # ------------------------------------------------------- 11. Tests locaux ----
@@ -225,36 +376,120 @@ php scripts/release-artifact.php inspect "$ZIP_PATH" || die "L'artefact est non 
 ok "Artefact conforme"
 
 # ------------------------------------------------------------ 21. Notes ------
+# Le fichier est validé ICI, avant l'attente du workflow : découvrir qu'il
+# manque une section après dix minutes de gates serait dix minutes perdues, et
+# le brouillon resterait de toute façon non publié.
 info "21/23 Notes de release"
-NOTES_FILE="$ROOT/build/release/notes-$NEW_VERSION.md"
-{
-    printf '# SecondStay %s\n\n' "$NEW_VERSION"
-    printf '## Changements\n\n'
-    git log --pretty='- %s' "v$CURRENT_VERSION..HEAD" 2>/dev/null || git log --pretty='- %s' -20
-    printf '\n## Vérifications effectuées\n\n'
-    printf '| Gate | Résultat |\n|---|---|\n'
-    printf '| Tests locaux (check.sh --full) | %s |\n' "$([ $SKIP_TESTS -eq 1 ] && echo 'IGNORÉE (bypass)' || echo 'OK')"
-    printf '| CI GitHub Actions | %s |\n' "$([ $SKIP_CI -eq 1 ] && echo 'IGNORÉE (bypass)' || echo 'OK')"
-    printf '| CodeQL / Dependabot | %s |\n' "$([ $SKIP_SECURITY -eq 1 ] && echo 'IGNORÉE (bypass)' || echo 'OK')"
-    printf '| SonarCloud Quality Gate | %s |\n' "$([ $SKIP_SONAR -eq 1 ] && echo 'IGNORÉE (bypass)' || echo 'OK')"
-    printf '| Déploiement précédent | %s |\n' "$([ $SKIP_DEPLOYMENT -eq 1 ] && echo 'IGNORÉE (bypass)' || echo 'OK')"
-    printf '| Artefact de production | OK |\n'
-    if [ ${#BYPASSES[@]} -gt 0 ]; then
-        printf '\n## ⚠ Bypass utilisés\n\n'
-        for b in "${BYPASSES[@]}"; do printf -- '- %s\n' "$b"; done
-        printf '\nCes bypass doivent être audités humainement après publication.\n'
-    fi
-} > "$NOTES_FILE"
-ok "Notes générées : $NOTES_FILE"
+NOTES_SOURCE="${RELEASE_NOTES_FILE:-}"
+if [ -z "$NOTES_SOURCE" ]; then
+    warn "RELEASE_NOTES_FILE n'est pas défini."
+    warn "Sans lui, la Release garderait une liste de commits : ce qui a été touché,"
+    warn "jamais ce que cela signifie. Voir l'en-tête de ce script pour le contrat."
+    die "Notes de release absentes."
+fi
+[ -r "$NOTES_SOURCE" ] || die "RELEASE_NOTES_FILE est défini mais « $NOTES_SOURCE » est illisible."
+[ -s "$NOTES_SOURCE" ] || die "« $NOTES_SOURCE » est vide."
+
+# Les cinq sections, dans l'ordre. Un contrôle textuel ne juge pas le contenu,
+# mais il attrape l'oubli — et « Compatibilité » est précisément la section
+# qu'on oublie, celle dont le silence se lit comme « rien à faire ».
+php -r '
+    $required = ["Ce qui change", "Corrections", "Compatibilité", "Tests", "Vérifier la release"];
+    $text = (string) file_get_contents($argv[1]);
+    $position = 0;
+    $missing = [];
+    $outOfOrder = [];
+    foreach ($required as $section) {
+        $at = mb_stripos($text, $section, 0);
+        if ($at === false) { $missing[] = $section; continue; }
+        if ($at < $position) { $outOfOrder[] = $section; }
+        $position = $at;
+    }
+    if ($missing !== []) {
+        fwrite(STDERR, "Sections absentes des notes : " . implode(", ", $missing) . "\n");
+        exit(1);
+    }
+    if ($outOfOrder !== []) {
+        fwrite(STDERR, "Sections dans le désordre : " . implode(", ", $outOfOrder) . "\n");
+        exit(1);
+    }
+' "$NOTES_SOURCE" || die "Les notes de release ne respectent pas le contrat (voir l'en-tête de ce script)."
+ok "Notes conformes : $NOTES_SOURCE"
 
 # ---------------------------------------------------------- 22. Publication --
-info "22/23 Publication de la GitHub Release"
-if [ $HAS_GH -eq 1 ]; then
-    gh release create "$TAG" "$ZIP_PATH" --title "SecondStay $NEW_VERSION" --notes-file "$NOTES_FILE" \
-        || die "Publication de la release impossible."
-    ok "Release $TAG publiée"
+# Le tag poussé a démarré `.github/workflows/release.yml`. Il joue toutes les
+# gates et, seulement si elles sont vertes, crée la Release **au brouillon**
+# avec le pack de preuves. Attendre ici est ce qui fait de la chaîne une seule
+# commande : l'alternative est quelqu'un qui doit penser à revenir dix minutes
+# plus tard finir la release à la main, ce qui est la façon dont une version
+# part avec une gate rouge que personne n'a regardée.
+info "22/23 Attente des gates, puis publication"
+if [ $HAS_GH -eq 0 ]; then
+    warn "gh absent : le workflow a créé un brouillon pour $TAG."
+    warn "Attachez-y $ZIP_PATH, mettez les notes de $NOTES_SOURCE, puis publiez à la main."
 else
-    warn "gh absent : publiez manuellement $ZIP_PATH sur la release $TAG avec $NOTES_FILE."
+    # La run est trouvée par tag et non par commit : une poussée de tag met le
+    # nom du tag dans `head_branch`, et le commit de release peut aussi porter
+    # une run de CI sur main.
+    RUN_ID=""
+    for _ in $(seq 1 30); do
+        RUN_ID="$(gh run list --workflow=release.yml --branch "$TAG" --limit 1 \
+            --json databaseId -q '.[0].databaseId' 2>/dev/null || true)"
+        [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ] && break
+        sleep 10
+    done
+    { [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; } \
+        || die "Aucune exécution de release.yml pour $TAG après cinq minutes. Le tag est poussé, rien n'est publié."
+
+    # Suivie pour la liste des travaux, mais **pas** crue pour le verdict :
+    # `gh run watch` refuse une run déjà terminée, et un échec rapide peut
+    # finir avant même que la boucle ci-dessus ne la trouve. La conclusion est
+    # relue séparément.
+    if [ "$(gh run view "$RUN_ID" --json status -q .status)" != "completed" ]; then
+        gh run watch "$RUN_ID" --interval 15 || true
+    fi
+
+    CONCLUSION="$(gh run view "$RUN_ID" --json conclusion -q .conclusion)"
+    if [ "$CONCLUSION" != "success" ]; then
+        warn "Rien n'a été publié : le workflow ne crée aucun brouillon quand une gate est rouge."
+        warn "Le tag $TAG existe et ne pointe sur rien de publié. Corrigez, puis :"
+        warn "  git push --delete $REMOTE $TAG && git tag -d $TAG"
+        die "release.yml a conclu « $CONCLUSION » : une gate est rouge."
+    fi
+
+    # Le brouillon du workflow ne porte que `evidence.zip`. Le ZIP construit
+    # plus haut est l'autre moitié — celle qu'on installe — et les deux
+    # appartiennent à la même Release. `--clobber` pour qu'une reprise remplace
+    # l'asset au lieu d'échouer sur un nom déjà présent.
+    gh release upload "$TAG" "$ZIP_PATH" --clobber || die "Impossible d'attacher $ZIP_PATH au brouillon."
+    ok "Artefact attaché au brouillon"
+
+    # La note humaine va AU-DESSUS de celle du workflow, qui décrit le pack de
+    # preuves et mérite d'être gardée. L'inventaire des dépendances est
+    # **généré** : lu dans les fichiers de verrouillage, il dit ce qui est
+    # réellement parti et ne peut pas dériver comme une liste écrite à la main.
+    NOTES_FILE="$ROOT/build/release/notes-$NEW_VERSION.md"
+    cat "$NOTES_SOURCE" > "$NOTES_FILE"
+    printf '\n\n' >> "$NOTES_FILE"
+    php "$ROOT/scripts/dependency-inventory.php" >> "$NOTES_FILE"
+    if [ ${#BYPASSES[@]} -gt 0 ]; then
+        printf '\n### ⚠ Bypass utilisés\n\n' >> "$NOTES_FILE"
+        for b in "${BYPASSES[@]}"; do printf -- '- %s\n' "$b" >> "$NOTES_FILE"; done
+        printf '\nCes bypass doivent être audités humainement après publication.\n' >> "$NOTES_FILE"
+    fi
+    printf '\n---\n\n' >> "$NOTES_FILE"
+    gh release view "$TAG" --json body -q .body >> "$NOTES_FILE"
+    gh release edit "$TAG" --notes-file "$NOTES_FILE" || die "Impossible de poser les notes."
+    ok "Notes posées : $NOTES_FILE"
+
+    # Publier ici plutôt que laisser le brouillon à un humain est délibéré, et
+    # ce n'est pas un relâchement : le brouillon existe pour que rien ne soit
+    # public avant que les gates aient parlé, et à cette ligne elles ont parlé.
+    # Ce qu'on abandonne, c'est une paire d'yeux sur les preuves AVANT que la
+    # Release ne soit publique ; le pack reste attaché à la Release publiée, il
+    # est donc toujours lu — simplement plus comme une étape bloquante.
+    gh release edit "$TAG" --draft=false --latest || die "Publication impossible."
+    ok "Release $TAG publiée"
 fi
 
 # --------------------------------------------------- 23. Restauration dev ----
