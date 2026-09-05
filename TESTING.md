@@ -826,21 +826,54 @@ que l'illusion. `chromiumBinary()` pose donc `proxy: { server: 'per-context' }`
 dans `launchOptions` quand — et seulement quand — un proxy est configuré : la
 valeur lance Chromium avec un proxy sans en imposer aucun.
 
-Ce n'est pas une précaution théorique. Sous le proxy du scan dynamique, une
-navigation faite juste après une connexion repartait avec le pot à cookies d'un
-autre contexte. Dans le trace conservé par un travail en échec, `/fr/account`
-part avec `secondstay_session=808c2587…; ss_locale=fr` et rend 200, puis la
-requête suivante, cent douze millisecondes plus tard, part avec
-`secondstay_session=303f6bfc…; ss_locale=nl` et rend 403. Les **deux** cookies
-changent ensemble : ce n'est pas une session régénérée, c'est un autre pot.
-L'application, elle, a répondu correctement — une session inconnue sur une
-route authentifiée doit rendre 403.
+Cette ligne est correcte en elle-même — c'est ce que Playwright exige pour que
+`proxy` déclaré par contexte isole réellement les contextes sur Chromium. **Elle
+n'a pas corrigé l'instabilité pour autant**, et il faut le dire ici plutôt que
+laisser croire le contraire à la prochaine personne qui lira ce paragraphe.
 
-Ce défaut ne se voyait que dans la campagne du scan dynamique, et il s'y voyait
-comme de l'instabilité : des scénarios différents tombaient à chaque exécution,
-toujours sur une page « Accès refusé » ou sur un élément qu'elle ne portait pas.
-Une gate verte une fois sur quatre est une gate que l'on apprend à relancer, ce
-qui est à mi-chemin d'apprendre à la sauter.
+### 18.6 bis L'instabilité du scan dynamique — ce qui est établi, et ce qui ne l'est pas
+
+La campagne du scan dynamique est verte environ une fois sur quatre. Les
+scénarios qui tombent changent à chaque exécution ; la campagne E2E ordinaire,
+elle, est verte. La différence est le proxy.
+
+**Le symptôme, observé quatre fois.** Après une authentification réussie, une
+requête ultérieure est traitée comme non authentifiée. L'application répond
+correctement — 403 sur une route authentifiée, ou une redirection vers la page
+de connexion — et le scénario meurt sur un élément que cette page ne porte pas,
+souvent au bout des six minutes du plafond mis à l'échelle.
+
+Dans le trace conservé par un travail en échec, en-têtes bruts :
+
+```text
+12:22:58.956 /fr/account         ss_locale=fr; secondstay_session=808c2587…  200
+12:22:59.068 /fr/account/export  secondstay_session=303f6bfc…; ss_locale=nl  403
+12:22:59.090 /icon-192.png       secondstay_session=303f6bfc…; ss_locale=nl
+```
+
+Les **deux** cookies changent ensemble, à cent douze millisecondes d'intervalle,
+et l'icône — une requête du navigateur, non du contexte d'API — part avec le
+même pot étranger. Ce n'est pas une session régénérée.
+
+**Écarté, avec preuve :**
+
+- le drapeau `Secure` du cookie de session : posé, et constant ;
+- des contextes non fermés : créations et `.close()` s'équilibrent partout ;
+- le terminateur TLS : éprouvé isolément, `X-Forwarded-Proto: https` est présent
+  sur GET comme sur POST, y compris en connexion persistante ;
+- l'add-on HttpSessions de ZAP : `secondstay_session` ne figure dans aucun de
+  ses onze jetons de session par défaut ;
+- l'isolation du proxy par contexte : corrigée ci-dessus, sans effet sur le
+  symptôme.
+
+**Non établi :** la cause. Le candidat restant est le service worker de la PWA,
+seul composant qui rejoue des requêtes hors du flux normal de la page.
+
+**Ne pas contourner cette gate en attendant.** Une campagne en échec fait
+échouer le scan même sans le moindre constat de sécurité, et c'est délibéré :
+un scan ne vaut que le trafic qu'on lui a donné. Une gate verte une fois sur
+quatre est une gate que l'on apprend à relancer, ce qui est à mi-chemin
+d'apprendre à la sauter.
 
 ### 18.7 Contrôle de l'artefact
 
