@@ -2,7 +2,7 @@
 
 Fichiers de référence SecondStay :
 
-- `AGENTS.md` — 11500 bytes — sha256 `94504202defca1e615d7ca315b7fb0e0365bbecdb2bb53de24b7996ce416ca90`
+- `AGENTS.md` — 12559 bytes — sha256 `bd79e3c7d2654d67ea703b336aa261d97888dacfc158f967c59453be62a9df06`
 - `ARCHITECTURE.md` — 88944 bytes — sha256 `28ca72458a623fb801912bd5b470895676831a84be0a6711f76bc332db20d634`
 - `CLAUDE.md` — 1092 bytes — sha256 `ddcbe9bd8a4b86f463e48099228eb970dabdf0a65f06ed02741056dc68256520`
 - `I18N.md` — 24447 bytes — sha256 `e6e269de9ad3a8067893803863661c07494a9ea9c348abb8fb4ad6fb63aa479f`

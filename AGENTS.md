@@ -380,6 +380,31 @@ constat que sa propre modification vient d'introduire — celui-là se corrige.
 Commiter une baseline exige donc la raison dans le message de commit, et sa
 disparition dès que la dette est payée.
 
+### Licences des dépendances
+
+Ajouter une dépendance de **production** sous une licence autre que MIT, BSD,
+ISC ou Apache-2.0 est **une décision à soumettre, pas à prendre en silence**.
+Ce projet est AGPL-3.0-or-later : la compatibilité dépend entièrement de la
+licence de ce qu'on y combine, et dans un seul sens pour certaines d'entre
+elles.
+
+L'inventaire est **généré, jamais rédigé** :
+
+```bash
+php scripts/dependency-inventory.php
+```
+
+Il lit les fichiers de verrouillage — jamais `composer.json` ni
+`package.json`, où `^3.11` n'est pas une version — et balaye
+`public/assets/vendor/`. Une ressource embarquée sans entrée dans sa carte de
+licences est rapportée **inconnue**, pas passée sous silence : ajouter une
+bibliothèque oblige donc à compléter la carte.
+
+Ce qui n'est pas couvert par la licence du projet — polices, images, marques —
+doit être nommé explicitement, et jamais décrit comme s'il l'était. La section
+reste imprimée même vide : « rien » est une information, l'absence de section
+n'en est pas une.
+
 Utiliser des fake providers pour :
 
 - SMTP ;
