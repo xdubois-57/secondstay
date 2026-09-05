@@ -47,6 +47,74 @@ Avant release, les contrôles suivants doivent être verts :
 - i18n FR/EN/NL/DE checks ;
 - release artifact validation.
 
+### 3.1 Deux pipelines, une seule définition de « vert »
+
+| Fichier | Rôle |
+|---|---|
+| `.github/workflows/checks.yml` | **toutes** les gates, réutilisable |
+| `.github/workflows/ci.yml` | boucle rapide sur chaque poussée |
+| `.github/workflows/release.yml` | passe lente et complète, sur tag `v*` **et** `workflow_dispatch` |
+
+Les deux pipelines appellent le même `checks.yml`. La seule différence est
+l'entrée `evidence` : à `true`, chaque travail téléverse la sortie **native**
+de son outil.
+
+`workflow_dispatch` autant que le tag : la répétition à blanc compte autant que
+la vraie, et c'est le seul moyen d'éprouver la chaîne sans publier.
+
+### 3.2 Le pack de preuves
+
+`evidence.zip` contient, et rien d'autre :
+
+- les JUnit PHPUnit des **deux** versions de PHP, et le JUnit Vitest ;
+- le rapport HTML de Playwright ;
+- PHPStan et `tsc` avec **leur périmètre** — outil, version, niveau, chemins,
+  nombre de fichiers analysés. « [OK] No errors » seul ne prouve rien : une
+  configuration qui n'analyse aucun fichier l'imprime tout aussi volontiers ;
+- le SARIF CodeQL, capturé **comme fichier** et jamais téléversé : `codeql.yml`
+  reste propriétaire de l'onglet Sécurité, et deux téléversements pour le même
+  commit se marchent dessus. CodeQL ne couvre pas PHP, et les notes doivent le
+  dire ;
+- l'analyse SonarCloud complète, ou un marqueur `INDISPONIBLE` expliquant
+  pourquoi ;
+- les **quatre** couvertures Clover et le lcov, avec la note qui explique
+  pourquoi ce chiffre diffère de celui de SonarCloud dans le même pack ;
+- le rapport complet du scan dynamique ;
+- `manifest.json`, dont **toutes** les valeurs viennent du contexte de
+  l'exécuteur ;
+- `SHA256SUMS`, calculé **avant** l'archivage.
+
+**Rien n'y est écrit à la main.** Un résumé rédigé une fois est un résumé que
+personne ne met à jour, et une preuve devenue fausse est pire qu'aucune preuve.
+
+Trois refus, parce que chacune de ces pannes est silencieuse :
+
+- **un pack vide est refusé.** Si un renommage fait que le motif de collecte ne
+  correspond plus à rien, un zip vide ressemblerait exactement à une preuve ;
+- **l'absence du rapport DAST est refusée**, nommément : c'est celui dont
+  l'absence passerait le plus inaperçue, et celui que `SECURITY.md` promet ;
+- **si une gate échoue, aucune Release n'est créée.** Le tag existe et ne pointe
+  sur rien de publié : on le supprime et on le repousse.
+
+### 3.3 L'attestation
+
+`actions/attest-build-provenance` signe `evidence.zip`. C'est **la seule pièce
+que le lecteur n'a pas à croire sur parole** : tout le reste est produit par ce
+dépôt et pourrait l'être autrement par quiconque peut modifier le workflow.
+
+```bash
+gh attestation verify evidence.zip --repo xdubois-57/secondstay
+```
+
+L'URL d'exécution inscrite dans `manifest.json` joue le même rôle en plus
+faible : elle mène à un journal horodaté que GitHub conserve et que personne
+ayant les droits d'écriture ici ne peut modifier — contrairement à l'archive.
+
+### 3.4 La Release est créée **au brouillon**
+
+La preuve se lit avant d'être publique. C'est toute la raison pour laquelle les
+gates tournent avant cette étape et non après.
+
 ## 4. Philosophie du script release
 
 `scripts/release.sh` suit la philosophie de ScoutMagic : fail closed, gates avant création du tag, artefact production contrôlé, notes de release avec état des vérifications.
