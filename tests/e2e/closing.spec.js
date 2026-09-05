@@ -25,6 +25,12 @@ test.describe('clôture de l’exploitation', () => {
 
     const PASSWORD = 'Marée-Haute-2026!';
 
+    /**
+     * Valeur par défaut de `booking.horizon_days` (SettingRegistry) : aucun
+     * scénario de cette campagne ne la modifie.
+     */
+    const HORIZON_DAYS = 540;
+
     let suffix = 'desktop';
     let month = '';
     let stay = { arrival: '', departure: '' };
@@ -68,15 +74,27 @@ test.describe('clôture de l’exploitation', () => {
     test.beforeAll(async ({ browser }, testInfo) => {
         suffix = testInfo.project.name === 'mobile-safari' ? 'mobile' : 'desktop';
 
+        // Dernier mois **entièrement** compris dans l'horizon de réservation,
+        // avec des jours distincts de ceux des autres scénarios du même mois.
+        //
+        // Un décalage fixe en mois ne suffit pas : le scénario vérifie que le
+        // 29 reste libre, et à dix-sept mois de distance ce jour tombe au-delà
+        // de `booking.horizon_days` dès que les mois traversés sont courts.
+        // `AvailabilityService` rend alors `closed`, à raison, et le scénario
+        // échoue selon la date à laquelle la campagne est jouée. On part donc
+        // de l'échéance de l'horizon et on recule jusqu'au dernier mois plein.
         const base = new Date();
         base.setUTCHours(0, 0, 0, 0);
-        // Dernier mois disponible dans l'horizon de réservation, avec des
-        // jours distincts de ceux des autres scénarios du même mois.
-        base.setUTCMonth(base.getUTCMonth() + (suffix === 'mobile' ? 17 : 16), 1);
+        base.setUTCDate(base.getUTCDate() + HORIZON_DAYS);
+        base.setUTCDate(1);
+        base.setUTCMonth(base.getUTCMonth() - (suffix === 'mobile' ? 1 : 2));
         month = base.toISOString().slice(0, 7);
 
-        stay = { arrival: `${month}-18`, departure: `${month}-24` };
-        ownerBlock = { start: `${month}-15`, end: `${month}-16` };
+        // Jours 17 à 29 : `stay.spec.js` occupe le 09 au 16 du même mois et
+        // `inspection.spec.js` le 05 au 12. Deux campagnes qui se partagent
+        // une installation ne peuvent pas poser deux états sur la même nuit.
+        stay = { arrival: `${month}-19`, departure: `${month}-25` };
+        ownerBlock = { start: `${month}-17`, end: `${month}-18` };
         feed = `https://calendrier.example.test/${suffix}.ics`;
         client = `cloture.${suffix}@example.test`;
 

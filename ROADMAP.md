@@ -994,6 +994,31 @@ C'est le même schéma que les deux précédents : une hypothèse d'hôte invisi
 depuis un exécuteur Linux. `${project[@]+"${project[@]}"}` fonctionne sur les
 deux versions.
 
+### Deux échecs de campagne, dont un vrai défaut produit
+
+Monter la campagne E2E complète en a fait tomber deux, confirmés par
+l'intégration continue pour le premier.
+
+**Le formulaire du livret ne partait pas sur iPhone.** `templates/admin/stay`
+était l'un des rares formulaires saisis du produit à ne pas porter
+`novalidate`. Vider le champ « Vérifiée le » — un `type="date"` qui portait une
+valeur — suffit à ce que WebKit rende `false` sur `form.checkValidity()` alors
+qu'aucun indicateur de `validity` n'est levé sur le champ. Le formulaire refuse
+alors de se soumettre, sans message : le propriétaire efface la date, appuie
+sur Enregistrer, et rien ne se passe. La validation du produit est de toute
+façon faite côté serveur et rendue par des clés de traduction, là où les bulles
+natives parlent la langue du navigateur et non celle de la page.
+
+**Un scénario qui dépendait du calendrier.** `closing.spec.js` choisissait
+`aujourd'hui + 17 mois` et vérifiait que le 29 restait libre. Selon la longueur
+des mois traversés, ce jour tombe au-delà de `booking.horizon_days` — 542 jours
+contre 540 le jour où la campagne a été montée. `AvailabilityService` rendait
+`closed`, à raison, et le scénario échouait sur un produit correct, en
+intégration continue comme en local. Le mois est désormais dérivé de l'échéance
+de l'horizon plutôt que d'un décalage fixe, et les jours utilisés ont été
+déplacés hors des fenêtres de `stay.spec.js` et `inspection.spec.js`, que le
+nouveau mois fait désormais voisiner.
+
 ### Une transcription lue avant d'être écrite
 
 Rejouer la suite unitaire plusieurs fois de suite a fait tomber
