@@ -831,7 +831,13 @@ final class BootstrapTest extends TestCase
         self::assertTrue(bootstrap_acquire_lock($lock));
         self::assertFalse(bootstrap_acquire_lock($lock));
 
-        touch($lock, time() - BOOTSTRAP_LOCK_STALE_SECONDS - 1);
+        // `touch()` est vérifié : sans cette assertion, un `touch` en échec
+        // fait échouer la ligne suivante avec « false n'est pas true », ce qui
+        // envoie chercher le défaut dans la fonction plutôt que dans le
+        // harnais. La date est très ancienne, et pas juste au-delà du seuil :
+        // aucun écart d'horloge d'une seconde ne doit pouvoir changer le
+        // verdict.
+        self::assertTrue(touch($lock, time() - 86400));
         self::assertTrue(bootstrap_acquire_lock($lock));
 
         bootstrap_release_lock($lock);

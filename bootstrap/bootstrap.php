@@ -1032,8 +1032,23 @@ function bootstrap_write_state(string $path, array $state): void
     file_put_contents($path, "<?php\n/*\n{$json}\n*/\n");
 }
 
+/**
+ * La décision porte sur la date du verrou **maintenant**. `filemtime()` passe
+ * par le cache de `stat()` de PHP, dont l'invalidation n'est pas la même
+ * partout : sur du code identique, la jambe PHP 8.2 de la matrice a lu une
+ * date que la jambe 8.4 a lue correctement. Le `clearstatcache()` ci-dessous
+ * ne corrige pas une cause démontrée — il retire la dépendance à ce
+ * comportement, ce qui est la seule chose que ce code peut garantir lui-même.
+ *
+ * L'enjeu justifie la prudence dans les deux sens : un verrou lu périmé alors
+ * qu'il est frais laisse deux installations démarrer en parallèle ; lu frais
+ * alors qu'il est périmé, il condamne toute reprise jusqu'à une intervention
+ * FTP.
+ */
 function bootstrap_acquire_lock(string $path): bool
 {
+    clearstatcache(true, $path);
+
     if (is_file($path) && (time() - (int) @filemtime($path)) < BOOTSTRAP_LOCK_STALE_SECONDS) {
         return false;
     }
