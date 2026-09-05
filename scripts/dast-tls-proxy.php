@@ -241,6 +241,38 @@ function dastTlsReadBody(string &$buffer, $stream, string $head): ?string
 }
 
 /**
+ * Écrit tout le tampon, ou rend `false`.
+ *
+ * `fwrite()` peut n'écrire qu'une partie de ce qu'on lui donne dès que le
+ * tampon de la socket est plein, et rendre alors un compte positif plus petit
+ * que la longueur demandée. Traiter « pas faux » comme « tout écrit » tronque
+ * silencieusement — vers le serveur d'application comme vers le navigateur.
+ *
+ * Les deux sens en ont besoin, et pour la même raison : la campagne pousse un
+ * envoi multipart d'environ 1,5 Mo, et l'entête de réponse a déjà annoncé un
+ * `Content-Length` que le corps doit honorer. Un corps court laisse le client
+ * attendre des octets qui ne viendront jamais — un scan qui se fige, pour une
+ * raison étrangère à l'application.
+ *
+ * @param resource $stream
+ */
+function dastTlsWriteAll($stream, string $payload): bool
+{
+    $written = 0;
+    $length = strlen($payload);
+
+    while ($written < $length) {
+        $chunk = @fwrite($stream, substr($payload, $written));
+        if ($chunk === false || $chunk === 0) {
+            return false;
+        }
+        $written += $chunk;
+    }
+
+    return true;
+}
+
+/**
  * Envoie une requête à `php -S` et lit toute la réponse.
  *
  * Une connexion neuve par requête, parce que le serveur intégré répond
@@ -262,24 +294,10 @@ function dastTlsExchange(string $backend, string $head, string $body): ?array
     }
     stream_set_timeout($upstream, DAST_TLS_BACKEND_TIMEOUT);
 
-    // `fwrite()` peut n'écrire qu'une partie de ce qu'on lui donne dès que le
-    // tampon de la socket est plein, et rendre alors un compte positif plus
-    // petit que la longueur demandée. Traiter « pas faux » comme « tout
-    // écrit » enverrait un corps tronqué au serveur d'application : la
-    // campagne pousse un envoi multipart d'environ 1,5 Mo, et le scan
-    // échouerait ou resterait suspendu pour une raison étrangère à
-    // l'application.
-    $payload = $head . $body;
-    $written = 0;
-    $length = strlen($payload);
-    while ($written < $length) {
-        $chunk = @fwrite($upstream, substr($payload, $written));
-        if ($chunk === false || $chunk === 0) {
-            fclose($upstream);
+    if (!dastTlsWriteAll($upstream, $head . $body)) {
+        fclose($upstream);
 
-            return null;
-        }
-        $written += $chunk;
+        return null;
     }
 
     $raw = '';
@@ -382,10 +400,14 @@ function dastTlsHandleConnection($client, string $backend): void
             && $served < DAST_TLS_MAX_REQUESTS - 1;
 
         $out = dastTlsReframe($responseHead, strlen($responseBody), $keepAlive, $omitBody);
-        if (@fwrite($client, $out) === false) {
+        // Même exigence que vers le serveur d'application, et pour la même
+        // raison : l'entête a annoncé un `Content-Length` que le corps doit
+        // honorer, sans quoi le navigateur attend des octets qui ne viendront
+        // pas.
+        if (!dastTlsWriteAll($client, $out)) {
             return;
         }
-        if (!$omitBody && $responseBody !== '' && @fwrite($client, $responseBody) === false) {
+        if (!$omitBody && $responseBody !== '' && !dastTlsWriteAll($client, $responseBody)) {
             return;
         }
 
@@ -439,6 +461,14 @@ if ($server === false) {
     fwrite(STDERR, "dast-tls-proxy : écoute impossible sur {$options['listen']} : {$errorString}\n");
     exit(1);
 }
+
+// Les gestionnaires doivent aussi être servis dans les **fils**, qui
+// n'appellent jamais `pcntl_signal_dispatch()` : ils passent leur vie dans une
+// lecture bloquante. Sans signaux asynchrones, un fils hérite d'un
+// gestionnaire qui ne s'exécute pas — et perd du même coup l'action par défaut
+// de SIGTERM. Au démontage il survivrait jusqu'au délai de lecture ou jusqu'à
+// `DAST_TLS_MAX_REQUESTS`, en gardant le port.
+pcntl_async_signals(true);
 
 // SIG_IGN sur SIGCHLD laisse le noyau récolter les fils. Une campagne, c'est
 // des dizaines de milliers de connexions : un zombie par connexion épuiserait

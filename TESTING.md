@@ -638,8 +638,9 @@ Une fonctionnalité est terminée si :
 - `tsc` **sans baseline** vert, aux mêmes conditions ;
 - Vitest et Playwright verts, la campagne Playwright passant aussi en HTTPS
   lorsque le changement touche le transport ou l’en-tête HSTS ;
-- scan dynamique passif vert : aucune alerte ZAP au-dessus d’informatif, et la
-  carte du site couvre les chemins attendus ;
+- scan dynamique passif vert : aucune alerte ZAP de niveau Medium ou au-dessus
+  — le seuil réellement appliqué, cf. §12.2 — et la carte du site couvre les
+  chemins attendus ;
 - SonarCloud vert ;
 - CodeQL applicable vert ;
 - pas d’alerte dépendance bloquante — `composer audit` et `npm audit` propres,

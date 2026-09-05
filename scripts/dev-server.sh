@@ -68,7 +68,13 @@ stop() {
     # une campagne interrompue — `e2e-reset.php` vide `storage/temp` et
     # emporte le fichier de pid — et la campagne suivante échouait alors à
     # prendre son port, pour une raison sans rapport avec ce qu'elle teste.
-    for ORPHAN in $(pgrep -f "^php( .*)? -S ${HOST}:${PORT}" 2>/dev/null || true); do
+    # `HOST` est échappé et `PORT` ancré : `pgrep -f` prend une expression
+    # rationnelle, où chaque point de « 127.0.0.1 » serait un joker, et où un
+    # port sans borne correspondrait au préfixe d'un autre — arrêter 443
+    # emporterait 4430, et deux campagnes voisines s'arrêteraient l'une
+    # l'autre, ce que le fichier de pid par port existe justement pour éviter.
+    HOST_RE="$(printf '%s' "$HOST" | sed 's/[.[\*^$+?(){}|]/\\&/g')"
+    for ORPHAN in $(pgrep -f "^php( .*)? -S ${HOST_RE}:${PORT}( |$)" 2>/dev/null || true); do
         kill "$ORPHAN" 2>/dev/null || true
         sleep 0.3
         kill -9 "$ORPHAN" 2>/dev/null || true

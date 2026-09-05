@@ -165,7 +165,13 @@ function dastGenerateCertificate(string $pemPath, string $hostname): void
     file_put_contents(
         $configFile,
         "[req]\ndistinguished_name = dn\n[dn]\n[v3_req]\n"
-        . "basicConstraints = CA:FALSE\n"
+        // `CA:TRUE` sur un certificat auto-signé qui sert lui-même de racine :
+        // c'est ce qui permet à un magasin de confiance — celui de Node, via
+        // `NODE_EXTRA_CA_CERTS` — de l'accepter comme ancre. Sans cela, le
+        // client HTTP de Playwright n'aurait d'autre choix que d'ignorer
+        // *toutes* les erreurs de certificat, ce qui reviendrait à désarmer la
+        // vérification au moment précis où l'on scanne du TLS.
+        . "basicConstraints = critical, CA:TRUE\n"
         . "keyUsage = digitalSignature, keyEncipherment\n"
         . "extendedKeyUsage = serverAuth\n"
         // `host.docker.internal` est le nom par lequel un ZAP conteneurisé

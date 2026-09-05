@@ -113,7 +113,13 @@ async function startTlsTerminator(host, port, backendHost, backendPort) {
     const stateDir = resolve(root, 'storage/temp');
     mkdirSync(stateDir, { recursive: true });
 
-    const certificate = process.env.SECONDSTAY_TLS_CERT || resolve(stateDir, `tls-${port}.pem`);
+    // Indexé sur l'hôte **et** le port : `storage/temp` survit d'une campagne
+    // à l'autre, et un certificat émis pour un hôte réutilisé pour un autre
+    // ferait échouer `assert-https` sur une non-correspondance de nom — un
+    // message qui accuse le produit alors que le fautif est un fichier resté
+    // là.
+    const certificate = process.env.SECONDSTAY_TLS_CERT
+        || resolve(stateDir, `tls-${host}-${port}.pem`);
     if (!existsSync(certificate)) {
         execFileSync('php', [support, 'generate-cert', certificate, host], {
             cwd: root,

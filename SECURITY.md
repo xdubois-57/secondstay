@@ -1122,12 +1122,25 @@ décision qu'on ne défait pas en un jour.
 L'en-tête suit `Request::isSecure()`, qui accepte `$_SERVER['HTTPS']` **et**
 `X-Forwarded-Proto`. Le second est ce que pose un répartiteur ou un
 terminateur TLS ; l'accepter est ce qui rend l'en-tête correct derrière un
-proxy, où l'application ne voit jamais le TLS elle-même. Le risque associé est
-inversé par rapport à l'intuition : un client qui forgerait
-`X-Forwarded-Proto: https` sur une connexion en clair obtiendrait des cookies
-`Secure` et un HSTS — c'est-à-dire un produit **plus** strict, et un navigateur
-qui refuserait ensuite de renvoyer ses propres cookies. Il n'y a rien à y
-gagner.
+proxy, où l'application ne voit jamais le TLS elle-même.
+
+Le risque associé mérite d'être dit exactement, parce qu'une formulation
+rassurante serait fausse ici. Un client qui forge `X-Forwarded-Proto: https`
+sur une connexion en clair obtient bien un HSTS — donc précisément
+l'enfermement décrit plus haut : un navigateur qui refuse ensuite de joindre le
+site avant l'échéance annoncée. Ce n'est pas anodin.
+
+Ce qui rend le risque acceptable n'est pas son innocuité, c'est qu'il ne peut
+frapper que celui qui le provoque. `X-Forwarded-Proto` n'appartient pas aux
+en-têtes qu'une page tierce peut faire émettre par le navigateur d'une
+victime : il faut forger la requête soi-même, et on ne s'enferme alors que
+soi-même.
+
+Sur une installation derrière un répartiteur, c'est au répartiteur — et à lui
+seul — de poser cet en-tête : il doit écraser toute valeur venant du client,
+faute de quoi n'importe qui pourrait la dicter. C'est ce que fait le
+terminateur du harnais de scan, qui retire toute copie envoyée par le client
+avant de poser la sienne.
 
 ### 39.1 Le cookie de session
 
@@ -1169,7 +1182,17 @@ l'archive de release, et exécutées par aucun déploiement :
 
 Le certificat est émis pour **`localhost`** et non pour une adresse IP : une IP
 n'est pas une *relying party* WebAuthn valide, et les parcours de clés d'accès
-de la campagne seraient refusés par le navigateur. Il couvre aussi
+de la campagne seraient refusés par le navigateur.
+
+Il est auto-signé et sert de **sa propre ancre de confiance**. Deux clients
+distincts doivent l'accepter, et aucun des deux ne le fait par une dérogation
+générale : le navigateur par l'épinglage de sa clé publique
+(`--ignore-certificate-errors-spki-list`), et le client HTTP de Playwright —
+du Node, que l'épinglage de Chromium ne concerne pas — parce que le certificat
+lui est donné comme ancre via `NODE_EXTRA_CA_CERTS`. L'alternative aurait été
+`ignoreHTTPSErrors`, qui désarme la vérification pour tout le contexte,
+navigateur compris, et rendrait l'épinglage décoratif au moment précis où l'on
+scanne du TLS. Il couvre aussi
 `host.docker.internal`, nom par lequel un ZAP conteneurisé joint l'hôte hors
 Linux : c'est alors l'origine que le navigateur demande au proxy, et elle doit
 rester valide de son côté.

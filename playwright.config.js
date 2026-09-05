@@ -16,9 +16,10 @@ const collectsCoverage = Boolean(process.env.SECONDSTAY_COVERAGE_DIR);
 
 // La campagne de scan dynamique sert l'application derrière un terminateur TLS
 // muni d'un certificat généré pour la durée de la campagne, à qui rien ne fait
-// confiance. `ignoreHTTPSErrors` est donc **conditionné** à cette campagne :
-// une campagne ordinaire qui se mettrait à ignorer les erreurs de certificat
-// cesserait de pouvoir en signaler une vraie.
+// confiance. L'exception est donc **conditionnée** à cette campagne, et se
+// limite à la clé publique de ce certificat : une campagne ordinaire qui se
+// mettrait à ignorer les erreurs de certificat cesserait de pouvoir en
+// signaler une vraie.
 const usesTls = process.env.SECONDSTAY_E2E_TLS === '1';
 
 // Chaque requête traverse maintenant une poignée de main TLS, et bientôt un
@@ -45,13 +46,27 @@ const proxyServer = process.env.SECONDSTAY_E2E_PROXY || '';
  */
 function campaignCertificateSpki() {
     const support = resolve(root, 'scripts/dast-support.php');
-    const certificate = process.env.SECONDSTAY_TLS_CERT || resolve(root, 'storage/temp', `tls-${port}.pem`);
+    const certificate = process.env.SECONDSTAY_TLS_CERT
+        || resolve(root, 'storage/temp', `tls-${host}-${port}.pem`);
 
     mkdirSync(dirname(certificate), { recursive: true });
     if (!existsSync(certificate)) {
         execFileSync('php', [support, 'generate-cert', certificate, host], { cwd: root, stdio: 'inherit' });
     }
     process.env.SECONDSTAY_TLS_CERT = certificate;
+
+    // Le client HTTP de Playwright (`request`) ne vit pas dans le navigateur :
+    // c'est du Node, et l'épinglage SPKI de Chromium ne le concerne pas. Sans
+    // ancre de confiance il ne resterait que `ignoreHTTPSErrors`, qui
+    // désarmerait la vérification pour **tout** le contexte, navigateur
+    // compris — et rendrait l'épinglage décoratif au moment précis où l'on
+    // scanne du TLS.
+    //
+    // On lui donne donc le certificat de la campagne comme ancre. Posé ici
+    // parce que cette configuration est relue par chaque worker avant sa
+    // première connexion, et que Node fige son magasin à la première
+    // utilisation de TLS.
+    process.env.NODE_EXTRA_CA_CERTS = certificate;
 
     return execFileSync('php', [support, 'cert-spki', certificate], { cwd: root, encoding: 'utf8' }).trim();
 }
@@ -93,10 +108,6 @@ export default defineConfig({
     expect: { timeout: (collectsCoverage ? 20000 : 7500) * timeoutFactor },
     use: {
         baseURL,
-        // `ignoreHTTPSErrors` suffit à traverser l'avertissement, mais pas à
-        // rendre l'origine **sûre** aux yeux de Chromium : un service worker
-        // refuse de s'enregistrer sur une origine dont le certificat n'est pas
-        // valide, et le scénario PWA resterait bloqué jusqu'à son délai.
         // `ignoreHTTPSErrors` suffit à traverser l'avertissement, mais ne rend
         // pas l'origine **sûre** aux yeux de Chromium : un service worker
         // refuse de s'enregistrer sur une origine dont le certificat n'est pas
@@ -114,7 +125,12 @@ export default defineConfig({
         // vivant le temps d'une campagne. Conditionné, comme le reste — une
         // campagne ordinaire doit rester capable de signaler un vrai défaut de
         // certificat.
-        ignoreHTTPSErrors: usesTls,
+        //
+        // Et **seulement** l'épinglage : `ignoreHTTPSErrors` accompagnait
+        // cette ligne et annulait ce qu'elle prétend faire, en désactivant la
+        // validation pour tout le contexte. Un autre certificat invalide
+        // passait alors aussi, ce qui rendait l'épinglage décoratif — juste au
+        // moment où l'on scanne le TLS.
         ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
         ...(usesTls
             ? {

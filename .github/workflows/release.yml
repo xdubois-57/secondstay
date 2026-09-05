@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
@@ -162,7 +162,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
@@ -275,22 +275,40 @@ jobs:
       # saisie. L'URL d'exécution est le cœur du fichier : elle mène à un
       # journal horodaté, conservé par GitHub, que personne ayant les droits
       # d'écriture ici ne peut modifier — contrairement à l'archive.
+      # Les valeurs passent par l'environnement et sont encodées par `jq`, pas
+      # interpolées dans du texte shell. `github.ref` porte le nom du tag :
+      # un tag contenant un guillemet produirait un JSON invalide, et un tag
+      # contenant `$(…)` s'exécuterait dans un travail qui détient plus loin
+      # `contents: write` et `attestations: write`. Poser un tel tag demande
+      # déjà le droit d'écrire ici — donc aucun gain de privilège — mais une
+      # valeur encodée reste une valeur encodée.
       - name: Manifeste
+        env:
+          DEPOT: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          COMMIT: ${{ github.sha }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          SERVER_URL: ${{ github.server_url }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          cat > evidence/manifest.json <<JSON
-          {
-            "depot": "${{ github.repository }}",
-            "ref": "${{ github.ref }}",
-            "commit": "${{ github.sha }}",
-            "workflow": "${{ github.workflow }}",
-            "run_id": "${{ github.run_id }}",
-            "run_attempt": "${{ github.run_attempt }}",
-            "url_execution": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "declenche_par": "${{ github.event_name }}",
-            "horodatage": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          }
-          JSON
+          jq -n \
+            --arg depot "$DEPOT" \
+            --arg ref "$REF" \
+            --arg commit "$COMMIT" \
+            --arg workflow "$WORKFLOW" \
+            --arg run_id "$RUN_ID" \
+            --arg run_attempt "$RUN_ATTEMPT" \
+            --arg url_execution "$SERVER_URL/$DEPOT/actions/runs/$RUN_ID" \
+            --arg declenche_par "$EVENT_NAME" \
+            --arg horodatage "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{depot: $depot, ref: $ref, commit: $commit, workflow: $workflow,
+              run_id: $run_id, run_attempt: $run_attempt,
+              url_execution: $url_execution, declenche_par: $declenche_par,
+              horodatage: $horodatage}' \
+            > evidence/manifest.json
           cat evidence/manifest.json
 
       # Refuser un pack vide. Si un renommage en amont fait que le motif de

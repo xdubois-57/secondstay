@@ -252,6 +252,20 @@ else
     SONAR_ISSUES="$(sonar_get "issues/search?componentKeys=$SONAR_PROJECT_KEY&statuses=OPEN,CONFIRMED,REOPENED&ps=500")" \
         || die "Constats SonarCloud illisibles."
 
+    # 500 est le maximum d'une page. Au-delà, cette réponse ne décrit qu'une
+    # partie des constats — et une gate qui compte sur un sous-ensemble en
+    # annonçant « rien au-dessus de INFO » est pire que pas de gate. Elle
+    # refuse donc de conclure plutôt que de conclure faux.
+    SONAR_TOTAL="$(printf '%s' "$SONAR_ISSUES" | php -r '
+        $d = json_decode(stream_get_contents(STDIN), true);
+        if (!is_array($d) || !isset($d["issues"]) || !is_array($d["issues"])) { echo "-1"; exit; }
+        $total = $d["paging"]["total"] ?? count($d["issues"]);
+        echo (int) $total - count($d["issues"]);
+    ')"
+    [ "$SONAR_TOTAL" -ge 0 ] 2>/dev/null || die "Constats SonarCloud illisibles."
+    [ "$SONAR_TOTAL" -eq 0 ] \
+        || die "SonarCloud rend plus de constats qu'une page n'en porte ($SONAR_TOTAL de plus) : verdict impossible sur un sous-ensemble."
+
     SONAR_BLOCKING="$(printf '%s' "$SONAR_ISSUES" | php -r '
         $d = json_decode(stream_get_contents(STDIN), true);
         if (!is_array($d) || !isset($d["issues"])) { echo "-1"; exit; }
@@ -399,11 +413,19 @@ php -r '
     $position = 0;
     $missing = [];
     $outOfOrder = [];
+    // Chaque section est cherchée **après** la précédente. Chercher depuis le
+    // début rendrait la première occurrence dans tout le fichier, or une
+    // section en cite volontiers une autre : le paragraphe « Ce qui change »
+    // qui mentionne « Compatibilité » suffisait à faire rejeter des notes
+    // pourtant dans le bon ordre.
     foreach ($required as $section) {
-        $at = mb_stripos($text, $section, 0);
-        if ($at === false) { $missing[] = $section; continue; }
-        if ($at < $position) { $outOfOrder[] = $section; }
-        $position = $at;
+        $at = mb_stripos($text, $section, $position);
+        if ($at === false) {
+            if (mb_stripos($text, $section) === false) { $missing[] = $section; }
+            else { $outOfOrder[] = $section; }
+            continue;
+        }
+        $position = $at + mb_strlen($section);
     }
     if ($missing !== []) {
         fwrite(STDERR, "Sections absentes des notes : " . implode(", ", $missing) . "\n");
