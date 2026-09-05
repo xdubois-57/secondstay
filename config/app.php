@@ -39,6 +39,10 @@ return [
         'session_name' => 'secondstay_session',
         'session_lifetime_minutes' => 120,
         'csrf_field' => '_csrf',
+        // Duree de l'en-tete Strict-Transport-Security, en secondes, emis
+        // uniquement quand la requete est arrivee en HTTPS. Six mois par
+        // defaut. Mettre a 0 desactive l'en-tete.
+        'hsts_max_age' => 15552000,
     ],
     'paths' => [
         'storage' => '',

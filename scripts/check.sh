@@ -6,7 +6,7 @@
 #   ./scripts/check.sh --fast     syntaxe + PHPStan + PHPUnit unitaire + i18n
 #   ./scripts/check.sh --php      syntaxe + PHPStan + PHPUnit
 #   ./scripts/check.sh --db       tests d'intégration base de données
-#   ./scripts/check.sh --js       Vitest
+#   ./scripts/check.sh --js       Vitest + tsc
 #   ./scripts/check.sh --e2e      Playwright
 #   ./scripts/check.sh --security composer audit + contrôles de fuite
 #   ./scripts/check.sh --full     tout
@@ -61,7 +61,7 @@ php_syntax() {
             php -l "$file"
             failed=1
         fi
-    done < <(find src public config scripts tests/php migrations translations -name '*.php' -print0 2>/dev/null)
+    done < <(find bootstrap src public config scripts tests/php migrations translations -name '*.php' -print0 2>/dev/null)
     return $failed
 }
 
@@ -94,11 +94,25 @@ phpunit_db() {
         printf 'Voir TESTING.md §5. La base de production ne doit jamais être utilisée.\n'
         return 1
     fi
-    XDEBUG_MODE=off ./vendor/bin/phpunit --testsuite database --do-not-cache-result
+    # `SECONDSTAY_TEST_DB_REQUIRED` transforme « pas de base configurée » en
+    # échec plutôt qu'en test ignoré : une exécution automatisée qui n'a touché
+    # aucune base n'a pas fait son travail. Voir l'en-tête de
+    # `tests/php/Support/DatabaseTestCase.php` pour ce que ce garde-fou couvre
+    # exactement — un trou latent, pas actuel.
+    SECONDSTAY_TEST_DB_REQUIRED=1 XDEBUG_MODE=off \
+        ./vendor/bin/phpunit --testsuite database --do-not-cache-result
 }
 
 vitest() {
     npm run --silent test
+}
+
+# L'autre moitié de l'analyse statique : les défauts du JavaScript navigateur
+# qu'aucune des trois campagnes ne voit, parce qu'ils vivent dans du code
+# qu'elles n'exécutent pas. TypeScript est un vérificateur, jamais une étape de
+# construction : rien n'est compilé (voir `tsconfig.json`).
+typecheck() {
+    npm run --silent typecheck
 }
 
 playwright() {
@@ -158,6 +172,7 @@ case "$MODE" in
         ;;
     --js)
         run_step "Vitest" vitest
+        run_step "tsc (vérificateur JavaScript)" typecheck
         ;;
     --e2e)
         run_step "Playwright" playwright
@@ -173,6 +188,7 @@ case "$MODE" in
         run_step "i18n FR/EN/NL/DE" i18n_check
         run_step "PHPUnit (base de données)" phpunit_db
         run_step "Vitest" vitest
+        run_step "tsc (vérificateur JavaScript)" typecheck
         run_step "Playwright" playwright
         run_step "Composer audit" composer_audit
         run_step "Absence de secrets versionnés" secret_scan

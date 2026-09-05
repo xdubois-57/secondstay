@@ -35,6 +35,29 @@ Possibles :
 
 La variante complète est l’autorité locale avant release.
 
+Chaque contrôle est aussi appelable seul, ce qui est commode pour chercher une
+régression précise. Ce sont des **alias** de ce que `check.sh` fait déjà ; ils
+ne remplacent pas la commande canonique :
+
+```bash
+composer run analyse           # PHPStan niveau 8
+composer run analyse:baseline  # régénère une baseline — voir §4
+composer run test              # PHPUnit, suite unitaire
+composer run test:coverage     # PHPUnit avec Clover et JUnit, comme en CI
+composer run coverage:merge    # fusionne les couvertures d'une campagne E2E instrumentée
+npm run typecheck              # tsc, vérificateur du JavaScript
+npm run typecheck:baseline     # régénère la baseline JavaScript — voir §4
+```
+
+`test:coverage` exige un pilote de couverture (`pcov` ou Xdebug) et échoue
+sans, volontairement : une couverture silencieusement absente se lit comme une
+couverture nulle sur le tableau de bord. `check.sh`, lui, se rabat sur une
+exécution sans couverture et le dit.
+
+`coverage:merge` suppose qu'une campagne E2E instrumentée a déjà écrit dans
+`build/coverage/e2e` ; sans cela il refuse plutôt que de produire un rapport
+vide.
+
 ## 4. PHP
 
 ### Syntaxe
@@ -43,9 +66,38 @@ Vérifier tous les fichiers PHP applicatifs.
 
 ### PHPStan
 
-Analyse statique avec niveau strict progressif mais non régressif.
+Analyse statique de niveau 8, sur `bootstrap`, `src`, `public`, `scripts` et
+`tests/php`.
 
 Aucune erreur acceptée dans `main`.
+
+`bootstrap/` y est parce que `bootstrap/bootstrap.php` s'exécute une seule fois,
+sur un hébergement dont personne ici ne sait rien, chez quelqu'un qui n'a que du
+FTP pour réparer. C'est le code du dépôt où une erreur de type coûte le plus
+cher, et le seul qu'aucune campagne E2E ne traverse.
+
+#### Aucune baseline commitée
+
+**« Vert » signifie *aucun constat*, et non *aucun constat nouveau*.** Ce dépôt
+ne porte ni `phpstan-baseline.neon` ni `js-typecheck-baseline.json`.
+
+La mécanique reste pourtant disponible — `composer run analyse:baseline`,
+`npm run typecheck:baseline` — et c'est délibéré : l'alternative à une baseline
+n'est pas « pas de baseline », c'est quelqu'un qui éteint le garde-fou le jour
+où une montée de dépendance produit cinquante constats un vendredi soir. La
+régénérer sert à **accepter sciemment une dette existante**, jamais à faire
+taire un constat que sa propre modification vient d'introduire — celui-là se
+corrige.
+
+Activer une baseline PHPStan demande d'ajouter soi-même la ligne `includes:`
+dans `phpstan.neon.dist`. Cette friction est voulue : l'acceptation d'une dette
+doit se voir en revue, avec sa raison dans le message de commit, et repartir
+dès que la dette est payée.
+
+La règle ne s'applique pas au scan dynamique : là, un constat se corrige ou se
+filtre nommément dans le plan ZAP, avec la raison écrite à côté. Une liste de
+constats « acceptés » qui s'allonge est exactement la façon dont un rapport de
+sécurité cesse de vouloir dire quelque chose.
 
 ### PHPUnit
 
@@ -60,7 +112,26 @@ Tests :
 - taxe séjour ;
 - i18n ;
 - backup/restore helpers ;
-- update logic.
+- update logic ;
+- installeur autonome.
+
+#### L'installeur autonome
+
+`bootstrap/bootstrap.php` s'exécute normalement dès qu'il est chargé : c'est un
+installeur, pas une bibliothèque. La constante `BOOTSTRAP_TEST`, définie avant
+le `require_once`, neutralise cet appel et rend le fichier chargeable comme
+n'importe quel autre — tout ce qui précède `bootstrap_main()` est une fonction
+pure ou une fonction dont les entrées/sorties sont injectées.
+
+`Tests\Unit\Bootstrap\BootstrapTest` couvre les décisions que l'installeur
+prend seul, y compris celles dont l'échec est invisible tant qu'il ne s'est
+jamais produit : refuser une archive, annuler une installation, juger qu'une
+ressource est protégée. Elle épingle aussi les valeurs **dupliquées** entre
+l'installeur et l'application — le contrat du jeton, la liste des sous-dossiers
+de `storage/`, les entrées exigées de l'artefact. Cette duplication n'est pas
+évitable : l'installeur tourne avant que `vendor/autoload.php` n'existe et ne
+peut charger aucune classe du projet. Ce qui est évitable, c'est qu'elle dérive
+en silence.
 
 Produire :
 
@@ -107,6 +178,64 @@ Vitest pour :
 
 Produire LCOV.
 
+### 6.1 `tsc`, vérificateur du JavaScript
+
+```bash
+npm run typecheck
+```
+
+C'est la moitié manquante de l'analyse statique : les défauts du JavaScript
+navigateur qu'aucune des trois campagnes ne voit, **parce qu'ils vivent dans
+du code qu'elles n'exécutent pas**. Un gestionnaire d'événement qu'aucun test
+ne déclenche est du code que rien ne lit ; identifiants inconnus, mauvais
+nombre d'arguments, propriétés absentes de l'objet touché s'y installent sans
+que rien ne devienne rouge.
+
+**TypeScript est ici un vérificateur, jamais une étape de construction.**
+`noEmit` : rien n'est compilé, rien n'est empaqueté, la production continue de
+servir le JavaScript non transformé de `public/assets/js/` (AGENTS.md §2).
+Aucun fichier `.ts` n'existe dans ce dépôt et il ne doit pas en apparaître ;
+`allowJs` + `checkJs` pointent l'outil sur le JavaScript déjà écrit.
+
+`strict: false` volontairement : ce code a été écrit sans types, et activer la
+rigueur enterrerait les constats qui méritent une correction sous des
+centaines d'autres sur des annotations absentes. `noImplicitReturns` et
+`noFallthroughCasesInSwitch` sont conservés parce qu'ils attrapent de vraies
+fautes.
+
+Les onze constats de la mise en place ont été **payés**, pas gelés :
+`public/assets/js/modules/dom.js` porte les accesseurs typés
+(`queryElement`, `asInput`, `asFormField`, `documentOf`) qui disent une fois,
+à un seul endroit, ce que le code sait déjà du DOM qu'il manipule. Une
+assertion dispersée sur chaque appel se serait corrigée en quinze endroits.
+
+`scripts/js-typecheck.mjs` porte la mécanique de baseline. **Aucun fichier de
+baseline n'est commité** : « vert » veut dire *aucun constat*, et non *aucun
+constat nouveau*. La mécanique reste disponible (`npm run typecheck:baseline`)
+parce que l'alternative à une baseline n'est pas « pas de baseline » : c'est
+quelqu'un qui éteint le garde-fou le jour où une montée de dépendance produit
+cinquante constats un vendredi soir. Elle sert à accepter sciemment une dette
+existante, jamais à faire taire un constat que sa propre modification vient
+d'introduire.
+
+Une entrée acceptée est identifiée par le fichier, le code et le message —
+jamais par le numéro de ligne, qu'une insertion cinq lignes plus haut suffirait
+à décaler — et chaque occurrence par **le texte de sa ligne source, précédé des
+deux lignes de code qui la précèdent**. Déplacer le bloc ne change donc rien ;
+le remplacer fait réapparaître le constat.
+
+Le contexte n'est pas décoratif, et une revue a montré pourquoi. Le texte seul
+ne distingue pas deux occurrences identiques dans un même fichier — deux
+`return null;`, deux appels au même helper. Corriger l'une et en introduire une
+autre ailleurs laissait alors le total inchangé, l'entrée acceptée consommée
+par la nouvelle, et le constat neuf jamais signalé.
+
+La règle vit dans `scripts/lib/occurrence-identity.mjs`, à part, parce que
+`js-typecheck.mjs` s'exécute entièrement au chargement et que rien de ce qu'il
+contient ne serait autrement testable. `tests/js/occurrence-identity.test.js`
+couvre le cas de l'échange, et le vérifie dans les deux sens : le test devient
+rouge dès qu'on rétablit l'identification par le seul texte.
+
 ## 7. Playwright E2E
 
 ### Principes
@@ -138,6 +267,42 @@ Produire LCOV.
 16. update/migration ;
 17. conformité/versioning légal ;
 18. i18n FR/EN/NL/DE.
+
+### 7.1 Campagne en HTTPS
+
+```bash
+SECONDSTAY_E2E_TLS=1 SECONDSTAY_BASE_URL=https://localhost:8443 \
+SECONDSTAY_PORT=8443 SECONDSTAY_BACKEND_PORT=8444 \
+    npx playwright test --project=desktop-chromium
+```
+
+`npm run e2e` en clair ne change pas : sans `SECONDSTAY_E2E_TLS=1`, rien de ce
+qui suit ne s'active.
+
+Avec, la préparation globale recule le serveur d'application sur un port
+interne en `127.0.0.1` et pose `scripts/dast-tls-proxy.php` devant lui, muni
+d'un certificat généré pour la campagne. `scripts/dast-https-prepend.php`,
+chargé par `auto_prepend_file` **pour ce processus seulement**, traduit
+l'en-tête du terminateur en `$_SERVER['HTTPS']` : l'application n'apprend rien
+et ne sait pas que la campagne existe.
+
+Deux détails qui ne se négocient pas :
+
+- le certificat est émis pour **`localhost`**, jamais pour une adresse IP —
+  une IP n'est pas une *relying party* WebAuthn valide, et les parcours de
+  clés d'accès seraient refusés par le navigateur ;
+- `ignoreHTTPSErrors` est **conditionné** à cette campagne. Une campagne
+  ordinaire qui ignorerait les erreurs de certificat cesserait de pouvoir en
+  signaler une vraie.
+
+La préparation **prouve** ensuite que l'instance se croit en HTTPS — en-tête
+HSTS et cookie de session `Secure` — et refuse de continuer sinon. Sans cette
+preuve, une campagne entière irait redécouvrir un défaut du harnais pour le
+rapporter comme un défaut du produit.
+
+`SECONDSTAY_TIMEOUT_FACTOR` multiplie tous les délais Playwright. Les scénarios
+font le même travail et portent les mêmes assertions : seule la patience
+change, parce que chaque requête traverse désormais une poignée de main TLS.
 
 ## 8. Fake providers
 
@@ -236,28 +401,96 @@ Tests obligatoires :
 
 ## 12. CI GitHub
 
-Jobs suggérés :
+### 12.0 Où vivent les gates
 
-### `php`
+> **La carte de l'ensemble est dans `docs/quality-pipeline.md`** : quelle
+> couche attrape quoi, ce que chacune ne voit pas, la configuration GitHub
+> dont rien ne fonctionne sans elle, et la liste des « verts qui ne prouvaient
+> rien » que ce dépôt a réellement rencontrés. Ce document-ci reste la source
+> de vérité des règles ; celui-là ne fait que les situer les unes par rapport
+> aux autres.
 
-- syntax ;
+
+Les gates ne sont pas écrites dans `ci.yml` : elles vivent dans
+`.github/workflows/checks.yml`, un workflow **réutilisable**
+(`on: workflow_call`) que les pipelines appellent.
+
+`ci.yml` est la boucle de retour **rapide**, jouée à chaque poussée ; la passe
+de release, plus lente, appellera le même fichier. Les deux ne sont pas
+fusionnés — l'intérêt de la première est d'être rapide — mais ils ne doivent
+pas diverger sur ce que « vert » veut dire. Le bloc `setup-php` était déjà
+recopié cinq fois : cinq occasions de répondre différemment à la question
+« de quelles extensions PHP ce projet a-t-il besoin ». Il est désormais écrit
+une fois par travail, avec la même liste partout :
+`mbstring, intl, pdo_mysql, zip, gd, dom, sodium`.
+
+`ci.yml` ne contient donc plus que deux travaux : l'appel à `checks.yml` et
+`sonarcloud`, qui dépend du premier par `needs`.
+
+### 12.1 Mode preuve
+
+`checks.yml` prend une entrée booléenne `evidence`, à `false` par défaut.
+
+- `false` (CI) : les travaux se comportent exactement comme avant l'extraction
+  du fichier. Une exécution de CI produit un verdict, pas un pack de preuves.
+- `true` : chaque travail téléverse en plus, sous un artefact `evidence-*`, ce
+  que son outil émet **nativement** — JUnit de PHPUnit (un par version de PHP)
+  et de Vitest, rapport HTML de Playwright, sortie de PHPStan et de `tsc`,
+  rapport JSON de `composer audit`, inventaire et empreinte du ZIP.
+
+Rien n'y écrit un résumé rédigé à la main : une preuve rédigée n'est pas
+maintenue, et une preuve non maintenue finit par mentir.
+
+Pour PHPStan, la sortie seule ne prouve rien : une exécution propre imprime
+`[OK] No errors`, et une configuration qui n'analyse **aucun** fichier
+l'imprime tout aussi volontiers. Le mode preuve écrit donc à côté le périmètre
+— version de l'outil, version de PHP, niveau, chemins analysés, nombre de
+fichiers effectivement traités — obtenu par une seconde passe `--debug`, que
+seule une passe de preuve peut se permettre.
+
+### 12.2 Les travaux de `checks.yml`
+
+#### `php`
+
+Matrice `['8.2', '8.4']`.
+
+- syntaxe ;
 - composer install ;
 - PHPStan ;
 - PHPUnit ;
 - reports.
 
-### `database`
+**8.2 et non 8.1** : c'est le plancher que `composer.json` déclare
+(`"php": ">=8.2"`). La matrice existe pour que le plancher annoncé reste vrai :
+une montée de dépendance qui remonterait le minimum réel sans que personne ne
+s'en aperçoive est exactement ce qu'elle attrape. Un échec en 8.2 est une
+information, pas un obstacle à contourner — on corrige, ou on remonte le
+plancher déclaré, jamais les deux en silence.
+
+La couverture Clover et le JUnit consommés par SonarCloud ne sont produits que
+par la version de référence (8.4) : l'analyse n'en consomme qu'un jeu, et deux
+artefacts de même nom se refusent mutuellement.
+
+#### `static-analysis`
+
+- `npm run typecheck`.
+
+La moitié PHP de l'analyse statique — PHPStan — n'est pas ici mais dans le
+travail `php`, où elle est jouée sur les **deux** versions supportées ; un
+travail unique n'en verrait qu'une.
+
+#### `database`
 
 - MySQL service ;
 - migrations ;
 - DB tests.
 
-### `javascript`
+#### `javascript`
 
 - npm ci ;
 - Vitest coverage.
 
-### `e2e`
+#### `e2e`
 
 - setup PHP/Node ;
 - DB ;
@@ -269,15 +502,53 @@ Jobs suggérés :
 Séparer les deux projets divise la durée par deux et **améliore** l'isolement :
 chacun installe la sienne, au lieu de partager une installation unique.
 
-### `security`
+Le rapport Playwright et les traces sont téléversés `if: always()`, mode preuve
+ou non : c'est la première chose que l'on regarde quand la campagne passe au
+rouge.
+
+#### `dast`
+
+- `npm run dast` : scan dynamique passif d'une instance jetable, servie en
+  HTTPS, pilotée par la campagne Playwright à travers OWASP ZAP ;
+- `timeout-minutes: 40`, service MySQL, extensions `openssl` et `pcntl` en
+  plus, récupération explicite de l'image ZAP.
+
+**La campagne est la surface d'attaque, pas l'araignée de ZAP.** Un crawler
+pointé sur SecondStay verrait la page d'accueil et s'arrêterait ; la campagne
+traverse l'installation, l'administration derrière sa session, une réservation
+complète, les paiements factices, l'espace client, le mode séjour et les états
+des lieux.
+
+Conséquence assumée : **une campagne en échec fait échouer le scan**, même
+sans le moindre constat de sécurité. Un scan ne vaut que le trafic qu'on lui a
+donné.
+
+Seul `desktop-chromium` est rejoué (plus sa dépendance `install`) : WebKit
+derrière un proxy et un certificat auto-signé apporte de la fragilité sans
+surface supplémentaire — le même serveur répond aux deux. Les délais sont
+multipliés par quatre, parce que chaque requête traverse désormais une poignée
+de main TLS **et** un proxy.
+
+Seuil d'échec : **Medium et au-dessus**. Pas de `security-events: write` : le
+*code scanning* rattache un résultat à un chemin du dépôt, alors qu'un constat
+DAST décrit une instance en cours d'exécution sur un port choisi à l'exécution.
+Le code de sortie est le garde-fou.
+
+#### `security`
 
 - composer audit ;
 - éventuellement checks secrets/config.
 
-### `sonarcloud`
+#### `release-artifact`
 
-Dernier travail du **même** workflow, déclenché par `needs` une fois les
-autres terminés. Il ne rejoue rien : il récupère les couvertures déjà
+- construction et inspection du ZIP de production ;
+- démarrage réel de l'archive : `/api/version` répond, et une installation
+  neuve conduit à l'assistant d'installation dans la langue demandée.
+
+### 12.3 `sonarcloud`
+
+Dernier travail du **même** workflow — `ci.yml` — déclenché par `needs` une
+fois les gates terminées. Il ne rejoue rien : il récupère les couvertures déjà
 produites, lance le scan, puis la Quality Gate bloquante.
 
 L'analyse vivait auparavant dans un workflow séparé qui rejouait la campagne
@@ -329,7 +600,34 @@ mesurer une exigence, et la seule façon d'y répondre serait de casser la règl
 qu'ils servent. L'exclusion porte sur la **portée de la mesure**, jamais sur la
 règle, qui reste appliquée au code PHP, au JavaScript et aux gabarits.
 
-### `codeql`
+### 12.4 Preuves SonarCloud
+
+`php scripts/sonar-evidence.php <répertoire>` récupère l'**analyse complète** :
+la Quality Gate condition par condition, toutes les mesures du projet, les
+mêmes par fichier, tous les constats ouverts et tous les *security hotspots* —
+plus une page de garde en Markdown.
+
+La Quality Gate seule dit « passé » ou « échoué ». Elle ne dit pas ce qui a été
+trouvé, ni quelle part du code a été couverte, et un pack de preuves dont le
+lecteur doit ouvrir un compte SonarCloud pour l'apprendre n'est pas une preuve.
+
+Les hotspots sont récupérés **délibérément** : ils vivent derrière leur propre
+endpoint, et un pack construit sur `issues/search` seul a l'air complet tout en
+omettant en silence la catégorie qu'un relecteur sécurité ouvre en premier.
+
+**Sans `SONAR_TOKEN`, le script écrit un marqueur `INDISPONIBLE` et sort en 0.**
+Un fichier manquant se lit comme un oubli ; un fichier qui dit « pas disponible,
+et voici pourquoi » se lit comme un fait — et une pull request issue d'un fork
+ne peut pas lire les secrets du dépôt.
+
+La clé de projet et l'organisation sont lues dans `sonar-project.properties`,
+jamais codées en dur : deux endroits où écrire la même chose finissent par ne
+plus dire la même.
+
+### 12.5 `codeql`
+
+CodeQL vit dans son propre workflow (`.github/workflows/codeql.yml`) et reste
+propriétaire de l'onglet Sécurité du dépôt.
 
 CodeQL pour JavaScript/TypeScript et GitHub Actions, ou autres langages supportés utilisés par le dépôt.
 
@@ -375,12 +673,26 @@ Une fonctionnalité est terminée si :
 - tests intégration pertinents ;
 - E2E pertinent ;
 - i18n FR/EN/NL/DE ;
-- docs à jour ;
+- docs à jour **dans le même commit** que le comportement décrit ;
 - security impact traité ;
-- PHPStan/Vitest/Playwright verts ;
+- `./scripts/check.sh --full` vert localement ;
+- PHPStan **sans baseline** vert — vert signifie *aucun constat*, pas
+  *aucun constat nouveau* ;
+- `tsc` **sans baseline** vert, aux mêmes conditions ;
+- Vitest et Playwright verts, la campagne Playwright passant aussi en HTTPS
+  lorsque le changement touche le transport ou l’en-tête HSTS ;
+- scan dynamique passif vert : aucune alerte ZAP de niveau Medium ou au-dessus
+  — le seuil réellement appliqué, cf. §12.2 — et la carte du site couvre les
+  chemins attendus ;
 - SonarCloud vert ;
 - CodeQL applicable vert ;
-- pas d’alerte dépendance bloquante.
+- pas d’alerte dépendance bloquante — `composer audit` et `npm audit` propres,
+  et toute dépendance de production ajoutée sous une licence hors MIT, BSD, ISC
+  ou Apache-2.0 est une décision à poser, pas à prendre en silence.
+
+Pour une release, s’y ajoute le pack de preuves : chaque outil dépose sa sortie
+native, l’archive est attestée, et un pack vide fait échouer le workflow plutôt
+que de publier une release sans preuve.
 
 ## 17. Itération indépendante
 
@@ -495,6 +807,18 @@ couverture, plus lente, a fait apparaître la course sur les clés d'accès.
 Les parcours « Mon séjour » et « états des lieux » doivent toujours être
 exécutés sur le projet mobile.
 
+**Un drapeau de lancement appartient à un moteur, jamais à la configuration
+partagée.** `--disable-dev-shm-usage`, `--ignore-certificate-errors-spki-list`
+et `--proxy-bypass-list` sont des options de Chromium ; posées dans le `use`
+partagé, elles atteignent aussi `mobile-safari`, et WebKit refuse de démarrer
+sur une option qu'il ne connaît pas — « Cannot parse arguments: Unknown option
+--disable-dev-shm-usage », et les cinquante-trois scénarios mobiles tombent sur
+le lancement du navigateur. La campagne du scan dynamique ne le montre pas :
+elle ne joue qu'un projet (`scripts/dast.sh`, `--project=desktop-chromium`).
+Ces drapeaux vivent donc dans `chromiumBinary()`, appliqué aux seuls projets
+Chromium. Le proxy, lui, reste partagé : `proxy` est une option de Playwright,
+comprise par les trois moteurs.
+
 ### 18.7 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
@@ -531,6 +855,21 @@ maintenance et sauvegardes sont un état global partagé. Les scénarios E2E
 s'exécutent donc en série (`workers: 1`). Les scénarios doivent rester
 rejouables : ils ne supposent jamais l'absence de données créées par un projet
 précédent.
+
+**Un groupe `test.describe.configure({ mode: 'serial' })` est repris en
+entier** au premier échec, y compris les scénarios déjà verts. « Rejouable »
+prend alors un sens plus fort que « indépendant du projet précédent » : le
+groupe doit pouvoir se rejouer **après lui-même**. Une identité ou des dates
+figées dans le `beforeAll` ne le permettent pas — la reprise réinscrit une
+adresse qui existe déjà, réserve un séjour déjà pris, et le scénario attend un
+bouton que la page ne propose plus, jusqu'au délai maximal du test. La reprise
+ne répare alors rien : elle remplace un échec net par un blocage long, et c'est
+la campagne du scan dynamique qui l'a payé (`docs/quality-pipeline.md`, §
+*Scan dynamique*).
+
+La règle : tout ce qu'un groupe `serial` crée et qui doit être unique dérive de
+`testInfo.retry`. `tests/e2e/stay.spec.js` en est l'exemple — adresse de compte
+et mois du séjour.
 
 ### 19.3 Contextes anonymes
 

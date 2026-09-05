@@ -1,6 +1,35 @@
+# Analyse statique du PHP.
+#
+# POLITIQUE : AUCUNE BASELINE N'EST COMMITÉE.
+#
+# « Vert » signifie **aucun constat**, et non aucun constat nouveau. Ce dépôt
+# ne contient donc pas de `phpstan-baseline.neon`, et l'inclusion ci-dessous
+# est facultative — le `?` fait que PHPStan l'ignore quand le fichier n'existe
+# pas, ce qui est le cas normal.
+#
+# La mécanique reste disponible (`composer run analyse:baseline`, et
+# `npm run typecheck:baseline` pour la moitié JavaScript) parce que
+# l'alternative à une baseline n'est pas « pas de baseline » : c'est quelqu'un
+# qui éteint le garde-fou le jour où une montée de dépendance produit cinquante
+# constats un vendredi soir. La régénérer sert à **accepter sciemment une dette
+# existante**, jamais à faire taire un constat que sa propre modification vient
+# d'introduire — celui-là se corrige.
+#
+# Aucune ligne `includes:` ne pointe donc vers une baseline, et il n'y en a pas
+# de facultative : PHPStan exige que tout fichier inclus existe. Activer une
+# baseline demande d'ajouter soi-même
+#
+#     includes:
+#         - phpstan-baseline.neon
+#
+# au-dessus de ce bloc. Cette friction est voulue : elle rend l'acceptation
+# d'une dette visible en revue, avec la raison écrite dans le message de
+# commit, et la fait repartir dès que la dette est payée.
+
 parameters:
     level: 8
     paths:
+        - bootstrap
         - src
         - public
         - scripts

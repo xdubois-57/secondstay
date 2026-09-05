@@ -10,6 +10,8 @@ use SecondStay\Core\Exception\HttpException;
 use SecondStay\Core\Http\Request;
 use SecondStay\Core\Http\Response;
 use SecondStay\Installer\InstallationState;
+use SecondStay\Installer\InstallTokenGate;
+use SecondStay\Installer\InstallTokenVerdict;
 use SecondStay\Installer\InstallationStatus;
 use SecondStay\Logging\Logger;
 use SecondStay\Maintenance\MaintenanceMode;
@@ -107,6 +109,12 @@ final class Kernel
         $container = $this->boot();
         $config = $container->get(Config::class);
 
+        // La requête est enregistrée **avant** toute résolution de service :
+        // le cookie de session doit être `Secure` quand la requête est arrivée
+        // en HTTPS, et `Session` est résolu bien avant que le `RequestContext`
+        // n'existe. Passer par ce dernier ne donnerait `null` à cet instant.
+        $container->instance(Request::class, $request);
+
         try {
             // Défense en profondeur : même si le serveur web est mal configuré,
             // l'application refuse de servir un chemin privé.
@@ -181,7 +189,7 @@ final class Kernel
 
             return $this->finalise($response, $request, $container, $localePrefixPresent, $locale);
         } catch (Throwable $throwable) {
-            return $this->applySecurityHeaders($this->renderError($throwable, $request), $config);
+            return $this->applySecurityHeaders($this->renderError($throwable, $request), $config, $request);
         }
     }
 
@@ -203,7 +211,7 @@ final class Kernel
             $session->persist();
         }
 
-        return $this->applySecurityHeaders($response, $config);
+        return $this->applySecurityHeaders($response, $config, $request);
     }
 
     private function timezone(Container $container, Config $config, bool $installed): string
@@ -291,7 +299,11 @@ final class Kernel
         $isTechnical = str_starts_with($context->routePath, '/api/');
 
         if ($status === InstallationStatus::NotInstalled) {
-            if ($isInstallRoute || $isTechnical) {
+            if ($isInstallRoute) {
+                return $this->installTokenGate($container, $context);
+            }
+
+            if ($isTechnical) {
                 return null;
             }
 
@@ -316,6 +328,32 @@ final class Kernel
         }
 
         return null;
+    }
+
+    /**
+     * Portail par jeton devant l'assistant d'installation.
+     *
+     * Sur une instance neuve, l'assistant crée le premier administrateur : il
+     * ne peut donc pas être protégé par une session authentifiée, et sur un
+     * hébergement public la fenêtre entre la mise en ligne et la première
+     * connexion appartient à qui arrive le premier. `bootstrap/bootstrap.php`
+     * écrit `token.php` pour la refermer ; sans ce fichier — installation
+     * manuelle, développement, campagne de tests — l'assistant reste ouvert,
+     * comme il l'a toujours été.
+     */
+    private function installTokenGate(Container $container, RequestContext $context): ?Response
+    {
+        $gate = $container->get(InstallTokenGate::class);
+
+        return match ($gate->authorise($context->request)) {
+            InstallTokenVerdict::Allowed => null,
+            // Le jeton ne reste pas dans l'URL : il finirait dans
+            // l'historique du navigateur et dans les journaux d'accès.
+            InstallTokenVerdict::Accepted => Response::redirect($gate->cleanUrl($context->request)),
+            InstallTokenVerdict::Denied => throw new ForbiddenException(
+                'Assistant d’installation protégé par un jeton : jeton absent ou invalide.'
+            ),
+        };
     }
 
     private function unavailableResponse(Container $container): Response
@@ -434,12 +472,29 @@ final class Kernel
         ]);
     }
 
-    private function applySecurityHeaders(Response $response, Config $config): Response
+    private function applySecurityHeaders(Response $response, Config $config, Request $request): Response
     {
         $response->withHeader('X-Content-Type-Options', 'nosniff');
         $response->withHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->withHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+        // HSTS, et **seulement en HTTPS**. L'émettre en clair ne protégerait
+        // rien — un attaquant capable de modifier la réponse peut aussi
+        // retirer l'en-tête — et l'émettre depuis une installation qui n'a pas
+        // de TLS rendrait le site injoignable pour la durée annoncée. Une
+        // installation servie en clair ne voit donc rien changer.
+        //
+        // La durée est configurable et vaut six mois par défaut : assez pour
+        // que la protection ait un sens, assez court pour qu'un hébergement
+        // qui perdrait son certificat ne condamne pas le site pour un an.
+        // Ni `includeSubDomains` ni `preload` : sur un hébergement mutualisé,
+        // les sous-domaines appartiennent souvent à autre chose, et `preload`
+        // est une décision qu'on ne défait pas en un jour.
+        $maxAge = $config->int('security.hsts_max_age', 15552000);
+        if ($maxAge > 0 && $request->isSecure()) {
+            $response->withHeader('Strict-Transport-Security', 'max-age=' . $maxAge);
+        }
 
         if (!$config->bool('app.debug')) {
             $response->withHeader(

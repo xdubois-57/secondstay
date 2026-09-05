@@ -1,0 +1,402 @@
+# La passe lente et complète : toutes les gates, puis une Release **au
+# brouillon** portant la preuve que ces gates ont tourné.
+#
+# POURQUOI ELLE EST SÉPARÉE DE `ci.yml`
+# ---------------------------------------------------------------------------
+# `ci.yml` est la boucle rapide sur chaque poussée ; celle-ci prend le temps
+# qu'il faut. Les deux ne sont pas fusionnées — l'intérêt de la première est
+# d'être rapide — mais elles jouent **le même** `checks.yml` : deux définitions
+# de « vert » finiraient par ne plus dire la même chose.
+#
+# La différence tient en une entrée : `evidence: true`, qui fait téléverser à
+# chaque travail la sortie **native** de son outil.
+#
+# CE QUE LE PACK CONTIENT, ET CE QU'IL NE CONTIENT PAS
+# ---------------------------------------------------------------------------
+# **Rien n'y est écrit à la main.** Uniquement ce que chaque outil émet
+# nativement. Un résumé rédigé une fois est un résumé que personne ne met à
+# jour, et une preuve devenue fausse est pire qu'aucune preuve.
+#
+# La seule pièce que le lecteur n'a pas à croire sur parole est l'attestation
+# de provenance : tout le reste est produit par ce dépôt et pourrait l'être
+# autrement par quiconque peut modifier ce fichier.
+#
+# `workflow_dispatch` autant que le tag : la répétition à blanc compte autant
+# que la vraie, et c'est le seul moyen d'éprouver cette chaîne sans publier.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  # Toutes les gates, en mode preuve. Si l'une échoue, aucun travail suivant ne
+  # tourne et **aucune Release n'est créée** : le tag existe et ne pointe sur
+  # rien de publié ; on le supprime et on le repousse.
+  checks:
+    name: Gates
+    uses: ./.github/workflows/checks.yml
+    with:
+      evidence: true
+
+  codeql-evidence:
+    # CodeQL rejoué pour **capturer le SARIF comme fichier**, jamais pour le
+    # téléverser : `codeql.yml` reste propriétaire de l'onglet Sécurité, et deux
+    # téléversements pour le même commit se marchent dessus.
+    #
+    # CodeQL ne couvre pas PHP. Le pack contient donc l'analyse du JavaScript et
+    # des workflows, et les notes de release doivent le dire plutôt que de
+    # laisser croire l'inverse : côté PHP, ce sont PHPStan, SonarCloud et les
+    # tests qui tiennent ce rôle.
+    name: Preuve CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialisation CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Analyse, sans téléversement
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
+          upload: never
+          output: codeql-results
+
+      - name: Rassemblement du SARIF
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          cp codeql-results/*.sarif evidence/ 2>/dev/null || {
+            echo "::error::CodeQL n'a produit aucun SARIF."; exit 1; }
+          {
+            echo "CodeQL, langages analysés : javascript-typescript"
+            echo "PHP n'est pas couvert par CodeQL : PHPStan, SonarCloud et les tests tiennent ce rôle."
+          } > evidence/codeql-portee.txt
+          ls -l evidence/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-codeql
+          path: evidence/
+          retention-days: 7
+
+  sonar-evidence:
+    name: Preuve SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      # Sans le secret, le script écrit un marqueur INDISPONIBLE et sort en 0 :
+      # une pull request issue d'un fork ne peut pas lire les secrets, et un
+      # fichier qui dit « pas disponible, et pourquoi » vaut mieux qu'un fichier
+      # manquant qu'on lirait comme un oubli.
+      - name: Récupération de l'analyse complète
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: php scripts/sonar-evidence.php evidence
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-sonarcloud
+          path: evidence/
+          retention-days: 7
+
+  coverage-evidence:
+    # **Tout** le calcul de couverture est rejoué, pas une moitié moins chère.
+    #
+    # SecondStay agrège quatre rapports Clover — unitaire, base de données, E2E
+    # desktop, E2E mobile — plus le lcov JavaScript. N'attacher que la moitié
+    # unitaire mettrait dans le pack un chiffre en désaccord avec celui du
+    # rapport SonarCloud **du même pack**, ce qui est pire pour un lecteur
+    # qu'aucun chiffre du tout.
+    name: Preuve de couverture
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: pcov
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Couverture unitaire
+        run: composer run test:coverage
+
+      - name: Couverture base de données
+        run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml
+
+      - name: Couverture E2E — desktop
+        env:
+          SECONDSTAY_E2E_PROJECT: desktop-chromium
+          SECONDSTAY_COVERAGE_DIR: ${{ github.workspace }}/build/coverage/e2e-desktop
+        run: |
+          ./scripts/check.sh --e2e
+          php scripts/coverage-merge.php build/coverage/e2e-desktop build/coverage/clover-e2e-desktop.xml
+
+      - name: Couverture E2E — mobile
+        env:
+          SECONDSTAY_E2E_PROJECT: mobile-safari
+          SECONDSTAY_COVERAGE_DIR: ${{ github.workspace }}/build/coverage/e2e-mobile
+        run: |
+          ./scripts/check.sh --e2e
+          php scripts/coverage-merge.php build/coverage/e2e-mobile build/coverage/clover-e2e-mobile.xml
+
+      - name: Couverture JavaScript
+        run: npm run test:coverage
+
+      # Deux chiffres différents dans un même pack sans explication font douter
+      # des deux. La note dit pourquoi ils diffèrent — dénominateurs différents,
+      # aucun ne prime — et ce qu'il faut comparer entre versions.
+      - name: Rassemblement et note
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/coverage
+          cp build/coverage/clover-*.xml evidence/coverage/
+          cp coverage/lcov.info evidence/coverage/ 2>/dev/null || true
+          cat > evidence/coverage/LISEZ-MOI.md <<'NOTE'
+          # Couverture
+
+          Quatre rapports Clover et un lcov, tels que les outils les écrivent :
+
+          | Fichier | Produit par | Ce qu'il couvre |
+          |---|---|---|
+          | `clover-unit.xml` | PHPUnit, suite unitaire | logique pure, formats, règles |
+          | `clover-database.xml` | PHPUnit, suite base de données | dépôts et services, sur une vraie base |
+          | `clover-e2e-desktop.xml` | Playwright, desktop-chromium | contrôleurs, traversés par le navigateur |
+          | `clover-e2e-mobile.xml` | Playwright, mobile-safari | les mêmes, depuis un téléphone |
+          | `lcov.info` | Vitest | modules JavaScript navigateur |
+
+          ## Pourquoi ce chiffre diffère de celui de SonarCloud, dans le même pack
+
+          Les deux sont justes ; ils ne mesurent pas la même chose.
+
+          SonarCloud applique **son** périmètre — les exclusions de
+          `sonar-project.properties`, sa notion de ligne exécutable — au même jeu
+          de rapports. Les dénominateurs diffèrent, et donc les pourcentages.
+
+          **Aucun des deux ne prime.** Pour suivre une évolution, comparer Clover
+          à Clover et Sonar à Sonar entre deux versions ; comparer l'un à l'autre
+          ne mesure que la différence entre deux définitions.
+          NOTE
+          ls -l evidence/coverage/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-coverage
+          path: evidence/
+          retention-days: 7
+
+  release:
+    name: Pack de preuves et Release au brouillon
+    runs-on: ubuntu-latest
+    needs: [checks, codeql-evidence, sonar-evidence, coverage-evidence]
+    permissions:
+      contents: write
+      # L'attestation de provenance : la seule pièce du pack que le lecteur
+      # n'a pas à croire sur parole.
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collecte des preuves
+        uses: actions/download-artifact@v4
+        with:
+          pattern: evidence-*
+          path: evidence
+
+      # Toutes les valeurs viennent du contexte de l'exécuteur, aucune n'est
+      # saisie. L'URL d'exécution est le cœur du fichier : elle mène à un
+      # journal horodaté, conservé par GitHub, que personne ayant les droits
+      # d'écriture ici ne peut modifier — contrairement à l'archive.
+      # Les valeurs passent par l'environnement et sont encodées par `jq`, pas
+      # interpolées dans du texte shell. `github.ref` porte le nom du tag :
+      # un tag contenant un guillemet produirait un JSON invalide, et un tag
+      # contenant `$(…)` s'exécuterait dans un travail qui détient plus loin
+      # `contents: write` et `attestations: write`. Poser un tel tag demande
+      # déjà le droit d'écrire ici — donc aucun gain de privilège — mais une
+      # valeur encodée reste une valeur encodée.
+      - name: Manifeste
+        env:
+          DEPOT: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          COMMIT: ${{ github.sha }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          SERVER_URL: ${{ github.server_url }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg depot "$DEPOT" \
+            --arg ref "$REF" \
+            --arg commit "$COMMIT" \
+            --arg workflow "$WORKFLOW" \
+            --arg run_id "$RUN_ID" \
+            --arg run_attempt "$RUN_ATTEMPT" \
+            --arg url_execution "$SERVER_URL/$DEPOT/actions/runs/$RUN_ID" \
+            --arg declenche_par "$EVENT_NAME" \
+            --arg horodatage "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{depot: $depot, ref: $ref, commit: $commit, workflow: $workflow,
+              run_id: $run_id, run_attempt: $run_attempt,
+              url_execution: $url_execution, declenche_par: $declenche_par,
+              horodatage: $horodatage}' \
+            > evidence/manifest.json
+          cat evidence/manifest.json
+
+      # Refuser un pack vide. Si un renommage en amont fait que le motif de
+      # téléchargement ne correspond plus à rien, un zip vide ressemblerait
+      # exactement à une preuve.
+      - name: Le pack n'est pas vide
+        run: |
+          set -euo pipefail
+          count="$(find evidence -type f | wc -l)"
+          echo "fichiers de preuve : ${count}"
+          if [ "${count}" -lt 5 ]; then
+            echo "::error::le pack de preuves ne contient que ${count} fichier(s) — refus de l'attacher."
+            find evidence -type f
+            exit 1
+          fi
+
+      # Le rapport DAST complet est nommément vérifié : c'est celui dont
+      # l'absence passerait le plus facilement inaperçue, et celui que
+      # SECURITY.md promet au lecteur.
+      - name: Le rapport du scan dynamique est présent
+        run: |
+          set -euo pipefail
+          if ! find evidence -name 'dast-passive.html' | grep -q .; then
+            echo "::error::le rapport complet du scan dynamique est absent du pack."
+            find evidence -type d
+            exit 1
+          fi
+
+      # Les empreintes sont calculées AVANT de zipper : elles portent sur les
+      # fichiers, pas sur une archive qui les contient.
+      - name: Empreintes puis archive
+        run: |
+          set -euo pipefail
+          (cd evidence && find . -type f -not -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd evidence && zip -qr ../evidence.zip .)
+          ls -l evidence.zip
+          head -20 evidence/SHA256SUMS
+
+      - name: Attestation de provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: evidence.zip
+
+      # En **brouillon** : la preuve se lit avant d'être publique. C'est toute
+      # la raison pour laquelle les gates tournent avant cette étape et non
+      # après. `scripts/release.sh` attache ensuite le ZIP installable au même
+      # brouillon et le publie — un seul chemin de publication.
+      - name: Release au brouillon
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF#refs/tags/}"
+          if [ "${tag}" = "${GITHUB_REF}" ]; then
+            echo "Pas de tag (répétition à blanc) : le pack est en artefact, aucune Release n'est créée."
+            exit 0
+          fi
+
+          notes="$(mktemp)"
+          {
+            echo "## Pack de preuves"
+            echo
+            echo "\`evidence.zip\` porte la sortie native de chaque gate de cette exécution :"
+            echo "JUnit PHPUnit des deux versions de PHP, JUnit Vitest, rapport Playwright,"
+            echo "PHPStan et \`tsc\` avec leur périmètre, SARIF CodeQL, analyse SonarCloud"
+            echo "complète, les quatre couvertures Clover et le lcov, et le rapport du scan"
+            echo "dynamique."
+            echo
+            echo "Vérifier la provenance :"
+            echo
+            echo '```bash'
+            echo "gh attestation verify evidence.zip --repo ${{ github.repository }}"
+            echo '```'
+            echo
+            echo "Exécution : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > "${notes}"
+
+          gh release create "${tag}" \
+            --draft \
+            --title "${tag}" \
+            --notes-file "${notes}" \
+            evidence.zip
+
+      - name: Pack en artefact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence
+          path: evidence.zip
+          retention-days: 30

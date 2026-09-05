@@ -38,7 +38,8 @@ Voir `I18N.md`.
 
 ## Stack cible
 
-- PHP 8.4+ recommandé
+- PHP 8.2 minimum (`composer.json`), 8.4 recommandé — la CI joue les tests sur
+  les deux
 - MySQL 8 / MariaDB compatible
 - PDO
 - Twig
@@ -47,6 +48,7 @@ Voir `I18N.md`.
 - PHPUnit
 - PHPStan
 - Vitest
+- TypeScript, comme vérificateur du JavaScript (jamais comme étape de build)
 - Playwright
 - GitHub Actions
 - CodeQL pour les langages supportés
@@ -235,9 +237,32 @@ stockage et purge des données échues.
 
 ## Installation
 
-Une installation SecondStay se fait en copiant l'archive de release à la racine
-web (FTP possible), puis en ouvrant le site : l'assistant d'installation prend
-la main.
+### Le plus simple : un seul fichier
+
+Chaque Release publie `bootstrap.php` à côté de l'archive. Déposez-le par FTP à
+la racine d'un hébergement vide, ouvrez `https://votre-site/bootstrap.php`, et
+cliquez sur **Installer**.
+
+Il télécharge la dernière version publiée, l'installe, puis — avant d'aller plus
+loin — **vérifie depuis votre navigateur** que `src/`, `config/`, `vendor/`,
+`storage/` et les fichiers cachés ne sont pas lisibles depuis le web, qu'aucun
+répertoire ne se liste, et que le serveur exécute bien PHP au lieu d'en servir
+le source. Si l'un de ces contrôles échoue, l'installation est **annulée** et
+les fichiers copiés retirés : mieux vaut un hébergement vide qu'un hébergement
+qui publie son code.
+
+Une fois les contrôles passés, il écrit un jeton dans `token.php`, se supprime,
+et vous emmène à l'assistant. Le jeton referme la fenêtre pendant laquelle
+n'importe qui pourrait installer le site à votre place (SECURITY.md §41) ; il
+est supprimé dès que votre compte administrateur existe. Le rapport complet des
+contrôles reste dans `storage/logs/install-report.json`.
+
+### À la main
+
+Copier l'archive de release à la racine web (FTP possible), puis ouvrir le
+site : l'assistant d'installation prend la main. Installé ainsi, l'assistant
+n'est pas protégé par un jeton — il n'y en a pas eu de généré — donc faites-le
+depuis une adresse que vous êtes seul à connaître, ou installez tout de suite.
 
 ```text
 /            → redirige vers /fr/install tant que l'installation n'est pas faite
@@ -803,21 +828,74 @@ Commande locale de référence :
 Elle couvre :
 
 - syntaxe PHP ;
-- PHPStan (niveau 8, aucune erreur tolérée) ;
+- PHPStan (niveau 8, aucune erreur tolérée, aucune baseline) ;
 - PHPUnit + couverture Clover ;
 - contrôle i18n FR/EN/NL/DE ;
 - tests d’intégration base de données ;
 - Vitest + couverture LCOV ;
+- `tsc`, vérificateur du JavaScript navigateur (`npm run typecheck`) — rien
+  n'est compilé, la production sert le JavaScript tel qu'il est écrit ;
 - Playwright (desktop + mobile) ;
 - audit Composer ;
 - absence de secrets versionnés ;
 - conformité de l’artefact de release.
+
+Chaque contrôle est aussi appelable seul, ce qui est commode quand on cherche
+une régression précise :
+
+```bash
+composer run analyse           # PHPStan niveau 8
+composer run test              # PHPUnit, suite unitaire
+composer run test:coverage     # PHPUnit avec Clover et JUnit, comme en CI
+composer run coverage:merge    # fusionne les couvertures d'une campagne E2E instrumentée
+npm run typecheck              # tsc, vérificateur du JavaScript
+npm run dast                   # scan dynamique passif (OWASP ZAP, Docker requis)
+```
+
+`./scripts/check.sh` reste la commande documentée : ces alias exécutent
+exactement ce qu'elle exécute, ils ne la remplacent pas.
 
 GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations sont
 utilisables depuis Claude Code sur macOS et déclenchables dans GitHub Actions
 depuis mobile.
 
 Voir `TESTING.md`.
+
+### Aucune baseline
+
+Ni PHPStan ni `tsc` ne portent de baseline dans ce dépôt. **« Vert » veut dire
+aucun constat**, et non aucun constat nouveau.
+
+La mécanique existe pourtant — `composer run analyse:baseline`,
+`npm run typecheck:baseline` — parce que l'alternative à une baseline n'est pas
+« pas de baseline » : c'est quelqu'un qui éteint le garde-fou le jour où une
+montée de dépendance produit cinquante constats un vendredi soir. Elle sert à
+**accepter sciemment une dette existante**, jamais à faire taire un constat que
+sa propre modification vient d'introduire — celui-là se corrige.
+
+Activer une baseline PHPStan demande d'ajouter soi-même l'`includes:` dans
+`phpstan.neon.dist`. Cette friction est voulue : l'acceptation d'une dette doit
+se voir en revue.
+
+Côté `tsc`, une baseline retient chaque occurrence par le texte de sa ligne et
+non par son rang : une ligne déplacée reste acceptée, une ligne réécrite
+ressort. Compter les occurrences aurait suffi à ce qu'une correction ici et une
+régression là, dans le même fichier, s'annulent sans que rien ne le dise.
+
+## Constats non corrigés
+
+Les constats SonarCloud délibérément marqués *won't fix*, avec l'argument de
+chacun.
+
+| Constat | Où | Pourquoi il n'est pas corrigé |
+|---|---|---|
+| _(aucun à ce jour)_ | | |
+
+Cette section existe vide, et c'est volontaire. Un constat qu'on décide de ne
+pas corriger est une décision, et une décision se signe : marquée *won't fix*
+dans SonarCloud d'un côté, expliquée ici de l'autre. Sans cet endroit, la
+décision se prend quand même — en silence, dans l'outil — et personne qui lit
+le dépôt ne peut la retrouver.
 
 ## Releases
 
@@ -849,6 +927,8 @@ Voir `RELEASE.md` et `ROADMAP.md`.
 - `I18N.md` — stratégie multilingue
 - `TESTING.md` — stratégie de tests
 - `RELEASE.md` — CI et release
+- `docs/quality-pipeline.md` — la carte de la chaîne d'assurance : quelle
+  couche attrape quoi, et ce que chacune ne voit pas
 - `ROADMAP.md` — découpage en itérations
 
 ## Licence

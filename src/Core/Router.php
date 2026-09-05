@@ -8,17 +8,38 @@ use SecondStay\Core\Exception\NotFoundException;
 
 final class Router
 {
-    /** @var list<array{method: string, pattern: string, regex: string, handler: array{0: class-string, 1: string}, name: string, localised: bool}> */
+    /** @var list<array{method: string, pattern: string, regex: string, handler: array{0: class-string, 1: string}, name: string, localised: bool, access: Access}> */
     private array $routes = [];
 
     /** @var array<string, array{pattern: string, localised: bool}> */
     private array $named = [];
 
     /**
+     * Niveau d'accès appliqué aux routes déclarées sans le préciser.
+     *
+     * Il vaut `Public`, et c'est délibéré : une route ajoutée sans y penser est
+     * déclarée publique, donc confrontée par la matrice d'autorisation au
+     * comportement le plus permissif possible. Si elle refuse un visiteur, la
+     * gate refuse — un oubli devient bruyant au lieu de passer inaperçu.
+     *
+     * Le choix inverse — un défaut restrictif — rendrait l'oubli silencieux :
+     * la route serait déclarée fermée, elle le serait effectivement, et la
+     * matrice n'aurait rien à signaler tant que personne n'aurait relu la
+     * table.
+     */
+    private const DEFAULT_ACCESS = Access::Public;
+
+    /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function add(string $method, string $pattern, array $handler, string $name, bool $localised = true): self
-    {
+    public function add(
+        string $method,
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
         $normalised = '/' . trim($pattern, '/');
         if ($normalised === '/') {
             $normalised = '/';
@@ -31,6 +52,7 @@ final class Router
             'handler' => $handler,
             'name' => $name,
             'localised' => $localised,
+            'access' => $access ?? self::DEFAULT_ACCESS,
         ];
         $this->named[$name] = ['pattern' => $normalised, 'localised' => $localised];
 
@@ -40,17 +62,27 @@ final class Router
     /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function get(string $pattern, array $handler, string $name, bool $localised = true): self
-    {
-        return $this->add('GET', $pattern, $handler, $name, $localised);
+    public function get(
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
+        return $this->add('GET', $pattern, $handler, $name, $localised, $access);
     }
 
     /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function post(string $pattern, array $handler, string $name, bool $localised = true): self
-    {
-        return $this->add('POST', $pattern, $handler, $name, $localised);
+    public function post(
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
+        return $this->add('POST', $pattern, $handler, $name, $localised, $access);
     }
 
     /**
@@ -138,7 +170,7 @@ final class Router
     }
 
     /**
-     * @return list<array{method: string, pattern: string, name: string, localised: bool}>
+     * @return list<array{method: string, pattern: string, name: string, localised: bool, access: Access, handler: array{0: class-string, 1: string}}>
      */
     public function routes(): array
     {
@@ -148,6 +180,8 @@ final class Router
                 'pattern' => $r['pattern'],
                 'name' => $r['name'],
                 'localised' => $r['localised'],
+                'access' => $r['access'],
+                'handler' => $r['handler'],
             ],
             $this->routes
         );

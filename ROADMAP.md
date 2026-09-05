@@ -1032,3 +1032,109 @@ rouge, parce qu'on prend l'habitude de la relancer. Le bouchon publie
 désormais par `rename()`, en une seule opération visible, et l'attente du test
 porte sur un contenu non vide plutôt que sur l'existence du fichier — une
 attente qui accepte zéro octet ne prouve rien.
+
+## Consolidation de la chaîne d'assurance
+
+### Livré
+
+Dix itérations d'alignement de la chaîne CI / tests / release, transposées
+depuis `iso20022-address-game` — la mécanique, pas les fichiers : les deux
+projets ne se ressemblent pas (MySQL contre SQLite, deux navigateurs contre un,
+PHP 8.2 contre 8.1, assistant d'installation joué en E2E).
+
+| # | Ce qui a changé |
+|---|---|
+| 1 | Les gates sortent de `ci.yml` dans `checks.yml`, réutilisable ; matrice PHP 8.2 / 8.4 ; mode preuve |
+| 2 | `tsc` comme vérificateur du JavaScript — jamais comme étape de build |
+| 3 | Alias Composer appelables un par un ; politique « zéro baseline » écrite |
+| 4 | La campagne E2E jouable en HTTPS, avec preuve du câblage |
+| 5 | Scan dynamique passif OWASP ZAP, la campagne servant de surface d'attaque |
+| 6 | `sonar-evidence.php` : l'analyse complète, pas le seul verdict |
+| 7 | `dependency-inventory.php` : l'inventaire généré, jamais rédigé |
+| 8 | `release.yml` : pack de preuves et attestation de provenance |
+| 9 | `release.sh` aligné — un seul chemin de publication |
+| 10 | Documentation et manifeste rendus vrais |
+
+### Ce que la campagne a trouvé en chemin
+
+Une consolidation d'outillage n'était pas censée toucher au produit. Elle a
+pourtant fait tomber cinq défauts réels du produit, tous invisibles depuis
+l'unique configuration que la CI jouait jusque-là :
+
+- **`CURLOPT_PROTOCOLS_STR` nommée en dur.** La constante n'existe que si PHP
+  est lié à libcurl ≥ 7.85 : sur un hébergement mutualisé plus ancien, *toute*
+  requête sortante échouait sur « Undefined constant » — import de calendrier,
+  webhooks, contenu local. Trouvé par la jambe PHP 8.2 que l'itération 1 venait
+  d'ajouter, c'est-à-dire exactement ce pour quoi elle existe ;
+- **trois extensions PHP exigées sans être déclarées** : `intl`, `sodium` et
+  `curl`. Sans l'une des trois, l'installation « fonctionnait » jusqu'à la
+  première page affichant un prix ;
+- **aucun en-tête HSTS.** La feuille de route le décrivait comme existant ; il
+  n'était nulle part. Il est désormais émis, et uniquement en HTTPS ;
+- **le cookie de session n'était jamais `Secure`.** `Services` construisait
+  `PhpSession` avec `secure: false` **en dur** : sur une installation
+  entièrement servie en TLS, le cookie de session voyageait sans le drapeau
+  qui interdit de le renvoyer en clair. Le drapeau existait depuis toujours,
+  et valait toujours faux ;
+- **un scénario de test qui devient rouge tout seul.** `closing.spec.js`
+  choisissait parfois un février commun, où le 29 qu'il vérifie n'existe pas :
+  latent jusqu'au 2027-09-08, puis rouge 183 jours sur les 1200 suivants, sans
+  qu'une ligne du produit ait bougé.
+
+Le cinquième mérite un mot de plus, parce que la façon dont il a survécu est
+plus instructive que le défaut lui-même. L'itération 4 avait écrit une preuve
+« le câblage HTTPS est vivant » justement pour ne pas scanner à l'aveugle — et
+cette preuve acceptait *n'importe quel* `Set-Cookie` contenant « secure ». La
+préférence de langue en pose un. Le garde-fou regardait donc à côté de ce qu'il
+surveillait, et rendait le silence rassurant. Il vérifie désormais le cookie
+**nommé**, et distingue « jamais posé » de « posé sans le drapeau » : deux
+pannes différentes, qui envoient chercher à deux endroits différents.
+
+Tous cinq ont été trouvés en revue ou par la matrice, aucun par un utilisateur.
+C'est le seul résultat qui compte ici.
+
+### Ce qui reste hors périmètre
+
+Le déploiement. `iso20022-address-game` déploie par miroir `lftp` ; SecondStay
+est architecturé à l'inverse, autour d'un ZIP de Release et d'un updater qui
+sauvegarde, migre et sait revenir en arrière. **Décision prise : ne pas porter
+`deploy.sh`.**
+
+## Mise en ligne : l'installeur autonome
+
+`scoutmagic` résout un problème que SecondStay avait aussi et n'avait pas
+traité : mettre le produit en ligne quand on possède un gîte et un compte FTP,
+pas une console. Son mécanisme de *bootstrap* a été analysé puis transposé —
+transposé, pas copié : les deux projets ne s'installent pas de la même façon.
+
+| | scoutmagic | SecondStay |
+|---|---|---|
+| Dispositions supportées | deux (`public/` fusionné dans la racine, ou arbre unique) | **une** — l'artefact livre déjà un `.htaccess` racine écrit pour l'arbre unique |
+| `.htaccess` | interdit dans l'artefact, **généré** par l'installeur | **livré** par l'artefact ; l'installeur n'en écrit aucun |
+| Jeton de l'assistant | l'assistant était déjà protégé | **absent** — il a fallu l'ajouter, sinon écrire `token.php` n'aurait rien protégé |
+
+La troisième ligne est le vrai résultat de ce travail, et c'est un sixième
+défaut réel du produit, du même ordre que les cinq de la section précédente :
+**l'assistant d'installation de SecondStay était ouvert à qui arrivait le
+premier.** Entre le moment où les fichiers arrivent par FTP et celui où le
+propriétaire ouvre son navigateur, quiconque charge `/install` choisit la base
+de données, le mot de passe administrateur, et devient l'exploitant du site.
+Ce n'était pas un manque de vigilance : il n'y a personne à authentifier sur
+une instance qui n'a pas encore d'administrateur, donc aucune protection
+*applicative* n'était possible. Il fallait une preuve d'accès au disque —
+c'est-à-dire un fichier — et donc quelque chose pour l'écrire.
+
+L'installeur ne se contente pas d'installer : il **prouve**, depuis le
+navigateur de la personne qui installe, que `src/`, `config/`, `vendor/`,
+`storage/` et les fichiers cachés ne sont pas lisibles depuis le web, et qu'un
+dossier créé après l'installation ne l'est pas davantage. Un seul contrôle en
+échec annule l'installation entière. Ce que PHP peut vérifier tout seul — qu'un
+fichier existe, qu'un dossier est accessible en écriture — ne dit rien de ce
+qu'Apache sert réellement à un client ; c'est la seule question qui compte ici,
+et la seule à laquelle le serveur ne sait pas répondre lui-même.
+
+### Ce qui reste hors périmètre, toujours
+
+Le déploiement, pour les raisons de la section précédente. L'installeur est son
+inverse exact : il ne pousse rien depuis une machine de développement, il tire
+une release publiée depuis l'hébergement lui-même, et il ne tourne qu'une fois.

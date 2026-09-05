@@ -191,6 +191,23 @@ Installation : host, port, DB, username, password, charset, test connexion.
 
 Secrets non réaffichés.
 
+### 13.1 Mise en ligne
+
+Le public visé possède un gîte, pas une console SSH. La mise en ligne doit tenir
+en **un fichier déposé par FTP** et une page ouverte dans un navigateur :
+`bootstrap.php`, publié avec chaque release, télécharge la version, l'installe
+et protège l'assistant par un jeton.
+
+Il ne se déclare pas terminé : il **prouve** — depuis le navigateur de la
+personne qui installe — que le code source, la configuration et les documents ne
+sont pas lisibles depuis le web. Un contrôle en échec annule l'installation
+entière plutôt que de la laisser en place. Le détail est dans ARCHITECTURE.md
+§28.3 ; l'exigence produit est celle-ci : **une installation qui exposerait les
+pièces d'identité des voyageurs ne doit pas pouvoir se terminer en silence.**
+
+L'installation manuelle (copier l'archive, ouvrir le site) reste possible et
+reste le chemin des environnements de développement.
+
 ## 14. Settings typés
 
 Types : string, text, bool, integer, decimal, money, enum, date, time, duration, email, URL, secret, JSON structuré.
@@ -525,9 +542,17 @@ Flux : download → validate → backup → maintenance → install → migratio
 
 Local Mac et GitHub partagent les mêmes commandes.
 
-`./scripts/check.sh` couvre PHP syntax, PHPStan, PHPUnit, DB, Vitest, Playwright, Composer audit.
+`./scripts/check.sh` couvre PHP syntax, PHPStan, PHPUnit, i18n, DB, Vitest,
+`tsc`, Playwright, Composer audit, absence de secret versionné et artefact de
+release.
 
-GitHub ajoute CodeQL, Dependabot, SonarCloud.
+`npm run dast` joue le scan dynamique passif — instance servie en HTTPS,
+campagne Playwright rejouée à travers OWASP ZAP. Il est hors de `check.sh` :
+il demande Docker et une image de 1,2 Go, ce qu'une commande de validation
+courante ne doit pas exiger.
+
+GitHub ajoute CodeQL, Dependabot, SonarCloud, et joue le scan dynamique à
+chaque exécution.
 
 ## 71. Fake providers
 

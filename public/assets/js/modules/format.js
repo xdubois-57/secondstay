@@ -19,6 +19,11 @@ export function formatMoney(cents, locale, currency = 'EUR') {
     }).format(cents / 100);
 }
 
+/**
+ * @param {string|Date} isoDate
+ * @param {string} locale
+ * @param {Intl.DateTimeFormatOptions} [options]
+ */
 export function formatDate(isoDate, locale, options = { dateStyle: 'medium' }) {
     const date = isoDate instanceof Date ? isoDate : new Date(isoDate + 'T00:00:00');
     if (Number.isNaN(date.getTime())) {

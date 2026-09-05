@@ -180,6 +180,7 @@ return [
             'create' => 'Die Sicherung ist fehlgeschlagen.',
             'restore' => 'Die Wiederherstellung ist fehlgeschlagen.',
             'delete' => 'Das Löschen ist fehlgeschlagen.',
+            'download' => 'Diese Sicherung wurde nicht gefunden: Sie wurde möglicherweise gelöscht oder durch die Aufbewahrung ersetzt.',
         ],
     ],
     'updates' => [

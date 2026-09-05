@@ -15,10 +15,17 @@ DirectoryIndex index.php
     RewriteEngine On
 
     # --- Repertoires prives ---
-    RewriteRule ^(?:public/)?(src|config|vendor|storage|tests|migrations|scripts|translations|templates|node_modules|coverage|build|dist|test-results|playwright-report|\.github|\.git|\.phpunit\.cache)(/|$) - [F,L,NC]
+    RewriteRule ^(?:public/)?(src|config|vendor|storage|tests|migrations|scripts|bootstrap|translations|templates|node_modules|coverage|build|dist|test-results|playwright-report|\.github|\.git|\.phpunit\.cache)(/|$) - [F,L,NC]
 
     # --- Fichiers caches (dotfiles), sauf .well-known ---
     RewriteRule (^|/)\.(?!well-known/)[^/]+ - [F,L]
+
+    # --- Jeton de l'assistant d'installation ---
+    # Ecrit par bootstrap.php a la racine, lu comme du texte par
+    # l'application, jamais servi ni execute. La regle de rattrapage plus bas
+    # l'enverrait de toute facon au controleur frontal ; celle-ci le refuse
+    # explicitement, avant tout le reste.
+    RewriteRule ^(?:public/)?token\.php$ - [F,L,NC]
 
     # --- Fichiers de developpement / documentation / metadonnees ---
     RewriteRule ^(?:public/)?(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|phpstan\.neon(\.dist)?|playwright\.config\.(js|ts)|vitest\.config\.(js|ts)|sonar-project\.properties|VERSION|LICENSE|MANIFEST\.md|.*\.md)$ - [F,L,NC]

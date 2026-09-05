@@ -1096,3 +1096,309 @@ Le contrôle d'accès reste celui de l'endpoint média, qui n'a pas changé.
 propriétaire et rendu échappé, comme dans « Mon séjour ». Les pages portent
 `noindex` et `robots.txt` refuse `/{langue}/info/` : publiques par nécessité,
 elles n'ont pas à être trouvées depuis un moteur de recherche.
+
+## 39. HSTS et transport
+
+`Strict-Transport-Security` est émis **uniquement lorsque la requête est
+arrivée en HTTPS**, avec une durée configurable (`security.hsts_max_age`,
+six mois par défaut ; `0` désactive l'en-tête).
+
+La condition n'est pas une prudence excessive, c'est le seul comportement
+correct pour un produit qui s'installe sur un hébergement mutualisé
+quelconque :
+
+- **en clair, l'en-tête ne protégerait rien.** Un attaquant capable de
+  modifier la réponse peut tout aussi bien retirer l'en-tête. Une protection
+  qui ne tient que si l'attaquant coopère n'en est pas une ;
+- **en clair, il ferait des dégâts.** Une installation servie en HTTP qui
+  annoncerait HSTS deviendrait injoignable pour la durée annoncée, depuis les
+  navigateurs qui l'ont vu passer une fois. Le propriétaire n'aurait aucun
+  moyen de revenir en arrière avant l'échéance.
+
+Ni `includeSubDomains` ni `preload` : sur un hébergement mutualisé, les
+sous-domaines appartiennent souvent à autre chose, et `preload` est une
+décision qu'on ne défait pas en un jour.
+
+L'en-tête suit `Request::isSecure()`, qui accepte `$_SERVER['HTTPS']` **et**
+`X-Forwarded-Proto`. Le second est ce que pose un répartiteur ou un
+terminateur TLS ; l'accepter est ce qui rend l'en-tête correct derrière un
+proxy, où l'application ne voit jamais le TLS elle-même.
+
+Le risque associé mérite d'être dit exactement, en séparant ce que
+l'**application émet** de ce que le **navigateur en fait**. Un client qui forge
+`X-Forwarded-Proto: https` sur une connexion en clair fait bien émettre
+l'en-tête par l'application. Mais il le reçoit sur du HTTP, et la RFC 6797 §7.2
+est explicite : un agent utilisateur **doit ignorer** un
+`Strict-Transport-Security` reçu sur un transport non sécurisé. Il n'y a donc
+pas d'enfermement — l'en-tête arrive et n'est pas retenu. Le drapeau `Secure`
+d'un cookie suit la même logique : un navigateur refuse un `Set-Cookie; Secure`
+posé en clair.
+
+Ce mécanisme est d'ailleurs la raison d'être de cette règle de la RFC : il
+existe précisément pour qu'un attaquant capable de parler en clair ne puisse
+pas fixer, prolonger ou détruire une politique HSTS.
+
+Sur une installation derrière un répartiteur, c'est au répartiteur — et à lui
+seul — de poser cet en-tête : il doit écraser toute valeur venant du client,
+faute de quoi n'importe qui pourrait la dicter. C'est ce que fait le
+terminateur du harnais de scan, qui retire toute copie envoyée par le client
+avant de poser la sienne. Rien n'y dépend de la bienveillance du navigateur,
+et c'est ce qu'on attend d'une défense en profondeur.
+
+### 39.1 Le cookie de session
+
+Le cookie de session porte `Secure` dès que la requête est arrivée en HTTPS, et
+jamais en clair — où le drapeau rendrait le cookie inutilisable, donc la
+connexion impossible. Il suit `Request::isSecure()`, donc le
+`X-Forwarded-Proto` d'un répartiteur : c'est précisément le cas d'un
+hébergement mutualisé derrière un terminateur, où le TLS est réellement là et
+où la protection compte.
+
+Cette protection **manquait**. `Services` construisait la session avec
+`secure: false` en dur : le drapeau existait, et valait toujours faux. Sur une
+installation entièrement servie en TLS, le cookie de session voyageait sans ce
+qui interdit de le renvoyer en clair.
+
+## 40. Scan dynamique : pourquoi il exige du HTTPS
+
+Deux protections de SecondStay dépendent du transport : l'en-tête HSTS
+ci-dessus et le drapeau `Secure` du cookie de session. Un scan joué contre une
+instance en clair rapporterait « HSTS absent » et « cookie sans Secure » :
+**deux constats faux, à propos de code correct.**
+
+La correction tentante est un filtre d'alertes qui fait taire les deux règles.
+C'est précisément ainsi qu'un rapport cesse d'être lu : deux règles muettes
+pour un défaut de harnais sont deux règles que personne ne regarde le jour où
+l'une d'elles se déclenche pour de bon. **On répare le harnais, pas le
+rapport.**
+
+Le harnais tient en deux pièces, toutes deux sous `scripts/` — donc exclues de
+l'archive de release, et exécutées par aucun déploiement :
+
+- `dast-tls-proxy.php` termine TLS devant le serveur de test avec un
+  certificat généré pour la durée de la campagne, et pose
+  `X-Forwarded-Proto: https` **après avoir retiré toute copie envoyée par le
+  client**. Un terminateur qui relaierait l'en-tête du client serait lui-même
+  la vulnérabilité ;
+- `dast-https-prepend.php`, chargé par `auto_prepend_file` pour le seul
+  processus de test, traduit cet en-tête en `$_SERVER['HTTPS']`.
+
+La preuve qui précède la campagne (`dast-support.php assert-https`) a rendu
+**deux** verdicts faux, pour la même raison à chaque fois : elle regardait à
+côté de ce qu'elle surveillait. Elle acceptait n'importe quel `Set-Cookie`
+contenant « secure », et la préférence de langue en pose un ; puis elle
+cherchait `max-age` comme sous-chaîne, si bien qu'un
+`Strict-Transport-Security: not-max-age=31536000` — que le navigateur ignore,
+RFC 6797 §6.1 — passait pour une politique effective. Les deux rendaient le
+silence rassurant. `tests/php/Unit/DastSupportTest.php` couvre désormais ces
+deux jugements.
+
+Le certificat est émis pour **`localhost`** et non pour une adresse IP : une IP
+n'est pas une *relying party* WebAuthn valide, et les parcours de clés d'accès
+de la campagne seraient refusés par le navigateur.
+
+Il est auto-signé et sert de **sa propre ancre de confiance**. Deux clients
+distincts doivent l'accepter, et aucun des deux ne le fait par une dérogation
+générale : le navigateur par l'épinglage de sa clé publique
+(`--ignore-certificate-errors-spki-list`), et le client HTTP de Playwright —
+du Node, que l'épinglage de Chromium ne concerne pas — parce que le certificat
+lui est donné comme ancre via `NODE_EXTRA_CA_CERTS`. L'alternative aurait été
+`ignoreHTTPSErrors`, qui désarme la vérification pour tout le contexte,
+navigateur compris, et rendrait l'épinglage décoratif.
+
+**La campagne de scan ajoute une seconde ancre, et n'en relâche aucune.** ZAP
+est un intercepteur par construction : le pair TLS du navigateur n'y est plus
+le terminateur mais ZAP, qui ré-signe chaque connexion avec une autorité qu'il
+génère à son démarrage. Épingler la seule clé du terminateur ne suffit donc
+pas — le navigateur refuse alors chaque connexion, et la carte du site de ZAP
+ressort vide.
+
+La tentation est de relâcher la vérification pour ce cas. Elle ne marche pas,
+et l'échec est instructif : `ignoreHTTPSErrors` traverse l'avertissement sans
+rendre l'origine **sûre** aux yeux de Chromium, si bien que le service worker
+refuse de s'enregistrer et que deux scénarios de la campagne tombent — sans
+rapport avec le produit. Les deux pannes ont été constatées en intégration
+continue, l'une après l'autre.
+
+`scripts/dast.sh` récupère donc la racine de ZAP par son API, en calcule
+l'empreinte et l'épingle **à côté** de celle du terminateur. Le navigateur fait
+exception pour ces deux clés, et pour aucune autre ; l'origine redevient sûre,
+et le service worker s'enregistre. Le client HTTP de Node reçoit les deux
+certificats comme ancres, dans un même paquet. Il couvre aussi
+`host.docker.internal`, nom par lequel un ZAP conteneurisé joint l'hôte hors
+Linux : c'est alors l'origine que le navigateur demande au proxy, et elle doit
+rester valide de son côté.
+
+Le câblage est **prouvé vivant avant tout scan** : une requête, et l'assertion
+que la réponse porte l'en-tête HSTS et un cookie de session `Secure`. Si la
+preuve échoue, la campagne s'arrête là. Un scan sur un harnais mal câblé
+produit un rapport faux, ce qui est pire que pas de rapport.
+
+La preuve **suit les redirections**, et ce détail n'en est pas un : sur une
+instance fraîche, l'application n'est pas encore installée et toute page
+publique redirige vers l'assistant — lequel est la première page à ouvrir une
+session, donc à poser le cookie. S'arrêter au premier 302 n'observerait jamais
+ce cookie, et la preuve échouerait en annonçant un défaut de l'application là
+où il n'y en a pas. Seules les redirections vers la même origine sont suivies,
+et au plus trois : suivre une redirection sortante ferait porter la preuve sur
+un autre serveur.
+
+La preuve porte sur le cookie **nommé**, et c'est le sujet. Elle acceptait
+d'abord n'importe quel `Set-Cookie` contenant « secure » ; la préférence de
+langue en pose un, si bien qu'elle était verte alors que le cookie de session
+n'était pas protégé du tout. Un garde-fou qui regarde à côté de ce qu'il
+surveille est plus dangereux que pas de garde-fou : il rend le silence
+rassurant. Elle distingue en outre « cookie jamais posé » de « cookie posé sans
+le drapeau » — deux pannes différentes, qui envoient chercher à deux endroits
+différents.
+
+## 41. Le jeton de l'assistant d'installation
+
+Une instance neuve a une fenêtre pendant laquelle l'assistant crée le premier
+administrateur sans qu'aucune authentification ne soit possible — par
+construction, puisqu'il n'y a encore personne à authentifier. Sur un hébergement
+public, cette fenêtre appartient à qui arrive le premier : **celui qui charge
+`/install` avant le propriétaire choisit la base de données, le mot de passe
+administrateur, et devient l'exploitant du site.**
+
+Ce n'est pas une hypothèse de laboratoire. Entre le moment où les fichiers
+arrivent par FTP et celui où le propriétaire ouvre son navigateur, il peut
+s'écouler des minutes ; un scanner d'index de nouveaux domaines en met moins.
+
+### 41.1 Ce qui referme la fenêtre
+
+`bootstrap/bootstrap.php` génère 32 octets aléatoires et les écrit dans
+`token.php`, à la racine du site. L'adresse de l'assistant n'est affichée
+qu'avec ce jeton. Seul quelqu'un disposant d'un accès FTP au site — donc son
+propriétaire — peut le lire.
+
+`Installer\InstallToken` lit ce fichier **comme du texte**, jamais par
+inclusion : son contenu vient du disque d'un hébergement dont l'application ne
+sait rien, et l'exécuter reviendrait à faire tourner ce que le premier fichier
+déposé à la racine contient. Le fichier écrit par l'installeur est du PHP valide
+qui répond 404 et s'arrête : un fichier de secret doit rester inoffensif même
+exécuté, et pas seulement inaccessible.
+
+La comparaison passe par `hash_equals()`. Un jeton tronqué ou hors de
+l'alphabet attendu n'est pas un jeton : accepter une valeur plus courte
+reviendrait à accepter un secret plus faible que celui qui a été généré.
+
+### 41.2 Ce qui reste ouvert, et pourquoi
+
+**En l'absence de `token.php`, l'assistant reste ouvert.** Une installation
+faite à la main — clone du dépôt, développement, campagne de tests — n'a jamais
+eu de jeton à présenter, et refuser tout accès dans ce cas transformerait
+l'absence d'un fichier en verrou définitif, sans aucun recours. Un `token.php`
+présent mais illisible ou sans marqueur exploitable compte de la même façon :
+enfermer dehors le propriétaire d'un fichier corrompu n'apprendrait rien à
+personne d'autre.
+
+La protection n'est donc pas *que l'assistant soit fermé* : c'est que
+`bootstrap.php` le ferme sur les installations qu'il fait — celles, précisément,
+où personne n'était présent pour surveiller la fenêtre.
+
+### 41.3 Le jeton ne reste pas dans l'URL
+
+Présenté une fois, il est mémorisé en session et l'assistant redirige vers la
+même adresse **sans** le paramètre. Une URL finit dans l'historique du
+navigateur, dans le `Referer` de chaque ressource externe et dans les journaux
+d'accès de l'hébergeur ; c'est la même raison qui fait préférer
+`X-Scheduler-Token` au paramètre d'URL pour le planificateur (§38).
+
+Les essais infructueux sont comptés dans la session : au cinquième, l'accès est
+refusé pendant quinze minutes, y compris avec le bon jeton. Une visite **sans**
+jeton ne consomme pas d'essai — la première ouverture de l'assistant se fait
+sans, et la compter épuiserait le budget avant que l'opérateur n'ait rien tenté.
+
+Ce verrouillage vaut ce que vaut une session : qui jette son cookie repart à
+zéro. **Ce n'est pas un oubli.** Un verrou porté par un état partagé serait, sur
+une instance non installée, un moyen de bloquer l'installation depuis
+l'extérieur — le propriétaire, lui, n'aurait alors plus aucun recours. Le
+compteur n'est pas là pour arrêter une force brute : 256 bits d'entropie s'en
+chargent. Il est là pour qu'une telle tentative coûte quelque chose.
+
+### 41.4 Le jeton est supprimé, pas oublié
+
+Dès que l'installation aboutit et qu'un administrateur existe, `token.php` est
+supprimé. La fenêtre qu'il protégeait est fermée ; le laisser en place serait un
+secret de plus sur le disque, pour rien.
+
+## 42. L'installeur autonome : ce qu'il refuse
+
+`bootstrap/bootstrap.php` tourne **avant** l'application : pas de `vendor/`, pas
+de noyau, pas de session. Rien de ce que SECURITY.md décrit ailleurs ne le
+protège, et il écrit à la racine du document d'un hébergement dont personne ici
+ne sait rien. Les protections ci-dessous sont donc les siennes.
+
+### 42.1 L'archive ne quitte jamais HTTPS, et elle est attestée
+
+Le téléchargement suit les redirections **lui-même**, un saut à la fois, et
+contrôle le schéma avant chacun. `follow_location => 1` suivait une redirection
+vers `http://` sans rien signaler : les options `ssl` du contexte de flux ne
+protègent que les sauts restés en TLS, elles n'ont rien à dire d'un saut qui
+n'en fait plus partie. L'archive pouvait donc arriver en clair, et seuls les
+contrôles de forme — la signature `PK`, la structure du ZIP — la séparaient de
+l'extraction.
+
+Les octets reçus sont ensuite comparés à l'empreinte SHA-256 que l'API de
+GitHub publie pour l'asset. Cette empreinte arrive par `api.github.com`, sur une
+connexion distincte de celle qui sert l'archive et de la chaîne de redirections
+qui y mène : c'est ce qui en fait une preuve, elle ne vient pas de la même
+source que ce qu'elle atteste. Une empreinte qui ne correspond pas interrompt
+l'installation.
+
+Une release qui n'en publie pas — le repli `zipball_url`, une release ancienne —
+est rapportée comme **non vérifiée** dans le journal de l'opérateur. « Non
+vérifiée » et « vérifiée » ne sont pas la même réponse, et les confondre serait
+la version installeur du vert qui ne prouve rien.
+
+### 42.2 Les trois actions POST refusent une origine étrangère
+
+`step` copie, `gate-report` décide de l'annulation, `abort` supprime. Aucune
+n'est protégée par le jeton d'installation : il n'existe pas encore quand les
+premières partent, et il voyage de toute façon dans une URL — ce n'est pas un
+jeton anti-CSRF. Sans contrôle d'origine, un site tiers visité par l'opérateur
+pendant l'installation pouvait soumettre `POST bootstrap.php?action=abort` et
+faire effacer les fichiers déjà copiés, l'état et le verrou.
+
+La comparaison porte sur l'**hôte** (`Origin`, à défaut `Referer`, contre
+`Host`), pas sur le schéma. L'installeur tourne souvent derrière un terminateur
+TLS qui ne renseigne ni `HTTPS` ni `X-Forwarded-Proto` ; exiger l'égalité des
+schémas ferait refuser des requêtes légitimes sans que l'opérateur puisse
+comprendre pourquoi. Ce qu'une falsification inter-site ne contourne pas, c'est
+l'hôte : un attaquant ne sert pas de contenu depuis le nom de domaine de sa
+victime.
+
+### 42.3 Le jeton et l'état ne sont lisibles que par leur propriétaire
+
+`token.php` et `.bootstrap-state.php` sont ramenés à `0600` après chaque
+écriture, et l'échec de cette restriction interrompt l'installation. Sur un
+hébergement mutualisé, une umask permissive les laisserait lisibles par les
+autres comptes de la machine — et `token.php` porte le secret qui ouvre
+l'assistant (§41).
+
+Le fichier d'état est du PHP inerte dont les données vivent dans un
+commentaire. Aucune valeur ne peut le refermer : les barres obliques sont
+échappées à l'encodage, si bien que la séquence de fermeture ne peut pas être
+construite. Sans cela, un chemin ou un message d'hébergeur contenant cette
+séquence aurait transformé le fichier d'état lui-même en injection de code.
+
+### 42.4 Une installation ne démarre jamais deux fois
+
+Le verrou est créé par une **création exclusive** (`fopen($path, 'x')`), en une
+opération noyau. Tester l'existence, lire la date, puis écrire laissait deux
+requêtes simultanées constater toutes deux l'absence du verrou et le poser
+toutes deux : deux installations sur le même dossier, copies entrelacées, état
+divergent du disque, annulation partielle. La reprise d'un verrou périmé est
+sérialisée par un `flock()` exclusif et la date est relue **sous** ce verrou :
+la requête qui arrive seconde voit une date fraîche et renonce.
+
+### 42.5 Une copie interrompue reste annulable
+
+Les entrées déjà écrites à la racine remontent avec l'échec, et non par la
+valeur de retour d'une fonction qui a levé. C'est ce qui permet à l'annulation
+— automatique ou déclenchée par le bouton « Annuler l'installation et
+nettoyer » — de les nommer, donc de les retirer. Sans cela, une copie
+interrompue au milieu de `vendor/` laissait `src/` en place, la reprise butait
+sur « déjà installé », le bouton d'annulation relisait un état vide et
+répondait « ok » sans rien faire : il ne restait que le FTP.

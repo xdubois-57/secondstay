@@ -16,6 +16,8 @@
  *    la règle serveur donnerait deux vérités.
  */
 
+import { asFormField, documentOf } from './dom.js';
+
 /** Contrôles qu'un humain peut réellement corriger. */
 const FIELDS = 'input, select, textarea';
 
@@ -23,7 +25,7 @@ const FIELDS = 'input, select, textarea';
  * Place le focus sur le premier champ refusé, s'il y en a un.
  *
  * @param {Document|Element} root
- * @returns {Element|null} le champ atteint, ou null
+ * @returns {import('./dom.js').FormField|null} le champ atteint, ou null
  */
 export function focusFirstInvalid(root) {
     const field = firstInvalid(root);
@@ -39,7 +41,7 @@ export function focusFirstInvalid(root) {
     // Le document est déduit de la racine reçue, jamais pris dans le global :
     // ce module doit rester utilisable sur un fragment comme sur une page,
     // et testable sans navigateur.
-    const owner = root.ownerDocument || root;
+    const owner = documentOf(root);
     const active = owner.activeElement;
     if (active && active !== owner.body && active.matches && active.matches(FIELDS)) {
         return null;
@@ -74,12 +76,13 @@ export function markInvalid(root) {
 
 /**
  * @param {Document|Element} root
- * @returns {Element|null}
+ * @returns {import('./dom.js').FormField|null}
  */
 function firstInvalid(root) {
     const fields = root.querySelectorAll('.is-invalid');
 
-    for (const field of fields) {
+    for (const element of fields) {
+        const field = asFormField(element);
         if (field.matches && field.matches(FIELDS) && !field.disabled) {
             return field;
         }

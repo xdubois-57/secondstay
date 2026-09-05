@@ -12,6 +12,7 @@ use SecondStay\Core\RequestContext;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\I18n\Locales;
 use SecondStay\Installer\Installer;
+use SecondStay\Installer\InstallToken;
 use SecondStay\Installer\RequirementChecker;
 use Throwable;
 
@@ -108,12 +109,24 @@ final class InstallController extends AbstractController
             );
         }
 
+        // Le jeton n'a plus d'objet : la fenêtre qu'il protégeait — une
+        // instance sans administrateur — vient de se refermer. Le laisser en
+        // place serait un secret de plus sur le disque, pour rien.
+        $this->container->get(InstallToken::class)->delete();
+
         $locale = Locales::normalise($input['locale']) ?? $context->locale;
         $this->flashSuccess('install.success');
 
         return $this->redirectToRoute($context, 'admin.dashboard', [], $locale);
     }
 
+    /**
+     * Rassemble les identifiants de base saisis dans l'assistant.
+     *
+     * Rien n'est écrit à partir d'eux avant qu'une connexion n'ait réussi :
+     * un `config/local.php` écrit sur des identifiants faux laisserait une
+     * installation qui ne démarre plus et que l'assistant ne reprend pas.
+     */
     private function databaseConfigFromRequest(RequestContext $context): DatabaseConfig
     {
         $request = $context->request;

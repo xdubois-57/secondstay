@@ -22,6 +22,12 @@ const privatePaths = [
     '/migrations/',
     '/scripts/check.sh',
     '/scripts/router.php',
+    // L'installeur autonome n'est jamais dans l'artefact de release, mais une
+    // installation faite par clone met tout le dépôt sous la racine web.
+    '/bootstrap/bootstrap.php',
+    // Le jeton de l'assistant d'installation (SECURITY.md §41) : lu comme du
+    // texte par l'application, jamais servi ni exécuté.
+    '/token.php',
     '/translations/fr/common.php',
     '/templates/layout/base.html.twig',
     '/.github/workflows/ci.yml',
@@ -102,5 +108,21 @@ test.describe('protection du document root', () => {
         expect(headers['x-frame-options']).toBe('SAMEORIGIN');
         expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
         expect(headers['content-security-policy']).toContain("default-src 'self'");
+
+        // `Strict-Transport-Security` dépend du transport, et l'assertion aussi.
+        //
+        // En clair, l'en-tête ne doit PAS être là : il n'y protégerait rien —
+        // un attaquant capable de modifier la réponse peut aussi le retirer —
+        // et une installation sans TLS qui l'émettrait se rendrait injoignable
+        // pour la durée annoncée.
+        //
+        // En HTTPS, il doit y être. C'est cette moitié-là que le scan dynamique
+        // vérifie aussi, avant chaque campagne, parce qu'un harnais mal câblé
+        // rapporterait son propre défaut comme un constat contre le produit.
+        if (process.env.SECONDSTAY_E2E_TLS === '1') {
+            expect(headers['strict-transport-security']).toContain('max-age=');
+        } else {
+            expect(headers['strict-transport-security']).toBeUndefined();
+        }
     });
 });

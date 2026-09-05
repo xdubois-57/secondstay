@@ -180,6 +180,7 @@ return [
             'create' => 'De back-up is mislukt.',
             'restore' => 'Het terugzetten is mislukt.',
             'delete' => 'Het verwijderen is mislukt.',
+            'download' => 'Deze back-up is niet gevonden: mogelijk is ze verwijderd of door de bewaartermijn vervangen.',
         ],
     ],
     'updates' => [

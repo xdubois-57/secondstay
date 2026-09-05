@@ -64,6 +64,7 @@ Règles :
 ├── tests/js/
 ├── tests/e2e/
 ├── scripts/
+├── bootstrap/bootstrap.php   installeur autonome, publié comme asset de release
 ├── vendor/
 ├── composer.json
 ├── package.json
@@ -364,6 +365,46 @@ CI ajoute :
 - CodeQL pour langages supportés ;
 - Dependabot ;
 - SonarCloud.
+
+### Aucune baseline commitée
+
+**« Vert » signifie *aucun constat*, et non *aucun constat nouveau*.** Ni
+PHPStan ni `tsc` ne portent de baseline dans ce dépôt.
+
+La mécanique reste disponible (`composer run analyse:baseline`,
+`npm run typecheck:baseline`) parce que l'alternative à une baseline n'est pas
+« pas de baseline » : c'est quelqu'un qui éteint le garde-fou le jour où une
+montée de dépendance produit cinquante constats un vendredi soir. La régénérer
+sert à **accepter sciemment une dette existante**, jamais à faire taire un
+constat que sa propre modification vient d'introduire — celui-là se corrige.
+
+Commiter une baseline exige donc la raison dans le message de commit, et sa
+disparition dès que la dette est payée.
+
+### Licences des dépendances
+
+Ajouter une dépendance de **production** sous une licence autre que MIT, BSD,
+ISC ou Apache-2.0 est **une décision à soumettre, pas à prendre en silence**.
+Ce projet est AGPL-3.0-or-later : la compatibilité dépend entièrement de la
+licence de ce qu'on y combine, et dans un seul sens pour certaines d'entre
+elles.
+
+L'inventaire est **généré, jamais rédigé** :
+
+```bash
+php scripts/dependency-inventory.php
+```
+
+Il lit les fichiers de verrouillage — jamais `composer.json` ni
+`package.json`, où `^3.11` n'est pas une version — et balaye
+`public/assets/vendor/`. Une ressource embarquée sans entrée dans sa carte de
+licences est rapportée **inconnue**, pas passée sous silence : ajouter une
+bibliothèque oblige donc à compléter la carte.
+
+Ce qui n'est pas couvert par la licence du projet — polices, images, marques —
+doit être nommé explicitement, et jamais décrit comme s'il l'était. La section
+reste imprimée même vide : « rien » est une information, l'absence de section
+n'en est pas une.
 
 Utiliser des fake providers pour :
 

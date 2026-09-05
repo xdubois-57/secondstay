@@ -1,0 +1,736 @@
+# Les gates que les deux pipelines jouent, définies à un seul endroit.
+#
+# POURQUOI CE FICHIER EXISTE
+# ---------------------------------------------------------------------------
+# `ci.yml` est la boucle de retour rapide sur chaque poussée ; la passe de
+# release, plus lente, joue les mêmes gates avant de produire une Release.
+# Les deux ne sont **pas** fusionnés — tout l'intérêt de la première est
+# d'être rapide — mais ils ne doivent pas diverger sur la définition de
+# ÉPINGLAGE DES ACTIONS TIERCES
+#
+# `shivammathur/setup-php` est épinglé sur un commit, pas sur `v2`. Un tag est
+# mutable : celui qui peut le déplacer choisit le code qui tourne dans un
+# travail détenant, plus loin dans la chaîne, `contents: write` et
+# `attestations: write`. Le commentaire `# v2` dit ce que ce commit était, pour
+# qu'une montée reste lisible en revue. Les actions `actions/*` restent sur
+# leur tag majeur : elles viennent du même fournisseur que l'exécuteur.
+#
+# « vert ». Le bloc `shivammathur/setup-php` était déjà recopié cinq fois
+# dans `ci.yml` : cinq occasions de répondre différemment à la question
+# « de quelles extensions PHP ce projet a-t-il besoin ».
+#
+# Les gates vivent donc ici et les deux workflows les appellent. La seule
+# différence entre une exécution de CI et une exécution de release est
+# l'entrée `evidence`.
+#
+# MODE PREUVE
+# ---------------------------------------------------------------------------
+# Avec `evidence: true`, chaque travail téléverse en plus ce que son outil
+# émet **nativement** — JUnit de PHPUnit et de Vitest, rapport HTML de
+# Playwright, sortie des analyseurs. Rien ici n'écrit un résumé rédigé à la
+# main : une preuve rédigée n'est pas maintenue, et une preuve non maintenue
+# finit par mentir.
+#
+# Le mode preuve n'ajoute pas de gate et n'en retire aucune : quand
+# `evidence` vaut `false`, les travaux se comportent exactement comme avant
+# l'extraction de ce fichier.
+
+name: Gates
+
+on:
+  workflow_call:
+    inputs:
+      evidence:
+        description: >
+          Téléverser la sortie native de chaque outil comme artefact.
+          Désactivé en CI, où cela ne ferait que ralentir la boucle ; activé
+          pour une release.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  # Version de référence : celle qui produit les couvertures consommées par
+  # SonarCloud et l'artefact de release.
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+
+jobs:
+  php:
+    # Le plancher que le projet déclare réellement supporter
+    # (`composer.json` exige `>=8.2`), pas seulement la version installée sur
+    # la machine de développement. Une montée de dépendance qui remonterait
+    # le minimum réel sans que personne ne s'en aperçoive est exactement ce
+    # que cette matrice attrape.
+    name: PHP ${{ matrix.php }} — syntaxe, PHPStan, PHPUnit
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      - name: Gates PHP (syntaxe, PHPStan, PHPUnit)
+        run: ./scripts/check.sh --php
+
+      # Les couvertures ne sont produites que par la version de référence :
+      # SonarCloud n'en consomme qu'une, et deux artefacts de même nom se
+      # refusent mutuellement.
+      - name: PHPUnit avec couverture
+        if: matrix.php == env.PHP_VERSION
+        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover-unit.xml --log-junit build/reports/phpunit-junit.xml
+
+      - name: PHPUnit — journal JUnit de cette version de PHP
+        if: ${{ inputs.evidence }}
+        run: |
+          mkdir -p evidence
+          XDEBUG_MODE=off ./vendor/bin/phpunit --testsuite unit --do-not-cache-result \
+            --log-junit "evidence/phpunit-php${{ matrix.php }}.xml"
+
+      # « [OK] No errors » ne prouve rien tout seul : une configuration qui
+      # n'analyse aucun fichier l'imprime tout aussi volontiers. Le périmètre
+      # — outil, version de PHP, niveau, chemins, nombre de fichiers
+      # réellement analysés — est ce qui transforme cette ligne en une
+      # affirmation vérifiable.
+      #
+      # `--debug` parce qu'il imprime chaque fichier au moment de l'analyser.
+      # Il coûte une seconde passe et la perte du parallélisme : une passe de
+      # preuve peut se le permettre, la boucle rapide non — d'où la condition.
+      - name: PHPStan — sortie et périmètre
+        if: ${{ inputs.evidence }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence
+          {
+            echo "phpstan: $(./vendor/bin/phpstan --version)"
+            echo "php: $(php -r 'echo PHP_VERSION;')"
+            echo "niveau: $(grep -E '^\s+level:' phpstan.neon.dist | tr -d ' ' | cut -d: -f2)"
+            echo "chemins:"
+            sed -n '/^    paths:/,/^    [a-z]/p' phpstan.neon.dist | grep -E '^\s+- ' || true
+          } > "evidence/phpstan-scope-php${{ matrix.php }}.txt"
+
+          ./vendor/bin/phpstan analyse --no-progress --debug 2>/dev/null \
+            | grep -E '\.php$' | sed "s#^${PWD}/##" | sort \
+            > "evidence/phpstan-files-php${{ matrix.php }}.txt" || true
+          echo "fichiers analysés: $(grep -c '' "evidence/phpstan-files-php${{ matrix.php }}.txt")" \
+            >> "evidence/phpstan-scope-php${{ matrix.php }}.txt"
+          cat "evidence/phpstan-scope-php${{ matrix.php }}.txt"
+
+          ./vendor/bin/phpstan analyse --no-progress | tee "evidence/phpstan-php${{ matrix.php }}.txt"
+
+      - name: Upload des rapports PHP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-reports-${{ matrix.php }}
+          path: build/
+          retention-days: 7
+
+      - name: Couverture pour l'analyse
+        if: matrix.php == env.PHP_VERSION
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: build/coverage/clover-unit.xml
+          retention-days: 1
+
+      - name: Preuves PHP
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-php-${{ matrix.php }}
+          path: evidence/
+          retention-days: 7
+
+  static-analysis:
+    # La moitié JavaScript de l'analyse statique. La moitié PHP — PHPStan —
+    # vit dans le travail `php` ci-dessus, et non ici : elle y est jouée sur
+    # **les deux** versions de PHP supportées, ce qu'un travail unique ne
+    # ferait pas. Les deux moitiés partagent la même politique : aucune
+    # baseline n'est commitée, « vert » veut dire aucun constat.
+    name: Analyse statique — tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: tsc (vérificateur, rien n'est produit)
+        run: npm run typecheck
+
+      # Même raisonnement que pour PHPStan : « aucun constat » ne veut rien
+      # dire tant qu'on ignore ce qui a été regardé. `--listFiles` donne la
+      # liste réelle des fichiers vérifiés.
+      - name: tsc — sortie et périmètre
+        if: ${{ inputs.evidence }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence
+          {
+            echo "typescript: $(npx tsc --version)"
+            echo "node: $(node --version)"
+            echo "configuration: tsconfig.json"
+            echo "fichiers vérifiés:"
+            npx tsc -p tsconfig.json --noEmit --listFiles 2>/dev/null \
+              | grep -v '/node_modules/' | sed "s#^${PWD}/##" || true
+          } > evidence/tsc-scope.txt
+          cat evidence/tsc-scope.txt
+
+          npm run typecheck | tee evidence/tsc.txt
+
+      - name: Preuves analyse statique
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-static-analysis
+          path: evidence/
+          retention-days: 7
+
+  database:
+    name: Base de données — migrations et intégration
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      # Une exécution automatisée qui n'a touché aucune base n'a pas fait son
+      # travail : cette variable en fait un échec plutôt qu'une suite ignorée.
+      # Voir l'en-tête de `tests/php/Support/DatabaseTestCase.php`.
+      SECONDSTAY_TEST_DB_REQUIRED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      # Base jetable : la durabilité n'y sert à rien. Un incident d'exécuteur
+      # se répare en relançant la CI, pas en relisant un journal. Sans les
+      # écritures synchrones, la remise à zéro entre chaque test — cinquante
+      # `TRUNCATE`, cinq cent quatre-vingt-huit fois — cesse d'être dominée par
+      # des `fsync`.
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Tests base de données
+        run: ./vendor/bin/phpunit --testsuite database --coverage-clover build/coverage/clover-database.xml --log-junit build/reports/phpunit-database-junit.xml
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-database
+          path: build/coverage/clover-database.xml
+          retention-days: 1
+
+      - name: Preuves base de données
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-database
+          path: build/reports/phpunit-database-junit.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # La même suite, sur l'autre moteur.
+  #
+  # README et ARCHITECTURE annoncent « MySQL 8 / MariaDB compatible ». Tant que
+  # la CI ne jouait que MySQL, cette phrase était une promesse que rien ne
+  # vérifiait — et l'asymétrie va dans le mauvais sens : du code correct sur
+  # MySQL et faux sur MariaDB arrive en production, parce que le travail
+  # ci-dessus est vert. L'inverse serait attrapé tout de suite.
+  #
+  # Les deux moteurs divergent là où ce projet les interroge vraiment : la
+  # façon dont `INFORMATION_SCHEMA` rapporte les valeurs par défaut, les
+  # largeurs d'affichage et `CURRENT_TIMESTAMP`, que le migrateur consulte pour
+  # décider si une colonne est déjà dans l'état voulu.
+  #
+  # La suite **entière**, et pas un groupe « base de données » : le jour où
+  # quelqu'un ajoute un test adossé à la base sans penser au marqueur, la
+  # version étroite le manquerait en silence.
+  #
+  # Pas de couverture ici : elle est produite par la jambe MySQL et consommée
+  # par SonarCloud. La mesurer deux fois ne dirait rien de plus et doublerait
+  # la durée.
+  # ---------------------------------------------------------------------------
+  database-mariadb:
+    name: Base de données — MariaDB 10.11
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: secondstay
+          MARIADB_DATABASE: secondstay_test
+          MARIADB_USER: secondstay
+          MARIADB_PASSWORD: secondstay
+        ports: ['3306:3306']
+        # `healthcheck.sh` est fourni par l'image MariaDB et sait attendre
+        # qu'InnoDB soit réellement initialisé — un `ping` répond bien avant.
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      SECONDSTAY_TEST_DB_REQUIRED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      - name: Version du moteur
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "SELECT VERSION();"
+
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Tests base de données
+        run: ./vendor/bin/phpunit --log-junit build/reports/phpunit-mariadb-junit.xml
+
+      - name: Preuves base de données MariaDB
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-database-mariadb
+          path: build/reports/phpunit-mariadb-junit.xml
+          retention-days: 7
+
+  javascript:
+    name: JavaScript — Vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # `vitest.config.js` déclare déjà le rapporteur JUnit : le journal est
+      # écrit dans les deux modes, seul son téléversement dépend du mode
+      # preuve. Le rapporteur `default` reste actif, sans quoi le journal du
+      # travail ne contiendrait plus que du XML.
+      - name: Vitest avec couverture
+        run: npm run test:coverage
+
+      - name: Upload de la couverture JS
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-coverage
+          path: coverage/
+          retention-days: 7
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-js
+          path: coverage/lcov.info
+          retention-days: 1
+
+      - name: Preuves JavaScript
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-vitest
+          path: build/reports/vitest-junit.xml
+          retention-days: 7
+
+  e2e:
+    # Un exécuteur par navigateur : la campagne passe de huit minutes à
+    # quatre, et chaque projet installe la sienne — un isolement meilleur que
+    # l'installation partagée d'avant.
+    name: E2E — ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop-chromium, mobile-safari]
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      SECONDSTAY_E2E_PROJECT: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          # Les contrôleurs ne sont traversés que par cette campagne : sans
+          # pilote de couverture ici, ils apparaîtraient comme non testés.
+          coverage: pcov
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+
+      # Base jetable : la durabilité n'y sert à rien. Un incident d'exécuteur
+      # se répare en relançant la CI, pas en relisant un journal. Sans les
+      # écritures synchrones, la remise à zéro entre chaque test — cinquante
+      # `TRUNCATE`, cinq cent quatre-vingt-huit fois — cesse d'être dominée par
+      # des `fsync`.
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Playwright
+        run: ./scripts/check.sh --e2e
+        env:
+          SECONDSTAY_COVERAGE_DIR: ${{ github.workspace }}/build/coverage/e2e
+
+      - name: Fusion de la couverture E2E
+        run: php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml
+
+      - name: Couverture pour l'analyse
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e-${{ matrix.project }}
+          path: build/coverage/clover-e2e.xml
+          retention-days: 1
+
+      - name: Upload du rapport Playwright
+        # Inconditionnel, mode preuve ou non — et en particulier en cas
+        # d'échec : le rapport et les traces sont la première chose que l'on
+        # regarde quand la campagne passe au rouge.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Preuves E2E
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-playwright-${{ matrix.project }}
+          path: |
+            playwright-report/
+            build/reports/playwright-junit.xml
+          retention-days: 7
+
+  dast:
+    # Un scan passif de l'application en fonctionnement. **La campagne
+    # Playwright est la surface d'attaque, pas l'araignée de ZAP** : un crawler
+    # pointé sur SecondStay verrait la page d'accueil et s'arrêterait, là où la
+    # campagne traverse l'installation, l'administration derrière sa session,
+    # une réservation complète, les paiements factices, l'espace client, le
+    # mode séjour et les états des lieux.
+    #
+    # Conséquence assumée : une campagne en échec fait échouer le scan, même
+    # sans le moindre constat. Un scan ne vaut que le trafic qu'on lui a donné.
+    #
+    # Le travail échoue à partir de « Medium ».
+    name: Scan dynamique (passif)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Pas de `security-events: write`, délibérément. Le *code scanning*
+      # rattache un résultat à un chemin du dépôt ; un constat DAST décrit une
+      # instance en cours d'exécution sur un port choisi à l'exécution, dont
+      # chaque emplacement se lit `https://localhost:<aléatoire>/...` — une
+      # origine qui n'a jamais existé hors de ce travail. Le code de sortie est
+      # le garde-fou.
+    # La borne couvre le téléchargement à froid d'une image de 1,2 Go, puis la
+    # campagne entière rejouée à travers un proxy.
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          # `openssl` génère le certificat de la campagne et `pcntl` fait
+          # tourner le terminateur TLS ; sans les deux, scripts/dast.sh refuse
+          # de démarrer.
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium, openssl, pcntl
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Récupération de l'image OWASP ZAP
+        # `scripts/dast.sh` refuse délibérément de télécharger 1,2 Go à la
+        # place de son appelant : la récupération est donc explicite ici, le
+        # seul endroit où c'est la chose attendue.
+        run: docker pull ghcr.io/zaproxy/zaproxy:stable
+
+      - name: Scan passif
+        run: npm run dast
+
+      # Le rapport COMPLET quitte ce travail en mode preuve. SecondStay est
+      # public, donc ses artefacts et ses assets de Release le sont aussi.
+      #
+      # Ce qui affaiblit l'objection, c'est la cible : le scan vise une
+      # instance jetable sur la boucle locale, construite pour l'occasion, avec
+      # un certificat généré et une base de test — pas un hôte de production —
+      # et le code qu'elle sert est ouvert.
+      #
+      # Ce qui y survit : les constats d'en-têtes et de cookies portent sur la
+      # configuration livrée, donc sur la production. Les publier publie une
+      # liste de choses à faire avant qu'elles ne soient faites. C'est le
+      # compromis — un pack de preuves auditable sans compte, au prix de dire
+      # tout haut ce que le scan rapporte aujourd'hui. **Il ne vaut que tant
+      # que ce rapport reste propre** (SECURITY.md).
+      - name: Preuves du scan
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-dast
+          path: dast-report/
+          retention-days: 7
+
+      - name: Rapport du scan en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report-failure
+          path: dast-report/
+          retention-days: 7
+
+      # Une campagne en échec fait échouer le scan, même sans le moindre
+      # constat de sécurité (`scripts/dast.sh`). Sans ces artefacts, cet échec
+      # n'était pas diagnosticable : le journal donne le nom du scénario tombé
+      # et rien de ce qui s'est passé dans le navigateur. Traces, captures et
+      # vidéos sont donc conservées — c'est le seul endroit où l'on voit ce que
+      # le proxy change à la campagne.
+      - name: Trace de la campagne en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-campaign-failure
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  security:
+    name: Sécurité — audit et fuites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --no-progress
+
+      - name: Audit et contrôle de secrets
+        run: ./scripts/check.sh --security
+
+      # La gate a déjà tourné ci-dessus ; ce second appel ne sert qu'à
+      # capturer le verdict dans le format que l'outil sait produire. S'il
+      # échouait alors que la gate est passée, c'est une contradiction, et
+      # elle doit faire échouer le travail plutôt que d'être avalée.
+      - name: Composer audit — rapport JSON
+        if: ${{ inputs.evidence }}
+        run: |
+          mkdir -p evidence
+          COMPOSER_ALLOW_SUPERUSER=1 composer audit --no-interaction --locked --format=json \
+            > evidence/composer-audit.json
+
+      - name: Preuves sécurité
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-security
+          path: evidence/
+          retention-days: 7
+
+  release-artifact:
+    name: Artefact de release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --no-interaction --no-progress
+
+      - name: Construction et inspection du ZIP
+        run: ./scripts/build-release-zip.sh --verify-only
+
+      - name: Vérification que l'artefact démarre
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact
+          unzip -q build/release/secondstay-*.zip -d /tmp/artifact
+          php -S 127.0.0.1:8321 -t /tmp/artifact/public &
+          SERVER_PID=$!
+          sleep 3
+          # Les réponses sont écrites sur disque avant d'être examinées.
+          # Enchaîner `curl | grep -q` est une course perdue d'avance : `grep`
+          # s'arrête à la première correspondance et ferme le tube, `curl`
+          # échoue alors sur une écriture impossible (code 23) — un contrôle
+          # qui passe ou non selon la vitesse du réseau ne prouve rien.
+          curl -fsS http://127.0.0.1:8321/api/version -o /tmp/artifact-version.json
+          cat /tmp/artifact-version.json
+          grep -q '"version"' /tmp/artifact-version.json
+          # Une archive fraîchement déployée n'est pas installée : elle doit
+          # conduire à l'assistant d'installation, dans la langue demandée.
+          # C'est aussi la preuve que les catalogues de traduction voyagent
+          # bien dans le ZIP.
+          curl -fsSL http://127.0.0.1:8321/de/ -o /tmp/artifact-de.html
+          grep -q 'SecondStay installieren' /tmp/artifact-de.html
+          kill "$SERVER_PID"
+
+      # L'inventaire et l'empreinte de l'archive, tels que `unzip` et
+      # `sha256sum` les impriment. Le ZIP lui-même n'est pas une preuve : il
+      # est attaché à la Release, et c'est ce qui permet de vérifier après
+      # coup que les deux parlent bien du même fichier.
+      - name: Inventaire et empreinte de l'archive
+        if: ${{ inputs.evidence }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          unzip -l build/release/secondstay-*.zip > evidence/release-artifact-contenu.txt
+          sha256sum build/release/secondstay-*.zip > evidence/release-artifact-sha256.txt
+          cat evidence/release-artifact-sha256.txt
+
+      - name: Preuves artefact
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-release-artifact
+          path: evidence/
+          retention-days: 7

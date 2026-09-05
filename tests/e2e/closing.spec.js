@@ -83,11 +83,29 @@ test.describe('clôture de l’exploitation', () => {
         // `AvailabilityService` rend alors `closed`, à raison, et le scénario
         // échoue selon la date à laquelle la campagne est jouée. On part donc
         // de l'échéance de l'horizon et on recule jusqu'au dernier mois plein.
+        //
+        // Les mois de moins de 29 jours sont sautés, pas seulement décalés :
+        // le scénario vérifie que le 29 reste libre, et un février commun n'en
+        // a pas — le sélecteur `[data-day="…-29"]` ne correspondrait à rien.
+        // Sauter revient à reculer, donc l'invariant « entièrement dans
+        // l'horizon » tient toujours. Compter les mois **éligibles** plutôt
+        // que les mois civils garde aussi les deux campagnes sur des mois
+        // distincts : un simple décalage supplémentaire les ferait se
+        // rejoindre en janvier et les deux poseraient leurs nuits au même
+        // endroit.
         const base = new Date();
         base.setUTCHours(0, 0, 0, 0);
         base.setUTCDate(base.getUTCDate() + HORIZON_DAYS);
         base.setUTCDate(1);
-        base.setUTCMonth(base.getUTCMonth() - (suffix === 'mobile' ? 1 : 2));
+
+        const wanted = suffix === 'mobile' ? 1 : 2;
+        let eligible = 0;
+        do {
+            base.setUTCMonth(base.getUTCMonth() - 1);
+            const length = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)).getUTCDate();
+            if (length >= 29) eligible += 1;
+        } while (eligible < wanted);
+
         month = base.toISOString().slice(0, 7);
 
         // Jours 17 à 29 : `stay.spec.js` occupe le 09 au 16 du même mois et

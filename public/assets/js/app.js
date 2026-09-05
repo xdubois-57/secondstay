@@ -2,6 +2,7 @@
  * SecondStay — point d'entrée client (module ES, aucune étape de build).
  */
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
+import { asInput, queryElement } from './modules/dom.js';
 import { focusFirstInvalid } from './modules/forms.js';
 import { evaluatePassword, levelClass } from './modules/password.js';
 import { initCalendar } from './modules/calendar.js';
@@ -24,7 +25,7 @@ function initTheme() {
             mode = nextTheme(root.getAttribute('data-theme-mode') || 'auto');
             storeTheme(window.localStorage, mode);
             applyTheme(root, mode, prefersDark());
-            const label = toggle.querySelector('[data-theme-label]');
+            const label = queryElement(toggle, '[data-theme-label]');
             if (label && label.dataset[mode]) {
                 label.textContent = label.dataset[mode];
             }
@@ -44,9 +45,10 @@ function initTheme() {
 }
 
 function initPasswordStrength() {
-    document.querySelectorAll('[data-password-input]').forEach((input) => {
+    document.querySelectorAll('[data-password-input]').forEach((element) => {
+        const input = asInput(element);
         const container = input.closest('.col-12, .mb-3, form') || document;
-        const bar = container.querySelector('[data-password-strength]');
+        const bar = queryElement(container, '[data-password-strength]');
         if (!bar) {
             return;
         }

@@ -1,0 +1,45 @@
+{
+    // TypeScript est ici un **vérificateur**, jamais une étape de construction.
+    //
+    // `noEmit` est tout l'intérêt : rien n'est compilé, rien n'est empaqueté,
+    // et la production continue de servir le JavaScript de
+    // `public/assets/js/` tel qu'il est écrit — module ES, sans build
+    // (AGENTS.md §2). Aucun fichier `.ts` n'existe dans ce dépôt et il ne
+    // doit pas en apparaître : `allowJs` + `checkJs` pointent tsc sur le
+    // JavaScript déjà là et lui demandent ce qu'il sait en prouver.
+    //
+    // Ce que cela apporte est la moitié manquante de l'analyse statique,
+    // celle que PHPStan fait côté serveur : identifiants inconnus, mauvais
+    // nombre d'arguments, propriétés qui n'existent pas sur l'objet touché.
+    // Ni Vitest ni Playwright ne la voient, parce qu'ils n'exécutent pas ce
+    // code-là — un gestionnaire d'événement qu'aucun test ne déclenche est
+    // du code que rien ne lit.
+    //
+    //   npm run typecheck
+    //
+    // `strict: false` volontairement. Ce code a été écrit sans types ;
+    // activer la rigueur enterrerait les constats qui méritent une correction
+    // sous des centaines d'autres sur des annotations absentes. Les deux
+    // contrôles conservés ci-dessous attrapent de vraies fautes, pas des
+    // annotations manquantes.
+    "compilerOptions": {
+        "target": "ES2020",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "allowJs": true,
+        "checkJs": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "strict": false,
+        "strictNullChecks": false,
+        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    // Le JavaScript de l'application. Ni `tests/` — Vitest et Playwright
+    // apportent leurs propres globales et leurs propres attentes — ni
+    // `public/assets/vendor/`, qui contient Bootstrap versionné tel quel :
+    // les constats qui s'y trouvent ne sont pas les nôtres à corriger.
+    "include": ["public/assets/js/**/*.js"],
+    "exclude": ["public/assets/vendor/**"]
+}

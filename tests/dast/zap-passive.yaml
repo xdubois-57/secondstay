@@ -1,0 +1,120 @@
+--- # SecondStay — plan ZAP Automation Framework, profil passif.
+#
+# Piloté par `scripts/dast.sh` ; jamais joué à la main. Les valeurs `${...}`
+# sont posées par ce script via l'environnement du conteneur ZAP :
+# DAST_TARGET est l'URL HTTPS de l'instance jetable, DAST_REPORT_DIR et
+# DAST_RELEASE_GATE_FILE sont des chemins **dans** le conteneur.
+#
+# CE QU'EST CE PROFIL
+# ----------------------------------------------------------------------
+# Règles passives uniquement. ZAP n'envoie rien de son propre chef et n'attaque
+# rien : la surface d'attaque vient entièrement du rejeu de la campagne
+# Playwright à travers ZAP comme proxy.
+#
+# C'est un choix délibéré contre l'araignée de ZAP. La campagne traverse déjà
+# l'assistant d'installation, l'administration derrière sa session, un parcours
+# de réservation complet, les paiements factices, l'espace client, le mode
+# séjour et les états des lieux. Aucun crawler n'atteint rien de tout cela, et
+# une araignée pointée sur SecondStay verrait la page d'accueil et s'arrêterait.
+#
+# Il n'y a pas de profil actif ici, et en ajouter un n'est pas un petit pas :
+# un scan actif REJOUE chaque requête enregistrée avec des charges d'attaque,
+# en portant les cookies de session du navigateur — y compris ceux d'un
+# administrateur authentifié, qui peut supprimer des réservations, vider des
+# médias et déclencher des sauvegardes. Un scan passif est une gate. Un scan
+# actif est une attaque, et il demande une liste d'exclusions écrite avant lui,
+# pas après.
+#
+# COMMENT LE PLAN ET LE TRAFIC S'EMBOÎTENT
+# ----------------------------------------------------------------------
+# Le plan démarre AVANT le navigateur et se bloque sur son travail `delay`
+# jusqu'à ce que `scripts/dast.sh` crée le fichier qu'il surveille. L'ordre
+# n'est pas cosmétique : la configuration du scanner passif doit être en place
+# avant que la première réponse ne soit analysée, parce qu'une alerte levée
+# avant que sa configuration n'existe reste levée.
+
+env:
+  contexts:
+    - name: secondstay
+      urls:
+        - ${DAST_TARGET}
+      includePaths:
+        - "\\Q${DAST_TARGET}\\E.*"
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # --------------------------------------------------------------------
+  # AUCUN FILTRE D'ALERTE, et c'est une décision, pas un oubli.
+  #
+  # Rien n'est mis en sourdine ici. En particulier « Strict-Transport-Security
+  # Header Not Set » (10035) et « Cookie Without Secure Flag » (10011) restent
+  # pleinement armés : l'instance est servie en vrai TLS par
+  # `scripts/dast-tls-proxy.php` et le sait grâce à
+  # `scripts/dast-https-prepend.php`. Si l'une des deux se déclenche, c'est un
+  # défaut du câblage HTTPS du harnais, pas un faux positif — et
+  # `scripts/dast.sh` prouve ce câblage vivant avant de lancer le scan,
+  # exactement pour cette raison.
+  #
+  # Si un filtre devient un jour nécessaire, le mettre ici AVEC SA RAISON. Un
+  # filtre sans raison écrite est la façon dont un rapport cesse d'être lu.
+  # --------------------------------------------------------------------
+  - type: passiveScan-config
+    parameters:
+      # Seulement ce que le navigateur a réellement visité. Un constat portant
+      # sur un tiers ne serait pas à ce projet de le corriger et enterrerait
+      # ceux qui le sont.
+      scanOnlyInScope: true
+      # Sans plafond par règle. Un plafond rend le rapport plus beau sans
+      # rendre l'application plus sûre, et le nombre d'occurrences est
+      # précisément ce qui dit si un constat porte sur une page ou sur toutes.
+      maxAlertsPerRule: 0
+
+  # --------------------------------------------------------------------
+  # Le navigateur tourne ici. `scripts/dast.sh` crée le fichier surveillé dès
+  # que Playwright se termine, quel que soit son verdict : une campagne en
+  # échec a tout de même produit du trafic qui mérite d'être analysé, et c'est
+  # le script shell qui décide du code de sortie global.
+  #
+  # `time` est un plafond, pas un horaire : il existe pour qu'une campagne
+  # coincée ne puisse pas tenir un travail d'intégration continue ouvert
+  # indéfiniment.
+  - type: delay
+    parameters:
+      time: '01:00:00'
+      fileName: ${DAST_RELEASE_GATE_FILE}
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 10
+
+  # --------------------------------------------------------------------
+  # Un rapport, en HTML, pour la personne qui lit une construction rouge.
+  #
+  # Il n'y a délibérément AUCUN rapport SARIF et aucun téléversement vers
+  # l'onglet Sécurité. Le *code scanning* rattache un résultat à un chemin du
+  # dépôt auquel il peut imputer un commit et une ligne ; un constat DAST est
+  # une observation sur une instance **en cours d'exécution**, et
+  # `scripts/dast.sh` la sert sur un port choisi à l'exécution — chaque
+  # emplacement se lit `https://localhost:<aléatoire>/...`, une origine qui n'a
+  # jamais existé hors de ce travail. Réécrire ces URL en chemins du dépôt
+  # ferait réussir le téléversement en inventant une localisation source à un
+  # constat qui n'en a pas.
+  #
+  # La gate n'en est pas affaiblie : `scripts/dast.sh` sort en non nul dès un
+  # constat au niveau `DAST_THRESHOLD` ou au-dessus, ce qui fait échouer le
+  # travail sur la poussée même qui l'a introduit — une application que
+  # l'onglet Sécurité n'a jamais fournie.
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: ${DAST_REPORT_DIR}
+      reportFile: dast-passive.html
+      reportTitle: SecondStay — scan dynamique passif
+      reportDescription: >
+        Produit par scripts/dast.sh, en rejouant la campagne Playwright de bout
+        en bout à travers OWASP ZAP, en HTTPS, contre une instance jetable
+        adossée à une base de test dédiée. Règles passives uniquement : rien
+        n'a été attaqué.
