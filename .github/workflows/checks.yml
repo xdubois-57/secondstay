@@ -228,6 +228,10 @@ jobs:
       SECONDSTAY_TEST_DB_NAME: secondstay_test
       SECONDSTAY_TEST_DB_USER: secondstay
       SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      # Une exécution automatisée qui n'a touché aucune base n'a pas fait son
+      # travail : cette variable en fait un échec plutôt qu'une suite ignorée.
+      # Voir l'en-tête de `tests/php/Support/DatabaseTestCase.php`.
+      SECONDSTAY_TEST_DB_REQUIRED: '1'
     steps:
       - uses: actions/checkout@v4
 
@@ -270,6 +274,88 @@ jobs:
         with:
           name: evidence-database
           path: build/reports/phpunit-database-junit.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # La même suite, sur l'autre moteur.
+  #
+  # README et ARCHITECTURE annoncent « MySQL 8 / MariaDB compatible ». Tant que
+  # la CI ne jouait que MySQL, cette phrase était une promesse que rien ne
+  # vérifiait — et l'asymétrie va dans le mauvais sens : du code correct sur
+  # MySQL et faux sur MariaDB arrive en production, parce que le travail
+  # ci-dessus est vert. L'inverse serait attrapé tout de suite.
+  #
+  # Les deux moteurs divergent là où ce projet les interroge vraiment : la
+  # façon dont `INFORMATION_SCHEMA` rapporte les valeurs par défaut, les
+  # largeurs d'affichage et `CURRENT_TIMESTAMP`, que le migrateur consulte pour
+  # décider si une colonne est déjà dans l'état voulu.
+  #
+  # La suite **entière**, et pas un groupe « base de données » : le jour où
+  # quelqu'un ajoute un test adossé à la base sans penser au marqueur, la
+  # version étroite le manquerait en silence.
+  #
+  # Pas de couverture ici : elle est produite par la jambe MySQL et consommée
+  # par SonarCloud. La mesurer deux fois ne dirait rien de plus et doublerait
+  # la durée.
+  # ---------------------------------------------------------------------------
+  database-mariadb:
+    name: Base de données — MariaDB 10.11
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: secondstay
+          MARIADB_DATABASE: secondstay_test
+          MARIADB_USER: secondstay
+          MARIADB_PASSWORD: secondstay
+        ports: ['3306:3306']
+        # `healthcheck.sh` est fourni par l'image MariaDB et sait attendre
+        # qu'InnoDB soit réellement initialisé — un `ping` répond bien avant.
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+      SECONDSTAY_TEST_DB_REQUIRED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+
+      - name: Version du moteur
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "SELECT VERSION();"
+
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Tests base de données
+        run: ./vendor/bin/phpunit --testsuite database --log-junit build/reports/phpunit-mariadb-junit.xml
+
+      - name: Preuves base de données MariaDB
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-database-mariadb
+          path: build/reports/phpunit-mariadb-junit.xml
           retention-days: 7
 
   javascript:

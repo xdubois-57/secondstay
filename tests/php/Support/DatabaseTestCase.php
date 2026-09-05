@@ -17,6 +17,34 @@ use SecondStay\Database\Migrator;
  * La base de test est explicitement configurée par variables d'environnement
  * (TESTING.md §5) : jamais de base de production, jamais de valeur par défaut
  * pointant vers une installation réelle.
+ *
+ * ## Pourquoi une base absente est un échec et non un test ignoré
+ *
+ * Un test qui s'ignore ne fait pas échouer la suite. Sans base, cette suite
+ * n'était pourtant **pas** verte : 705 tests ignorés, et 34 erreurs venues de
+ * sous-classes dont le `tearDown()` touche une propriété que le `setUp()`
+ * interrompu n'avait pas initialisée. Le compte rendu disait donc « Typed
+ * property $sandboxRoot must not be accessed before initialization » — un
+ * message qui envoie chercher un défaut d'initialisation dans le test, jamais
+ * une base éteinte.
+ *
+ * Deux garde-fous, pour deux situations différentes :
+ *
+ * - **base injoignable** : toujours un échec, jamais un `skip`. Avoir dit où
+ *   elle se trouve et ne pas l'y trouver est une panne, pas une absence de
+ *   configuration. Chaque test nomme alors la vraie cause ;
+ * - **base non configurée** : un `skip` en local — quelqu'un lance `phpunit`
+ *   sur un portable — mais un échec dès que `SECONDSTAY_TEST_DB_REQUIRED=1`.
+ *
+ * Ce second garde-fou couvre un trou **latent**, pas actuel : ce sont les 34
+ * erreurs incidentes ci-dessus qui rendent aujourd'hui la suite rouge. Que
+ * quelqu'un assainisse ces `tearDown()` — un nettoyage parfaitement
+ * raisonnable — et il resterait 739 tests ignorés, tous verts, en n'ayant
+ * touché aucune base. La variable rend cet état impossible d'avance.
+ *
+ * La question à poser devant n'importe quelle gate : à quoi ressemblerait un
+ * vert si la chose n'avait pas tourné du tout ? Quand la réponse est
+ * « pareil », le signal n'en est pas un.
  */
 abstract class DatabaseTestCase extends TestCase
 {
@@ -30,12 +58,30 @@ abstract class DatabaseTestCase extends TestCase
     {
         $config = self::databaseConfig();
         if ($config === null) {
+            // Une base absente est une situation locale légitime : quelqu'un
+            // lance `phpunit` sur un portable sans base de test. En CI, c'est
+            // un harnais cassé, et `SECONDSTAY_TEST_DB_REQUIRED` fait la
+            // différence — voir l'en-tête de cette classe.
+            if (self::databaseIsRequired()) {
+                self::fail(
+                    'SECONDSTAY_TEST_DB_REQUIRED=1 mais aucune base de test n’est configurée '
+                    . '(SECONDSTAY_TEST_DB_NAME). Cette exécution n’aurait rien prouvé.'
+                );
+            }
+
             self::markTestSkipped('Base de test non configurée (SECONDSTAY_TEST_DB_NAME).');
         }
 
         $this->database = new Database($config);
         if (!$this->database->isReachable()) {
-            self::markTestSkipped('Base de test injoignable.');
+            // Jamais un `skip`, nulle part : avoir dit où se trouve la base et
+            // ne pas l’y trouver n’est pas une absence de configuration, c’est
+            // une panne. La sauter rendrait la suite verte au moment précis où
+            // elle ne teste plus rien.
+            self::fail(sprintf(
+                'Base de test injoignable : %s. La configuration la désigne, elle doit répondre.',
+                $config->name
+            ));
         }
 
         // `realpath()` sur le dossier temporaire, pas seulement sur le bac à
@@ -55,6 +101,16 @@ abstract class DatabaseTestCase extends TestCase
         $this->paths->ensureStorageDirectories();
 
         $this->resetSchema();
+    }
+
+    /**
+     * La CI et `scripts/check.sh --db` posent cette variable. Elle transforme
+     * « pas de base, donc rien à tester » en échec, parce qu'une exécution
+     * automatisée qui n'a touché aucune base n'a pas fait son travail.
+     */
+    protected static function databaseIsRequired(): bool
+    {
+        return getenv('SECONDSTAY_TEST_DB_REQUIRED') === '1';
     }
 
     protected function tearDown(): void

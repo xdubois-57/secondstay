@@ -8,17 +8,63 @@ use SecondStay\Core\Exception\NotFoundException;
 
 final class Router
 {
-    /** @var list<array{method: string, pattern: string, regex: string, handler: array{0: class-string, 1: string}, name: string, localised: bool}> */
+    /** @var list<array{method: string, pattern: string, regex: string, handler: array{0: class-string, 1: string}, name: string, localised: bool, access: Access}> */
     private array $routes = [];
 
     /** @var array<string, array{pattern: string, localised: bool}> */
     private array $named = [];
 
     /**
+     * Niveau d'accès appliqué aux routes déclarées sans le préciser.
+     *
+     * Il vaut `Public` hors de toute portée, et c'est délibéré : une route
+     * ajoutée sans y penser est déclarée publique, donc confrontée par la
+     * matrice d'autorisation au comportement le plus permissif possible. Si
+     * elle refuse un visiteur, la gate refuse — un oubli devient bruyant au
+     * lieu de passer inaperçu.
+     */
+    private Access $scope = Access::Public;
+
+    /**
+     * Déclare un bloc de routes partageant le même niveau d'accès minimal.
+     *
+     * Annoter cent quatre-vingt-quatre routes une par une produirait une table
+     * que plus personne ne relit — et une table de routes illisible est un
+     * danger en soi. Les blocs suivent le découpage que ce fichier avait déjà.
+     *
+     * Une route peut toujours déclarer son propre niveau : le paramètre
+     * l'emporte sur la portée.
+     *
+     * @param callable(self): void $routes
+     */
+    public function scoped(Access $access, callable $routes): self
+    {
+        $previous = $this->scope;
+        $this->scope = $access;
+
+        try {
+            $routes($this);
+        } finally {
+            // Restauré même si la déclaration lève : une portée qui fuiterait
+            // ferait silencieusement hériter tout le reste du fichier d'un
+            // niveau d'accès qu'il n'a pas demandé.
+            $this->scope = $previous;
+        }
+
+        return $this;
+    }
+
+    /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function add(string $method, string $pattern, array $handler, string $name, bool $localised = true): self
-    {
+    public function add(
+        string $method,
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
         $normalised = '/' . trim($pattern, '/');
         if ($normalised === '/') {
             $normalised = '/';
@@ -31,6 +77,7 @@ final class Router
             'handler' => $handler,
             'name' => $name,
             'localised' => $localised,
+            'access' => $access ?? $this->scope,
         ];
         $this->named[$name] = ['pattern' => $normalised, 'localised' => $localised];
 
@@ -40,17 +87,27 @@ final class Router
     /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function get(string $pattern, array $handler, string $name, bool $localised = true): self
-    {
-        return $this->add('GET', $pattern, $handler, $name, $localised);
+    public function get(
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
+        return $this->add('GET', $pattern, $handler, $name, $localised, $access);
     }
 
     /**
      * @param array{0: class-string, 1: string} $handler
      */
-    public function post(string $pattern, array $handler, string $name, bool $localised = true): self
-    {
-        return $this->add('POST', $pattern, $handler, $name, $localised);
+    public function post(
+        string $pattern,
+        array $handler,
+        string $name,
+        bool $localised = true,
+        ?Access $access = null,
+    ): self {
+        return $this->add('POST', $pattern, $handler, $name, $localised, $access);
     }
 
     /**
@@ -138,7 +195,7 @@ final class Router
     }
 
     /**
-     * @return list<array{method: string, pattern: string, name: string, localised: bool}>
+     * @return list<array{method: string, pattern: string, name: string, localised: bool, access: Access, handler: array{0: class-string, 1: string}}>
      */
     public function routes(): array
     {
@@ -148,6 +205,8 @@ final class Router
                 'pattern' => $r['pattern'],
                 'name' => $r['name'],
                 'localised' => $r['localised'],
+                'access' => $r['access'],
+                'handler' => $r['handler'],
             ],
             $this->routes
         );

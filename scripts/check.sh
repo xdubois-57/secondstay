@@ -94,7 +94,13 @@ phpunit_db() {
         printf 'Voir TESTING.md §5. La base de production ne doit jamais être utilisée.\n'
         return 1
     fi
-    XDEBUG_MODE=off ./vendor/bin/phpunit --testsuite database --do-not-cache-result
+    # `SECONDSTAY_TEST_DB_REQUIRED` transforme « pas de base configurée » en
+    # échec plutôt qu'en test ignoré : une exécution automatisée qui n'a touché
+    # aucune base n'a pas fait son travail. Voir l'en-tête de
+    # `tests/php/Support/DatabaseTestCase.php` pour ce que ce garde-fou couvre
+    # exactement — un trou latent, pas actuel.
+    SECONDSTAY_TEST_DB_REQUIRED=1 XDEBUG_MODE=off \
+        ./vendor/bin/phpunit --testsuite database --do-not-cache-result
 }
 
 vitest() {
