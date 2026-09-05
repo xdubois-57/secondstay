@@ -938,12 +938,14 @@ bibliothèque C de l'hôte, et les deux implémentations répandues ne donnent p
 le même résultat : la glibc rend « Été » par « Ete », la libiconv des BSD et de
 macOS par « 'Et'e ».
 
-Le défaut ne se voyait pas en intégration continue, qui tourne sur Linux. Il se
-voyait sur l'hébergement mutualisé du client, où l'icône de l'application
-installée affichait « EE » pour « Été Indien » — les apostrophes ajoutées par
-la translittération coupaient le premier mot en deux, et la deuxième initiale
-était prise dans la moitié restante du premier mot. `PwaTest` disait vrai
-depuis toujours ; c'était le code qui dépendait de l'hôte.
+Le défaut ne se voit pas en intégration continue, qui tourne sur Linux. Il se
+voit sur toute machine dont le PHP est lié à la libiconv des BSD — un poste de
+développement macOS, et tout hébergement de cette famille : l'icône de
+l'application installée y affiche « EE » pour « Été Indien », les apostrophes
+ajoutées par la translittération coupant le premier mot en deux, de sorte que
+la deuxième initiale est prise dans la moitié restante du premier mot.
+`PwaTest` disait vrai depuis toujours ; c'était le code qui dépendait de
+l'hôte.
 
 Livré :
 
@@ -963,3 +965,45 @@ Livré :
 Corrigé au passage : le tableau d'état d'avancement annonçait encore
 l'itération 14 « à venir » alors que la section qui la suit la documente comme
 livrée en 0.15.0.
+
+### Le même défaut, côté campagne
+
+La recherche a fait apparaître une seconde hypothèse d'hôte, dans le harnais
+cette fois. `DatabaseTestCase` posait son bac à sable sous
+`sys_get_temp_dir()` sans le résoudre. Sur macOS cette valeur est
+`/var/folders/…`, un lien symbolique vers `/private/var/folders/…` :
+`DocumentService::absolutePath()` rendait la forme résolue — il appelle
+`realpath()` avant de vérifier que le fichier ne sort pas de la racine du
+stockage — et le test comparait deux écritures du même dossier.
+
+Le produit avait raison, le test avait tort, et l'intégration continue ne
+pouvait pas le dire : `/tmp` n'est pas un lien sur l'exécuteur Linux. Le bac à
+sable est désormais canonique dès sa création.
+
+### Et une troisième, dans la commande de validation elle-même
+
+`check.sh` construisait la liste d'arguments de Playwright dans un tableau
+vide lorsque `SECONDSTAY_E2E_PROJECT` n'est pas défini, puis l'expansait par
+`"${project[@]}"`. Bash 4 accepte ; bash 3.2 — celui que macOS livre encore,
+et le seul disponible sans installation supplémentaire — considère l'expansion
+d'un tableau vide comme une variable non définie, et `set -u` interrompt alors
+la commande entière. La campagne E2E ne démarrait pas du tout, sans message
+autre que `project[@]: unbound variable`.
+
+C'est le même schéma que les deux précédents : une hypothèse d'hôte invisible
+depuis un exécuteur Linux. `${project[@]+"${project[@]}"}` fonctionne sur les
+deux versions.
+
+### Une transcription lue avant d'être écrite
+
+Rejouer la suite unitaire plusieurs fois de suite a fait tomber
+`ImapClientTest::testAFullSessionSpeaksTheExpectedProtocol` environ une fois
+sur cinq, sur une transcription vide. Le bouchon IMAP publiait la sienne par
+`file_put_contents`, qui crée le fichier puis écrit : deux opérations, et le
+test attendait la première en croyant attendre la seconde.
+
+Une suite qui échoue une fois sur cinq sans rien casser est pire qu'une suite
+rouge, parce qu'on prend l'habitude de la relancer. Le bouchon publie
+désormais par `rename()`, en une seule opération visible, et l'attente du test
+porte sur un contenu non vide plutôt que sur l'existence du fichier — une
+attente qui accepte zéro octet ne prouve rien.
