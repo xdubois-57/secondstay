@@ -1191,8 +1191,22 @@ générale : le navigateur par l'épinglage de sa clé publique
 du Node, que l'épinglage de Chromium ne concerne pas — parce que le certificat
 lui est donné comme ancre via `NODE_EXTRA_CA_CERTS`. L'alternative aurait été
 `ignoreHTTPSErrors`, qui désarme la vérification pour tout le contexte,
-navigateur compris, et rendrait l'épinglage décoratif au moment précis où l'on
-scanne du TLS. Il couvre aussi
+navigateur compris, et rendrait l'épinglage décoratif.
+
+**La campagne de scan est l'exception, et pour une raison de fond.** ZAP est
+un intercepteur par construction : le pair TLS du navigateur n'y est plus le
+terminateur mais ZAP, qui ré-signe chaque connexion avec une autorité qu'il
+génère lui-même. Épingler une clé connue d'avance n'a alors pas de sens — le
+certificat présenté n'existait pas quand l'empreinte a été calculée. Le
+navigateur refusait donc chaque connexion, et la carte du site de ZAP
+ressortait vide ; c'est `assert-sitemap` qui l'a dit, pas un rapport
+faussement rassurant.
+
+Ce que le scan affirme sur le TLS du produit, il l'établit sur **sa** connexion
+au terminateur. La vérification côté navigateur ne porterait, dans cette
+campagne, que sur un certificat jetable fabriqué par l'outil de mesure
+lui-même : il n'y a rien à y garantir. `ignoreHTTPSErrors` est donc conditionné
+à la présence d'un proxy d'interception, et à elle seule. Il couvre aussi
 `host.docker.internal`, nom par lequel un ZAP conteneurisé joint l'hôte hors
 Linux : c'est alors l'origine que le navigateur demande au proxy, et elle doit
 rester valide de son côté.

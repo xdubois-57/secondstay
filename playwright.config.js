@@ -126,11 +126,29 @@ export default defineConfig({
         // campagne ordinaire doit rester capable de signaler un vrai défaut de
         // certificat.
         //
-        // Et **seulement** l'épinglage : `ignoreHTTPSErrors` accompagnait
-        // cette ligne et annulait ce qu'elle prétend faire, en désactivant la
-        // validation pour tout le contexte. Un autre certificat invalide
-        // passait alors aussi, ce qui rendait l'épinglage décoratif — juste au
-        // moment où l'on scanne le TLS.
+        // Et **seulement** l'épinglage, tant qu'aucun proxy ne s'interpose :
+        // `ignoreHTTPSErrors` accompagnait cette ligne et annulait ce qu'elle
+        // prétend faire, en désactivant la validation pour tout le contexte.
+        // Un autre certificat invalide passait alors aussi, ce qui rendait
+        // l'épinglage décoratif — juste au moment où l'on scanne le TLS.
+        //
+        // La campagne de scan dynamique est l'exception, et pour une raison de
+        // fond : elle interpose ZAP, qui **est un intercepteur par
+        // construction**. Le pair TLS du navigateur n'y est plus le
+        // terminateur mais ZAP, qui ré-signe chaque connexion avec une
+        // autorité qu'il génère lui-même. Épingler une clé publique connue
+        // d'avance n'a alors pas de sens : le certificat présenté n'existait
+        // pas au moment où l'on a calculé l'empreinte. C'est ce qui a vidé la
+        // carte du site de ZAP à la première tentative — le navigateur
+        // refusait chaque connexion, donc aucun trafic n'atteignait le
+        // scanner.
+        //
+        // Rien n'est perdu au passage : ce que le scan affirme sur le TLS du
+        // produit, il l'établit sur **sa** connexion au terminateur, pas sur
+        // celle du navigateur. La validation côté navigateur ne porte, dans
+        // cette campagne, que sur un certificat jetable fabriqué par l'outil
+        // de mesure.
+        ignoreHTTPSErrors: proxyServer !== '',
         ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
         ...(usesTls
             ? {
