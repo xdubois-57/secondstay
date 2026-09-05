@@ -21,18 +21,13 @@ final class Slugger
         return mb_substr($slug, 0, $maxLength);
     }
 
+    /**
+     * La table d'`Ascii` sert de référence, pas de repli : un slug entre dans
+     * des URLs et des noms de fichiers, et doit donc être le même quel que
+     * soit l'hébergement — avec ou sans `intl`, glibc ou libiconv.
+     */
     private static function transliterate(string $value): string
     {
-        $lower = mb_strtolower(trim($value));
-
-        // La translittération ICU gère correctement œ, ß, ij, les diacritiques…
-        $transliterated = @transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $lower);
-        if (is_string($transliterated) && $transliterated !== '') {
-            return $transliterated;
-        }
-
-        $fallback = @iconv('UTF-8', 'ASCII//TRANSLIT', $lower);
-
-        return is_string($fallback) && $fallback !== '' ? mb_strtolower($fallback) : $lower;
+        return mb_strtolower(Ascii::fold(trim($value)));
     }
 }

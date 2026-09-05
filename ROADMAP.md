@@ -39,7 +39,7 @@ Une itération est terminée seulement si :
 | 11 | États des lieux et incidents | ✅ livrée |
 | 12 | France et conformité | ✅ livrée |
 | 13 | Contenu local IA | ✅ livrée |
-| 14 | ICS externes, reporting, consolidation | ⏳ à venir |
+| 14 | ICS externes, reporting, consolidation | ✅ livrée |
 
 Le numéro de version mineure suit l’itération livrée : l’itération N correspond
 à la série `0.(N+1).x`.
@@ -926,3 +926,40 @@ le paramètre d'URL reste admis parce que beaucoup d'hébergements n'offrent qu'
 champ « adresse à appeler », et que leur fermer la porte reviendrait à les
 priver de sauvegarde et de purge. Le risque résiduel est nommé dans
 `SECURITY.md` plutôt que passé sous silence.
+
+## Portabilité de la translittération
+
+### Livré (0.17.2)
+
+Trois endroits du produit ramenaient du texte accentué à l'ASCII par
+`iconv('UTF-8', 'ASCII//TRANSLIT', …)` : les initiales de l'icône PWA, les
+slugs et le dernier recours du générateur PDF. Cette fonction délègue à la
+bibliothèque C de l'hôte, et les deux implémentations répandues ne donnent pas
+le même résultat : la glibc rend « Été » par « Ete », la libiconv des BSD et de
+macOS par « 'Et'e ».
+
+Le défaut ne se voyait pas en intégration continue, qui tourne sur Linux. Il se
+voyait sur l'hébergement mutualisé du client, où l'icône de l'application
+installée affichait « EE » pour « Été Indien » — les apostrophes ajoutées par
+la translittération coupaient le premier mot en deux, et la deuxième initiale
+était prise dans la moitié restante du premier mot. `PwaTest` disait vrai
+depuis toujours ; c'était le code qui dépendait de l'hôte.
+
+Livré :
+
+- `Support\Ascii::fold()`, table explicite couvrant Latin-1 Supplement, Latin
+  Extended-A, les ligatures (`œ`, `æ`, `ĳ`, `ß`) et la ponctuation
+  typographique des quatre langues. Ce qu'elle ne connaît pas est retiré, non
+  approximé : perdre un caractère est acceptable, en introduire un que la
+  source ne portait pas ne l'est pas ;
+- les trois appels à `iconv` remplacés. `Slugger` n'utilise plus non plus la
+  translittération ICU : un slug entre dans des URLs et des noms de fichiers,
+  et deux installations du même produit ne peuvent pas en produire deux
+  versions selon que `intl` est chargé ou non ;
+- `AsciiTest`, qui vérifie notamment qu'aucune apostrophe n'apparaît là où la
+  source n'en portait pas, et que le filtre final ne vide pas une chaîne en
+  UTF-8 invalide.
+
+Corrigé au passage : le tableau d'état d'avancement annonçait encore
+l'itération 14 « à venir » alors que la section qui la suit la documente comme
+livrée en 0.15.0.
