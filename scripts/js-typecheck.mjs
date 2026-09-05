@@ -66,6 +66,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { occurrenceIdentity } from './lib/occurrence-identity.mjs';
+
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const tscBin = path.join(repoRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.cmd' : 'tsc');
 const tsconfigPath = path.join(repoRoot, 'tsconfig.json');
@@ -88,8 +90,10 @@ const BASELINE_HEADER = [
     '// Clé : fichier + code + message, jamais le numéro de ligne — une modification',
     '// ailleurs dans un fichier ne doit pas faire passer pour neufs les constats',
     '// situés en dessous. Chaque occurrence acceptée est retenue par le texte de sa',
-    '// ligne : déplacer cette ligne ne change rien, la remplacer fait réapparaître le',
-    '// constat, et un constat corrigé ici puis réintroduit là ne se compense plus.',
+    '// ligne, précédé des deux lignes de code qui la précèdent : déplacer le bloc ne',
+    '// change rien, le remplacer fait réapparaître le constat, et deux occurrences',
+    '// au texte identique dans le même fichier ne se confondent plus — corriger',
+    '// l\'une et en introduire une autre ailleurs ne se compense donc pas.',
     '',
 ].join('\n');
 
@@ -146,13 +150,18 @@ const keyOf = (d) => `${d.file} ${d.code} ${d.message}`;
 const sourceCache = new Map();
 
 /**
- * Le texte de la ligne signalée, espaces de bord retirés et espaces internes
- * réduits : un simple ré-indentation ne doit pas faire passer pour neuf un
- * constat déjà accepté. Une ligne devenue illisible — fichier supprimé entre
- * l'analyse et ici — rend une chaîne vide, qui ne correspondra à aucune
- * entrée : dans le doute, la gate parle.
+ * Identité d'une occurrence, déléguée à `scripts/lib/occurrence-identity.mjs`.
+ *
+ * La règle vit dans un module à part parce que ce fichier-ci s'exécute
+ * entièrement au chargement : rien de ce qu'il contient ne serait testable, et
+ * cette règle décide seule si un constat neuf est vu ou confondu avec un
+ * constat déjà accepté. `tests/js/occurrence-identity.test.js` la couvre.
+ *
+ * Un fichier devenu illisible — supprimé entre l'analyse et ici — rend un
+ * tableau vide, donc une identité vide, qui ne correspondra à aucune entrée :
+ * dans le doute, la gate parle.
  */
-function sourceLine(file, line) {
+function identityAt(file, line) {
     if (!sourceCache.has(file)) {
         const absolute = path.isAbsolute(file) ? file : path.join(repoRoot, file);
         try {
@@ -161,7 +170,8 @@ function sourceLine(file, line) {
             sourceCache.set(file, []);
         }
     }
-    return (sourceCache.get(file)?.[line - 1] ?? '').trim().replace(/\s+/g, ' ');
+
+    return occurrenceIdentity(sourceCache.get(file) ?? [], line);
 }
 
 /** @type {Map<string, {file: string, code: string, message: string, occurrences: {line: number, column: number, text: string}[]}>} */
@@ -173,7 +183,7 @@ for (const d of diagnostics) {
         group = { file: d.file, code: d.code, message: d.message, occurrences: [] };
         current.set(key, group);
     }
-    group.occurrences.push({ line: d.line, column: d.column, text: sourceLine(d.file, d.line) });
+    group.occurrences.push({ line: d.line, column: d.column, text: identityAt(d.file, d.line) });
 }
 
 if (generateBaseline) {

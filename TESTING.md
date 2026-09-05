@@ -220,11 +220,21 @@ d'introduire.
 
 Une entrée acceptée est identifiée par le fichier, le code et le message —
 jamais par le numéro de ligne, qu'une insertion cinq lignes plus haut suffirait
-à décaler — et chaque occurrence par **le texte de sa ligne source**. Déplacer
-la ligne ne change donc rien ; la remplacer fait réapparaître le constat. Sans
-cela, corriger une occurrence et en écrire une autre du même code ailleurs dans
-le même fichier laisserait le total inchangé, et la gate resterait muette sur
-le constat qu'on vient d'introduire.
+à décaler — et chaque occurrence par **le texte de sa ligne source, précédé des
+deux lignes de code qui la précèdent**. Déplacer le bloc ne change donc rien ;
+le remplacer fait réapparaître le constat.
+
+Le contexte n'est pas décoratif, et une revue a montré pourquoi. Le texte seul
+ne distingue pas deux occurrences identiques dans un même fichier — deux
+`return null;`, deux appels au même helper. Corriger l'une et en introduire une
+autre ailleurs laissait alors le total inchangé, l'entrée acceptée consommée
+par la nouvelle, et le constat neuf jamais signalé.
+
+La règle vit dans `scripts/lib/occurrence-identity.mjs`, à part, parce que
+`js-typecheck.mjs` s'exécute entièrement au chargement et que rien de ce qu'il
+contient ne serait autrement testable. `tests/js/occurrence-identity.test.js`
+couvre le cas de l'échange, et le vérifie dans les deux sens : le test devient
+rouge dès qu'on rétablit l'identification par le seul texte.
 
 ## 7. Playwright E2E
 
