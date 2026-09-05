@@ -375,17 +375,51 @@ npm audit --omit=dev --audit-level=high >/dev/null 2>&1 || warn "npm audit signa
 ok "Dépendances auditées"
 
 # ------------------------------------------------------ 13. Nouvelle version -
+# REPRENDRE PLUTÔT QUE REBONDIR
+# ---------------------------------------------------------------------------
+# Depuis que le commit de version peut passer par une pull request (§5.1), la
+# publication se fait en deux temps, et l'intervalle entre les deux peut être
+# long : les gates du dépôt tournent sur cette pull request avant qu'elle ne
+# fusionne. Une interruption à ce moment-là — le script tué, l'attente
+# dépassée — laisse `VERSION` déjà incrémenté sur la branche et aucun tag.
+#
+# Relancer le script tel quel incrémenterait alors **une seconde fois** :
+# 0.18.0 fusionné mais non publié deviendrait 0.19.0, et 0.18.0 n'existerait
+# jamais qu'en tant que numéro dans un fichier. C'est un trou dans la suite des
+# versions publiées, et il est silencieux.
+#
+# La détection est étroite à dessein. « `VERSION` sans tag » ne suffit pas :
+# c'est aussi l'état d'un dépôt qui n'a jamais rien publié, et où il faut bien
+# incrémenter. Ce qui distingue une publication interrompue, c'est que le
+# dernier commit à toucher `VERSION` est celui que **ce script** écrit.
+RESUME=0
+if ! git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+    LAST_VERSION_SUBJECT="$(git log -1 --format=%s -- VERSION 2>/dev/null || true)"
+    if [ "$LAST_VERSION_SUBJECT" = "chore: release $CURRENT_VERSION" ]; then
+        RESUME=1
+    fi
+fi
+
 info "14/24 Calcul de la nouvelle version"
-IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-case "$BUMP" in
-    major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-    minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-    patch) PATCH=$((PATCH + 1)) ;;
-esac
-NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-TAG="v$NEW_VERSION"
-git rev-parse "$TAG" >/dev/null 2>&1 && die "Le tag $TAG existe déjà."
-ok "Nouvelle version : $NEW_VERSION"
+if [ $RESUME -eq 1 ]; then
+    NEW_VERSION="$CURRENT_VERSION"
+    TAG="v$NEW_VERSION"
+    warn "Publication interrompue : le commit de version de $NEW_VERSION est sur"
+    warn "$EXPECTED_BRANCH, et $TAG n'existe pas. Reprise à la pose du tag."
+    warn "L'incrément demandé (« $BUMP ») est ignoré : $NEW_VERSION n'a jamais été publiée."
+    ok "Version reprise : $NEW_VERSION"
+else
+    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+    case "$BUMP" in
+        major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+        minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+        patch) PATCH=$((PATCH + 1)) ;;
+    esac
+    NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+    TAG="v$NEW_VERSION"
+    git rev-parse "$TAG" >/dev/null 2>&1 && die "Le tag $TAG existe déjà."
+    ok "Nouvelle version : $NEW_VERSION"
+fi
 
 if [ $DRY_RUN -eq 1 ]; then
     warn "--dry-run : arrêt avant toute écriture."
@@ -393,6 +427,10 @@ if [ $DRY_RUN -eq 1 ]; then
 fi
 
 # ----------------------------------------------------------- 14. VERSION -----
+if [ $RESUME -eq 1 ]; then
+    info "15-17/24 Écriture, commit et publication du commit de version"
+    ok "Déjà fait : repris depuis $EXPECTED_BRANCH"
+else
 info "15/24 Écriture de VERSION"
 printf '%s\n' "$NEW_VERSION" > VERSION
 ok "VERSION = $NEW_VERSION"
@@ -472,6 +510,7 @@ else
     git fetch "$REMOTE" "$MERGE_SHA" >/dev/null 2>&1 || die "Fetch de $MERGE_SHA impossible."
     git reset --hard "$MERGE_SHA" >/dev/null || die "Mise à jour de $EXPECTED_BRANCH impossible."
     ok "Commit de version fusionné dans $EXPECTED_BRANCH"
+fi
 fi
 
 # --------------------------------------------------------------- 17. Tag -----
