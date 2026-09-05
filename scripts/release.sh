@@ -120,6 +120,29 @@ for tool in git php composer npm zip; do
 done
 HAS_GH=0
 command -v gh >/dev/null 2>&1 && HAS_GH=1
+
+# `gh` résout le dépôt à partir des remotes du dossier, et choisit lui-même
+# lequel. Or `SECONDSTAY_RELEASE_REMOTE` peut en désigner un autre — un fork,
+# un miroir. Le script pousserait alors la branche ici et ouvrirait la pull
+# request là-bas, ou pire, lirait l'état d'une pull request qui n'est pas la
+# sienne. `GH_REPO` lève l'ambiguïté pour **toutes** les commandes `gh` du
+# script, en une seule ligne plutôt qu'un `--repo` par appel.
+if [ $HAS_GH -eq 1 ]; then
+    REMOTE_URL="$(git remote get-url "$REMOTE" 2>/dev/null || true)"
+    case "$REMOTE_URL" in
+        *github.com[:/]*)
+            GH_REPO="${REMOTE_URL#*github.com}"
+            GH_REPO="${GH_REPO#:}"
+            GH_REPO="${GH_REPO#/}"
+            GH_REPO="${GH_REPO%.git}"
+            export GH_REPO
+            ;;
+        *)
+            # Un remote qui n'est pas sur github.com : on laisse `gh` décider
+            # plutôt que d'exporter une valeur fausse.
+            ;;
+    esac
+fi
 ok "Outils présents (gh: $([ $HAS_GH -eq 1 ] && echo oui || echo non))"
 
 # ------------------------------------------------------- 2. Working tree ------
@@ -381,9 +404,75 @@ git commit -m "chore: release $NEW_VERSION" >/dev/null || die "Commit impossible
 ok "Commit créé"
 
 # -------------------------------------------------------------- 16. Push -----
-info "17/24 Push du commit"
-git push -u "$REMOTE" "$EXPECTED_BRANCH" >/dev/null || die "Push impossible."
-ok "Commit poussé"
+# Deux chemins, et le dépôt choisit lequel — pas ce script.
+#
+# Là où rien n'interdit d'écrire sur la branche de release, le commit y va
+# directement : c'est le plus court, et c'est ce que fait ce script depuis le
+# début.
+#
+# Là où une règle exige une pull request — le ruleset « Main » de ce dépôt le
+# fait, sans acteur en dérogation — la poussée directe est refusée par le
+# serveur avec « Changes must be made through a pull request ». Le commit de
+# version passe alors par une branche et une PR fusionnée automatiquement.
+#
+# Ce n'est pas un contournement : c'est la même règle que pour tout autre
+# changement, et elle a l'avantage de faire subir au commit de version
+# exactement les mêmes gates qu'au reste. Un commit qui échappe aux contrôles
+# parce qu'il ne touche « qu'un numéro » est précisément le commit dont
+# personne ne relit le diff.
+#
+# La tentative directe d'abord, plutôt qu'une détection : interroger l'API des
+# rulesets dirait ce qui est *configuré*, quand seule la poussée dit ce qui est
+# *appliqué*. Un refus ne laisse rien derrière lui.
+info "17/24 Publication du commit de version"
+if git push -u "$REMOTE" "$EXPECTED_BRANCH" >/dev/null 2>&1; then
+    ok "Commit poussé sur $EXPECTED_BRANCH"
+else
+    warn "$EXPECTED_BRANCH refuse les poussées directes — passage par une pull request."
+    [ $HAS_GH -eq 1 ] || die "gh est requis pour ouvrir la pull request de version."
+
+    RELEASE_BRANCH="release/$NEW_VERSION"
+    git branch -f "$RELEASE_BRANCH" HEAD >/dev/null || die "Branche $RELEASE_BRANCH impossible."
+    git push -u "$REMOTE" "$RELEASE_BRANCH" >/dev/null || die "Push de $RELEASE_BRANCH impossible."
+
+    gh pr create --base "$EXPECTED_BRANCH" --head "$RELEASE_BRANCH" \
+        --title "chore: release $NEW_VERSION" \
+        --body "Commit de version pour \`$TAG\`, ouvert par \`scripts/release.sh\` parce que \`$EXPECTED_BRANCH\` exige une pull request. Le tag est posé sur la fusion." \
+        >/dev/null || die "Création de la pull request de version impossible."
+
+    # `--auto` plutôt qu'une fusion immédiate : les gates doivent passer, et
+    # certaines règles demandent une analyse du commit de fusion que GitHub
+    # recalcule. Attendre ici est ce qui garde la chaîne en une seule commande.
+    gh pr merge "$RELEASE_BRANCH" --merge --auto --delete-branch >/dev/null \
+        || die "Auto-fusion de la pull request de version impossible."
+
+    info "  attente de la fusion de $RELEASE_BRANCH (gates du dépôt)..."
+    MERGED=0
+    for _ in $(seq 1 240); do
+        if [ "$(gh pr view "$RELEASE_BRANCH" --json state -q .state 2>/dev/null)" = "MERGED" ]; then
+            MERGED=1
+            break
+        fi
+        sleep 30
+    done
+    [ $MERGED -eq 1 ] || die "La pull request de version n'a pas été fusionnée en deux heures."
+
+    # Le tag doit porter sur **le** commit de fusion de cette pull request, et
+    # non sur la tête de la branche au moment où on la relit : entre la fusion
+    # et cette ligne, une autre pull request peut être passée. Le tag
+    # désignerait alors du code que la pull request de version n'a pas validé
+    # et que les notes ne décrivent pas.
+    MERGE_SHA="$(gh pr view "$RELEASE_BRANCH" --json mergeCommit -q '.mergeCommit.oid' 2>/dev/null)"
+    [ -n "$MERGE_SHA" ] && [ "$MERGE_SHA" != "null" ] || die "Commit de fusion de la pull request de version illisible."
+
+    # `reset --hard` et non `pull --ff-only` : la branche locale porte encore le
+    # commit de version, que la fusion a intégré à distance sous une autre
+    # empreinte. Les deux ont divergé, une avance rapide est impossible, et le
+    # contenu local n'est pas perdu — il est dans la fusion.
+    git fetch "$REMOTE" "$MERGE_SHA" >/dev/null 2>&1 || die "Fetch de $MERGE_SHA impossible."
+    git reset --hard "$MERGE_SHA" >/dev/null || die "Mise à jour de $EXPECTED_BRANCH impossible."
+    ok "Commit de version fusionné dans $EXPECTED_BRANCH"
+fi
 
 # --------------------------------------------------------------- 17. Tag -----
 info "18/24 Tag annoté"
