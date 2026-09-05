@@ -819,6 +819,29 @@ Ces drapeaux vivent donc dans `chromiumBinary()`, appliqué aux seuls projets
 Chromium. Le proxy, lui, reste partagé : `proxy` est une option de Playwright,
 comprise par les trois moteurs.
 
+**Mais sur Chromium, un proxy déclaré par contexte n'isole les contextes que
+si le navigateur a lui-même été lancé avec un proxy.** Sans cela, les contextes
+partagent l'état réseau du navigateur et le `proxy` du `use` partagé n'en donne
+que l'illusion. `chromiumBinary()` pose donc `proxy: { server: 'per-context' }`
+dans `launchOptions` quand — et seulement quand — un proxy est configuré : la
+valeur lance Chromium avec un proxy sans en imposer aucun.
+
+Ce n'est pas une précaution théorique. Sous le proxy du scan dynamique, une
+navigation faite juste après une connexion repartait avec le pot à cookies d'un
+autre contexte. Dans le trace conservé par un travail en échec, `/fr/account`
+part avec `secondstay_session=808c2587…; ss_locale=fr` et rend 200, puis la
+requête suivante, cent douze millisecondes plus tard, part avec
+`secondstay_session=303f6bfc…; ss_locale=nl` et rend 403. Les **deux** cookies
+changent ensemble : ce n'est pas une session régénérée, c'est un autre pot.
+L'application, elle, a répondu correctement — une session inconnue sur une
+route authentifiée doit rendre 403.
+
+Ce défaut ne se voyait que dans la campagne du scan dynamique, et il s'y voyait
+comme de l'instabilité : des scénarios différents tombaient à chaque exécution,
+toujours sur une page « Accès refusé » ou sur un élément qu'elle ne portait pas.
+Une gate verte une fois sur quatre est une gate que l'on apprend à relancer, ce
+qui est à mi-chemin d'apprendre à la sauter.
+
 ### 18.7 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
