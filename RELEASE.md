@@ -265,8 +265,13 @@ C'est le prix d'une branche protégée, et il est assumé.
 Le chemin par pull request fait de la publication un geste en deux temps, et
 l'intervalle entre les deux peut être long : les gates du dépôt tournent sur la
 pull request de version avant qu'elle ne fusionne. Une interruption à ce
-moment-là — script tué, attente dépassée, fusion bloquée — laisse `VERSION`
-déjà incrémenté sur la branche et **aucun tag**.
+moment-là — script tué, ou attente dépassée alors que la fusion finit par
+avoir lieu — laisse `VERSION` déjà incrémenté sur la branche et **aucun
+tag**.
+
+Une fusion qui reste bloquée n'entre pas dans ce cas : le commit de version
+n'est alors pas sur la branche de release, il n'y a rien à reprendre, et la
+publication se relance simplement.
 
 Relancer le script tel quel incrémenterait une seconde fois : une 0.18.0
 fusionnée mais non publiée deviendrait 0.19.0, et 0.18.0 n'existerait jamais

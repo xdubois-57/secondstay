@@ -393,7 +393,10 @@ ok "Dépendances auditées"
 # incrémenter. Ce qui distingue une publication interrompue, c'est que le
 # dernier commit à toucher `VERSION` est celui que **ce script** écrit.
 RESUME=0
-if ! git rev-parse "v$CURRENT_VERSION" >/dev/null 2>&1; then
+# `show-ref --verify refs/tags/…` et non `rev-parse` : ce dernier résout aussi
+# une **branche** du même nom. Une branche `v0.18.0` traînant dans le dépôt
+# empêcherait la reprise d'une publication qui n'a pourtant aucun tag.
+if ! git show-ref --verify --quiet "refs/tags/v$CURRENT_VERSION"; then
     LAST_VERSION_SUBJECT="$(git log -1 --format=%s -- VERSION 2>/dev/null || true)"
     if [ "$LAST_VERSION_SUBJECT" = "chore: release $CURRENT_VERSION" ]; then
         RESUME=1
@@ -417,7 +420,9 @@ else
     esac
     NEW_VERSION="$MAJOR.$MINOR.$PATCH"
     TAG="v$NEW_VERSION"
-    git rev-parse "$TAG" >/dev/null 2>&1 && die "Le tag $TAG existe déjà."
+    # Même raison qu'au-dessus : c'est l'existence du **tag** qui interdit de
+    # republier, pas celle d'une branche homonyme.
+    git show-ref --verify --quiet "refs/tags/$TAG" && die "Le tag $TAG existe déjà."
     ok "Nouvelle version : $NEW_VERSION"
 fi
 
