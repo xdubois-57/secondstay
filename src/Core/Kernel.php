@@ -107,6 +107,12 @@ final class Kernel
         $container = $this->boot();
         $config = $container->get(Config::class);
 
+        // La requête est enregistrée **avant** toute résolution de service :
+        // le cookie de session doit être `Secure` quand la requête est arrivée
+        // en HTTPS, et `Session` est résolu bien avant que le `RequestContext`
+        // n'existe. Passer par ce dernier ne donnerait `null` à cet instant.
+        $container->instance(Request::class, $request);
+
         try {
             // Défense en profondeur : même si le serveur web est mal configuré,
             // l'application refuse de servir un chemin privé.

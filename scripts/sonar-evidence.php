@@ -227,13 +227,22 @@ $measures = sonarApi(
 );
 sonarWriteJson($outDir . '/sonarcloud-measures.json', $measures);
 
-$byFile = sonarApi(
+// Paginé, comme les constats et les points chauds. Une seule page laisserait
+// tomber tout ce qui dépasse, en silence : les arbres analysés passent déjà
+// les 500 fichiers, et le pack présenterait alors un relevé par fichier
+// incomplet comme s'il était complet. Une preuve tronquée sans le dire est
+// pire qu'une preuve absente.
+$byFile = sonarFetchAllPages(
     'measures/component_tree?component=' . $projectKey
-    . '&qualifiers=FIL&ps=500&metricKeys='
+    . '&qualifiers=FIL&metricKeys='
     . 'ncloc,coverage,bugs,vulnerabilities,code_smells,duplicated_lines_density,cognitive_complexity',
+    'components',
     $token
 );
-sonarWriteJson($outDir . '/sonarcloud-measures-by-file.json', $byFile);
+sonarWriteJson(
+    $outDir . '/sonarcloud-measures-by-file.json',
+    ['total' => count($byFile), 'components' => $byFile]
+);
 
 $issues = sonarFetchAllPages(
     'issues/search?componentKeys=' . $projectKey . '&statuses=OPEN,CONFIRMED,REOPENED',

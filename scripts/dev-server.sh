@@ -61,7 +61,14 @@ stop() {
     # garderait le port et servirait un environnement obsolète. Le motif est
     # ancré en début de ligne de commande : il ne peut pas correspondre au
     # shell qui exécute ce script.
-    for ORPHAN in $(pgrep -f "^php -S ${HOST}:${PORT}" 2>/dev/null || true); do
+    #
+    # Les options qui précèdent `-S` sont acceptées : en mode TLS la ligne
+    # commence par « php -d auto_prepend_file=… -S », et un motif qui exigeait
+    # `-S` juste après `php` ne trouvait donc plus rien. Un orphelin survit à
+    # une campagne interrompue — `e2e-reset.php` vide `storage/temp` et
+    # emporte le fichier de pid — et la campagne suivante échouait alors à
+    # prendre son port, pour une raison sans rapport avec ce qu'elle teste.
+    for ORPHAN in $(pgrep -f "^php( .*)? -S ${HOST}:${PORT}" 2>/dev/null || true); do
         kill "$ORPHAN" 2>/dev/null || true
         sleep 0.3
         kill -9 "$ORPHAN" 2>/dev/null || true

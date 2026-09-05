@@ -262,10 +262,24 @@ function dastTlsExchange(string $backend, string $head, string $body): ?array
     }
     stream_set_timeout($upstream, DAST_TLS_BACKEND_TIMEOUT);
 
-    if (@fwrite($upstream, $head . $body) === false) {
-        fclose($upstream);
+    // `fwrite()` peut n'écrire qu'une partie de ce qu'on lui donne dès que le
+    // tampon de la socket est plein, et rendre alors un compte positif plus
+    // petit que la longueur demandée. Traiter « pas faux » comme « tout
+    // écrit » enverrait un corps tronqué au serveur d'application : la
+    // campagne pousse un envoi multipart d'environ 1,5 Mo, et le scan
+    // échouerait ou resterait suspendu pour une raison étrangère à
+    // l'application.
+    $payload = $head . $body;
+    $written = 0;
+    $length = strlen($payload);
+    while ($written < $length) {
+        $chunk = @fwrite($upstream, substr($payload, $written));
+        if ($chunk === false || $chunk === 0) {
+            fclose($upstream);
 
-        return null;
+            return null;
+        }
+        $written += $chunk;
     }
 
     $raw = '';

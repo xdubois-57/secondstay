@@ -1129,6 +1129,20 @@ inversé par rapport à l'intuition : un client qui forgerait
 qui refuserait ensuite de renvoyer ses propres cookies. Il n'y a rien à y
 gagner.
 
+### 39.1 Le cookie de session
+
+Le cookie de session porte `Secure` dès que la requête est arrivée en HTTPS, et
+jamais en clair — où le drapeau rendrait le cookie inutilisable, donc la
+connexion impossible. Il suit `Request::isSecure()`, donc le
+`X-Forwarded-Proto` d'un répartiteur : c'est précisément le cas d'un
+hébergement mutualisé derrière un terminateur, où le TLS est réellement là et
+où la protection compte.
+
+Cette protection **manquait**. `Services` construisait la session avec
+`secure: false` en dur : le drapeau existait, et valait toujours faux. Sur une
+installation entièrement servie en TLS, le cookie de session voyageait sans ce
+qui interdit de le renvoyer en clair.
+
 ## 40. Scan dynamique : pourquoi il exige du HTTPS
 
 Deux protections de SecondStay dépendent du transport : l'en-tête HSTS
@@ -1155,9 +1169,21 @@ l'archive de release, et exécutées par aucun déploiement :
 
 Le certificat est émis pour **`localhost`** et non pour une adresse IP : une IP
 n'est pas une *relying party* WebAuthn valide, et les parcours de clés d'accès
-de la campagne seraient refusés par le navigateur.
+de la campagne seraient refusés par le navigateur. Il couvre aussi
+`host.docker.internal`, nom par lequel un ZAP conteneurisé joint l'hôte hors
+Linux : c'est alors l'origine que le navigateur demande au proxy, et elle doit
+rester valide de son côté.
 
 Le câblage est **prouvé vivant avant tout scan** : une requête, et l'assertion
-que la réponse porte l'en-tête HSTS et un cookie `Secure`. Si la preuve échoue,
-la campagne s'arrête là. Un scan sur un harnais mal câblé produit un rapport
-faux, ce qui est pire que pas de rapport.
+que la réponse porte l'en-tête HSTS et un cookie de session `Secure`. Si la
+preuve échoue, la campagne s'arrête là. Un scan sur un harnais mal câblé
+produit un rapport faux, ce qui est pire que pas de rapport.
+
+La preuve porte sur le cookie **nommé**, et c'est le sujet. Elle acceptait
+d'abord n'importe quel `Set-Cookie` contenant « secure » ; la préférence de
+langue en pose un, si bien qu'elle était verte alors que le cookie de session
+n'était pas protégé du tout. Un garde-fou qui regarde à côté de ce qu'il
+surveille est plus dangereux que pas de garde-fou : il rend le silence
+rassurant. Elle distingue en outre « cookie jamais posé » de « cookie posé sans
+le drapeau » — deux pannes différentes, qui envoient chercher à deux endroits
+différents.

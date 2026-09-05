@@ -35,12 +35,16 @@ vMAJOR.MINOR.PATCH
 Avant release, les contrôles suivants doivent être verts :
 
 - PHP syntax ;
-- PHPStan ;
-- PHPUnit ;
+- PHPStan, **sans baseline** — vert signifie *aucun constat* ;
+- `tsc`, vérificateur du JavaScript, aux mêmes conditions ;
+- PHPUnit, sur les **deux** versions de PHP supportées ;
 - DB integration ;
 - Vitest ;
-- Playwright ;
+- Playwright, sur `desktop-chromium` et `mobile-safari` ;
+- scan dynamique passif OWASP ZAP — aucune alerte au-dessus d'informatif, et
+  une carte du site qui couvre les chemins attendus ;
 - Composer audit ;
+- absence de secret ou de donnée runtime versionné ;
 - CodeQL applicable ;
 - Dependabot security state ;
 - SonarCloud Quality Gate ;
@@ -231,7 +235,8 @@ Ordre recommandé :
 Bloque si :
 
 - PHPStan erreur ;
-- PHPUnit fail ;
+- `tsc` erreur ;
+- PHPUnit fail, sur l'une ou l'autre version de PHP ;
 - Vitest fail ;
 - Playwright fail ;
 - i18n check fail.
@@ -239,6 +244,10 @@ Bloque si :
 ### Security gate
 
 Bloque sur alertes CodeQL/Dependabot définies comme ouvertes et bloquantes.
+
+Bloque aussi sur une alerte du scan dynamique passif au-dessus d'informatif.
+Une campagne en échec y fait échouer le scan même sans le moindre constat de
+sécurité : un scan ne vaut que le trafic qu'on lui a donné.
 
 ### Sonar gate
 

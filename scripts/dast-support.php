@@ -22,7 +22,7 @@ declare(strict_types=1);
  *   generate-cert <chemin.pem> <nom-d-hote>
  *   cert-spki <chemin.pem>
  *   wait-url <url> <secondes>
- *   assert-https <url-de-base>
+ *   assert-https <url-de-base> [nom-du-cookie-de-session]
  *   zap-plan-start <url-zap> <clé-api> <chemin-du-plan-dans-le-conteneur>
  *   zap-plan-await-delay <url-zap> <clé-api> <id-de-plan> <secondes>
  *   zap-plan-wait <url-zap> <clé-api> <id-de-plan> <secondes>
@@ -160,7 +160,10 @@ function dastGenerateCertificate(string $pemPath, string $hostname): void
         . "basicConstraints = CA:FALSE\n"
         . "keyUsage = digitalSignature, keyEncipherment\n"
         . "extendedKeyUsage = serverAuth\n"
-        . "subjectAltName = DNS:{$hostname}, DNS:localhost, IP:127.0.0.1\n"
+        // `host.docker.internal` est le nom par lequel un ZAP conteneurisé
+        // joint l'hôte hors Linux ; c'est donc l'origine que le navigateur
+        // demande au proxy, et elle doit rester valide côté navigateur.
+        . "subjectAltName = DNS:{$hostname}, DNS:localhost, DNS:host.docker.internal, IP:127.0.0.1\n"
     );
 
     $config = [
@@ -281,11 +284,48 @@ function dastWaitUrl(string $url, int $timeoutSeconds): bool
  * un défaut du harnais pour le rapporter comme celui de l'application. Mieux
  * vaut échouer ici, bruyamment, en dix secondes.
  */
-function dastAssertHttps(string $baseUrl): void
+/**
+ * Le cookie de session porte-t-il `Secure` ?
+ *
+ * Le nom compte. Une réponse en HTTPS pose plusieurs cookies, et l'un d'eux —
+ * la préférence de langue — est `Secure` depuis toujours : accepter n'importe
+ * quel `Set-Cookie` contenant « secure » faisait donc passer la preuve sans
+ * jamais regarder le cookie de session. C'est exactement la panne que cette
+ * fonction existe pour attraper, et elle y était aveugle.
+ *
+ * @param list<string> $headers
+ */
+function dastSessionCookieIsSecure(array $headers, string $sessionCookieName): bool
+{
+    foreach ($headers as $header) {
+        if (stripos($header, 'Set-Cookie:') !== 0) {
+            continue;
+        }
+
+        $cookie = trim(substr($header, strlen('Set-Cookie:')));
+        $attributes = array_map('trim', explode(';', $cookie));
+        $name = trim(explode('=', (string) array_shift($attributes), 2)[0]);
+
+        if ($name !== $sessionCookieName) {
+            continue;
+        }
+
+        foreach ($attributes as $attribute) {
+            if (strcasecmp($attribute, 'Secure') === 0) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondstay_session'): void
 {
     $reached = false;
     $hasHsts = false;
     $hasSecureCookie = false;
+    $sessionCookieSeen = false;
 
     // Deux pages, parce que les deux protections ne se voient pas au même
     // endroit : l'en-tête HSTS accompagne toute réponse, le cookie de session
@@ -302,9 +342,17 @@ function dastAssertHttps(string $baseUrl): void
             if (stripos($header, 'Strict-Transport-Security:') === 0) {
                 $hasHsts = true;
             }
-            if (stripos($header, 'Set-Cookie:') === 0 && stripos($header, 'secure') !== false) {
-                $hasSecureCookie = true;
+        }
+
+        foreach ($response['headers'] as $header) {
+            if (stripos($header, 'Set-Cookie:') === 0
+                && str_starts_with(trim(substr($header, strlen('Set-Cookie:'))), $sessionCookieName . '=')) {
+                $sessionCookieSeen = true;
             }
+        }
+
+        if (dastSessionCookieIsSecure($response['headers'], $sessionCookieName)) {
+            $hasSecureCookie = true;
         }
 
         if ($hasHsts && $hasSecureCookie) {
@@ -318,10 +366,18 @@ function dastAssertHttps(string $baseUrl): void
         dastFail("impossible de joindre {$baseUrl} en HTTPS.");
     }
 
+    // Un cookie de session jamais vu et un cookie de session vu sans `Secure`
+    // sont deux pannes différentes : la première est un scénario de preuve qui
+    // n'ouvre plus de session, la seconde un vrai défaut de l'application.
+    // Les confondre enverrait chercher au mauvais endroit.
+    $cookieDiagnostic = $hasSecureCookie
+        ? 'oui'
+        : ($sessionCookieSeen ? 'NON — posé sans le drapeau' : "NON — cookie « {$sessionCookieName} » jamais posé");
+
     dastFail(
         "l'instance ne se comporte pas comme une instance HTTPS"
         . ' (HSTS : ' . ($hasHsts ? 'oui' : 'NON')
-        . ', cookie de session Secure : ' . ($hasSecureCookie ? 'oui' : 'NON') . ").\n"
+        . ", cookie de session Secure : {$cookieDiagnostic}).\n"
         . "      scripts/dast-https-prepend.php n'atteint pas les deux protections\n"
         . "      conditionnées au TLS. Scanner maintenant rapporterait le défaut du\n"
         . '      harnais comme deux constats contre du code applicatif correct.'
@@ -779,7 +835,7 @@ switch ($command) {
         if (($argv[2] ?? '') === '') {
             dastFail('usage : dast-support.php assert-https <url-de-base>');
         }
-        dastAssertHttps($argv[2]);
+        dastAssertHttps($argv[2], ($argv[3] ?? '') !== '' ? $argv[3] : 'secondstay_session');
         break;
 
     case 'zap-plan-start':

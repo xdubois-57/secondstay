@@ -66,7 +66,7 @@ export default async function globalSetup(config) {
         || `http://${publicHost}:${publicPort}`;
 
     if (tlsEnabled) {
-        await startTlsTerminator(publicHost, publicPort, backendHost, backendPort, baseURL);
+        await startTlsTerminator(publicHost, publicPort, backendHost, backendPort);
     }
 
     // Les sondes de la préparation passent par le serveur d'application
@@ -108,7 +108,7 @@ export default async function globalSetup(config) {
  * (« pas de HSTS », « cookie sans Secure »). Mieux vaut échouer ici, en dix
  * secondes, en le disant.
  */
-async function startTlsTerminator(host, port, backendHost, backendPort, baseURL) {
+async function startTlsTerminator(host, port, backendHost, backendPort) {
     const support = resolve(root, 'scripts/dast-support.php');
     const stateDir = resolve(root, 'storage/temp');
     mkdirSync(stateDir, { recursive: true });
@@ -137,12 +137,19 @@ async function startTlsTerminator(host, port, backendHost, backendPort, baseURL)
     // global tourne dans un autre processus Node que celui-ci.
     writeFileSync(resolve(stateDir, `tls-proxy-${port}.pid`), String(terminator.pid));
 
-    const ready = spawnResult('php', [support, 'wait-url', `${baseURL}/`, '30']);
+    // L'URL sondée est celle où le terminateur écoute réellement, construite
+    // ici — et non `baseURL`, qui est ce que voit le **navigateur**. Les deux
+    // se séparent dès que le navigateur passe par un proxy conteneurisé : ZAP
+    // sous Docker Desktop joint l'hôte par un nom que l'hôte, lui, ne résout
+    // pas. Sonder ce nom depuis ici échouerait sans que rien ne soit cassé.
+    const probeURL = `https://${host}:${port}`;
+
+    const ready = spawnResult('php', [support, 'wait-url', `${probeURL}/`, '30']);
     if (ready !== 0) {
-        throw new Error(`Le terminateur TLS n'a pas répondu sur ${baseURL} (code ${ready}).`);
+        throw new Error(`Le terminateur TLS n'a pas répondu sur ${probeURL} (code ${ready}).`);
     }
 
-    execFileSync('php', [support, 'assert-https', baseURL], { cwd: root, stdio: 'inherit' });
+    execFileSync('php', [support, 'assert-https', probeURL], { cwd: root, stdio: 'inherit' });
 }
 
 function spawnResult(command, args) {

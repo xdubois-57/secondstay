@@ -261,6 +261,18 @@ else
     ZAP_LISTEN_HOST="0.0.0.0"
     echo "DAST : hors Linux — ZAP joindra l'instance par ${ZAP_TARGET}."
 fi
+
+# Le navigateur reçoit **la même** origine que ZAP. Changer la cible du seul
+# scanner ne suffisait pas : le navigateur demandait au proxy conteneurisé de
+# joindre `localhost:PORT`, c'est-à-dire la boucle du conteneur et non le
+# terminateur de l'hôte — et le contexte se retrouvait en prime sur un nom
+# d'hôte différent de celui du scan. Le certificat de campagne couvre
+# `host.docker.internal` pour que cette origine reste valide côté navigateur.
+#
+# Ce chemin n'est pas exercé par l'intégration continue, qui tourne sous Linux.
+# `assert-sitemap` reste le garde-fou : une carte vide fait échouer la campagne
+# plutôt que de rendre un scan qui n'a rien vu.
+BROWSER_BASE_URL="${ZAP_TARGET}"
 ZAP_PROXY="http://127.0.0.1:${ZAP_PORT}"
 
 echo "DAST : démarrage d'OWASP ZAP (${DAST_ZAP_IMAGE}) sur ${ZAP_PROXY}."
@@ -323,7 +335,7 @@ SECONDSTAY_TEST_DB_NAME="${DAST_DB_NAME:-${SECONDSTAY_TEST_DB_NAME}}" \
 SECONDSTAY_HOST="${DAST_TLS_HOST}" \
 SECONDSTAY_PORT="${PORT}" \
 SECONDSTAY_BACKEND_PORT="${BACKEND_PORT}" \
-SECONDSTAY_BASE_URL="${BASE_URL}" \
+SECONDSTAY_BASE_URL="${BROWSER_BASE_URL}" \
 SECONDSTAY_TLS_CERT="${CERT_FILE}" \
 SECONDSTAY_E2E_PROXY="${ZAP_PROXY}" \
 SECONDSTAY_TIMEOUT_FACTOR="${DAST_TIMEOUT_FACTOR}" \

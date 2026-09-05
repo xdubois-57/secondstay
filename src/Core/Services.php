@@ -29,6 +29,7 @@ use SecondStay\Backup\BackupService;
 use SecondStay\Content\ContentRepository;
 use SecondStay\Content\ContentSeeder;
 use SecondStay\Content\ContentService;
+use SecondStay\Core\Http\Request;
 use SecondStay\Database\Database;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\Database\Migrator;
@@ -215,10 +216,18 @@ final class Services
         $container->set(Session::class, static function (Container $c): Session {
             $config = $c->get(Config::class);
 
+            // `Secure` dès que la requête est arrivée en HTTPS — jamais en
+            // clair, où le drapeau rendrait le cookie inutilisable et donc la
+            // connexion impossible. `isSecure()` tient compte du
+            // `X-Forwarded-Proto` d'un répartiteur, cas normal en hébergement
+            // mutualisé, sans quoi la protection disparaîtrait précisément là
+            // où le TLS est réellement terminé.
+            $request = $c->has(Request::class) ? $c->get(Request::class) : null;
+
             return new PhpSession(
                 $config->string('security.session_name', 'secondstay_session'),
                 $config->int('security.session_lifetime_minutes', 120),
-                false,
+                $request instanceof Request && $request->isSecure(),
             );
         });
 

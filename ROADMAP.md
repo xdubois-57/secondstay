@@ -952,8 +952,8 @@ PHP 8.2 contre 8.1, assistant d'installation joué en E2E).
 ### Ce que la campagne a trouvé en chemin
 
 Une consolidation d'outillage n'était pas censée toucher au produit. Elle a
-pourtant fait tomber trois défauts réels, tous invisibles depuis l'unique
-configuration que la CI jouait jusque-là :
+pourtant fait tomber cinq défauts réels du produit, tous invisibles depuis
+l'unique configuration que la CI jouait jusque-là :
 
 - **`CURLOPT_PROTOCOLS_STR` nommée en dur.** La constante n'existe que si PHP
   est lié à libcurl ≥ 7.85 : sur un hébergement mutualisé plus ancien, *toute*
@@ -964,7 +964,28 @@ configuration que la CI jouait jusque-là :
   `curl`. Sans l'une des trois, l'installation « fonctionnait » jusqu'à la
   première page affichant un prix ;
 - **aucun en-tête HSTS.** La feuille de route le décrivait comme existant ; il
-  n'était nulle part. Il est désormais émis, et uniquement en HTTPS.
+  n'était nulle part. Il est désormais émis, et uniquement en HTTPS ;
+- **le cookie de session n'était jamais `Secure`.** `Services` construisait
+  `PhpSession` avec `secure: false` **en dur** : sur une installation
+  entièrement servie en TLS, le cookie de session voyageait sans le drapeau
+  qui interdit de le renvoyer en clair. Le drapeau existait depuis toujours,
+  et valait toujours faux ;
+- **un scénario de test qui devient rouge tout seul.** `closing.spec.js`
+  choisissait parfois un février commun, où le 29 qu'il vérifie n'existe pas :
+  latent jusqu'au 2027-09-08, puis rouge 183 jours sur les 1200 suivants, sans
+  qu'une ligne du produit ait bougé.
+
+Le cinquième mérite un mot de plus, parce que la façon dont il a survécu est
+plus instructive que le défaut lui-même. L'itération 4 avait écrit une preuve
+« le câblage HTTPS est vivant » justement pour ne pas scanner à l'aveugle — et
+cette preuve acceptait *n'importe quel* `Set-Cookie` contenant « secure ». La
+préférence de langue en pose un. Le garde-fou regardait donc à côté de ce qu'il
+surveillait, et rendait le silence rassurant. Il vérifie désormais le cookie
+**nommé**, et distingue « jamais posé » de « posé sans le drapeau » : deux
+pannes différentes, qui envoient chercher à deux endroits différents.
+
+Tous cinq ont été trouvés en revue ou par la matrice, aucun par un utilisateur.
+C'est le seul résultat qui compte ici.
 
 ### Ce qui reste hors périmètre
 
