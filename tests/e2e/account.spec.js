@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN, ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
+import { ADMIN, ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait, submitSignUp } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 import { closeNavigation, openNavigation } from './helpers/navigation.js';
 
@@ -39,7 +39,7 @@ test.describe('comptes', () => {
         await page.fill('#phone', '+33600000000');
         await page.fill('#password', PASSWORD);
         await page.check('#accept_terms');
-        await page.click('[data-testid="signup-form"] button[type="submit"]');
+        await submitSignUp(page);
     }
 
     test('inscription, e-mail de confirmation et activation du compte', async ({ page, request }) => {
@@ -230,17 +230,38 @@ test.describe('comptes', () => {
     });
 
     test('export RGPD des données personnelles', async ({ page }) => {
-        // La navigation doit être terminée avant d'interroger l'API : le
-        // contexte de requête partage le pot à cookies de la page.
         await signInAndWait(page, email, PASSWORD);
 
-        const response = await page.request.get('/fr/account/export');
+        // La requête part **du document**, et non du contexte d'API de
+        // Playwright. Ce dernier est censé partager le pot à cookies de la
+        // page, et il le fait presque toujours — mais sous le proxy du scan
+        // dynamique il a resservi celui d'un test antérieur du groupe
+        // `serial` : la requête est partie avec la session périmée de ce
+        // test-là et son `ss_locale=nl`, posé par « préférence de langue »,
+        // alors que le navigateur venait de se connecter et affichait « Mon
+        // compte ». L'application a répondu 403, correctement.
+        //
+        // Un `fetch` dans la page n'a pas ce degré de liberté : il ne peut
+        // utiliser que le pot du document qui l'exécute. La campagne ordinaire
+        // ne voyait rien de tout cela ; c'est la latence du proxy qui a rendu
+        // la course visible, et une course qui ne se voit qu'en scan dynamique
+        // reste une course.
+        const result = await page.evaluate(async () => {
+            const response = await fetch('/fr/account/export', { credentials: 'same-origin' });
 
-        expect(response.status()).toBe(200);
-        expect(response.headers()['content-disposition']).toContain('attachment');
-        expect(response.headers()['cache-control']).toContain('no-store');
+            return {
+                status: response.status,
+                contentDisposition: response.headers.get('content-disposition') ?? '',
+                cacheControl: response.headers.get('cache-control') ?? '',
+                body: await response.text(),
+            };
+        });
 
-        const payload = await response.json();
+        expect(result.status).toBe(200);
+        expect(result.contentDisposition).toContain('attachment');
+        expect(result.cacheControl).toContain('no-store');
+
+        const payload = JSON.parse(result.body);
         expect(payload.account.email).toBe(email);
         expect(payload.account.first_name).toBe('Claire-Marie');
         expect(payload.consents.length).toBeGreaterThanOrEqual(2);

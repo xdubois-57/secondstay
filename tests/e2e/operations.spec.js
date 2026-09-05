@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait, submitSignUp } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
@@ -73,7 +73,7 @@ test.describe('exploitation', () => {
         await page.fill('#email', client);
         await page.fill('#password', PASSWORD);
         await page.check('#accept_terms');
-        await page.click('[data-testid="signup-form"] button[type="submit"]');
+        await submitSignUp(page);
 
         const mail = await waitForMail(request, client, 'account_confirmation');
         await page.goto(linkFrom(mail, '/account/confirm'));
@@ -225,7 +225,7 @@ test.describe('exploitation', () => {
         expect(body).toContain(reference);
         // Le flux du voyageur porte le contact du responsable, jamais de
         // montant.
-        expect(body).toContain(manager.replace(/@/, '@'));
+        expect(body).toContain(manager);
         expect(body).not.toMatch(/\d+,\d{2}/);
 
         await context.close();

@@ -147,12 +147,35 @@ function pinnedPublicKeys() {
  * TLS aurait laissé un proxy en clair sans rien voir de la boucle locale —
  * une campagne qui mesure moins que ce qu'elle annonce.
  *
- * @returns {{ channel?: string, launchOptions: { args: string[] } }}
+ * @returns {{ channel?: string, launchOptions: { args: string[], proxy?: { server: string } } }}
  */
 function chromiumBinary() {
     return {
         ...(proxyServer !== '' ? { channel: 'chromium' } : {}),
         launchOptions: {
+            // Sur Chromium, un proxy déclaré **par contexte** n'isole
+            // réellement les contextes que si le navigateur a lui-même été
+            // lancé avec un proxy. Sans cela, les contextes partagent l'état
+            // réseau du navigateur, et le `proxy` du `use` partagé ne fait
+            // qu'en donner l'illusion.
+            //
+            // Ce n'est pas une précaution théorique. Sous le proxy du scan
+            // dynamique, une navigation faite juste après une connexion
+            // repartait avec le pot à cookies d'un autre contexte : dans le
+            // trace conservé par un travail en échec, `/fr/account` part avec
+            // `secondstay_session=808c2587…; ss_locale=fr` et rend 200, puis
+            // la requête suivante, cent douze millisecondes plus tard, part
+            // avec `secondstay_session=303f6bfc…; ss_locale=nl` et rend 403.
+            // Les **deux** cookies changent ensemble : ce n'est pas une
+            // session régénérée, c'est un autre pot. L'application a répondu
+            // correctement — une session inconnue sur une route authentifiée
+            // doit rendre 403.
+            //
+            // `per-context` est la valeur que Playwright prévoit pour cela :
+            // elle lance Chromium avec un proxy sans en imposer aucun, et
+            // rend le proxy du contexte réellement propre à ce contexte. La
+            // campagne ordinaire, sans proxy, ne voit pas cette ligne.
+            ...(proxyServer !== '' ? { proxy: { server: 'per-context' } } : {}),
             args: [
                 // Précaution standard pour Chromium en intégration continue,
                 // où `/dev/shm` est petit. Elle ne dépend d'aucun harnais, et

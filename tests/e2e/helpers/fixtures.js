@@ -1,4 +1,72 @@
-import { expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+
+import { expect, test } from '@playwright/test';
+
+/**
+ * En cas d'échec, l'état des pots à cookies de tous les contextes vivants.
+ *
+ * POURQUOI CETTE INSTRUMENTATION EXISTE
+ * ---------------------------------------------------------------------------
+ * La campagne du scan dynamique tombe environ trois fois sur quatre, sur des
+ * scénarios différents et toujours de la même façon : après une
+ * authentification réussie, une requête ultérieure est traitée comme anonyme,
+ * l'application répond correctement 403 — ou renvoie vers la page de connexion
+ * — et le scénario meurt sur un élément que cette page ne porte pas.
+ *
+ * Le trace de Playwright montre les en-têtes **envoyés**. Il a établi que la
+ * requête fautive part avec un jeu de cookies complet et cohérent qui n'est pas
+ * celui du test : `secondstay_session` **et** `ss_locale` changent ensemble,
+ * d'une requête à la suivante, à cent douze millisecondes d'intervalle.
+ *
+ * Ce que le trace ne montre pas, c'est ce que le contexte **contenait** à cet
+ * instant. Or c'est la seule mesure qui sépare les deux explications
+ * restantes, et elles mènent dans des directions opposées :
+ *
+ *   - le contexte porte le bon cookie, et quelque chose le remplace en chemin
+ *     — l'enquête va alors vers le proxy ;
+ *   - le contexte porte lui-même le mauvais cookie — elle va vers Playwright.
+ *
+ * Chaque mesure coûte une demi-heure d'intégration continue. Ajouter une
+ * hypothèse de plus reviendrait à tirer à pile ou face à ce prix-là.
+ *
+ * `browser` est demandé plutôt que `page` : il est de portée « worker » et
+ * déjà instancié, là où demander `page` créerait un contexte pour les
+ * scénarios qui n'en utilisent pas — l'instrumentation changerait alors ce
+ * qu'elle mesure. `browser.contexts()` rend tous les contextes vivants, y
+ * compris ceux que les scénarios créent eux-mêmes par `anonymousContext()`.
+ */
+test.afterEach(async ({ browser }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) {
+        return;
+    }
+
+    const contexts = [];
+    for (const [index, context] of browser.contexts().entries()) {
+        try {
+            contexts.push({
+                index,
+                pages: context.pages().map((page) => page.url()),
+                cookies: await context.cookies(),
+            });
+        } catch (error) {
+            // Un contexte fermé pendant le démontage n'est pas une raison de
+            // faire échouer le démontage lui-même : on note l'impossibilité.
+            contexts.push({ index, error: String(error) });
+        }
+    }
+
+    // Écrit sur disque plutôt que joint par `body` : un attachement à corps
+    // vit dans le rapport, quand l'artefact que la CI conserve en cas d'échec
+    // est l'arborescence `test-results/`. Une preuve qui ne sort pas de la
+    // machine où elle a été produite n'en est pas une.
+    const target = testInfo.outputPath('pots-a-cookies.json');
+    await writeFile(
+        target,
+        JSON.stringify({ capturedAt: new Date().toISOString(), contexts }, null, 2),
+        'utf8'
+    );
+    await testInfo.attach('pots-a-cookies.json', { path: target, contentType: 'application/json' });
+});
 
 /**
  * Données de test partagées entre les scénarios E2E.
@@ -50,6 +118,38 @@ export async function signIn(page, email = ADMIN.email, password = ADMIN.passwor
 export async function signInAndWait(page, email, password, locale = 'fr') {
     await signIn(page, email, password, locale);
     await page.waitForURL(/\/(fr|en|nl|de)\/account$/);
+}
+
+/**
+ * Soumet le formulaire d'inscription **et attend que la réponse soit arrivée**.
+ *
+ * LA COURSE QUE CE HELPER FERME
+ * ---------------------------------------------------------------------------
+ * `page.click()` rend la main dès que le clic est délivré, jamais quand la
+ * réponse est là. Le POST d'inscription reste donc en vol. Or l'e-mail de
+ * confirmation est écrit en base **pendant** le traitement, avant que la
+ * réponse ne parte : `waitForMail()` rend donc la main, lui aussi, alors que
+ * la réponse n'est toujours pas revenue.
+ *
+ * La suite ouvrait le lien de confirmation, qui connecte et pose une session.
+ * Puis la réponse tardive de l'inscription arrivait enfin, avec son propre
+ * `Set-Cookie` — et **réécrivait le pot** par-dessus la session fraîche. La
+ * navigation suivante repartait avec la session périmée, l'application
+ * répondait correctement « Accès refusé » ou renvoyait vers la connexion, et
+ * le scénario attendait six minutes un élément que cette page ne porte pas.
+ *
+ * C'est ce qui rendait la campagne du scan dynamique verte une fois sur
+ * quatre, sur des scénarios différents à chaque fois : la fenêtre de course
+ * n'est que de quelques millisecondes en direct, mais la latence du proxy
+ * d'interception l'élargit à plusieurs centaines. La campagne ordinaire ne la
+ * voyait donc presque jamais — ce qui n'en faisait pas moins une course.
+ *
+ * `signup-sent` est la page que le POST produit, et son marqueur ne dépend pas
+ * de la langue : l'attendre, c'est attendre la réponse elle-même.
+ */
+export async function submitSignUp(page) {
+    await page.click('[data-testid="signup-form"] button[type="submit"]');
+    await expect(page.locator('[data-testid="signup-sent"]')).toBeVisible();
 }
 
 /**

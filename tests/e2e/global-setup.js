@@ -61,10 +61,6 @@ export default async function globalSetup(config) {
     });
 
     const internalBaseURL = `http://${backendHost}:${backendPort}`;
-    const baseURL = config.projects[0]?.use?.baseURL
-        || process.env.SECONDSTAY_BASE_URL
-        || `http://${publicHost}:${publicPort}`;
-
     if (tlsEnabled) {
         await startTlsTerminator(publicHost, publicPort, backendHost, backendPort);
     }

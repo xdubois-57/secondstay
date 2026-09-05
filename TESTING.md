@@ -819,6 +819,88 @@ Ces drapeaux vivent donc dans `chromiumBinary()`, appliqué aux seuls projets
 Chromium. Le proxy, lui, reste partagé : `proxy` est une option de Playwright,
 comprise par les trois moteurs.
 
+**Mais sur Chromium, un proxy déclaré par contexte n'isole les contextes que
+si le navigateur a lui-même été lancé avec un proxy.** Sans cela, les contextes
+partagent l'état réseau du navigateur et le `proxy` du `use` partagé n'en donne
+que l'illusion. `chromiumBinary()` pose donc `proxy: { server: 'per-context' }`
+dans `launchOptions` quand — et seulement quand — un proxy est configuré : la
+valeur lance Chromium avec un proxy sans en imposer aucun.
+
+Cette ligne est correcte en elle-même — c'est ce que Playwright exige pour que
+`proxy` déclaré par contexte isole réellement les contextes sur Chromium. **Elle
+n'a pas corrigé l'instabilité pour autant**, et il faut le dire ici plutôt que
+laisser croire le contraire à la prochaine personne qui lira ce paragraphe.
+
+### 18.6 bis L'instabilité du scan dynamique, et la course qui la causait
+
+La campagne du scan dynamique passait environ une fois sur quatre, sur des
+scénarios différents à chaque exécution. Le symptôme était toujours le même :
+après une inscription ou une connexion réussie, une navigation ultérieure était
+traitée comme anonyme. L'application répondait correctement — « Accès refusé »,
+ou un renvoi vers la page de connexion — et le scénario attendait six minutes un
+élément que cette page ne porte pas.
+
+**La cause est une course dans le harnais**, et elle tient en quatre lignes :
+
+```js
+await page.click('[data-testid="signup-form"] button[type="submit"]');
+const mail = await waitForMail(request, client, 'account_confirmation');
+await page.goto(linkFrom(mail, '/account/confirm'));
+await page.goto('/fr/booking?…');
+```
+
+`page.click()` rend la main dès que le clic est délivré, jamais quand la réponse
+est là : le POST d'inscription reste en vol. L'e-mail, lui, est écrit en base
+**pendant** le traitement, avant que la réponse ne parte — `waitForMail()` rend
+donc la main alors que la réponse n'est toujours pas revenue. Le lien de
+confirmation était alors ouvert, connectait et posait une session ; puis la
+réponse tardive de l'inscription arrivait avec son propre `Set-Cookie` et
+**réécrivait le pot** par-dessus la session fraîche.
+
+C'est ce que montraient les en-têtes bruts d'un travail en échec : deux jeux de
+cookies cohérents mais différents sur deux requêtes consécutives, `ss_locale` et
+`secondstay_session` changeant **ensemble**. L'instrumentation ajoutée depuis a
+écarté l'explication la plus tentante en montrant qu'il n'existait qu'un **seul**
+contexte vivant, donc un seul pot : ce n'était pas un contexte étranger, c'était
+le même pot réécrit.
+
+La fenêtre n'est que de quelques millisecondes en direct. La latence du proxy
+d'interception l'élargit à plusieurs centaines, ce qui explique pourquoi la
+campagne ordinaire ne la voyait presque jamais — sans qu'elle en soit moins
+réelle.
+
+`submitSignUp()` de `helpers/fixtures.js` ferme la course : il attend la page
+`signup-sent`, que le POST produit, donc la réponse elle-même. Les douze sites
+d'appel l'utilisent.
+
+**Écarté au cours de l'enquête, avec preuve, avant d'arriver là :** le drapeau
+`Secure` du cookie de session, des contextes non fermés, le terminateur TLS,
+l'add-on HttpSessions de ZAP, l'isolation du proxy par contexte et le service
+worker de la PWA — dont `NEVER_CACHED` couvre justement tous les chemins
+concernés.
+
+**Ne pas contourner cette gate.** Une campagne en échec fait échouer le scan
+même sans le moindre constat de sécurité, et c'est délibéré : un scan ne vaut
+que le trafic qu'on lui a donné.
+
+### 18.6 ter Un défaut connu, non corrigé : l'allocation des mois en reprise
+
+Chaque scénario qui réserve possède son mois, dérivé de `getUTCMonth()` plus un
+décalage : de +1 pour `closing` à +16/+17 pour `inspection`. Seul `stay` ajoute
+un terme de reprise, `+ testInfo.retry * 2` — qui le fait atterrir sur les mois
+d'`inspection`, dont il recoupe la fenêtre de jours. Les autres n'en ont aucun
+et rejouent donc la réservation qu'ils viennent de faire, ce qui rend « Ces
+dates ne sont pas disponibles » et six minutes d'attente.
+
+Le remède évident — un pas de reprise plus grand que toute l'allocation — est
+**faux** : `booking.horizon_days` vaut 540 jours, soit un peu moins de dix-huit
+mois, et un décalage de vingt mois placerait la reprise au-delà de l'horizon,
+où l'application répond « indisponible » à juste titre. La correction demande
+de repenser l'allocation dans son ensemble, jours compris, et n'a pas été faite
+ici plutôt que faite au jugé.
+
+Ce défaut n'amplifie que des échecs déjà survenus. Il ne les cause pas.
+
 ### 18.7 Contrôle de l'artefact
 
 `./scripts/check.sh --full` construit et inspecte le ZIP de production à chaque
