@@ -524,16 +524,34 @@ Contrôles : PHP, extensions, DB, permissions, disque, ZIP, crypto, SMTP, IMAP, 
 
 ## 27. CI
 
-Jobs séparés :
+Trois workflows, et un seul endroit où les gates sont définies :
 
-- PHP static/unit ;
+| Fichier | Rôle |
+|---|---|
+| `.github/workflows/checks.yml` | **réutilisable** (`on: workflow_call`) — toutes les gates |
+| `.github/workflows/ci.yml` | boucle rapide : appelle `checks.yml`, puis SonarCloud |
+| `.github/workflows/codeql.yml` | CodeQL, propriétaire de l'onglet Sécurité |
+
+`checks.yml` est appelé par la boucle rapide et le sera par la passe de
+release : deux pipelines qui jouent les mêmes gates ne peuvent pas diverger
+sur la définition de « vert » s'ils lisent le même fichier.
+
+Jobs séparés, dans `checks.yml` :
+
+- PHP static/unit, **en matrice 8.2 / 8.4** — 8.2 est le plancher déclaré par
+  `composer.json` ;
 - DB integration ;
 - JS unit ;
-- Playwright ;
+- Playwright, un exécuteur par navigateur ;
 - dependency/security ;
-- SonarCloud ;
-- CodeQL ;
 - release artifact validation.
+
+Puis, dans `ci.yml` : SonarCloud, par `needs` sur l'appel aux gates.
+
+`checks.yml` prend une entrée booléenne `evidence` (défaut `false`). À `true`,
+chaque travail téléverse en plus, sous un artefact `evidence-*`, la sortie
+**native** de son outil ; à `false`, le comportement est celui d'avant
+l'extraction du fichier.
 
 Rapports : Clover/JUnit, LCOV, Playwright traces/screenshots.
 

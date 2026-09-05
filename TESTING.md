@@ -226,28 +226,80 @@ Tests obligatoires :
 
 ## 12. CI GitHub
 
-Jobs suggérés :
+### 12.0 Où vivent les gates
 
-### `php`
+Les gates ne sont pas écrites dans `ci.yml` : elles vivent dans
+`.github/workflows/checks.yml`, un workflow **réutilisable**
+(`on: workflow_call`) que les pipelines appellent.
 
-- syntax ;
+`ci.yml` est la boucle de retour **rapide**, jouée à chaque poussée ; la passe
+de release, plus lente, appellera le même fichier. Les deux ne sont pas
+fusionnés — l'intérêt de la première est d'être rapide — mais ils ne doivent
+pas diverger sur ce que « vert » veut dire. Le bloc `setup-php` était déjà
+recopié cinq fois : cinq occasions de répondre différemment à la question
+« de quelles extensions PHP ce projet a-t-il besoin ». Il est désormais écrit
+une fois par travail, avec la même liste partout :
+`mbstring, intl, pdo_mysql, zip, gd, dom, sodium`.
+
+`ci.yml` ne contient donc plus que deux travaux : l'appel à `checks.yml` et
+`sonarcloud`, qui dépend du premier par `needs`.
+
+### 12.1 Mode preuve
+
+`checks.yml` prend une entrée booléenne `evidence`, à `false` par défaut.
+
+- `false` (CI) : les travaux se comportent exactement comme avant l'extraction
+  du fichier. Une exécution de CI produit un verdict, pas un pack de preuves.
+- `true` : chaque travail téléverse en plus, sous un artefact `evidence-*`, ce
+  que son outil émet **nativement** — JUnit de PHPUnit (un par version de PHP)
+  et de Vitest, rapport HTML de Playwright, sortie de PHPStan, rapport JSON de
+  `composer audit`, inventaire et empreinte du ZIP.
+
+Rien n'y écrit un résumé rédigé à la main : une preuve rédigée n'est pas
+maintenue, et une preuve non maintenue finit par mentir.
+
+Pour PHPStan, la sortie seule ne prouve rien : une exécution propre imprime
+`[OK] No errors`, et une configuration qui n'analyse **aucun** fichier
+l'imprime tout aussi volontiers. Le mode preuve écrit donc à côté le périmètre
+— version de l'outil, version de PHP, niveau, chemins analysés, nombre de
+fichiers effectivement traités — obtenu par une seconde passe `--debug`, que
+seule une passe de preuve peut se permettre.
+
+### 12.2 Les travaux de `checks.yml`
+
+#### `php`
+
+Matrice `['8.2', '8.4']`.
+
+- syntaxe ;
 - composer install ;
 - PHPStan ;
 - PHPUnit ;
 - reports.
 
-### `database`
+**8.2 et non 8.1** : c'est le plancher que `composer.json` déclare
+(`"php": ">=8.2"`). La matrice existe pour que le plancher annoncé reste vrai :
+une montée de dépendance qui remonterait le minimum réel sans que personne ne
+s'en aperçoive est exactement ce qu'elle attrape. Un échec en 8.2 est une
+information, pas un obstacle à contourner — on corrige, ou on remonte le
+plancher déclaré, jamais les deux en silence.
+
+La couverture Clover et le JUnit consommés par SonarCloud ne sont produits que
+par la version de référence (8.4) : l'analyse n'en consomme qu'un jeu, et deux
+artefacts de même nom se refusent mutuellement.
+
+#### `database`
 
 - MySQL service ;
 - migrations ;
 - DB tests.
 
-### `javascript`
+#### `javascript`
 
 - npm ci ;
 - Vitest coverage.
 
-### `e2e`
+#### `e2e`
 
 - setup PHP/Node ;
 - DB ;
@@ -259,15 +311,25 @@ Jobs suggérés :
 Séparer les deux projets divise la durée par deux et **améliore** l'isolement :
 chacun installe la sienne, au lieu de partager une installation unique.
 
-### `security`
+Le rapport Playwright et les traces sont téléversés `if: always()`, mode preuve
+ou non : c'est la première chose que l'on regarde quand la campagne passe au
+rouge.
+
+#### `security`
 
 - composer audit ;
 - éventuellement checks secrets/config.
 
-### `sonarcloud`
+#### `release-artifact`
 
-Dernier travail du **même** workflow, déclenché par `needs` une fois les
-autres terminés. Il ne rejoue rien : il récupère les couvertures déjà
+- construction et inspection du ZIP de production ;
+- démarrage réel de l'archive : `/api/version` répond, et une installation
+  neuve conduit à l'assistant d'installation dans la langue demandée.
+
+### 12.3 `sonarcloud`
+
+Dernier travail du **même** workflow — `ci.yml` — déclenché par `needs` une
+fois les gates terminées. Il ne rejoue rien : il récupère les couvertures déjà
 produites, lance le scan, puis la Quality Gate bloquante.
 
 L'analyse vivait auparavant dans un workflow séparé qui rejouait la campagne
@@ -319,7 +381,10 @@ mesurer une exigence, et la seule façon d'y répondre serait de casser la règl
 qu'ils servent. L'exclusion porte sur la **portée de la mesure**, jamais sur la
 règle, qui reste appliquée au code PHP, au JavaScript et aux gabarits.
 
-### `codeql`
+### 12.4 `codeql`
+
+CodeQL vit dans son propre workflow (`.github/workflows/codeql.yml`) et reste
+propriétaire de l'onglet Sécurité du dépôt.
 
 CodeQL pour JavaScript/TypeScript et GitHub Actions, ou autres langages supportés utilisés par le dépôt.
 

@@ -38,7 +38,8 @@ Voir `I18N.md`.
 
 ## Stack cible
 
-- PHP 8.4+ recommandé
+- PHP 8.2 minimum (`composer.json`), 8.4 recommandé — la CI joue les tests sur
+  les deux
 - MySQL 8 / MariaDB compatible
 - PDO
 - Twig

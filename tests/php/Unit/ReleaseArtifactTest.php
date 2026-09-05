@@ -27,6 +27,7 @@ final class ReleaseArtifactTest extends TestCase
             'tests/php/bootstrap.php',
             'storage/logs/app.log',
             '.github/workflows/ci.yml',
+            '.github/workflows/checks.yml',
             'node_modules/vitest/package.json',
             '.env',
             'config/local.php',

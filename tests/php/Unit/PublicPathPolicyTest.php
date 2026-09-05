@@ -28,6 +28,7 @@ final class PublicPathPolicyTest extends TestCase
             ['/translations/fr/common.php'],
             ['/templates/layout/base.html.twig'],
             ['/.github/workflows/ci.yml'],
+            ['/.github/workflows/checks.yml'],
             ['/.git/config'],
             ['/.env'],
             ['/.env.local'],
