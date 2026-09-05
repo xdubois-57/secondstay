@@ -105,6 +105,38 @@ function pinnedPublicKeys() {
 //    préparation globale qui les connaît. Deux endroits qui démarrent le même
 //    serveur avec deux environnements différents finissent toujours par
 //    diverger.
+/**
+ * Quel binaire Chromium jouer.
+ *
+ * En temps normal, Playwright lance `chrome-headless-shell` : un binaire
+ * allégé, plus rapide, et parfaitement suffisant pour la campagne E2E, qui est
+ * verte avec lui.
+ *
+ * **Sous le proxy du scan dynamique, ce binaire meurt.** Quatre campagnes de
+ * suite se sont terminées par `Received signal 11 SEGV_MAPERR 0000000001b0`,
+ * toujours à la même adresse de faute, sur un test différent à chaque fois.
+ * Une adresse constante n'est pas une pénurie de mémoire — c'est un
+ * déréférencement déterministe. `--disable-dev-shm-usage` n'y a rien changé,
+ * ce qui a fait tomber l'hypothèse de la mémoire partagée.
+ *
+ * Ce qui distingue ces campagnes des E2E vertes est le proxy, et le seul
+ * élément qu'on puisse échanger sans toucher à ce qui est mesuré est le
+ * binaire qui plante. `channel: 'chromium'` demande le navigateur complet,
+ * dont le mode sans affichage est une implémentation différente — plus proche,
+ * au passage, de ce qu'un visiteur exécute réellement.
+ *
+ * **Ce n'est pas une cause établie.** Docker ne peut pas démarrer dans
+ * l'environnement de développement de ce dépôt, donc la campagne n'a pas pu
+ * être reproduite ailleurs qu'en CI, et cette explication reste une hypothèse
+ * — mieux ciblée que la précédente, pas démontrée pour autant. Si le plantage
+ * survit à ce changement, c'est le binaire qu'il faut cesser de soupçonner.
+ *
+ * @returns {{ channel?: string }}
+ */
+function chromiumBinary() {
+    return proxyServer !== '' ? { channel: 'chromium' } : {};
+}
+
 export default defineConfig({
     testDir: 'tests/e2e',
     globalSetup: './tests/e2e/global-setup.js',
@@ -172,16 +204,11 @@ export default defineConfig({
                 launchOptions: {
                     args: [
                         `--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`,
-                        // Chromium place sa mémoire partagée dans /dev/shm et
-                        // meurt en SIGSEGV quand elle manque. Sous ZAP, trois
-                        // campagnes de suite sont mortes ainsi, sur trois tests
-                        // différents — donc pas un test en cause, mais le
-                        // processus. La cause exacte n'est pas établie ; ce
-                        // drapeau bascule Chromium sur /tmp, ce qui est le
-                        // remède habituel de ce plantage-là et ne coûte rien
-                        // ailleurs. S'il ne suffit pas, l'hypothèse tombe et
-                        // il faudra chercher du côté de la mémoire du runner,
-                        // que ZAP partage avec MySQL, PHP et le navigateur.
+                        // Gardé, mais ce n'est pas ce qui corrigeait le
+                        // plantage décrit plus bas : la campagne est morte de
+                        // la même façon avec. C'est une précaution standard
+                        // pour Chromium en CI contraint, qui ne coûte rien —
+                        // pas une hypothèse encore en cours.
                         '--disable-dev-shm-usage',
                         ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
                     ]
@@ -200,12 +227,12 @@ export default defineConfig({
             // et produit l'état de session administrateur réutilisé ensuite.
             name: 'install',
             testMatch: /install\.setup\.js$/,
-            use: { ...devices['Desktop Chrome'] }
+            use: { ...devices['Desktop Chrome'], ...chromiumBinary() }
         },
         {
             name: 'desktop-chromium',
             testIgnore: /install\.setup\.js$/,
-            use: { ...devices['Desktop Chrome'] },
+            use: { ...devices['Desktop Chrome'], ...chromiumBinary() },
             dependencies: ['install']
         },
         {
