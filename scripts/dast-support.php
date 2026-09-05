@@ -299,6 +299,28 @@ function dastWaitUrl(string $url, int $timeoutSeconds): bool
  * vaut échouer ici, bruyamment, en dix secondes.
  */
 /**
+ * L'en-tête est-il un HSTS qui protège réellement ?
+ *
+ * Le nom seul ne suffit pas : `max-age=0` est un en-tête HSTS parfaitement
+ * valide qui demande au navigateur d'**oublier** la politique. L'accepter
+ * comme preuve que le câblage TLS est vivant reviendrait à valider le
+ * contraire de ce qu'on vérifie. Une directive absente ou illisible est
+ * traitée de même.
+ */
+function dastHstsIsEffective(string $header): bool
+{
+    if (stripos($header, 'Strict-Transport-Security:') !== 0) {
+        return false;
+    }
+
+    if (preg_match('/max-age\s*=\s*"?(\d+)"?/i', $header, $matches) !== 1) {
+        return false;
+    }
+
+    return (int) $matches[1] > 0;
+}
+
+/**
  * Le cookie de session porte-t-il `Secure` ?
  *
  * Le nom compte. Une réponse en HTTPS pose plusieurs cookies, et l'un d'eux —
@@ -389,7 +411,11 @@ function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondsta
     foreach (['/fr/login', '/fr/'] as $path) {
         $url = rtrim($baseUrl, '/') . $path;
 
-        for ($hop = 0; $hop < DAST_ASSERT_MAX_HOPS; $hop++) {
+        // La borne compte les **redirections**, donc une requête de plus : à
+        // `$hop < MAX`, la cible de la dernière redirection était calculée
+        // sans jamais être demandée, et la preuve suivait deux sauts là où
+        // elle en annonçait trois.
+        for ($hop = 0; $hop <= DAST_ASSERT_MAX_HOPS; $hop++) {
             $response = dastHttpGet($url, 20);
             if ($response === null) {
                 break;
@@ -397,7 +423,7 @@ function dastAssertHttps(string $baseUrl, string $sessionCookieName = 'secondsta
             $reached = true;
 
             foreach ($response['headers'] as $header) {
-                if (stripos($header, 'Strict-Transport-Security:') === 0) {
+                if (dastHstsIsEffective($header)) {
                     $hasHsts = true;
                 }
                 if (stripos($header, 'Set-Cookie:') === 0
