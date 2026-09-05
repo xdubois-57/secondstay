@@ -225,7 +225,7 @@ test.describe('exploitation', () => {
         expect(body).toContain(reference);
         // Le flux du voyageur porte le contact du responsable, jamais de
         // montant.
-        expect(body).toContain(manager.replace(/@/, '@'));
+        expect(body).toContain(manager);
         expect(body).not.toMatch(/\d+,\d{2}/);
 
         await context.close();
