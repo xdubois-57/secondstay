@@ -817,11 +817,56 @@ Elle couvre :
 - absence de secrets versionnés ;
 - conformité de l’artefact de release.
 
+Chaque contrôle est aussi appelable seul, ce qui est commode quand on cherche
+une régression précise :
+
+```bash
+composer run analyse           # PHPStan niveau 8
+composer run test              # PHPUnit, suite unitaire
+composer run test:coverage     # PHPUnit avec Clover et JUnit, comme en CI
+composer run coverage:merge    # fusionne les couvertures d'une campagne E2E instrumentée
+npm run typecheck              # tsc, vérificateur du JavaScript
+```
+
+`./scripts/check.sh` reste la commande documentée : ces alias exécutent
+exactement ce qu'elle exécute, ils ne la remplacent pas.
+
 GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations sont
 utilisables depuis Claude Code sur macOS et déclenchables dans GitHub Actions
 depuis mobile.
 
 Voir `TESTING.md`.
+
+### Aucune baseline
+
+Ni PHPStan ni `tsc` ne portent de baseline dans ce dépôt. **« Vert » veut dire
+aucun constat**, et non aucun constat nouveau.
+
+La mécanique existe pourtant — `composer run analyse:baseline`,
+`npm run typecheck:baseline` — parce que l'alternative à une baseline n'est pas
+« pas de baseline » : c'est quelqu'un qui éteint le garde-fou le jour où une
+montée de dépendance produit cinquante constats un vendredi soir. Elle sert à
+**accepter sciemment une dette existante**, jamais à faire taire un constat que
+sa propre modification vient d'introduire — celui-là se corrige.
+
+Activer une baseline PHPStan demande d'ajouter soi-même l'`includes:` dans
+`phpstan.neon.dist`. Cette friction est voulue : l'acceptation d'une dette doit
+se voir en revue.
+
+## Constats non corrigés
+
+Les constats SonarCloud délibérément marqués *won't fix*, avec l'argument de
+chacun.
+
+| Constat | Où | Pourquoi il n'est pas corrigé |
+|---|---|---|
+| _(aucun à ce jour)_ | | |
+
+Cette section existe vide, et c'est volontaire. Un constat qu'on décide de ne
+pas corriger est une décision, et une décision se signe : marquée *won't fix*
+dans SonarCloud d'un côté, expliquée ici de l'autre. Sans cet endroit, la
+décision se prend quand même — en silence, dans l'outil — et personne qui lit
+le dépôt ne peut la retrouver.
 
 ## Releases
 

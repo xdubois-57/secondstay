@@ -365,6 +365,21 @@ CI ajoute :
 - Dependabot ;
 - SonarCloud.
 
+### Aucune baseline commitée
+
+**« Vert » signifie *aucun constat*, et non *aucun constat nouveau*.** Ni
+PHPStan ni `tsc` ne portent de baseline dans ce dépôt.
+
+La mécanique reste disponible (`composer run analyse:baseline`,
+`npm run typecheck:baseline`) parce que l'alternative à une baseline n'est pas
+« pas de baseline » : c'est quelqu'un qui éteint le garde-fou le jour où une
+montée de dépendance produit cinquante constats un vendredi soir. La régénérer
+sert à **accepter sciemment une dette existante**, jamais à faire taire un
+constat que sa propre modification vient d'introduire — celui-là se corrige.
+
+Commiter une baseline exige donc la raison dans le message de commit, et sa
+disparition dès que la dette est payée.
+
 Utiliser des fake providers pour :
 
 - SMTP ;

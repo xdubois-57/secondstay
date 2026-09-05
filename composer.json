@@ -12,6 +12,9 @@
         "ext-zip": "*",
         "ext-dom": "*",
         "ext-fileinfo": "*",
+        "ext-intl": "*",
+        "ext-sodium": "*",
+        "ext-curl": "*",
         "twig/twig": "^3.11"
     },
     "require-dev": {
@@ -34,6 +37,19 @@
         "allow-plugins": {}
     },
     "scripts": {
-        "check": "./scripts/check.sh"
+        "check": "./scripts/check.sh",
+        "analyse": "./vendor/bin/phpstan analyse --no-progress",
+        "analyse:baseline": "./vendor/bin/phpstan analyse --no-progress --generate-baseline",
+        "test": "XDEBUG_MODE=off ./vendor/bin/phpunit --testsuite unit --do-not-cache-result",
+        "test:coverage": "./vendor/bin/phpunit --testsuite unit --coverage-clover build/coverage/clover-unit.xml --log-junit build/reports/phpunit-junit.xml",
+        "coverage:merge": "php scripts/coverage-merge.php build/coverage/e2e build/coverage/clover-e2e.xml"
+    },
+    "scripts-descriptions": {
+        "check": "Commande canonique de validation locale (TESTING.md §2). Les autres scripts en sont des alias, utiles un par un.",
+        "analyse": "PHPStan niveau 8, aucune baseline.",
+        "analyse:baseline": "Regenere phpstan-baseline.neon. A n'utiliser que pour accepter sciemment une dette existante.",
+        "test": "PHPUnit, suite unitaire.",
+        "test:coverage": "PHPUnit unitaire avec Clover et JUnit, comme en integration continue.",
+        "coverage:merge": "Fusionne les couvertures ecrites requete par requete pendant la campagne E2E."
     }
 }

@@ -35,6 +35,29 @@ Possibles :
 
 La variante complète est l’autorité locale avant release.
 
+Chaque contrôle est aussi appelable seul, ce qui est commode pour chercher une
+régression précise. Ce sont des **alias** de ce que `check.sh` fait déjà ; ils
+ne remplacent pas la commande canonique :
+
+```bash
+composer run analyse           # PHPStan niveau 8
+composer run analyse:baseline  # régénère une baseline — voir §4
+composer run test              # PHPUnit, suite unitaire
+composer run test:coverage     # PHPUnit avec Clover et JUnit, comme en CI
+composer run coverage:merge    # fusionne les couvertures d'une campagne E2E instrumentée
+npm run typecheck              # tsc, vérificateur du JavaScript
+npm run typecheck:baseline     # régénère la baseline JavaScript — voir §4
+```
+
+`test:coverage` exige un pilote de couverture (`pcov` ou Xdebug) et échoue
+sans, volontairement : une couverture silencieusement absente se lit comme une
+couverture nulle sur le tableau de bord. `check.sh`, lui, se rabat sur une
+exécution sans couverture et le dit.
+
+`coverage:merge` suppose qu'une campagne E2E instrumentée a déjà écrit dans
+`build/coverage/e2e` ; sans cela il refuse plutôt que de produire un rapport
+vide.
+
 ## 4. PHP
 
 ### Syntaxe
@@ -43,9 +66,32 @@ Vérifier tous les fichiers PHP applicatifs.
 
 ### PHPStan
 
-Analyse statique avec niveau strict progressif mais non régressif.
+Analyse statique de niveau 8.
 
 Aucune erreur acceptée dans `main`.
+
+#### Aucune baseline commitée
+
+**« Vert » signifie *aucun constat*, et non *aucun constat nouveau*.** Ce dépôt
+ne porte ni `phpstan-baseline.neon` ni `js-typecheck-baseline.json`.
+
+La mécanique reste pourtant disponible — `composer run analyse:baseline`,
+`npm run typecheck:baseline` — et c'est délibéré : l'alternative à une baseline
+n'est pas « pas de baseline », c'est quelqu'un qui éteint le garde-fou le jour
+où une montée de dépendance produit cinquante constats un vendredi soir. La
+régénérer sert à **accepter sciemment une dette existante**, jamais à faire
+taire un constat que sa propre modification vient d'introduire — celui-là se
+corrige.
+
+Activer une baseline PHPStan demande d'ajouter soi-même la ligne `includes:`
+dans `phpstan.neon.dist`. Cette friction est voulue : l'acceptation d'une dette
+doit se voir en revue, avec sa raison dans le message de commit, et repartir
+dès que la dette est payée.
+
+La règle ne s'applique pas au scan dynamique : là, un constat se corrige ou se
+filtre nommément dans le plan ZAP, avec la raison écrite à côté. Une liste de
+constats « acceptés » qui s'allonge est exactement la façon dont un rapport de
+sécurité cesse de vouloir dire quelque chose.
 
 ### PHPUnit
 
