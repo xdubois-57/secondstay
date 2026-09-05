@@ -166,8 +166,13 @@ function sonarFetchAllPages(string $path, string $key, string $token): array
         // s'arrêter en silence : rendre 20 pages pleines en les présentant
         // comme le tout écrirait un « total » qui a l'air complet. Une preuve
         // tronquée sans le dire est pire qu'une preuve absente.
-        if (count($batch) === SONAR_PAGE_SIZE && $page > 20) {
-            fwrite(STDERR, "sonar-evidence : plus de 20 pages sur {$path} ; preuve tronquée, rien n'est écrit.\n");
+        // `> 21` et non `> 20` : après une vingtième page pleine, `$page` vaut
+        // déjà 21 et la page suivante n'a pas encore été demandée. Refuser là
+        // rejetterait un jeu de résultats de très exactement 10 000 constats,
+        // qui est complet. On interroge donc une page de plus, et on ne refuse
+        // que si elle est pleine à son tour.
+        if (count($batch) === SONAR_PAGE_SIZE && $page > 21) {
+            fwrite(STDERR, "sonar-evidence : plus de 21 pages sur {$path} ; preuve tronquée, rien n'est écrit.\n");
             exit(1);
         }
     } while (count($batch) === SONAR_PAGE_SIZE);

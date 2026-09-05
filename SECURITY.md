@@ -1124,23 +1124,26 @@ L'en-tête suit `Request::isSecure()`, qui accepte `$_SERVER['HTTPS']` **et**
 terminateur TLS ; l'accepter est ce qui rend l'en-tête correct derrière un
 proxy, où l'application ne voit jamais le TLS elle-même.
 
-Le risque associé mérite d'être dit exactement, parce qu'une formulation
-rassurante serait fausse ici. Un client qui forge `X-Forwarded-Proto: https`
-sur une connexion en clair obtient bien un HSTS — donc précisément
-l'enfermement décrit plus haut : un navigateur qui refuse ensuite de joindre le
-site avant l'échéance annoncée. Ce n'est pas anodin.
+Le risque associé mérite d'être dit exactement, en séparant ce que
+l'**application émet** de ce que le **navigateur en fait**. Un client qui forge
+`X-Forwarded-Proto: https` sur une connexion en clair fait bien émettre
+l'en-tête par l'application. Mais il le reçoit sur du HTTP, et la RFC 6797 §7.2
+est explicite : un agent utilisateur **doit ignorer** un
+`Strict-Transport-Security` reçu sur un transport non sécurisé. Il n'y a donc
+pas d'enfermement — l'en-tête arrive et n'est pas retenu. Le drapeau `Secure`
+d'un cookie suit la même logique : un navigateur refuse un `Set-Cookie; Secure`
+posé en clair.
 
-Ce qui rend le risque acceptable n'est pas son innocuité, c'est qu'il ne peut
-frapper que celui qui le provoque. `X-Forwarded-Proto` n'appartient pas aux
-en-têtes qu'une page tierce peut faire émettre par le navigateur d'une
-victime : il faut forger la requête soi-même, et on ne s'enferme alors que
-soi-même.
+Ce mécanisme est d'ailleurs la raison d'être de cette règle de la RFC : il
+existe précisément pour qu'un attaquant capable de parler en clair ne puisse
+pas fixer, prolonger ou détruire une politique HSTS.
 
 Sur une installation derrière un répartiteur, c'est au répartiteur — et à lui
 seul — de poser cet en-tête : il doit écraser toute valeur venant du client,
 faute de quoi n'importe qui pourrait la dicter. C'est ce que fait le
 terminateur du harnais de scan, qui retire toute copie envoyée par le client
-avant de poser la sienne.
+avant de poser la sienne. Rien n'y dépend de la bienveillance du navigateur,
+et c'est ce qu'on attend d'une défense en profondeur.
 
 ### 39.1 Le cookie de session
 
