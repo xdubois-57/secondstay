@@ -854,6 +854,11 @@ Activer une baseline PHPStan demande d'ajouter soi-même l'`includes:` dans
 `phpstan.neon.dist`. Cette friction est voulue : l'acceptation d'une dette doit
 se voir en revue.
 
+Côté `tsc`, une baseline retient chaque occurrence par le texte de sa ligne et
+non par son rang : une ligne déplacée reste acceptée, une ligne réécrite
+ressort. Compter les occurrences aurait suffi à ce qu'une correction ici et une
+régression là, dans le même fichier, s'annulent sans que rien ne le dise.
+
 ## Constats non corrigés
 
 Les constats SonarCloud délibérément marqués *won't fix*, avec l'argument de

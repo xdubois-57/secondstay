@@ -33,8 +33,23 @@
 // les numéros de ligne signalerait un « nouveau constat » pour chacun des
 // constats existants situés sous une modification, puisque insérer cinq
 // lignes en haut d'`app.js` les déplace tous. Grouper par fichier + code +
-// message, et retenir le nombre d'occurrences acceptées, fait qu'une
-// modification sans rapport ailleurs dans le même fichier ne change rien.
+// message fait qu'une modification sans rapport ailleurs dans le même fichier
+// ne change rien.
+//
+// IDENTITÉ DES OCCURRENCES : LE TEXTE DE LA LIGNE, PAS LEUR NOMBRE
+// ---------------------------------------------------------------------------
+// Grouper ne suffit pas : compter les occurrences acceptées laisserait passer
+// un échange. Une baseline qui accepte un constat dans `app.js`, une
+// modification qui corrige cette occurrence-là et en introduit une autre du
+// même code et du même message ailleurs dans le même fichier — le total reste
+// à un, et la gate ne dirait rien du constat qu'on vient d'écrire.
+//
+// Chaque occupation retient donc le **texte de sa ligne source**, normalisé.
+// Déplacer une ligne ne change pas son texte, donc l'insensibilité au numéro
+// de ligne est conservée ; remplacer le code fait apparaître un texte qui
+// n'est dans aucune entrée acceptée, et le constat est rapporté comme neuf.
+// Réécrire une ligne déjà couverte la fait ressortir aussi : c'est le
+// comportement voulu, puisqu'on l'a touchée.
 //
 // RÉGÉNÉRATION
 // ---------------------------------------------------------------------------
@@ -72,7 +87,9 @@ const BASELINE_HEADER = [
     '//',
     '// Clé : fichier + code + message, jamais le numéro de ligne — une modification',
     '// ailleurs dans un fichier ne doit pas faire passer pour neufs les constats',
-    '// situés en dessous.',
+    '// situés en dessous. Chaque occurrence acceptée est retenue par le texte de sa',
+    '// ligne : déplacer cette ligne ne change rien, la remplacer fait réapparaître le',
+    '// constat, et un constat corrigé ici puis réintroduit là ne se compense plus.',
     '',
 ].join('\n');
 
@@ -125,7 +142,29 @@ if (diagnostics.length === 0 && result.status !== 0) {
 
 const keyOf = (d) => `${d.file} ${d.code} ${d.message}`;
 
-/** @type {Map<string, {file: string, code: string, message: string, occurrences: {line: number, column: number}[]}>} */
+/** @type {Map<string, string[]>} */
+const sourceCache = new Map();
+
+/**
+ * Le texte de la ligne signalée, espaces de bord retirés et espaces internes
+ * réduits : un simple ré-indentation ne doit pas faire passer pour neuf un
+ * constat déjà accepté. Une ligne devenue illisible — fichier supprimé entre
+ * l'analyse et ici — rend une chaîne vide, qui ne correspondra à aucune
+ * entrée : dans le doute, la gate parle.
+ */
+function sourceLine(file, line) {
+    if (!sourceCache.has(file)) {
+        const absolute = path.isAbsolute(file) ? file : path.join(repoRoot, file);
+        try {
+            sourceCache.set(file, readFileSync(absolute, 'utf8').split('\n'));
+        } catch {
+            sourceCache.set(file, []);
+        }
+    }
+    return (sourceCache.get(file)?.[line - 1] ?? '').trim().replace(/\s+/g, ' ');
+}
+
+/** @type {Map<string, {file: string, code: string, message: string, occurrences: {line: number, column: number, text: string}[]}>} */
 const current = new Map();
 for (const d of diagnostics) {
     const key = keyOf(d);
@@ -134,18 +173,18 @@ for (const d of diagnostics) {
         group = { file: d.file, code: d.code, message: d.message, occurrences: [] };
         current.set(key, group);
     }
-    group.occurrences.push({ line: d.line, column: d.column });
+    group.occurrences.push({ line: d.line, column: d.column, text: sourceLine(d.file, d.line) });
 }
 
 if (generateBaseline) {
-    /** @type {Record<string, {code: string, message: string, count: number}[]>} */
+    /** @type {Record<string, {code: string, message: string, lines: string[]}[]>} */
     const baseline = {};
     for (const group of current.values()) {
         baseline[group.file] ??= [];
         baseline[group.file].push({
             code: group.code,
             message: group.message,
-            count: group.occurrences.length,
+            lines: group.occurrences.map((at) => at.text).sort(),
         });
     }
     // Trié, pour qu'une régénération produise une différence lisible par un
@@ -170,14 +209,25 @@ function loadBaseline() {
 
 const baseline = loadBaseline();
 
+// Chaque occurrence courante consomme au plus une ligne acceptée portant le
+// même texte. Ce qui reste sans correspondance est neuf — y compris quand le
+// total n'a pas bougé parce qu'une occurrence a été corrigée et une autre
+// écrite ailleurs dans le même fichier.
 const newFindings = [];
 for (const group of current.values()) {
     const accepted = (baseline[group.file] || [])
         .find((entry) => entry.code === group.code && entry.message === group.message);
-    const acceptedCount = accepted ? accepted.count : 0;
+    const unclaimed = [...(accepted?.lines ?? [])];
 
-    if (group.occurrences.length > acceptedCount) {
-        newFindings.push({ ...group, newCount: group.occurrences.length - acceptedCount });
+    const introduced = group.occurrences.filter((at) => {
+        const index = unclaimed.indexOf(at.text);
+        if (index === -1) return true;
+        unclaimed.splice(index, 1);
+        return false;
+    });
+
+    if (introduced.length > 0) {
+        newFindings.push({ ...group, introduced });
     }
 }
 
@@ -187,8 +237,13 @@ for (const group of current.values()) {
 let staleCount = 0;
 for (const [file, entries] of Object.entries(baseline)) {
     for (const entry of entries) {
-        const stillPresent = current.get(`${file} ${entry.code} ${entry.message}`)?.occurrences.length ?? 0;
-        if (stillPresent < entry.count) staleCount += entry.count - stillPresent;
+        const present = (current.get(`${file} ${entry.code} ${entry.message}`)?.occurrences ?? [])
+            .map((at) => at.text);
+        for (const text of entry.lines ?? []) {
+            const index = present.indexOf(text);
+            if (index === -1) staleCount += 1;
+            else present.splice(index, 1);
+        }
     }
 }
 
@@ -197,9 +252,12 @@ if (newFindings.length > 0) {
     for (const finding of newFindings) {
         console.error(
             `${finding.file} — ${finding.code} : ${finding.message} `
-            + `(${finding.newCount} nouveau(x), ${finding.occurrences.length} au total cette fois)`
+            + `(${finding.introduced.length} nouveau(x), ${finding.occurrences.length} au total cette fois)`
         );
-        for (const at of finding.occurrences) {
+        // Seules les occurrences sans correspondance sont listées : les autres
+        // sont acceptées, et les mêler ferait chercher au relecteur laquelle
+        // est la sienne.
+        for (const at of finding.introduced) {
             console.error(`    ${finding.file}:${at.line}:${at.column}`);
         }
     }

@@ -183,6 +183,14 @@ cinquante constats un vendredi soir. Elle sert à accepter sciemment une dette
 existante, jamais à faire taire un constat que sa propre modification vient
 d'introduire.
 
+Une entrée acceptée est identifiée par le fichier, le code et le message —
+jamais par le numéro de ligne, qu'une insertion cinq lignes plus haut suffirait
+à décaler — et chaque occurrence par **le texte de sa ligne source**. Déplacer
+la ligne ne change donc rien ; la remplacer fait réapparaître le constat. Sans
+cela, corriger une occurrence et en écrire une autre du même code ailleurs dans
+le même fichier laisserait le total inchangé, et la gate resterait muette sur
+le constat qu'on vient d'introduire.
+
 ## 7. Playwright E2E
 
 ### Principes
