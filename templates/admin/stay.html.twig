@@ -41,7 +41,19 @@
         </div>
     {% endif %}
 
-    <form method="post" action="{{ path('admin.stay.save') }}" data-testid="stay-form">
+    {#
+        `novalidate` comme sur les autres formulaires saisis du produit : la
+        validation est faite côté serveur et rendue par des clés de traduction
+        (`invalid-feedback`), là où les bulles natives parlent la langue du
+        navigateur et non celle de la page (I18N.md, AGENTS.md §6).
+
+        Sans lui, WebKit refuse en silence de soumettre après le vidage d'un
+        champ `type="date"` qui portait une valeur : `checkValidity()` du
+        formulaire rend `false` alors qu'aucun indicateur de `validity` n'est
+        levé sur le champ. L'utilisateur d'iPhone efface la date « Vérifiée
+        le », appuie sur Enregistrer, et rien ne se passe.
+    #}
+    <form method="post" action="{{ path('admin.stay.save') }}" novalidate data-testid="stay-form">
         <input type="hidden" name="_csrf" value="{{ csrf_token }}">
         <input type="hidden" name="locale" value="{{ current_locale }}">
 

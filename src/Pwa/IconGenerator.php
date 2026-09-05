@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SecondStay\Pwa;
 
 use RuntimeException;
+use SecondStay\Support\Ascii;
 
 /**
  * Icônes d'application générées par l'installation.
@@ -123,10 +124,7 @@ final class IconGenerator
      */
     public static function initials(string $label): string
     {
-        $normalised = @iconv('UTF-8', 'ASCII//TRANSLIT', $label);
-        if ($normalised === false) {
-            $normalised = $label;
-        }
+        $normalised = Ascii::fold($label);
 
         $words = preg_split('/[^A-Za-z0-9]+/', $normalised, -1, PREG_SPLIT_NO_EMPTY) ?: [];
 

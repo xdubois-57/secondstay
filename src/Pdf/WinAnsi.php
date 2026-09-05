@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SecondStay\Pdf;
 
+use SecondStay\Support\Ascii;
+
 /**
  * Conversion UTF-8 → WinAnsiEncoding, le codage des polices standard PDF.
  *
@@ -128,9 +130,9 @@ final class WinAnsi
     }
 
     /**
-     * Dernier recours : décomposition Unicode pour retirer l'accent, sinon un
-     * point d'interrogation. Perdre un caractère est acceptable ; produire un
-     * PDF illisible ne l'est pas.
+     * Dernier recours pour un caractère absent de WinAnsi : sa forme ASCII
+     * si la table en connaît une, sinon un point d'interrogation. Perdre un
+     * caractère est acceptable ; produire un PDF illisible ne l'est pas.
      */
     private static function transliterate(int $code): string
     {
@@ -139,15 +141,7 @@ final class WinAnsi
             return '?';
         }
 
-        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $character);
-
-        if ($ascii === false || $ascii === '') {
-            return '?';
-        }
-
-        // iconv peut produire des séquences du type « 'e » : on ne conserve
-        // que ce qui est réellement imprimable.
-        $ascii = (string) preg_replace('/[^\x20-\x7e]/', '', $ascii);
+        $ascii = Ascii::fold($character);
 
         return $ascii === '' ? '?' : $ascii;
     }

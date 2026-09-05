@@ -130,6 +130,16 @@ GitHub Actions fournit un service MySQL.
 
 Localement, la commande peut utiliser Docker ou une DB test explicitement configurée, mais ne doit jamais toucher la DB de production.
 
+Le bac à sable de stockage de `DatabaseTestCase` est créé sous
+`realpath(sys_get_temp_dir())`, et non sous la valeur brute. Sur macOS, cette
+valeur est `/var/folders/…`, un lien symbolique vers `/private/var/folders/…`.
+Le produit, lui, résout ses chemins avant de les confronter à la racine du
+stockage — c'est ce qui empêche un chemin corrompu en base de faire lire un
+fichier arbitraire. Un test qui garderait la forme non résolue comparerait donc
+deux écritures du même dossier et échouerait sur un produit correct, mais
+seulement là où le dossier temporaire est un lien : jamais sur l'exécuteur
+Linux de l'intégration continue.
+
 ## 6. JavaScript
 
 Vitest pour :

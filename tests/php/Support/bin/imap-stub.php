@@ -124,7 +124,12 @@ while (!feof($client)) {
     $write($tag . ' BAD commande inconnue');
 }
 
-file_put_contents($transcriptPath, implode("\n", $transcript));
+// Écriture atomique : `file_put_contents` crée le fichier vide puis écrit,
+// et le test peut observer l'instant qui sépare les deux. Il lisait alors une
+// transcription vide et échouait sans que rien ne soit cassé.
+$temporary = $transcriptPath . '.partial';
+file_put_contents($temporary, implode("\n", $transcript));
+rename($temporary, $transcriptPath);
 
 fclose($client);
 fclose($server);

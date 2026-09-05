@@ -284,12 +284,21 @@ final class ImapClientTest extends TestCase
         self::fail('Le serveur IMAP factice n’a pas démarré.');
     }
 
+    /**
+     * Le bouchon publie sa transcription par `rename()`, donc en une fois.
+     * L'attente porte malgré tout sur un contenu non vide et non sur la seule
+     * existence du fichier : une attente qui accepte zéro octet ne prouve
+     * rien, et c'est ce qui rendait le scénario intermittent.
+     */
     private function transcript(): string
     {
         for ($attempt = 0; $attempt < 250; $attempt++) {
             clearstatcache(true, $this->transcriptPath);
             if (is_file($this->transcriptPath)) {
-                return (string) file_get_contents($this->transcriptPath);
+                $contents = (string) file_get_contents($this->transcriptPath);
+                if ($contents !== '') {
+                    return $contents;
+                }
             }
             usleep(20_000);
         }

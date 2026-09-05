@@ -39,7 +39,7 @@ Une itération est terminée seulement si :
 | 11 | États des lieux et incidents | ✅ livrée |
 | 12 | France et conformité | ✅ livrée |
 | 13 | Contenu local IA | ✅ livrée |
-| 14 | ICS externes, reporting, consolidation | ⏳ à venir |
+| 14 | ICS externes, reporting, consolidation | ✅ livrée |
 
 Le numéro de version mineure suit l’itération livrée : l’itération N correspond
 à la série `0.(N+1).x`.
@@ -926,6 +926,112 @@ le paramètre d'URL reste admis parce que beaucoup d'hébergements n'offrent qu'
 champ « adresse à appeler », et que leur fermer la porte reviendrait à les
 priver de sauvegarde et de purge. Le risque résiduel est nommé dans
 `SECURITY.md` plutôt que passé sous silence.
+
+## Portabilité de la translittération
+
+### Livré (0.17.2)
+
+Trois endroits du produit ramenaient du texte accentué à l'ASCII par
+`iconv('UTF-8', 'ASCII//TRANSLIT', …)` : les initiales de l'icône PWA, les
+slugs et le dernier recours du générateur PDF. Cette fonction délègue à la
+bibliothèque C de l'hôte, et les deux implémentations répandues ne donnent pas
+le même résultat : la glibc rend « Été » par « Ete », la libiconv des BSD et de
+macOS par « 'Et'e ».
+
+Le défaut ne se voit pas en intégration continue, qui tourne sur Linux. Il se
+voit sur toute machine dont le PHP est lié à la libiconv des BSD — un poste de
+développement macOS, et tout hébergement de cette famille : l'icône de
+l'application installée y affiche « EE » pour « Été Indien », les apostrophes
+ajoutées par la translittération coupant le premier mot en deux, de sorte que
+la deuxième initiale est prise dans la moitié restante du premier mot.
+`PwaTest` disait vrai depuis toujours ; c'était le code qui dépendait de
+l'hôte.
+
+Livré :
+
+- `Support\Ascii::fold()`, table explicite couvrant Latin-1 Supplement, Latin
+  Extended-A, les ligatures (`œ`, `æ`, `ĳ`, `ß`) et la ponctuation
+  typographique des quatre langues. Ce qu'elle ne connaît pas est retiré, non
+  approximé : perdre un caractère est acceptable, en introduire un que la
+  source ne portait pas ne l'est pas ;
+- les trois appels à `iconv` remplacés. `Slugger` n'utilise plus non plus la
+  translittération ICU : un slug entre dans des URLs et des noms de fichiers,
+  et deux installations du même produit ne peuvent pas en produire deux
+  versions selon que `intl` est chargé ou non ;
+- `AsciiTest`, qui vérifie notamment qu'aucune apostrophe n'apparaît là où la
+  source n'en portait pas, et que le filtre final ne vide pas une chaîne en
+  UTF-8 invalide.
+
+Corrigé au passage : le tableau d'état d'avancement annonçait encore
+l'itération 14 « à venir » alors que la section qui la suit la documente comme
+livrée en 0.15.0.
+
+### Le même défaut, côté campagne
+
+La recherche a fait apparaître une seconde hypothèse d'hôte, dans le harnais
+cette fois. `DatabaseTestCase` posait son bac à sable sous
+`sys_get_temp_dir()` sans le résoudre. Sur macOS cette valeur est
+`/var/folders/…`, un lien symbolique vers `/private/var/folders/…` :
+`DocumentService::absolutePath()` rendait la forme résolue — il appelle
+`realpath()` avant de vérifier que le fichier ne sort pas de la racine du
+stockage — et le test comparait deux écritures du même dossier.
+
+Le produit avait raison, le test avait tort, et l'intégration continue ne
+pouvait pas le dire : `/tmp` n'est pas un lien sur l'exécuteur Linux. Le bac à
+sable est désormais canonique dès sa création.
+
+### Et une troisième, dans la commande de validation elle-même
+
+`check.sh` construisait la liste d'arguments de Playwright dans un tableau
+vide lorsque `SECONDSTAY_E2E_PROJECT` n'est pas défini, puis l'expansait par
+`"${project[@]}"`. Bash 4 accepte ; bash 3.2 — celui que macOS livre encore,
+et le seul disponible sans installation supplémentaire — considère l'expansion
+d'un tableau vide comme une variable non définie, et `set -u` interrompt alors
+la commande entière. La campagne E2E ne démarrait pas du tout, sans message
+autre que `project[@]: unbound variable`.
+
+C'est le même schéma que les deux précédents : une hypothèse d'hôte invisible
+depuis un exécuteur Linux. `${project[@]+"${project[@]}"}` fonctionne sur les
+deux versions.
+
+### Deux échecs de campagne, dont un vrai défaut produit
+
+Monter la campagne E2E complète en a fait tomber deux, confirmés par
+l'intégration continue pour le premier.
+
+**Le formulaire du livret ne partait pas sur iPhone.** `templates/admin/stay`
+était l'un des rares formulaires saisis du produit à ne pas porter
+`novalidate`. Vider le champ « Vérifiée le » — un `type="date"` qui portait une
+valeur — suffit à ce que WebKit rende `false` sur `form.checkValidity()` alors
+qu'aucun indicateur de `validity` n'est levé sur le champ. Le formulaire refuse
+alors de se soumettre, sans message : le propriétaire efface la date, appuie
+sur Enregistrer, et rien ne se passe. La validation du produit est de toute
+façon faite côté serveur et rendue par des clés de traduction, là où les bulles
+natives parlent la langue du navigateur et non celle de la page.
+
+**Un scénario qui dépendait du calendrier.** `closing.spec.js` choisissait
+`aujourd'hui + 17 mois` et vérifiait que le 29 restait libre. Selon la longueur
+des mois traversés, ce jour tombe au-delà de `booking.horizon_days` — 542 jours
+contre 540 le jour où la campagne a été montée. `AvailabilityService` rendait
+`closed`, à raison, et le scénario échouait sur un produit correct, en
+intégration continue comme en local. Le mois est désormais dérivé de l'échéance
+de l'horizon plutôt que d'un décalage fixe, et les jours utilisés ont été
+déplacés hors des fenêtres de `stay.spec.js` et `inspection.spec.js`, que le
+nouveau mois fait désormais voisiner.
+
+### Une transcription lue avant d'être écrite
+
+Rejouer la suite unitaire plusieurs fois de suite a fait tomber
+`ImapClientTest::testAFullSessionSpeaksTheExpectedProtocol` environ une fois
+sur cinq, sur une transcription vide. Le bouchon IMAP publiait la sienne par
+`file_put_contents`, qui crée le fichier puis écrit : deux opérations, et le
+test attendait la première en croyant attendre la seconde.
+
+Une suite qui échoue une fois sur cinq sans rien casser est pire qu'une suite
+rouge, parce qu'on prend l'habitude de la relancer. Le bouchon publie
+désormais par `rename()`, en une seule opération visible, et l'attente du test
+porte sur un contenu non vide plutôt que sur l'existence du fichier — une
+attente qui accepte zéro octet ne prouve rien.
 
 ## Consolidation de la chaîne d'assurance
 
