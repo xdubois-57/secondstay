@@ -301,11 +301,21 @@ function dastWaitUrl(string $url, int $timeoutSeconds): bool
 /**
  * L'en-tête est-il un HSTS qui protège réellement ?
  *
- * Le nom seul ne suffit pas : `max-age=0` est un en-tête HSTS parfaitement
- * valide qui demande au navigateur d'**oublier** la politique. L'accepter
- * comme preuve que le câblage TLS est vivant reviendrait à valider le
- * contraire de ce qu'on vérifie. Une directive absente ou illisible est
- * traitée de même.
+ * Trois façons de se tromper, et ce contrôle les a toutes rencontrées.
+ *
+ * Le **nom de l'en-tête** ne suffit pas : `max-age=0` est un HSTS
+ * parfaitement valide qui demande au navigateur d'**oublier** la politique.
+ * L'accepter comme preuve que le câblage TLS est vivant reviendrait à valider
+ * le contraire de ce qu'on vérifie.
+ *
+ * Chercher `max-age` **comme sous-chaîne** ne suffit pas davantage :
+ * `not-max-age=31536000` contient ces huit caractères sans être une directive
+ * `max-age`. Un navigateur ignore une directive qu'il ne connaît pas, si bien
+ * que le harnais validait un HSTS que le navigateur ne recevait jamais —
+ * encore un garde-fou qui regarde à côté de ce qu'il surveille (RFC 6797 §6.1,
+ * constat de revue sur la PR #13).
+ *
+ * Les directives sont donc découpées sur `;` et le nom comparé **exactement**.
  */
 function dastHstsIsEffective(string $header): bool
 {
@@ -313,11 +323,17 @@ function dastHstsIsEffective(string $header): bool
         return false;
     }
 
-    if (preg_match('/max-age\s*=\s*"?(\d+)"?/i', $header, $matches) !== 1) {
-        return false;
+    $value = trim(substr($header, strlen('Strict-Transport-Security:')));
+
+    foreach (explode(';', $value) as $directive) {
+        // RFC 6797 §6.1 : `max-age` est un nom de directive, insensible à la
+        // casse, dont la valeur peut être entre guillemets.
+        if (preg_match('/^\s*max-age\s*=\s*"?(\d+)"?\s*$/i', $directive, $matches) === 1) {
+            return (int) $matches[1] > 0;
+        }
     }
 
-    return (int) $matches[1] > 0;
+    return false;
 }
 
 /**
@@ -889,6 +905,16 @@ function dastGateAlerts(
 
     echo "DAST : aucun constat au niveau « {$threshold} » ou au-dessus.\n";
     exit(0);
+}
+
+// Chargé par `tests/php/Unit/DastSupportTest.php`, qui exerce les fonctions de
+// jugement — celles qui décident si le câblage HTTPS est vivant. Un garde-fou
+// qui regarde à côté de ce qu'il surveille est plus dangereux que pas de
+// garde-fou : il rend le silence rassurant, et ce fichier l'a déjà prouvé deux
+// fois. Sans cette constante, rien ici ne serait testable : la répartition
+// ci-dessous s'exécute au chargement.
+if (defined('DAST_SUPPORT_TEST')) {
+    return;
 }
 
 /** @var list<string> $argv */

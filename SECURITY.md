@@ -1183,6 +1183,16 @@ l'archive de release, et exécutées par aucun déploiement :
 - `dast-https-prepend.php`, chargé par `auto_prepend_file` pour le seul
   processus de test, traduit cet en-tête en `$_SERVER['HTTPS']`.
 
+La preuve qui précède la campagne (`dast-support.php assert-https`) a rendu
+**deux** verdicts faux, pour la même raison à chaque fois : elle regardait à
+côté de ce qu'elle surveillait. Elle acceptait n'importe quel `Set-Cookie`
+contenant « secure », et la préférence de langue en pose un ; puis elle
+cherchait `max-age` comme sous-chaîne, si bien qu'un
+`Strict-Transport-Security: not-max-age=31536000` — que le navigateur ignore,
+RFC 6797 §6.1 — passait pour une politique effective. Les deux rendaient le
+silence rassurant. `tests/php/Unit/DastSupportTest.php` couvre désormais ces
+deux jugements.
+
 Le certificat est émis pour **`localhost`** et non pour une adresse IP : une IP
 n'est pas une *relying party* WebAuthn valide, et les parcours de clés d'accès
 de la campagne seraient refusés par le navigateur.
