@@ -301,6 +301,35 @@ if ! php "${SUPPORT}" wait-url "${ZAP_PROXY}/JSON/core/view/version/?apikey=${ZA
 fi
 echo "DAST : ZAP est prêt."
 
+# ---------------------------------------------------------------
+# 4 bis. L'autorité de ZAP, épinglée comme la nôtre.
+#
+# ZAP est un intercepteur : le pair TLS du navigateur n'est pas le terminateur
+# mais ZAP, qui ré-signe chaque connexion avec une autorité qu'il génère au
+# démarrage. Épingler la seule clé du terminateur ne suffit donc pas, et
+# relâcher toute vérification (`ignoreHTTPSErrors`) ne suffit pas non plus :
+# cela traverse l'avertissement sans rendre l'origine **sûre**, et Chromium
+# refuse alors d'enregistrer un service worker — deux scénarios de la campagne
+# tombent, sans rapport avec le produit.
+#
+# On récupère donc la racine de ZAP et on l'épingle à côté de la nôtre. Le
+# navigateur fait alors exception pour ces deux clés-là, et pour aucune autre.
+ZAP_ROOT_CERT="${INSTANCE_DIR}/zap-root.pem"
+if ! curl -fsS "${ZAP_PROXY}/OTHER/core/other/rootcert/?apikey=${ZAP_API_KEY}" -o "${ZAP_ROOT_CERT}"; then
+    echo "ERREUR : impossible de récupérer le certificat racine de ZAP." >&2
+    exit 1
+fi
+if ! ZAP_ROOT_SPKI="$(php "${SUPPORT}" cert-spki "${ZAP_ROOT_CERT}")"; then
+    echo "ERREUR : empreinte de la clé publique de ZAP illisible." >&2
+    exit 1
+fi
+echo "DAST : autorité de ZAP épinglée (${ZAP_ROOT_SPKI})."
+
+# Le client HTTP de Playwright est du Node : il ne connaît pas l'épinglage de
+# Chromium et a besoin des deux certificats comme ancres.
+DAST_CA_BUNDLE="${INSTANCE_DIR}/ca-bundle.pem"
+cat "${CERT_FILE}" "${ZAP_ROOT_CERT}" > "${DAST_CA_BUNDLE}"
+
 # Le plan démarre maintenant et se bloque sur son propre travail `delay`
 # jusqu'à ce que le navigateur ait fini. Le démarrer AVANT le trafic est tout
 # l'intérêt : la configuration du scanner passif doit être en place avant que
@@ -338,6 +367,8 @@ SECONDSTAY_BACKEND_PORT="${BACKEND_PORT}" \
 SECONDSTAY_BASE_URL="${BROWSER_BASE_URL}" \
 SECONDSTAY_TLS_CERT="${CERT_FILE}" \
 SECONDSTAY_E2E_PROXY="${ZAP_PROXY}" \
+SECONDSTAY_EXTRA_SPKI="${ZAP_ROOT_SPKI}" \
+SECONDSTAY_CA_BUNDLE="${DAST_CA_BUNDLE}" \
 SECONDSTAY_TIMEOUT_FACTOR="${DAST_TIMEOUT_FACTOR}" \
     npx playwright test --project=desktop-chromium \
         ${PLAYWRIGHT_ARGS[@]+"${PLAYWRIGHT_ARGS[@]}"} &

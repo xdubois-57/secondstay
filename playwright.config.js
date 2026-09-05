@@ -66,9 +66,31 @@ function campaignCertificateSpki() {
     // parce que cette configuration est relue par chaque worker avant sa
     // première connexion, et que Node fige son magasin à la première
     // utilisation de TLS.
-    process.env.NODE_EXTRA_CA_CERTS = certificate;
+    // La campagne de scan fournit un paquet contenant **deux** ancres : le
+    // certificat du terminateur et la racine que ZAP génère pour intercepter.
+    // Hors scan, le certificat de campagne suffit.
+    process.env.NODE_EXTRA_CA_CERTS = process.env.SECONDSTAY_CA_BUNDLE || certificate;
 
     return execFileSync('php', [support, 'cert-spki', certificate], { cwd: root, encoding: 'utf8' }).trim();
+}
+
+/**
+ * Les clés publiques auxquelles le navigateur fait exception, et elles seules.
+ *
+ * Celle du terminateur de la campagne, et — quand un proxy d'interception est
+ * en place — celle de l'autorité que ZAP génère à son démarrage, que
+ * `scripts/dast.sh` calcule et transmet. Chromium accepte une liste séparée
+ * par des virgules.
+ */
+function pinnedPublicKeys() {
+    const keys = [campaignCertificateSpki()];
+    const zapRoot = (process.env.SECONDSTAY_EXTRA_SPKI || '').trim();
+
+    if (zapRoot !== '') {
+        keys.push(zapRoot);
+    }
+
+    return keys.join(',');
 }
 
 // Le serveur de test est démarré et arrêté par `global-setup.js` /
@@ -132,29 +154,24 @@ export default defineConfig({
         // Un autre certificat invalide passait alors aussi, ce qui rendait
         // l'épinglage décoratif — juste au moment où l'on scanne le TLS.
         //
-        // La campagne de scan dynamique est l'exception, et pour une raison de
-        // fond : elle interpose ZAP, qui **est un intercepteur par
-        // construction**. Le pair TLS du navigateur n'y est plus le
+        // La campagne de scan interpose ZAP, qui **est un intercepteur par
+        // construction** : le pair TLS du navigateur n'y est plus le
         // terminateur mais ZAP, qui ré-signe chaque connexion avec une
-        // autorité qu'il génère lui-même. Épingler une clé publique connue
-        // d'avance n'a alors pas de sens : le certificat présenté n'existait
-        // pas au moment où l'on a calculé l'empreinte. C'est ce qui a vidé la
-        // carte du site de ZAP à la première tentative — le navigateur
-        // refusait chaque connexion, donc aucun trafic n'atteignait le
-        // scanner.
+        // autorité générée à son démarrage. La réponse n'est pas de relâcher
+        // la vérification pour autant — `ignoreHTTPSErrors` traverse
+        // l'avertissement sans rendre l'origine **sûre**, et deux scénarios de
+        // service worker tombent alors, sans rapport avec le produit. C'est
+        // constaté, pas supposé.
         //
-        // Rien n'est perdu au passage : ce que le scan affirme sur le TLS du
-        // produit, il l'établit sur **sa** connexion au terminateur, pas sur
-        // celle du navigateur. La validation côté navigateur ne porte, dans
-        // cette campagne, que sur un certificat jetable fabriqué par l'outil
-        // de mesure.
-        ignoreHTTPSErrors: proxyServer !== '',
+        // `scripts/dast.sh` récupère donc la racine de ZAP et la passe ici :
+        // le navigateur fait exception pour ces deux clés, et pour aucune
+        // autre.
         ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
         ...(usesTls
             ? {
                 launchOptions: {
                     args: [
-                        `--ignore-certificate-errors-spki-list=${campaignCertificateSpki()}`,
+                        `--ignore-certificate-errors-spki-list=${pinnedPublicKeys()}`,
                         ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
                     ]
                 }

@@ -1196,20 +1196,25 @@ lui est donné comme ancre via `NODE_EXTRA_CA_CERTS`. L'alternative aurait été
 `ignoreHTTPSErrors`, qui désarme la vérification pour tout le contexte,
 navigateur compris, et rendrait l'épinglage décoratif.
 
-**La campagne de scan est l'exception, et pour une raison de fond.** ZAP est
-un intercepteur par construction : le pair TLS du navigateur n'y est plus le
-terminateur mais ZAP, qui ré-signe chaque connexion avec une autorité qu'il
-génère lui-même. Épingler une clé connue d'avance n'a alors pas de sens — le
-certificat présenté n'existait pas quand l'empreinte a été calculée. Le
-navigateur refusait donc chaque connexion, et la carte du site de ZAP
-ressortait vide ; c'est `assert-sitemap` qui l'a dit, pas un rapport
-faussement rassurant.
+**La campagne de scan ajoute une seconde ancre, et n'en relâche aucune.** ZAP
+est un intercepteur par construction : le pair TLS du navigateur n'y est plus
+le terminateur mais ZAP, qui ré-signe chaque connexion avec une autorité qu'il
+génère à son démarrage. Épingler la seule clé du terminateur ne suffit donc
+pas — le navigateur refuse alors chaque connexion, et la carte du site de ZAP
+ressort vide.
 
-Ce que le scan affirme sur le TLS du produit, il l'établit sur **sa** connexion
-au terminateur. La vérification côté navigateur ne porterait, dans cette
-campagne, que sur un certificat jetable fabriqué par l'outil de mesure
-lui-même : il n'y a rien à y garantir. `ignoreHTTPSErrors` est donc conditionné
-à la présence d'un proxy d'interception, et à elle seule. Il couvre aussi
+La tentation est de relâcher la vérification pour ce cas. Elle ne marche pas,
+et l'échec est instructif : `ignoreHTTPSErrors` traverse l'avertissement sans
+rendre l'origine **sûre** aux yeux de Chromium, si bien que le service worker
+refuse de s'enregistrer et que deux scénarios de la campagne tombent — sans
+rapport avec le produit. Les deux pannes ont été constatées en intégration
+continue, l'une après l'autre.
+
+`scripts/dast.sh` récupère donc la racine de ZAP par son API, en calcule
+l'empreinte et l'épingle **à côté** de celle du terminateur. Le navigateur fait
+exception pour ces deux clés, et pour aucune autre ; l'origine redevient sûre,
+et le service worker s'enregistre. Le client HTTP de Node reçoit les deux
+certificats comme ancres, dans un même paquet. Il couvre aussi
 `host.docker.internal`, nom par lequel un ZAP conteneurisé joint l'hôte hors
 Linux : c'est alors l'origine que le navigateur demande au proxy, et elle doit
 rester valide de son côté.
