@@ -2132,3 +2132,37 @@ passées (deux ans). Un blocage échu ne prouve rien et n'explique aucun montant
 — le prix payé est figé sur le séjour —, alors qu'il alourdit le calendrier et
 le disque. Ce qui reste hors purge automatique n'a pas changé : séjours,
 paiements, contrats acceptés et états des lieux sont des pièces contractuelles.
+
+## 44. Repli ASCII
+
+### 44.1 Une seule table, explicite
+
+```text
+src/Support/
+└── Ascii    fold() : UTF-8 → ASCII imprimable, table explicite
+```
+
+Trois composants ont besoin de ramener du texte à l'ASCII : `IconGenerator`
+(la police bitmap de GD ne connaît que l'ASCII), `Slugger` (les URLs et les
+noms de fichiers) et `WinAnsi` (les caractères absents du codage des polices
+standard PDF). Tous trois passent désormais par `Ascii::fold()`.
+
+Le produit s'installe sur un hébergement mutualisé quelconque (AGENTS.md
+§1.6). Il ne peut donc pas fonder un résultat visible sur `iconv` avec
+`ASCII//TRANSLIT`, qui délègue à la bibliothèque C de l'hôte : la glibc rend
+« Été » par « Ete », la libiconv des BSD et de macOS par « 'Et'e ». Ni sur la
+translittération ICU, qui suppose `intl` chargé. Une table écrite dans le
+dépôt donne le même résultat partout, et c'est la seule propriété qui compte
+ici.
+
+### 44.2 Retirer plutôt qu'approximer
+
+Ce que la table ne connaît pas — écritures non latines, symboles, émoji — est
+retiré. Une approximation ponctuée est pire que l'absence : elle traverse les
+découpages en mots, les expressions régulières et les noms de fichiers en
+faisant croire à un contenu que la source ne portait pas. C'est précisément
+par là qu'arrivait le défaut d'origine.
+
+Le filtre final travaille octet par octet, sans le modificateur `/u` : une
+entrée en UTF-8 invalide doit être nettoyée, pas rendue vide par un motif qui
+échoue sur elle.

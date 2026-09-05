@@ -38,7 +38,19 @@ abstract class DatabaseTestCase extends TestCase
             self::markTestSkipped('Base de test injoignable.');
         }
 
-        $this->storagePath = sys_get_temp_dir() . '/secondstay-test-' . bin2hex(random_bytes(6));
+        // `realpath()` sur le dossier temporaire, pas seulement sur le bac à
+        // sable : sur macOS `sys_get_temp_dir()` rend `/var/folders/…`, un lien
+        // symbolique vers `/private/var/folders/…`. Le produit, lui, résout ses
+        // chemins avant de les comparer à la racine du stockage — c'est ce qui
+        // empêche un chemin corrompu de sortir du bac à sable. Un test qui
+        // garde la forme non résolue compare alors deux écritures du même
+        // dossier et échoue sur un produit correct.
+        $temporary = realpath(sys_get_temp_dir());
+        if ($temporary === false) {
+            self::markTestSkipped('Dossier temporaire introuvable.');
+        }
+
+        $this->storagePath = $temporary . '/secondstay-test-' . bin2hex(random_bytes(6));
         $this->paths = new Paths(self::projectRoot(), $this->storagePath);
         $this->paths->ensureStorageDirectories();
 

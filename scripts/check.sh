@@ -107,6 +107,11 @@ playwright() {
     # parallèle sur deux exécuteurs : chacun installe le sien, ce qui les
     # isole mieux qu'une installation partagée. Sans la variable, les deux
     # sont joués à la suite, comme en local.
+    #
+    # `${project[@]+…}` et non `"${project[@]}"` : bash 3.2, celui que macOS
+    # livre encore, traite l'expansion d'un tableau vide comme une variable
+    # non définie et `set -u` interrompt alors toute la commande de
+    # validation.
     local project=()
     if [ -n "${SECONDSTAY_E2E_PROJECT:-}" ]; then
         project=(--project="$SECONDSTAY_E2E_PROJECT")
@@ -115,7 +120,7 @@ playwright() {
     # Transports factices : les parcours de compte et de notification sont
     # vérifiables sans serveur SMTP, sans service de push et sans réseau.
     SECONDSTAY_MAIL_TRANSPORT=fake SECONDSTAY_PUSH_PROVIDER=fake SECONDSTAY_LLM_PROVIDER=fake \
-        npx playwright test "${project[@]}"
+        npx playwright test ${project[@]+"${project[@]}"}
 }
 
 composer_audit() {
