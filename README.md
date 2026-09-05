@@ -826,6 +826,7 @@ composer run test              # PHPUnit, suite unitaire
 composer run test:coverage     # PHPUnit avec Clover et JUnit, comme en CI
 composer run coverage:merge    # fusionne les couvertures d'une campagne E2E instrumentée
 npm run typecheck              # tsc, vérificateur du JavaScript
+npm run dast                   # scan dynamique passif (OWASP ZAP, Docker requis)
 ```
 
 `./scripts/check.sh` reste la commande documentée : ces alias exécutent

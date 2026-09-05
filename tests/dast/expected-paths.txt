@@ -1,0 +1,36 @@
+# Chemins que la carte du site de ZAP DOIT contenir une fois la campagne
+# navigateur jouée, un par ligne. Vérifié par `scripts/dast-support.php
+# assert-sitemap`.
+#
+# POURQUOI CE FICHIER EXISTE
+# ---------------------------------------------------------------------------
+# Chromium contourne un proxy HTTP pour les adresses de boucle locale à moins
+# qu'on ne le lui interdise (`--proxy-bypass-list=<-loopback>` dans
+# `playwright.config.js`). Quand cet argument disparaît, tous les scénarios
+# passent, ZAP n'enregistre rien, le scanner passif ne trouve aucun problème
+# dans ce rien, et la campagne rend un certificat de bonne santé. Cet échec est
+# complètement silencieux, ce qui est le pire défaut qu'une gate de sécurité
+# puisse avoir.
+#
+# La campagne vérifie donc que ZAP a réellement vu le site, et le vérifie sur
+# des chemins qui vont **au-delà de la page d'accueil** — « le navigateur a
+# atteint la porte d'entrée » est quelque chose qu'une configuration de proxy
+# cassée pourrait encore satisfaire.
+#
+# Garder cette liste COURTE et STABLE. C'est une preuve que du trafic est
+# arrivé, pas un rapport de couverture ; une liste longue transforme chaque
+# nouvelle route en scan rouge.
+
+# Le site public, et la redirection de racine qui y mène.
+/
+/fr/
+
+# L'authentification : la page qui pose le cookie de session, donc celle dont
+# les constats de cookie ont un sens.
+/fr/login
+
+# L'administration, que jamais aucune araignée n'atteindrait : elle est
+# derrière une session.
+/fr/admin
+/fr/admin/settings
+/fr/admin/bookings

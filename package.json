@@ -9,7 +9,8 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "typecheck": "node scripts/js-typecheck.mjs",
-    "typecheck:baseline": "node scripts/js-typecheck.mjs --generate-baseline"
+    "typecheck:baseline": "node scripts/js-typecheck.mjs --generate-baseline",
+    "dast": "./scripts/dast.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

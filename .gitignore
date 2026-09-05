@@ -9,6 +9,7 @@
 /.env.*
 /test-results/
 /playwright-report/
+/dast-report/
 /blob-report/
 /.phpunit.cache/
 /build/

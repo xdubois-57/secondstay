@@ -445,6 +445,34 @@ Le rapport Playwright et les traces sont téléversés `if: always()`, mode preu
 ou non : c'est la première chose que l'on regarde quand la campagne passe au
 rouge.
 
+#### `dast`
+
+- `npm run dast` : scan dynamique passif d'une instance jetable, servie en
+  HTTPS, pilotée par la campagne Playwright à travers OWASP ZAP ;
+- `timeout-minutes: 40`, service MySQL, extensions `openssl` et `pcntl` en
+  plus, récupération explicite de l'image ZAP.
+
+**La campagne est la surface d'attaque, pas l'araignée de ZAP.** Un crawler
+pointé sur SecondStay verrait la page d'accueil et s'arrêterait ; la campagne
+traverse l'installation, l'administration derrière sa session, une réservation
+complète, les paiements factices, l'espace client, le mode séjour et les états
+des lieux.
+
+Conséquence assumée : **une campagne en échec fait échouer le scan**, même
+sans le moindre constat de sécurité. Un scan ne vaut que le trafic qu'on lui a
+donné.
+
+Seul `desktop-chromium` est rejoué (plus sa dépendance `install`) : WebKit
+derrière un proxy et un certificat auto-signé apporte de la fragilité sans
+surface supplémentaire — le même serveur répond aux deux. Les délais sont
+multipliés par quatre, parce que chaque requête traverse désormais une poignée
+de main TLS **et** un proxy.
+
+Seuil d'échec : **Medium et au-dessus**. Pas de `security-events: write` : le
+*code scanning* rattache un résultat à un chemin du dépôt, alors qu'un constat
+DAST décrit une instance en cours d'exécution sur un port choisi à l'exécution.
+Le code de sortie est le garde-fou.
+
 #### `security`
 
 - composer audit ;

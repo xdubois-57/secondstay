@@ -407,6 +407,118 @@ jobs:
             build/reports/playwright-junit.xml
           retention-days: 7
 
+  dast:
+    # Un scan passif de l'application en fonctionnement. **La campagne
+    # Playwright est la surface d'attaque, pas l'araignée de ZAP** : un crawler
+    # pointé sur SecondStay verrait la page d'accueil et s'arrêterait, là où la
+    # campagne traverse l'installation, l'administration derrière sa session,
+    # une réservation complète, les paiements factices, l'espace client, le
+    # mode séjour et les états des lieux.
+    #
+    # Conséquence assumée : une campagne en échec fait échouer le scan, même
+    # sans le moindre constat. Un scan ne vaut que le trafic qu'on lui a donné.
+    #
+    # Le travail échoue à partir de « Medium ».
+    name: Scan dynamique (passif)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Pas de `security-events: write`, délibérément. Le *code scanning*
+      # rattache un résultat à un chemin du dépôt ; un constat DAST décrit une
+      # instance en cours d'exécution sur un port choisi à l'exécution, dont
+      # chaque emplacement se lit `https://localhost:<aléatoire>/...` — une
+      # origine qui n'a jamais existé hors de ce travail. Le code de sortie est
+      # le garde-fou.
+    # La borne couvre le téléchargement à froid d'une image de 1,2 Go, puis la
+    # campagne entière rejouée à travers un proxy.
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secondstay
+          MYSQL_DATABASE: secondstay_test
+          MYSQL_USER: secondstay
+          MYSQL_PASSWORD: secondstay
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psecondstay"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      SECONDSTAY_TEST_DB_HOST: 127.0.0.1
+      SECONDSTAY_TEST_DB_PORT: '3306'
+      SECONDSTAY_TEST_DB_NAME: secondstay_test
+      SECONDSTAY_TEST_DB_USER: secondstay
+      SECONDSTAY_TEST_DB_PASSWORD: secondstay
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          # `openssl` génère le certificat de la campagne et `pcntl` fait
+          # tourner le terminateur TLS ; sans les deux, scripts/dast.sh refuse
+          # de démarrer.
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium, openssl, pcntl
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: composer install --no-interaction --no-progress
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Base de test sans écriture synchrone
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -psecondstay -e "
+            SET GLOBAL innodb_flush_log_at_trx_commit = 0;
+            SET GLOBAL sync_binlog = 0;
+          "
+
+      - name: Récupération de l'image OWASP ZAP
+        # `scripts/dast.sh` refuse délibérément de télécharger 1,2 Go à la
+        # place de son appelant : la récupération est donc explicite ici, le
+        # seul endroit où c'est la chose attendue.
+        run: docker pull ghcr.io/zaproxy/zaproxy:stable
+
+      - name: Scan passif
+        run: npm run dast
+
+      # Le rapport COMPLET quitte ce travail en mode preuve. SecondStay est
+      # public, donc ses artefacts et ses assets de Release le sont aussi.
+      #
+      # Ce qui affaiblit l'objection, c'est la cible : le scan vise une
+      # instance jetable sur la boucle locale, construite pour l'occasion, avec
+      # un certificat généré et une base de test — pas un hôte de production —
+      # et le code qu'elle sert est ouvert.
+      #
+      # Ce qui y survit : les constats d'en-têtes et de cookies portent sur la
+      # configuration livrée, donc sur la production. Les publier publie une
+      # liste de choses à faire avant qu'elles ne soient faites. C'est le
+      # compromis — un pack de preuves auditable sans compte, au prix de dire
+      # tout haut ce que le scan rapporte aujourd'hui. **Il ne vaut que tant
+      # que ce rapport reste propre** (SECURITY.md).
+      - name: Preuves du scan
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-dast
+          path: dast-report/
+          retention-days: 7
+
+      - name: Rapport du scan en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report-failure
+          path: dast-report/
+          retention-days: 7
+
   security:
     name: Sécurité — audit et fuites
     runs-on: ubuntu-latest

@@ -27,6 +27,14 @@ const usesTls = process.env.SECONDSTAY_E2E_TLS === '1';
 // serait rapportée comme des échecs de l'application.
 const timeoutFactor = Number(process.env.SECONDSTAY_TIMEOUT_FACTOR || 1) || 1;
 
+// Le scan dynamique rejoue la campagne **à travers** ZAP : c'est de là que
+// vient toute la surface d'attaque. `--proxy-bypass-list=<-loopback>` est
+// indispensable et discret : sans lui, Chromium contourne le proxy pour les
+// adresses de boucle locale, ZAP n'enregistre rien, le scanner passif ne
+// trouve aucun problème dans ce rien, et la campagne rend un certificat de
+// bonne santé. `scripts/dast-support.php assert-sitemap` refuse ce silence.
+const proxyServer = process.env.SECONDSTAY_E2E_PROXY || '';
+
 /**
  * Empreinte de la clé publique du certificat de la campagne.
  *
@@ -107,10 +115,14 @@ export default defineConfig({
         // campagne ordinaire doit rester capable de signaler un vrai défaut de
         // certificat.
         ignoreHTTPSErrors: usesTls,
+        ...(proxyServer !== '' ? { proxy: { server: proxyServer } } : {}),
         ...(usesTls
             ? {
                 launchOptions: {
-                    args: [`--ignore-certificate-errors-spki-list=${campaignCertificateSpki()}`]
+                    args: [
+                        `--ignore-certificate-errors-spki-list=${campaignCertificateSpki()}`,
+                        ...(proxyServer !== '' ? ['--proxy-bypass-list=<-loopback>'] : [])
+                    ]
                 }
             }
             : {}),
