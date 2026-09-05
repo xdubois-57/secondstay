@@ -12,6 +12,7 @@ use SecondStay\Core\RequestContext;
 use SecondStay\Database\DatabaseConfig;
 use SecondStay\I18n\Locales;
 use SecondStay\Installer\Installer;
+use SecondStay\Installer\InstallToken;
 use SecondStay\Installer\RequirementChecker;
 use Throwable;
 
@@ -107,6 +108,11 @@ final class InstallController extends AbstractController
                 $context->request->userAgent(),
             );
         }
+
+        // Le jeton n'a plus d'objet : la fenêtre qu'il protégeait — une
+        // instance sans administrateur — vient de se refermer. Le laisser en
+        // place serait un secret de plus sur le disque, pour rien.
+        $this->container->get(InstallToken::class)->delete();
 
         $locale = Locales::normalise($input['locale']) ?? $context->locale;
         $this->flashSuccess('install.success');

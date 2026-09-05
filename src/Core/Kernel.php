@@ -10,6 +10,8 @@ use SecondStay\Core\Exception\HttpException;
 use SecondStay\Core\Http\Request;
 use SecondStay\Core\Http\Response;
 use SecondStay\Installer\InstallationState;
+use SecondStay\Installer\InstallTokenGate;
+use SecondStay\Installer\InstallTokenVerdict;
 use SecondStay\Installer\InstallationStatus;
 use SecondStay\Logging\Logger;
 use SecondStay\Maintenance\MaintenanceMode;
@@ -297,7 +299,11 @@ final class Kernel
         $isTechnical = str_starts_with($context->routePath, '/api/');
 
         if ($status === InstallationStatus::NotInstalled) {
-            if ($isInstallRoute || $isTechnical) {
+            if ($isInstallRoute) {
+                return $this->installTokenGate($container, $context);
+            }
+
+            if ($isTechnical) {
                 return null;
             }
 
@@ -322,6 +328,32 @@ final class Kernel
         }
 
         return null;
+    }
+
+    /**
+     * Portail par jeton devant l'assistant d'installation.
+     *
+     * Sur une instance neuve, l'assistant crée le premier administrateur : il
+     * ne peut donc pas être protégé par une session authentifiée, et sur un
+     * hébergement public la fenêtre entre la mise en ligne et la première
+     * connexion appartient à qui arrive le premier. `bootstrap/bootstrap.php`
+     * écrit `token.php` pour la refermer ; sans ce fichier — installation
+     * manuelle, développement, campagne de tests — l'assistant reste ouvert,
+     * comme il l'a toujours été.
+     */
+    private function installTokenGate(Container $container, RequestContext $context): ?Response
+    {
+        $gate = $container->get(InstallTokenGate::class);
+
+        return match ($gate->authorise($context->request)) {
+            InstallTokenVerdict::Allowed => null,
+            // Le jeton ne reste pas dans l'URL : il finirait dans
+            // l'historique du navigateur et dans les journaux d'accès.
+            InstallTokenVerdict::Accepted => Response::redirect($gate->cleanUrl($context->request)),
+            InstallTokenVerdict::Denied => throw new ForbiddenException(
+                'Assistant d’installation protégé par un jeton : jeton absent ou invalide.'
+            ),
+        };
     }
 
     private function unavailableResponse(Container $container): Response

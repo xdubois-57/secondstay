@@ -61,7 +61,7 @@ php_syntax() {
             php -l "$file"
             failed=1
         fi
-    done < <(find src public config scripts tests/php migrations translations -name '*.php' -print0 2>/dev/null)
+    done < <(find bootstrap src public config scripts tests/php migrations translations -name '*.php' -print0 2>/dev/null)
     return $failed
 }
 

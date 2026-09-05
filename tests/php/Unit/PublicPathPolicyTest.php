@@ -94,6 +94,28 @@ final class PublicPathPolicyTest extends TestCase
         self::assertTrue(PublicPathPolicy::isBlocked('/assets/..%2fconfig/app.php'));
     }
 
+    /**
+     * `bootstrap/` n'est jamais dans l'artefact, mais une installation faite
+     * par clone met tout le dépôt sous la racine web : l'installeur y serait
+     * alors joignable. Il refuse de tourner sur une instance installée, mais
+     * un garde-fou applicatif n'est pas une raison de le laisser atteignable.
+     *
+     * `token.php`, lui, porte le jeton de l'assistant (SECURITY.md §41) :
+     * il est lu comme du texte par l'application et ne doit jamais être servi.
+     */
+    public function testTheInstallerAndItsTokenAreNeverServed(): void
+    {
+        self::assertTrue(PublicPathPolicy::isBlocked('/bootstrap/bootstrap.php'));
+        self::assertTrue(PublicPathPolicy::isBlocked('/public/bootstrap/bootstrap.php'));
+        self::assertTrue(PublicPathPolicy::isBlocked('/token.php'));
+        self::assertTrue(PublicPathPolicy::isBlocked('/TOKEN.PHP'));
+
+        // Déposé à la racine, l'installeur lui-même n'est pas un chemin privé :
+        // c'est toute sa raison d'être. Il se supprime une fois son travail
+        // fait, et refuse de tourner tant qu'une installation existe.
+        self::assertFalse(PublicPathPolicy::isBlocked('/bootstrap.php'));
+    }
+
     public function testHtaccessCoversEveryBlockedDirectory(): void
     {
         $raw = file_get_contents(dirname(__DIR__, 3) . '/.htaccess');

@@ -50,6 +50,8 @@ use SecondStay\Http\FixtureHttpFetcher;
 use SecondStay\Http\HttpFetcher;
 use SecondStay\Installer\InstallationState;
 use SecondStay\Installer\Installer;
+use SecondStay\Installer\InstallToken;
+use SecondStay\Installer\InstallTokenGate;
 use SecondStay\Installer\RequirementChecker;
 use SecondStay\I18n\Translator;
 use SecondStay\Llm\AnthropicLlmProvider;
@@ -176,6 +178,12 @@ final class Services
 
         $container->set(RequirementChecker::class, static fn (Container $c): RequirementChecker
             => new RequirementChecker($c->get(Paths::class)));
+
+        $container->set(InstallToken::class, static fn (Container $c): InstallToken
+            => InstallToken::forRoot($c->get(Paths::class)->root()));
+
+        $container->set(InstallTokenGate::class, static fn (Container $c): InstallTokenGate
+            => new InstallTokenGate($c->get(InstallToken::class), $c->get(Session::class)));
 
         $container->set(Installer::class, static fn (Container $c): Installer
             => new Installer($c->get(Paths::class), $c->get(InstallationState::class)));

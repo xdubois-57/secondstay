@@ -1099,3 +1099,42 @@ Le déploiement. `iso20022-address-game` déploie par miroir `lftp` ; SecondStay
 est architecturé à l'inverse, autour d'un ZIP de Release et d'un updater qui
 sauvegarde, migre et sait revenir en arrière. **Décision prise : ne pas porter
 `deploy.sh`.**
+
+## Mise en ligne : l'installeur autonome
+
+`scoutmagic` résout un problème que SecondStay avait aussi et n'avait pas
+traité : mettre le produit en ligne quand on possède un gîte et un compte FTP,
+pas une console. Son mécanisme de *bootstrap* a été analysé puis transposé —
+transposé, pas copié : les deux projets ne s'installent pas de la même façon.
+
+| | scoutmagic | SecondStay |
+|---|---|---|
+| Dispositions supportées | deux (`public/` fusionné dans la racine, ou arbre unique) | **une** — l'artefact livre déjà un `.htaccess` racine écrit pour l'arbre unique |
+| `.htaccess` | interdit dans l'artefact, **généré** par l'installeur | **livré** par l'artefact ; l'installeur n'en écrit aucun |
+| Jeton de l'assistant | l'assistant était déjà protégé | **absent** — il a fallu l'ajouter, sinon écrire `token.php` n'aurait rien protégé |
+
+La troisième ligne est le vrai résultat de ce travail, et c'est un sixième
+défaut réel du produit, du même ordre que les cinq de la section précédente :
+**l'assistant d'installation de SecondStay était ouvert à qui arrivait le
+premier.** Entre le moment où les fichiers arrivent par FTP et celui où le
+propriétaire ouvre son navigateur, quiconque charge `/install` choisit la base
+de données, le mot de passe administrateur, et devient l'exploitant du site.
+Ce n'était pas un manque de vigilance : il n'y a personne à authentifier sur
+une instance qui n'a pas encore d'administrateur, donc aucune protection
+*applicative* n'était possible. Il fallait une preuve d'accès au disque —
+c'est-à-dire un fichier — et donc quelque chose pour l'écrire.
+
+L'installeur ne se contente pas d'installer : il **prouve**, depuis le
+navigateur de la personne qui installe, que `src/`, `config/`, `vendor/`,
+`storage/` et les fichiers cachés ne sont pas lisibles depuis le web, et qu'un
+dossier créé après l'installation ne l'est pas davantage. Un seul contrôle en
+échec annule l'installation entière. Ce que PHP peut vérifier tout seul — qu'un
+fichier existe, qu'un dossier est accessible en écriture — ne dit rien de ce
+qu'Apache sert réellement à un client ; c'est la seule question qui compte ici,
+et la seule à laquelle le serveur ne sait pas répondre lui-même.
+
+### Ce qui reste hors périmètre, toujours
+
+Le déploiement, pour les raisons de la section précédente. L'installeur est son
+inverse exact : il ne pousse rien depuis une machine de développement, il tire
+une release publiée depuis l'hébergement lui-même, et il ne tourne qu'une fois.

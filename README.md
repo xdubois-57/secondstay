@@ -237,9 +237,32 @@ stockage et purge des données échues.
 
 ## Installation
 
-Une installation SecondStay se fait en copiant l'archive de release à la racine
-web (FTP possible), puis en ouvrant le site : l'assistant d'installation prend
-la main.
+### Le plus simple : un seul fichier
+
+Chaque Release publie `bootstrap.php` à côté de l'archive. Déposez-le par FTP à
+la racine d'un hébergement vide, ouvrez `https://votre-site/bootstrap.php`, et
+cliquez sur **Installer**.
+
+Il télécharge la dernière version publiée, l'installe, puis — avant d'aller plus
+loin — **vérifie depuis votre navigateur** que `src/`, `config/`, `vendor/`,
+`storage/` et les fichiers cachés ne sont pas lisibles depuis le web, qu'aucun
+répertoire ne se liste, et que le serveur exécute bien PHP au lieu d'en servir
+le source. Si l'un de ces contrôles échoue, l'installation est **annulée** et
+les fichiers copiés retirés : mieux vaut un hébergement vide qu'un hébergement
+qui publie son code.
+
+Une fois les contrôles passés, il écrit un jeton dans `token.php`, se supprime,
+et vous emmène à l'assistant. Le jeton referme la fenêtre pendant laquelle
+n'importe qui pourrait installer le site à votre place (SECURITY.md §41) ; il
+est supprimé dès que votre compte administrateur existe. Le rapport complet des
+contrôles reste dans `storage/logs/install-report.json`.
+
+### À la main
+
+Copier l'archive de release à la racine web (FTP possible), puis ouvrir le
+site : l'assistant d'installation prend la main. Installé ainsi, l'assistant
+n'est pas protégé par un jeton — il n'y en a pas eu de généré — donc faites-le
+depuis une adresse que vous êtes seul à connaître, ou installez tout de suite.
 
 ```text
 /            → redirige vers /fr/install tant que l'installation n'est pas faite

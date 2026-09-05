@@ -22,6 +22,12 @@ const privatePaths = [
     '/migrations/',
     '/scripts/check.sh',
     '/scripts/router.php',
+    // L'installeur autonome n'est jamais dans l'artefact de release, mais une
+    // installation faite par clone met tout le dépôt sous la racine web.
+    '/bootstrap/bootstrap.php',
+    // Le jeton de l'assistant d'installation (SECURITY.md §41) : lu comme du
+    // texte par l'application, jamais servi ni exécuté.
+    '/token.php',
     '/translations/fr/common.php',
     '/templates/layout/base.html.twig',
     '/.github/workflows/ci.yml',

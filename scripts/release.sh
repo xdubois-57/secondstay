@@ -486,6 +486,16 @@ else
     gh release upload "$TAG" "$ZIP_PATH" --clobber || die "Impossible d'attacher $ZIP_PATH au brouillon."
     ok "Artefact attaché au brouillon"
 
+    # L'installeur autonome est le troisième asset. Il est publié tel quel,
+    # non zippé : il se dépose par FTP à la racine d'un hébergement vide, et
+    # demander à quelqu'un de dézipper un fichier unique avant de le
+    # téléverser n'ajoute qu'une occasion de se tromper. C'est aussi lui qui,
+    # une fois exécuté, ira chercher le ZIP ci-dessus sur cette même Release :
+    # les deux ne se publient jamais séparément.
+    gh release upload "$TAG" "$ROOT/bootstrap/bootstrap.php" --clobber \
+        || die "Impossible d'attacher bootstrap.php au brouillon."
+    ok "Installeur attaché au brouillon"
+
     # La note humaine va AU-DESSUS de celle du workflow, qui décrit le pack de
     # preuves et mérite d'être gardée. L'inventaire des dépendances est
     # **généré** : lu dans les fichiers de verrouillage, il dit ce qui est

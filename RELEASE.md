@@ -302,6 +302,27 @@ Doit exclure :
 - backups ;
 - médias locaux.
 
+### 7.1 Les trois assets d'une Release
+
+| Asset | Ce que c'est | Qui le produit |
+|---|---|---|
+| `secondstay-<version>.zip` | l'unité installable | `release.sh` (étape 19) |
+| `evidence.zip` | la preuve que les gates ont tourné sur ce commit | `release.yml` |
+| `bootstrap.php` | l'installeur autonome | publié tel quel depuis `bootstrap/` |
+
+`bootstrap.php` est publié **non zippé**, délibérément : il se dépose par FTP à
+la racine d'un hébergement vide, et demander de décompresser un fichier unique
+avant de le téléverser n'ajoute qu'une occasion de se tromper.
+
+C'est aussi lui qui, une fois exécuté, ira chercher `secondstay-<version>.zip`
+sur cette même Release. **Les deux ne se publient jamais séparément** : une
+Release qui ne porterait que l'installeur donnerait un installeur qui ne trouve
+rien à installer.
+
+Il n'est jamais dans l'archive installable : `bootstrap/` n'est pas dans
+`ReleaseArtifactPolicy::INCLUDED_PATHS`. Un installeur livré à l'intérieur de ce
+qu'il installe est un fichier de plus à supprimer à la main.
+
 ## 8. Protection des données runtime
 
 `storage/` n’est jamais inclus dans une release publique.

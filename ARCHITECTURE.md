@@ -607,6 +607,99 @@ Un miroir FTP de l'arbre de travail contournerait les migrations, la sauvegarde
 préalable et le rollback. **C'est une décision, pas un oubli :** il n'existe
 pas de `deploy.sh` dans ce dépôt et il ne doit pas en apparaître.
 
+### 28.3 L'installeur autonome (`bootstrap/bootstrap.php`)
+
+Le ZIP installable suppose que quelqu'un sache le décompresser, le téléverser
+entièrement, et vérifier ensuite que `src/`, `config/` et `vendor/` ne sont pas
+lisibles depuis le web. C'est beaucoup demander à un propriétaire de gîte muni
+d'un compte FTP.
+
+`bootstrap/bootstrap.php` est la réponse : **un seul fichier**, déposé à la
+racine d'un hébergement vide, publié comme troisième asset de chaque Release
+aux côtés de `secondstay-<version>.zip` et `evidence.zip`. Ouvert dans un
+navigateur, il télécharge la dernière version publiée, l'installe, prouve
+qu'elle est saine, écrit le jeton de l'assistant, puis se supprime.
+
+**Il ne dépend de rien.** Il s'exécute avant que `vendor/autoload.php` n'existe
+sur le disque : pas de Composer, pas d'espace de noms, aucune classe du projet,
+uniquement `ZipArchive` et les flux natifs. Ce n'est pas un choix de style,
+c'est la seule façon qu'il ait de fonctionner.
+
+**Il n'invente aucune disposition.** L'artefact livre déjà son `.htaccess`
+racine et son `public/.htaccess`
+(`ReleaseArtifactPolicy::REQUIRED_ENTRIES`) : l'installeur copie l'arborescence
+telle quelle et n'écrit aucune règle de serveur. S'il en écrivait, il existerait
+deux sources de vérité pour la protection du dépôt et elles divergeraient au
+premier changement.
+
+#### Les onze étapes
+
+Chaque étape est une requête POST courte, l'état étant persisté dans
+`.bootstrap-state.php` entre chacune : une installation complète en une seule
+requête dépasse le `max_execution_time` de la plupart des hébergements
+mutualisés. Un verrou (`.bootstrap.lock`, périmé après dix minutes) empêche
+deux tentatives simultanées.
+
+| # | Étape | Ce qu'elle fait |
+|---|---|---|
+| 1 | Préflight | emplacement, version de PHP, extensions, HTTPS sortant, droits d'écriture, absence d'installation existante |
+| 2 | Résolution | dernière release publiée, choix de l'asset **par son nom**, espace disque |
+| 3 | Téléchargement | trois tentatives, certificat toujours vérifié, en-tête `PK` contrôlé |
+| 4 | Extraction | archive validée **entièrement** avant le premier octet écrit (zip-slip, liens symboliques) |
+| 5 | Vérification | entrées obligatoires présentes, aucun `config/local.php` hérité |
+| 6 | Installation | copie préservant les fichiers cachés ; `storage/` et `VERSION` exclus |
+| 7 | Stockage | les onze sous-dossiers de `Paths::ensureStorageDirectories()`, en `0750` |
+| 8 | Finalisation | `VERSION` écrit depuis le tag, dossier temporaire supprimé |
+| 9 | Contrôles | portail d'acceptation (ci-dessous) |
+| 10 | Jeton | constate que `token.php` est en place |
+| 11 | Nettoyage | supprime l'état et l'installeur lui-même |
+
+#### Le portail d'acceptation
+
+C'est la raison d'être de ce fichier. Huit contrôles serveur (`S1`-`S8`)
+vérifient ce que le disque contient ; dix contrôles navigateur (`B1`-`B10`) et
+un contrôle fonctionnel (`F1`) vérifient ce qu'Apache **sert réellement à un
+client** — ce que PHP ne peut pas savoir de lui-même. Le navigateur de
+l'opérateur va chercher chaque sonde et rapporte ce qu'il a obtenu.
+
+- `B1` est un témoin positif : un fichier volontairement public sous `public/`.
+  S'il n'est pas servi, « inaccessible » ne prouve plus rien et tous les autres
+  contrôles sont déclarés non vérifiés.
+- `B2` prouve que PHP s'exécute : si le corps de la réponse contient une balise
+  d'ouverture PHP, tout le dépôt est lisible, jeton compris.
+- `B3`-`B9` sondent `src/`, `config/`, `vendor/`, `storage/logs/`, un dossier de
+  `storage/` **créé après l'installation**, un fichier caché, et `VERSION`.
+  Le dossier créé après coup n'est pas décoratif : il distingue une règle de
+  préfixe d'un fichier de refus déposé dossier par dossier, et l'application
+  crée des dossiers longtemps après l'installation.
+- `B10` vérifie l'absence de listage de répertoire.
+- `F1` vérifie que l'assistant répond, jeton en main.
+
+Un contrôle jugé « protégé » ne l'est jamais sur le seul code de statut : un
+hébergeur qui renvoie sa propre page en 200 pour tout ce qu'il refuse existe, et
+le lire comme un succès transformerait une exposition en réussite. Le corps est
+comparé au contenu attendu.
+
+**Un seul échec annule l'installation entière** : les fichiers copiés sont
+retirés, `token.php` avec. Une installation à moitié faite qu'un contrôle vient
+de déclarer dangereuse ne doit pas rester configurable.
+
+Le rapport est déposé dans `storage/logs/install-report.json` : c'est la seule
+trace de ce qui a été réellement mesuré sur cet hébergement, et elle survit à la
+suppression de l'installeur.
+
+#### Le jeton de l'assistant
+
+Voir SECURITY.md §41. `bootstrap.php` écrit `token.php`, l'application le lit
+**comme du texte** via `Installer\InstallToken`, et le supprime dès qu'un
+administrateur existe.
+
+Trois valeurs sont dupliquées entre l'installeur et l'application — le nom du
+paramètre, le marqueur, le nom du fichier — parce que l'installeur ne peut
+charger aucune classe du projet. `Tests\Unit\Bootstrap\BootstrapTest` épingle
+les deux copies l'une à l'autre, de même que la liste des sous-dossiers de
+`storage/` et les entrées exigées de l'artefact.
+
 ## 29. Implémentation effective
 
 Cette section décrit l'état réel du dépôt. Elle est mise à jour à chaque itération.
@@ -640,6 +733,8 @@ scripts/                      check.sh, release.sh, dev-server.sh, router.php,
                               sonar-evidence.php, dependency-inventory.php,
                               dast.sh, dast-support.php, dast-tls-proxy.php,
                               dast-https-prepend.php
+bootstrap/bootstrap.php       installeur autonome, publié comme asset de
+                              release ; jamais dans l'artefact (§28.3)
 tests/php|js|e2e/             PHPUnit, Vitest, Playwright
 ```
 
@@ -665,6 +760,13 @@ appliquée par :
 1. le `.htaccess` racine (production Apache) ;
 2. `scripts/router.php` (serveur PHP intégré, développement et E2E) ;
 3. `Kernel::handle()` (défense en profondeur applicative).
+
+`bootstrap/` et `token.php` en font partie. Le premier n'est jamais dans
+l'artefact, mais une installation faite par clone met tout le dépôt sous la
+racine web ; le second porte le jeton de l'assistant et n'est lu que comme du
+texte, jamais servi ni exécuté (SECURITY.md §41). L'installeur **déposé à la
+racine** — `/bootstrap.php` — n'est lui pas un chemin privé : c'est toute sa
+raison d'être, et il se supprime une fois son travail fait.
 
 Un test PHPUnit vérifie que le `.htaccess` couvre chaque entrée déclarée dans la
 politique ; un test Playwright vérifie les réponses réelles du serveur.

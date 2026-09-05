@@ -29,6 +29,7 @@
 parameters:
     level: 8
     paths:
+        - bootstrap
         - src
         - public
         - scripts

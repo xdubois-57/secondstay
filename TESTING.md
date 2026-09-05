@@ -66,9 +66,15 @@ Vérifier tous les fichiers PHP applicatifs.
 
 ### PHPStan
 
-Analyse statique de niveau 8.
+Analyse statique de niveau 8, sur `bootstrap`, `src`, `public`, `scripts` et
+`tests/php`.
 
 Aucune erreur acceptée dans `main`.
+
+`bootstrap/` y est parce que `bootstrap/bootstrap.php` s'exécute une seule fois,
+sur un hébergement dont personne ici ne sait rien, chez quelqu'un qui n'a que du
+FTP pour réparer. C'est le code du dépôt où une erreur de type coûte le plus
+cher, et le seul qu'aucune campagne E2E ne traverse.
 
 #### Aucune baseline commitée
 
@@ -106,7 +112,26 @@ Tests :
 - taxe séjour ;
 - i18n ;
 - backup/restore helpers ;
-- update logic.
+- update logic ;
+- installeur autonome.
+
+#### L'installeur autonome
+
+`bootstrap/bootstrap.php` s'exécute normalement dès qu'il est chargé : c'est un
+installeur, pas une bibliothèque. La constante `BOOTSTRAP_TEST`, définie avant
+le `require_once`, neutralise cet appel et rend le fichier chargeable comme
+n'importe quel autre — tout ce qui précède `bootstrap_main()` est une fonction
+pure ou une fonction dont les entrées/sorties sont injectées.
+
+`Tests\Unit\Bootstrap\BootstrapTest` couvre les décisions que l'installeur
+prend seul, y compris celles dont l'échec est invisible tant qu'il ne s'est
+jamais produit : refuser une archive, annuler une installation, juger qu'une
+ressource est protégée. Elle épingle aussi les valeurs **dupliquées** entre
+l'installeur et l'application — le contrat du jeton, la liste des sous-dossiers
+de `storage/`, les entrées exigées de l'artefact. Cette duplication n'est pas
+évitable : l'installeur tourne avant que `vendor/autoload.php` n'existe et ne
+peut charger aucune classe du projet. Ce qui est évitable, c'est qu'elle dérive
+en silence.
 
 Produire :
 

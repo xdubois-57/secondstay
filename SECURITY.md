@@ -1241,3 +1241,74 @@ surveille est plus dangereux que pas de garde-fou : il rend le silence
 rassurant. Elle distingue en outre « cookie jamais posé » de « cookie posé sans
 le drapeau » — deux pannes différentes, qui envoient chercher à deux endroits
 différents.
+
+## 41. Le jeton de l'assistant d'installation
+
+Une instance neuve a une fenêtre pendant laquelle l'assistant crée le premier
+administrateur sans qu'aucune authentification ne soit possible — par
+construction, puisqu'il n'y a encore personne à authentifier. Sur un hébergement
+public, cette fenêtre appartient à qui arrive le premier : **celui qui charge
+`/install` avant le propriétaire choisit la base de données, le mot de passe
+administrateur, et devient l'exploitant du site.**
+
+Ce n'est pas une hypothèse de laboratoire. Entre le moment où les fichiers
+arrivent par FTP et celui où le propriétaire ouvre son navigateur, il peut
+s'écouler des minutes ; un scanner d'index de nouveaux domaines en met moins.
+
+### 41.1 Ce qui referme la fenêtre
+
+`bootstrap/bootstrap.php` génère 32 octets aléatoires et les écrit dans
+`token.php`, à la racine du site. L'adresse de l'assistant n'est affichée
+qu'avec ce jeton. Seul quelqu'un disposant d'un accès FTP au site — donc son
+propriétaire — peut le lire.
+
+`Installer\InstallToken` lit ce fichier **comme du texte**, jamais par
+inclusion : son contenu vient du disque d'un hébergement dont l'application ne
+sait rien, et l'exécuter reviendrait à faire tourner ce que le premier fichier
+déposé à la racine contient. Le fichier écrit par l'installeur est du PHP valide
+qui répond 404 et s'arrête : un fichier de secret doit rester inoffensif même
+exécuté, et pas seulement inaccessible.
+
+La comparaison passe par `hash_equals()`. Un jeton tronqué ou hors de
+l'alphabet attendu n'est pas un jeton : accepter une valeur plus courte
+reviendrait à accepter un secret plus faible que celui qui a été généré.
+
+### 41.2 Ce qui reste ouvert, et pourquoi
+
+**En l'absence de `token.php`, l'assistant reste ouvert.** Une installation
+faite à la main — clone du dépôt, développement, campagne de tests — n'a jamais
+eu de jeton à présenter, et refuser tout accès dans ce cas transformerait
+l'absence d'un fichier en verrou définitif, sans aucun recours. Un `token.php`
+présent mais illisible ou sans marqueur exploitable compte de la même façon :
+enfermer dehors le propriétaire d'un fichier corrompu n'apprendrait rien à
+personne d'autre.
+
+La protection n'est donc pas *que l'assistant soit fermé* : c'est que
+`bootstrap.php` le ferme sur les installations qu'il fait — celles, précisément,
+où personne n'était présent pour surveiller la fenêtre.
+
+### 41.3 Le jeton ne reste pas dans l'URL
+
+Présenté une fois, il est mémorisé en session et l'assistant redirige vers la
+même adresse **sans** le paramètre. Une URL finit dans l'historique du
+navigateur, dans le `Referer` de chaque ressource externe et dans les journaux
+d'accès de l'hébergeur ; c'est la même raison qui fait préférer
+`X-Scheduler-Token` au paramètre d'URL pour le planificateur (§38).
+
+Les essais infructueux sont comptés dans la session : au cinquième, l'accès est
+refusé pendant quinze minutes, y compris avec le bon jeton. Une visite **sans**
+jeton ne consomme pas d'essai — la première ouverture de l'assistant se fait
+sans, et la compter épuiserait le budget avant que l'opérateur n'ait rien tenté.
+
+Ce verrouillage vaut ce que vaut une session : qui jette son cookie repart à
+zéro. **Ce n'est pas un oubli.** Un verrou porté par un état partagé serait, sur
+une instance non installée, un moyen de bloquer l'installation depuis
+l'extérieur — le propriétaire, lui, n'aurait alors plus aucun recours. Le
+compteur n'est pas là pour arrêter une force brute : 256 bits d'entropie s'en
+chargent. Il est là pour qu'une telle tentative coûte quelque chose.
+
+### 41.4 Le jeton est supprimé, pas oublié
+
+Dès que l'installation aboutit et qu'un administrateur existe, `token.php` est
+supprimé. La fenêtre qu'il protégeait est fermée ; le laisser en place serait un
+secret de plus sur le disque, pour rien.

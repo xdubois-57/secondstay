@@ -64,6 +64,7 @@ Règles :
 ├── tests/js/
 ├── tests/e2e/
 ├── scripts/
+├── bootstrap/bootstrap.php   installeur autonome, publié comme asset de release
 ├── vendor/
 ├── composer.json
 ├── package.json

@@ -28,6 +28,7 @@ final class PublicPathPolicy
         'tests',
         'migrations',
         'scripts',
+        'bootstrap',
         'translations',
         'templates',
         'node_modules',
@@ -61,6 +62,13 @@ final class PublicPathPolicy
         'VERSION',
         'LICENSE',
         'MANIFEST.md',
+        // Écrit par `bootstrap/bootstrap.php`, jamais servi : il porte le
+        // jeton de l'assistant d'installation (SECURITY.md §41). Le
+        // `.htaccess` racine l'envoie déjà au contrôleur frontal, qui ne
+        // connaît pas cette route ; cette entrée est la défense en
+        // profondeur, pour l'hébergement dont la configuration exécuterait
+        // un .php posé à la racine avant que la réécriture ne s'applique.
+        'token.php',
     ];
 
     /**
