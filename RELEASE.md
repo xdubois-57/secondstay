@@ -38,7 +38,11 @@ Avant release, les contrôles suivants doivent être verts :
 - PHPStan, **sans baseline** — vert signifie *aucun constat* ;
 - `tsc`, vérificateur du JavaScript, aux mêmes conditions ;
 - PHPUnit, sur les **deux** versions de PHP supportées ;
-- DB integration ;
+- DB integration, sur les **deux** moteurs supportés — MySQL 8 et MariaDB
+  10.11 : du code correct sur l'un et faux sur l'autre atteindrait la
+  production, puisque le premier travail serait vert ;
+- matrice d'autorisation — chaque route rejouée avec chaque rôle, comparée au
+  niveau qu'elle déclare ;
 - Vitest ;
 - Playwright, sur `desktop-chromium` et `mobile-safari` ;
 - scan dynamique passif OWASP ZAP — aucune alerte au-dessus d'informatif, et
@@ -47,6 +51,7 @@ Avant release, les contrôles suivants doivent être verts :
 - absence de secret ou de donnée runtime versionné ;
 - CodeQL applicable ;
 - Dependabot security state ;
+- fraîcheur des dépendances directes et vendorisées ;
 - SonarCloud Quality Gate ;
 - i18n FR/EN/NL/DE checks ;
 - release artifact validation.
@@ -248,6 +253,30 @@ Bloque sur alertes CodeQL/Dependabot définies comme ouvertes et bloquantes.
 Bloque aussi sur une alerte du scan dynamique passif au-dessus d'informatif.
 Une campagne en échec y fait échouer le scan même sans le moindre constat de
 sécurité : un scan ne vaut que le trafic qu'on lui a donné.
+
+### Freshness gate
+
+Bloque si une dépendance directe peut être montée **sans changer sa
+contrainte** : Composer l'appelle `semver-safe-update`, npm le montre comme un
+écart entre `current` et `wanted`, et une bibliothèque vendorisée de
+`public/assets/vendor/` comme un écart de version corrective avec son amont.
+Ces montées-là sont à un `composer update` ou `npm update` de distance : les
+laisser traîner n'est pas une décision, c'est un oubli.
+
+**Avertit sans bloquer** quand la montée exige de changer la contrainte —
+typiquement une version majeure. C'est une décision, avec sa lecture de notes
+de version et ses tests, pas quelque chose qu'une gate tranche à la place de
+quelqu'un. Une liste d'avertissements qui s'allonge release après release est
+en revanche exactement la dérive que cette gate rend visible.
+
+Bloque également sur une bibliothèque vendorisée absente de la carte
+`VENDORED_UPSTREAM` de `scripts/dependency-freshness.php` : une bibliothèque
+copiée à la main que personne ne surveille est le cas que cette gate existe
+pour empêcher.
+
+Ne bloque **pas** quand la version amont est introuvable : une mesure
+impossible n'est pas un retard, et une panne de GitHub ne doit pas empêcher de
+publier. Le script le dit alors explicitement.
 
 ### Sonar gate
 

@@ -1,0 +1,38 @@
+# Propriétaires de code.
+#
+# ATTENTION : ce fichier ne fait rien tout seul. Il ne devient une protection
+# que si « Require review from Code Owners » est activé dans le ruleset de
+# `main` (Settings → Rules → Rulesets), et cette moitié-là ne vit pas dans le
+# dépôt : aucun diff ne la montre, aucune gate ne la rapporte.
+#
+# Elle n'est **pas** activée aujourd'hui, et elle ne peut pas l'être tant que
+# ce dépôt n'a qu'un collaborateur : GitHub interdit d'approuver sa propre
+# pull request, donc l'unique propriétaire de code, qui est aussi l'unique
+# auteur, ne pourrait jamais satisfaire la règle — chaque pull request
+# deviendrait définitivement non fusionnable. S'ajouter à la liste de
+# contournement du ruleset rétablirait la fusion et ne protégerait de
+# personne.
+#
+# À activer le jour où une deuxième personne obtient l'accès en écriture :
+# c'est le jour où un propriétaire de code distinct de l'auteur existe.
+#
+# Second piège, celui-là silencieux : GitHub **ignore sans rien dire** une
+# entrée nommant un compte qui n'a pas accès en écriture au dépôt. Pas
+# d'erreur, pas d'avertissement sur la pull request, aucun contrôle rouge —
+# la règle est simplement sans effet. Vérifier après toute modification de ce
+# fichier, et après tout changement de collaborateurs.
+#
+# Ce que cette règle refermerait, une fois les deux moitiés en place : l'écart
+# documenté dans `.github/workflows/claude-review.yml`, où une pull request
+# modifiant le relecteur obtient un vert sans avoir été relue. Voir aussi
+# `docs/quality-pipeline.md`.
+
+* @xdubois-57
+
+# Les fichiers qui décident de ce qui est vérifié. Une modification ici change
+# ce que « vert » veut dire pour tout le reste du dépôt.
+/.github/          @xdubois-57
+/scripts/          @xdubois-57
+/phpstan.neon.dist @xdubois-57
+/phpunit.xml.dist  @xdubois-57
+/.coderabbit.yaml  @xdubois-57

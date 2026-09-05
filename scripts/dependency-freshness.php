@@ -1,0 +1,294 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Fraîcheur des dépendances — gate de release (RELEASE.md §6).
+ *
+ * ## Ce que cette gate ajoute aux autres
+ *
+ * `composer audit` et Dependabot répondent à « une de mes dépendances est-elle
+ * vulnérable ? ». `dependency-inventory.php` répond à « sous quelle licence
+ * sont-elles ? ». Aucun des deux ne répond à « depuis combien de temps
+ * n'ai-je rien mis à jour ? », et c'est pourtant cette dérive-là qui rend la
+ * montée suivante coûteuse : trois versions de retard se rattrapent, trente
+ * se négocient.
+ *
+ * ## La distinction qui compte
+ *
+ * Le verdict n'est pas « en retard / à jour » mais celui que Composer et npm
+ * donnent eux-mêmes :
+ *
+ * - **une montée que les contraintes autorisent déjà** (`semver-safe-update`)
+ *   est à un `composer update` de distance. La laisser traîner n'est pas une
+ *   décision, c'est un oubli — donc la release **refuse** ;
+ * - **une montée qui exige de changer la contrainte** (`update-possible`,
+ *   typiquement une version majeure) est une décision, avec sa lecture de
+ *   notes de version et ses tests. La release **avertit** et continue.
+ *
+ * Inventer un seuil arbitraire — « plus de six mois », « plus de deux
+ * versions » — aurait produit un chiffre que personne ne peut défendre. Les
+ * deux outils savent déjà distinguer ce qui est gratuit de ce qui ne l'est
+ * pas ; cette gate ne fait que les lire.
+ *
+ * ## Les bibliothèques vendorisées
+ *
+ * `public/assets/vendor/` ne relève d'aucun gestionnaire de paquets : ces
+ * fichiers sont copiés à la main, précisément pour qu'aucune page n'aille
+ * chercher un CDN (SECURITY.md, politique de contenu). Personne ne les met
+ * donc à jour, sauf à y penser — et personne n'y pense. Leur version est lue
+ * dans la bannière du fichier minifié et comparée à la dernière release
+ * publiée en amont.
+ *
+ * Usage :
+ *
+ *     php scripts/dependency-freshness.php
+ *
+ * Sortie 0 : rien à rattraper gratuitement. Sortie 1 : au moins une montée
+ * était à portée de `composer update` ou `npm update`.
+ */
+
+/**
+ * Bibliothèques copiées dans `public/assets/vendor/`, avec le dépôt amont où
+ * lire la dernière version publiée.
+ *
+ * Ajouter une bibliothèque vendorisée sans l'ajouter ici la rend invisible à
+ * cette gate — et le contrôle plus bas refuse justement un répertoire absent
+ * de cette carte, pour que l'oubli soit bruyant.
+ */
+const VENDORED_UPSTREAM = [
+    'bootstrap' => 'twbs/bootstrap',
+];
+
+/**
+ * @return array{stale: list<string>, deliberate: list<string>}
+ */
+function freshnessOfComposer(string $root): array
+{
+    $json = shellJson('cd ' . escapeshellarg($root) . ' && composer outdated --direct --format=json 2>/dev/null');
+    $stale = [];
+    $deliberate = [];
+
+    /** @var list<array<string, mixed>> $packages */
+    $packages = is_array($json['installed'] ?? null) ? $json['installed'] : [];
+    foreach ($packages as $package) {
+        $name = (string) ($package['name'] ?? '');
+        $version = (string) ($package['version'] ?? '?');
+        $latest = (string) ($package['latest'] ?? '?');
+        $status = (string) ($package['latest-status'] ?? '');
+
+        $line = sprintf('%s %s → %s', $name, $version, $latest);
+        if ($status === 'semver-safe-update') {
+            $stale[] = $line;
+        } elseif ($status === 'update-possible') {
+            $deliberate[] = $line . ' (change la contrainte)';
+        }
+    }
+
+    return ['stale' => $stale, 'deliberate' => $deliberate];
+}
+
+/**
+ * @return array{stale: list<string>, deliberate: list<string>}
+ */
+function freshnessOfNpm(string $root): array
+{
+    // `npm outdated` sort en 1 quand il trouve quelque chose : ce n'est pas
+    // une erreur, c'est son verdict. On lit donc sa sortie sans juger son code.
+    $json = shellJson('cd ' . escapeshellarg($root) . ' && npm outdated --json 2>/dev/null');
+    $stale = [];
+    $deliberate = [];
+
+    foreach ($json as $name => $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $current = (string) ($entry['current'] ?? '?');
+        $wanted = (string) ($entry['wanted'] ?? '?');
+        $latest = (string) ($entry['latest'] ?? '?');
+
+        // `wanted` est ce que la contrainte autorise déjà : s'il diffère de
+        // l'installé, la montée est gratuite. Sinon seul `latest` avance, et
+        // c'est une décision.
+        if ($current !== $wanted) {
+            $stale[] = sprintf('%s %s → %s', (string) $name, $current, $wanted);
+        } elseif ($current !== $latest) {
+            $deliberate[] = sprintf('%s %s → %s (change la contrainte)', (string) $name, $current, $latest);
+        }
+    }
+
+    return ['stale' => $stale, 'deliberate' => $deliberate];
+}
+
+/**
+ * @return array{stale: list<string>, deliberate: list<string>}
+ */
+function freshnessOfVendored(string $root): array
+{
+    $stale = [];
+    $deliberate = [];
+
+    $directory = $root . '/public/assets/vendor';
+    foreach (array_diff(scandir($directory) ?: [], ['.', '..']) as $entry) {
+        if (!is_dir($directory . '/' . $entry)) {
+            continue;
+        }
+
+        if (!array_key_exists($entry, VENDORED_UPSTREAM)) {
+            // Bruyant plutôt que silencieux : une bibliothèque vendorisée que
+            // cette gate ne connaît pas est une bibliothèque que personne ne
+            // met à jour et dont personne ne le sait.
+            $stale[] = sprintf(
+                'public/assets/vendor/%s : aucun dépôt amont déclaré dans VENDORED_UPSTREAM',
+                (string) $entry
+            );
+            continue;
+        }
+
+        $installed = bannerVersion($directory . '/' . $entry);
+        if ($installed === null) {
+            $stale[] = sprintf('public/assets/vendor/%s : version illisible dans la bannière', (string) $entry);
+            continue;
+        }
+
+        $upstream = latestUpstreamVersion(VENDORED_UPSTREAM[$entry]);
+        if ($upstream === null) {
+            // Une version amont introuvable n'est pas un retard : c'est une
+            // mesure impossible. Le dire, et ne pas refuser la release
+            // là-dessus — sinon une panne de GitHub bloque une publication.
+            fwrite(STDERR, sprintf(
+                "  ? %s : version amont introuvable (réseau ?) — non vérifiée\n",
+                (string) $entry
+            ));
+            continue;
+        }
+
+        if ($installed !== $upstream) {
+            $line = sprintf('public/assets/vendor/%s %s → %s', (string) $entry, $installed, $upstream);
+            // Une majeure vendorisée se relit avant de se copier ; le reste
+            // est une copie de fichiers.
+            if (majorOf($installed) !== majorOf($upstream)) {
+                $deliberate[] = $line . ' (version majeure)';
+            } else {
+                $stale[] = $line;
+            }
+        }
+    }
+
+    return ['stale' => $stale, 'deliberate' => $deliberate];
+}
+
+/**
+ * Première version trouvée dans la bannière d'un fichier minifié du répertoire.
+ */
+function bannerVersion(string $directory): ?string
+{
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $file) {
+        if (!$file->isFile()) {
+            continue;
+        }
+        $head = (string) @file_get_contents((string) $file, false, null, 0, 400);
+        if (preg_match('/v?(\d+\.\d+\.\d+)/', $head, $matches) === 1) {
+            return $matches[1];
+        }
+    }
+
+    return null;
+}
+
+function latestUpstreamVersion(string $repository): ?string
+{
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => "User-Agent: SecondStay-Freshness\r\nAccept: application/vnd.github+json\r\n",
+            'timeout' => 15,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $body = @file_get_contents('https://api.github.com/repos/' . $repository . '/releases/latest', false, $context);
+    if ($body === false) {
+        return null;
+    }
+
+    $data = json_decode($body, true);
+    $tag = is_array($data) ? (string) ($data['tag_name'] ?? '') : '';
+
+    return preg_match('/(\d+\.\d+\.\d+)/', $tag, $matches) === 1 ? $matches[1] : null;
+}
+
+function majorOf(string $version): string
+{
+    return explode('.', $version)[0];
+}
+
+/**
+ * @return array<mixed>
+ */
+function shellJson(string $command): array
+{
+    $output = shell_exec($command);
+    if (!is_string($output) || trim($output) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($output, true);
+
+    return is_array($decoded) ? $decoded : [];
+}
+
+// -----------------------------------------------------------------------------
+
+$root = dirname(__DIR__);
+
+$sections = [
+    'Composer (dépendances directes)' => freshnessOfComposer($root),
+    'npm (dépendances directes)' => freshnessOfNpm($root),
+    'Bibliothèques vendorisées' => freshnessOfVendored($root),
+];
+
+$stale = [];
+$deliberate = [];
+
+foreach ($sections as $title => $result) {
+    if ($result['stale'] === [] && $result['deliberate'] === []) {
+        printf("  ✔ %s : à jour\n", $title);
+        continue;
+    }
+
+    printf("  %s :\n", $title);
+    foreach ($result['stale'] as $line) {
+        printf("    ✘ %s\n", $line);
+        $stale[] = $line;
+    }
+    foreach ($result['deliberate'] as $line) {
+        printf("    ⚠ %s\n", $line);
+        $deliberate[] = $line;
+    }
+}
+
+if ($deliberate !== []) {
+    printf(
+        "\n%d montée(s) exigent de changer une contrainte : ce sont des décisions, pas des oublis.\n"
+        . "Elles ne bloquent pas cette release — mais une liste qui s'allonge release après release\n"
+        . "est exactement la dérive que cette gate existe pour rendre visible.\n",
+        count($deliberate)
+    );
+}
+
+if ($stale !== []) {
+    printf(
+        "\n%d montée(s) sont autorisées par les contraintes actuelles : un `composer update` ou\n"
+        . "`npm update` de distance. Les rattraper avant de publier, ou déroger explicitement.\n",
+        count($stale)
+    );
+    exit(1);
+}
+
+printf("\nRien à rattraper gratuitement.\n");
+exit(0);

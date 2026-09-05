@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit — configuration de la revue automatique.
+#
+# Les règles elles-mêmes vivent dans AGENTS.md, SPECIFICATIONS.md,
+# ARCHITECTURE.md, SECURITY.md, I18N.md et TESTING.md. Ce qui suit **pointe**
+# le relecteur vers celles qu'un diff peut enfreindre sans qu'aucune gate ne
+# le voie. Ce n'est pas une seconde copie de ces règles et cela ne doit pas le
+# devenir : une règle recopiée dérive de son original, et c'est l'original qui
+# gagne.
+#
+# La ligne `$schema` ci-dessus porte quelque chose : un éditeur muni du serveur
+# de langage YAML valide ce fichier, et une clé que CodeRabbit ne reconnaît pas
+# est autrement ignorée en silence.
+
+language: fr-FR
+
+# 250 caractères, plafond documenté de ce champ.
+tone_instructions: >-
+  Sois direct et précis. Nomme la conséquence d'un défaut, pas la règle qu'il
+  enfreint. Pas d'éloge, pas de préambule, pas de reformulation du diff. Quand
+  tu doutes qu'un constat soit réel, dis-le plutôt que de l'affirmer.
+
+reviews:
+  profile: assertive
+
+  # Volontairement désactivé. Activé, CodeRabbit peut soumettre de vraies
+  # revues GitHub, donc une approbation — qui satisferait une revue exigée sur
+  # `main`. Ce n'est pas une décision qu'un relecteur automatique doit prendre
+  # ici. Désactivé, ses constats arrivent en commentaires et c'est le
+  # mainteneur qui décide de ce qui bloque.
+  request_changes_workflow: false
+
+  auto_review:
+    enabled: true
+
+    # Une revue à l'ouverture, pas une par poussée. Une PR qui répond à sa
+    # propre revue prend cinq ou six poussées correctives, et relire chacune
+    # rapporte peu tout en consommant le quota horaire du plan gratuit. Une
+    # passe supplémentaire se demande avec `@coderabbitai review`.
+    #
+    # C'est l'inverse du workflow `claude-review.yml`, qui relit à chaque
+    # poussée : celui-là est la gate, et une gate qui juge un diff périmé n'en
+    # est pas une. Celui-ci est le relecteur permanent, avec un plafond
+    # horaire.
+    auto_incremental_review: false
+
+    drafts: false
+
+  path_filters:
+    # Engendré ou vendorisé : rien ici n'est écrit à la main, donc un
+    # commentaire de revue n'y a aucun destinataire.
+    - "!composer.lock"
+    - "!package-lock.json"
+    - "!public/assets/vendor/**"
+    - "!MANIFEST.md"
+
+  tools:
+    # PHPStan est une gate bloquante ici, au niveau 8 et **sans baseline**
+    # (TESTING.md §4). Une seconde exécution par CodeRabbit, avec une autre
+    # configuration, rapporterait des constats que la gate ne rapporte pas —
+    # et la première leçon de ce dépôt est qu'un rapport dont les constats ne
+    # veulent rien dire cesse d'être lu.
+    phpstan:
+      enabled: false
+
+  path_instructions:
+    - path: "**/*.php"
+      instructions: >-
+        Les commentaires et docblocks sont en français ; les identifiants sont
+        en anglais. Aucun texte visible par un utilisateur n'est écrit en dur :
+        il passe par une clé de traduction présente dans les quatre catalogues
+        fr, en, nl, de (I18N.md). Une chaîne française dans un gabarit ou un
+        contrôleur est un défaut, pas un détail.
+        Découpage Contrôleur -> Service -> Repository : pas de SQL dans un
+        contrôleur, pas de logique métier dans un contrôleur ou une vue.
+        Toute requête SQL est préparée ; concaténer une valeur dans du SQL est
+        un défaut quelle que soit sa provenance.
+        Les données personnelles et bancaires sont chiffrées via `Encryptor` et
+        n'apparaissent jamais dans une ligne de journal, un message
+        d'exception ou une page d'erreur.
+
+    - path: "src/Core/Routes.php"
+      instructions: >-
+        Chaque route déclare son niveau d'accès minimal avec `access:`, sauf
+        celles réellement publiques — `Access::Public` est la valeur par
+        défaut. `Tests\Database\AuthorizationMatrixTest` rejoue chaque route
+        avec chaque rôle et compare ; une déclaration trop permissive est un
+        trou, une déclaration trop stricte fait mentir la table sur qui accède
+        à quoi. Signale toute route d'administration ajoutée sans `access:`.
+
+    - path: "src/Controller/**/*.php"
+      instructions: >-
+        L'autorisation est vérifiée côté serveur dans le corps de chaque
+        action (`requireOperational()`, `requireAdministrator()`), jamais par
+        le seul masquage d'un bouton. Une garde placée dans un helper privé
+        est correcte mais invisible à la lecture de l'action : signale-la pour
+        qu'elle soit au moins nommée. Un drapeau de fonctionnalité placé avant
+        la garde rend la garde inobservable par la matrice d'autorisation —
+        dis-le.
+
+    - path: "**/*.html.twig"
+      instructions: >-
+        Tout texte affiché passe par `t()` avec une clé présente dans les
+        quatre catalogues. Chaque formulaire porte un jeton CSRF. Les ancres
+        stables utilisées par la campagne Playwright sont des `data-testid` :
+        en renommer un casse un test sans que le produit change, dis-le
+        explicitement.
+
+    - path: "public/assets/js/**/*.js"
+      instructions: >-
+        JavaScript de navigateur, chargé en module ES, sans étape de build et
+        sans nouvelle dépendance d'exécution. `tsc` vérifie ces fichiers sans
+        baseline (TESTING.md §6.1) : un `any` implicite ou un type manquant
+        est une gate rouge, pas un avertissement.
+        Examine toute valeur atteignant `src`, `href`, `action`, `innerHTML`,
+        `outerHTML`, `insertAdjacentHTML`, `location`, `window.open`, `eval`,
+        ou `setTimeout`/`setInterval` avec une chaîne. Une valeur n'est pas
+        sûre parce qu'elle vient du gabarit de la page : un gabarit rend du
+        contenu contrôlé par l'utilisateur. Valide au point d'arrivée, jamais
+        aux points d'appel.
+
+    - path: "migrations/*.sql"
+      instructions: >-
+        Migrations incrémentales et numérotées, jamais un état complet.
+        Une migration déjà publiée ne se modifie pas : les installations
+        existantes l'ont déjà appliquée et ne la rejoueront pas. Noms de
+        tables et de colonnes en anglais, snake_case. Les colonnes portant des
+        données personnelles sont chiffrées au repos.
+
+    - path: "tests/**"
+      instructions: >-
+        Un correctif porte le test qui reproduit le défaut. Une nouvelle route
+        porte sa déclaration `access:`, que la matrice d'autorisation
+        confronte au comportement réel.
+        Signale tout test capable de s'ignorer silencieusement sur ce qui fait
+        justement son intérêt : un `markTestSkipped` qui dépend de
+        l'environnement rend une exécution verte en n'ayant rien prouvé.
+
+    - path: "bootstrap/bootstrap.php"
+      instructions: >-
+        Ce fichier s'exécute avant que `vendor/autoload.php` n'existe : aucune
+        dépendance Composer, aucun espace de noms, aucune classe du projet.
+        Il n'écrit aucune règle de serveur — l'artefact livre ses `.htaccess`,
+        et une seconde source de vérité divergerait au premier changement.
+        Aucun jeton n'est conservé tant que le portail d'acceptation n'a pas
+        prouvé que `src/`, `config/`, `vendor/` et `storage/` sont
+        inaccessibles depuis le web ; un seul contrôle en échec annule
+        l'installation entière.
+
+    - path: ".github/workflows/**"
+      instructions: >-
+        `docs/quality-pipeline.md` décrit ce que chaque travail joue et ce
+        qu'il ne voit pas. Changer le nom d'un travail, ses commandes, son
+        moteur de base ou ses variables d'environnement rend ce tableau faux :
+        dis-le en nommant la ligne qui devient périmée.
+        Les actions tierces sont épinglées sur un commit, jamais sur un tag —
+        un tag est mutable, et ces travaux détiennent plus loin dans la chaîne
+        `contents: write` et `attestations: write`.
+
+knowledge_base:
+  code_guidelines:
+    # Ces entrées **complètent** les motifs intégrés de CodeRabbit plutôt
+    # qu'elles ne les remplacent : les défauts couvrent déjà AGENTS.md et
+    # CLAUDE.md, et aucun des fichiers ci-dessous. Sans elles, les documents
+    # que l'en-tête de ce fichier appelle sources de vérité étaient invisibles
+    # au relecteur censé les citer.
+    filePatterns:
+      - "/SPECIFICATIONS.md"
+      - "/ARCHITECTURE.md"
+      - "/SECURITY.md"
+      - "/I18N.md"
+      - "/TESTING.md"
+      - "/RELEASE.md"
+      - "/docs/quality-pipeline.md"

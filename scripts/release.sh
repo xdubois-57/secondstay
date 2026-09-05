@@ -65,6 +65,7 @@
 #   --skip-security       ne vérifie pas CodeQL/Dependabot          (bypass)
 #   --skip-sonar          ne vérifie pas la Quality Gate SonarCloud (bypass)
 #   --skip-deployment     ne vérifie pas la production déployée     (bypass)
+#   --skip-freshness      ne vérifie pas la fraîcheur des deps      (bypass)
 #
 set -uo pipefail
 
@@ -85,6 +86,7 @@ SKIP_CI=0
 SKIP_SECURITY=0
 SKIP_SONAR=0
 SKIP_DEPLOYMENT=0
+SKIP_FRESHNESS=0
 BYPASSES=()
 
 die() { printf '%s✘ %s%s\n' "$RED$BOLD" "$1" "$RESET" >&2; exit 1; }
@@ -102,6 +104,7 @@ while [ $# -gt 0 ]; do
         --skip-security) SKIP_SECURITY=1 ;;
         --skip-sonar) SKIP_SONAR=1 ;;
         --skip-deployment) SKIP_DEPLOYMENT=1 ;;
+        --skip-freshness) SKIP_FRESHNESS=1 ;;
         -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
         *) die "Option inconnue : $1" ;;
     esac
@@ -111,7 +114,7 @@ done
 [ -n "$BUMP" ] || die "Indiquez le type d'incrément : patch, minor ou major."
 
 # ---------------------------------------------------------------- 1. Outils --
-info "1/23 Vérification des outils requis"
+info "1/24 Vérification des outils requis"
 for tool in git php composer npm zip; do
     command -v "$tool" >/dev/null 2>&1 || die "Outil manquant : $tool"
 done
@@ -120,36 +123,36 @@ command -v gh >/dev/null 2>&1 && HAS_GH=1
 ok "Outils présents (gh: $([ $HAS_GH -eq 1 ] && echo oui || echo non))"
 
 # ------------------------------------------------------- 2. Working tree ------
-info "2/23 Working tree propre"
+info "2/24 Working tree propre"
 [ -z "$(git status --porcelain)" ] || die "Le working tree contient des modifications non commitées."
 ok "Working tree propre"
 
 # ------------------------------------------------------------- 3. Branche -----
-info "3/23 Branche attendue"
+info "3/24 Branche attendue"
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$CURRENT_BRANCH" = "$EXPECTED_BRANCH" ] || die "Branche courante '$CURRENT_BRANCH' ≠ '$EXPECTED_BRANCH'."
 ok "Sur $EXPECTED_BRANCH"
 
 # --------------------------------------------------------------- 4. Fetch ----
-info "4/23 Synchronisation avec $REMOTE"
+info "4/24 Synchronisation avec $REMOTE"
 git fetch --tags "$REMOTE" "$EXPECTED_BRANCH" >/dev/null 2>&1 || die "git fetch a échoué."
 ok "Remote synchronisé"
 
 # ------------------------------------------------------------- 5. HEAD -------
-info "5/23 HEAD à jour"
+info "5/24 HEAD à jour"
 LOCAL="$(git rev-parse HEAD)"
 UPSTREAM="$(git rev-parse "$REMOTE/$EXPECTED_BRANCH")"
 [ "$LOCAL" = "$UPSTREAM" ] || die "HEAD local ($LOCAL) ≠ $REMOTE/$EXPECTED_BRANCH ($UPSTREAM)."
 ok "HEAD identique à $REMOTE/$EXPECTED_BRANCH"
 
 # ---------------------------------------------------- 6. Version courante ----
-info "6/23 Version courante"
+info "6/24 Version courante"
 CURRENT_VERSION="$(tr -d '[:space:]' < VERSION)"
 [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "VERSION invalide : $CURRENT_VERSION"
 ok "VERSION = $CURRENT_VERSION"
 
 # ------------------------------------------------- 7. Déploiement précédent --
-info "7/23 Gate déploiement"
+info "7/24 Gate déploiement"
 if [ $SKIP_DEPLOYMENT -eq 1 ]; then
     bypass "gate déploiement ignorée"
 elif [ -z "$DEPLOYMENT_URL" ]; then
@@ -161,7 +164,7 @@ else
 fi
 
 # ----------------------------------------------------------- 8. Gate CI ------
-info "8/23 Gate CI GitHub Actions"
+info "8/24 Gate CI GitHub Actions"
 if [ $SKIP_CI -eq 1 ]; then
     bypass "gate CI ignorée"
 elif [ $HAS_GH -eq 0 ]; then
@@ -174,7 +177,7 @@ else
 fi
 
 # ------------------------------------------ 9. Gate CodeQL / Dependabot ------
-info "9/23 Gate sécurité (CodeQL / Dependabot)"
+info "9/24 Gate sécurité (CodeQL / Dependabot)"
 if [ $SKIP_SECURITY -eq 1 ]; then
     bypass "gate sécurité ignorée"
 elif [ $HAS_GH -eq 0 ]; then
@@ -219,7 +222,7 @@ sonar_wait_budget() {
     else printf '%s minute(s)' "$((total / 60))"; fi
 }
 
-info "10/23 Gate SonarCloud"
+info "10/24 Gate SonarCloud"
 if [ $SKIP_SONAR -eq 1 ]; then
     bypass "gate SonarCloud ignorée"
 else
@@ -318,7 +321,23 @@ else
 fi
 
 # ------------------------------------------------------- 11. Tests locaux ----
-info "11/23 Gate tests locaux"
+# ------------------------------------------------- 11. Fraîcheur des deps ----
+# Parmi les gates rapides, et avant les tests : découvrir une dépendance en
+# retard après vingt minutes de `check.sh --full` coûterait ces vingt minutes
+# pour rien.
+info "11/24 Gate fraîcheur des dépendances"
+if [ "$SKIP_FRESHNESS" = "1" ]; then
+    bypass "fraîcheur des dépendances non vérifiée"
+elif COMPOSER_ALLOW_SUPERUSER=1 php scripts/dependency-freshness.php; then
+    ok "Aucune montée gratuite en attente"
+else
+    warn "Des montées autorisées par les contraintes actuelles sont en attente."
+    warn "Rattrapez-les (composer update / npm update / copie du vendorisé),"
+    warn "ou relancez avec --skip-freshness en sachant ce que vous ne vérifiez pas."
+    die "Gate fraîcheur des dépendances en échec."
+fi
+
+info "12/24 Gate tests locaux"
 if [ $SKIP_TESTS -eq 1 ]; then
     bypass "tests locaux ignorés"
 else
@@ -327,13 +346,13 @@ else
 fi
 
 # ------------------------------------------------------ 12. Dépendances ------
-info "12/23 Audit des dépendances"
+info "13/24 Audit des dépendances"
 COMPOSER_ALLOW_SUPERUSER=1 composer audit --locked --no-interaction >/dev/null || die "composer audit a échoué."
 npm audit --omit=dev --audit-level=high >/dev/null 2>&1 || warn "npm audit signale des alertes (dépendances de développement uniquement)."
 ok "Dépendances auditées"
 
 # ------------------------------------------------------ 13. Nouvelle version -
-info "13/23 Calcul de la nouvelle version"
+info "14/24 Calcul de la nouvelle version"
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 case "$BUMP" in
     major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
@@ -351,41 +370,41 @@ if [ $DRY_RUN -eq 1 ]; then
 fi
 
 # ----------------------------------------------------------- 14. VERSION -----
-info "14/23 Écriture de VERSION"
+info "15/24 Écriture de VERSION"
 printf '%s\n' "$NEW_VERSION" > VERSION
 ok "VERSION = $NEW_VERSION"
 
 # ------------------------------------------------------------ 15. Commit -----
-info "15/23 Commit de version"
+info "16/24 Commit de version"
 git add VERSION
 git commit -m "chore: release $NEW_VERSION" >/dev/null || die "Commit impossible."
 ok "Commit créé"
 
 # -------------------------------------------------------------- 16. Push -----
-info "16/23 Push du commit"
+info "17/24 Push du commit"
 git push -u "$REMOTE" "$EXPECTED_BRANCH" >/dev/null || die "Push impossible."
 ok "Commit poussé"
 
 # --------------------------------------------------------------- 17. Tag -----
-info "17/23 Tag annoté"
+info "18/24 Tag annoté"
 git tag -a "$TAG" -m "SecondStay $NEW_VERSION" || die "Création du tag impossible."
 git push "$REMOTE" "$TAG" >/dev/null || die "Push du tag impossible."
 ok "Tag $TAG poussé"
 
 # --------------------------------------------------- 18. Composer production -
-info "18/23 Dépendances de production"
+info "19/24 Dépendances de production"
 COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction >/dev/null \
     || die "composer install --no-dev a échoué."
 ok "Dépendances de production prêtes"
 
 # --------------------------------------------------------------- 19. ZIP -----
-info "19/23 Construction du ZIP"
+info "20/24 Construction du ZIP"
 ZIP_PATH="$ROOT/build/release/secondstay-$NEW_VERSION.zip"
 ./scripts/build-release-zip.sh --build "$ZIP_PATH" >/dev/null || die "Construction du ZIP impossible."
 ok "ZIP construit : $ZIP_PATH"
 
 # ------------------------------------------------------- 20. Inspection ZIP --
-info "20/23 Inspection du ZIP"
+info "21/24 Inspection du ZIP"
 php scripts/release-artifact.php inspect "$ZIP_PATH" || die "L'artefact est non conforme."
 ok "Artefact conforme"
 
@@ -393,7 +412,7 @@ ok "Artefact conforme"
 # Le fichier est validé ICI, avant l'attente du workflow : découvrir qu'il
 # manque une section après dix minutes de gates serait dix minutes perdues, et
 # le brouillon resterait de toute façon non publié.
-info "21/23 Notes de release"
+info "22/24 Notes de release"
 NOTES_SOURCE="${RELEASE_NOTES_FILE:-}"
 if [ -z "$NOTES_SOURCE" ]; then
     warn "RELEASE_NOTES_FILE n'est pas défini."
@@ -445,7 +464,7 @@ ok "Notes conformes : $NOTES_SOURCE"
 # commande : l'alternative est quelqu'un qui doit penser à revenir dix minutes
 # plus tard finir la release à la main, ce qui est la façon dont une version
 # part avec une gate rouge que personne n'a regardée.
-info "22/23 Attente des gates, puis publication"
+info "23/24 Attente des gates, puis publication"
 if [ $HAS_GH -eq 0 ]; then
     warn "gh absent : le workflow a créé un brouillon pour $TAG."
     warn "Attachez-y $ZIP_PATH, mettez les notes de $NOTES_SOURCE, puis publiez à la main."
@@ -525,7 +544,7 @@ else
 fi
 
 # --------------------------------------------------- 23. Restauration dev ----
-info "23/23 Restauration de l'environnement de développement"
+info "24/24 Restauration de l'environnement de développement"
 COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction >/dev/null || warn "Restauration des dépendances de développement à refaire manuellement."
 ok "Environnement de développement restauré"
 

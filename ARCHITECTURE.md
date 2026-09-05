@@ -524,6 +524,10 @@ Contrôles : PHP, extensions, DB, permissions, disque, ZIP, crypto, SMTP, IMAP, 
 
 ## 27. CI
 
+La carte de l'ensemble — quelle couche attrape quoi, ce que chacune ne voit
+pas, et la configuration GitHub dont rien ne fonctionne sans elle — est dans
+`docs/quality-pipeline.md`.
+
 Trois workflows, et un seul endroit où les gates sont définies :
 
 | Fichier | Rôle |

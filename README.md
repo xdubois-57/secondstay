@@ -927,6 +927,8 @@ Voir `RELEASE.md` et `ROADMAP.md`.
 - `I18N.md` — stratégie multilingue
 - `TESTING.md` — stratégie de tests
 - `RELEASE.md` — CI et release
+- `docs/quality-pipeline.md` — la carte de la chaîne d'assurance : quelle
+  couche attrape quoi, et ce que chacune ne voit pas
 - `ROADMAP.md` — découpage en itérations
 
 ## Licence

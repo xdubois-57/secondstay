@@ -393,6 +393,14 @@ Tests obligatoires :
 
 ### 12.0 Où vivent les gates
 
+> **La carte de l'ensemble est dans `docs/quality-pipeline.md`** : quelle
+> couche attrape quoi, ce que chacune ne voit pas, la configuration GitHub
+> dont rien ne fonctionne sans elle, et la liste des « verts qui ne prouvaient
+> rien » que ce dépôt a réellement rencontrés. Ce document-ci reste la source
+> de vérité des règles ; celui-là ne fait que les situer les unes par rapport
+> aux autres.
+
+
 Les gates ne sont pas écrites dans `ci.yml` : elles vivent dans
 `.github/workflows/checks.yml`, un workflow **réutilisable**
 (`on: workflow_call`) que les pipelines appellent.
