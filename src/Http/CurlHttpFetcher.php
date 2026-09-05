@@ -217,19 +217,50 @@ final class CurlHttpFetcher implements HttpFetcher
             $formatted[] = $name . ': ' . $value;
         }
 
-        curl_setopt_array($curl, [
+        curl_setopt_array($curl, self::protocolRestrictionOptions() + [
             CURLOPT_HTTPHEADER => $formatted,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT => $this->timeoutSeconds,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_PROTOCOLS_STR => 'http,https',
-            CURLOPT_REDIR_PROTOCOLS_STR => 'http,https',
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_USERAGENT => 'SecondStay',
         ]);
 
         return $curl;
+    }
+
+    /**
+     * Restriction des protocoles autorisés, dans la forme que l'hôte comprend.
+     *
+     * `CURLOPT_PROTOCOLS_STR` n'existe que si PHP a été construit avec
+     * libcurl ≥ 7.85. Le produit s'installe sur un hébergement mutualisé
+     * quelconque (AGENTS.md §1.6) : nommer la constante directement ferait
+     * échouer **toute** requête sortante sur « Undefined constant » là où elle
+     * manque — l'import de calendrier, les webhooks, le fournisseur de
+     * contenu local — et non seulement la restriction elle-même.
+     *
+     * La restriction est appliquée dans les deux cas, jamais abandonnée : sans
+     * elle, une redirection vers `file://` ou `gopher://` deviendrait
+     * atteignable, ce que la garde d'URL n'attrape pas (SECURITY.md §16).
+     * `constant()` plutôt qu'une constante nommée, pour que l'analyse statique
+     * n'ait pas à connaître un symbole que l'hôte d'analyse peut ne pas avoir.
+     *
+     * @return array<int, string|int>
+     */
+    public static function protocolRestrictionOptions(): array
+    {
+        if (defined('CURLOPT_PROTOCOLS_STR') && defined('CURLOPT_REDIR_PROTOCOLS_STR')) {
+            return [
+                (int) constant('CURLOPT_PROTOCOLS_STR') => 'http,https',
+                (int) constant('CURLOPT_REDIR_PROTOCOLS_STR') => 'http,https',
+            ];
+        }
+
+        return [
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+        ];
     }
 
     private function resolveRedirect(string $base, string $location): string

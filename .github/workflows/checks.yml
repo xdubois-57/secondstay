@@ -148,6 +148,56 @@ jobs:
           path: evidence/
           retention-days: 7
 
+  static-analysis:
+    # La moitié JavaScript de l'analyse statique. La moitié PHP — PHPStan —
+    # vit dans le travail `php` ci-dessus, et non ici : elle y est jouée sur
+    # **les deux** versions de PHP supportées, ce qu'un travail unique ne
+    # ferait pas. Les deux moitiés partagent la même politique : aucune
+    # baseline n'est commitée, « vert » veut dire aucun constat.
+    name: Analyse statique — tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: tsc (vérificateur, rien n'est produit)
+        run: npm run typecheck
+
+      # Même raisonnement que pour PHPStan : « aucun constat » ne veut rien
+      # dire tant qu'on ignore ce qui a été regardé. `--listFiles` donne la
+      # liste réelle des fichiers vérifiés.
+      - name: tsc — sortie et périmètre
+        if: ${{ inputs.evidence }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence
+          {
+            echo "typescript: $(npx tsc --version)"
+            echo "node: $(node --version)"
+            echo "configuration: tsconfig.json"
+            echo "fichiers vérifiés:"
+            npx tsc -p tsconfig.json --noEmit --listFiles 2>/dev/null \
+              | grep -v '/node_modules/' | sed "s#^${PWD}/##" || true
+          } > evidence/tsc-scope.txt
+          cat evidence/tsc-scope.txt
+
+          npm run typecheck | tee evidence/tsc.txt
+
+      - name: Preuves analyse statique
+        if: ${{ inputs.evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-static-analysis
+          path: evidence/
+          retention-days: 7
+
   database:
     name: Base de données — migrations et intégration
     runs-on: ubuntu-latest

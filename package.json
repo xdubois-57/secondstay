@@ -7,13 +7,16 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "typecheck": "node scripts/js-typecheck.mjs",
+    "typecheck:baseline": "node scripts/js-typecheck.mjs --generate-baseline"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.49.1",
     "@vitest/coverage-v8": "^2.1.8",
     "jsdom": "^25.0.1",
+    "typescript": "5.7.3",
     "vitest": "^2.1.8"
   }
 }

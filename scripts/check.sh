@@ -6,7 +6,7 @@
 #   ./scripts/check.sh --fast     syntaxe + PHPStan + PHPUnit unitaire + i18n
 #   ./scripts/check.sh --php      syntaxe + PHPStan + PHPUnit
 #   ./scripts/check.sh --db       tests d'intégration base de données
-#   ./scripts/check.sh --js       Vitest
+#   ./scripts/check.sh --js       Vitest + tsc
 #   ./scripts/check.sh --e2e      Playwright
 #   ./scripts/check.sh --security composer audit + contrôles de fuite
 #   ./scripts/check.sh --full     tout
@@ -101,6 +101,14 @@ vitest() {
     npm run --silent test
 }
 
+# L'autre moitié de l'analyse statique : les défauts du JavaScript navigateur
+# qu'aucune des trois campagnes ne voit, parce qu'ils vivent dans du code
+# qu'elles n'exécutent pas. TypeScript est un vérificateur, jamais une étape de
+# construction : rien n'est compilé (voir `tsconfig.json`).
+typecheck() {
+    npm run --silent typecheck
+}
+
 playwright() {
     # `SECONDSTAY_E2E_PROJECT` restreint la campagne à un seul navigateur.
     # L'intégration continue s'en sert pour jouer les deux projets en
@@ -153,6 +161,7 @@ case "$MODE" in
         ;;
     --js)
         run_step "Vitest" vitest
+        run_step "tsc (vérificateur JavaScript)" typecheck
         ;;
     --e2e)
         run_step "Playwright" playwright
@@ -168,6 +177,7 @@ case "$MODE" in
         run_step "i18n FR/EN/NL/DE" i18n_check
         run_step "PHPUnit (base de données)" phpunit_db
         run_step "Vitest" vitest
+        run_step "tsc (vérificateur JavaScript)" typecheck
         run_step "Playwright" playwright
         run_step "Composer audit" composer_audit
         run_step "Absence de secrets versionnés" secret_scan

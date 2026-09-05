@@ -48,6 +48,7 @@ Voir `I18N.md`.
 - PHPUnit
 - PHPStan
 - Vitest
+- TypeScript, comme vérificateur du JavaScript (jamais comme étape de build)
 - Playwright
 - GitHub Actions
 - CodeQL pour les langages supportés
@@ -804,11 +805,13 @@ Commande locale de référence :
 Elle couvre :
 
 - syntaxe PHP ;
-- PHPStan (niveau 8, aucune erreur tolérée) ;
+- PHPStan (niveau 8, aucune erreur tolérée, aucune baseline) ;
 - PHPUnit + couverture Clover ;
 - contrôle i18n FR/EN/NL/DE ;
 - tests d’intégration base de données ;
 - Vitest + couverture LCOV ;
+- `tsc`, vérificateur du JavaScript navigateur (`npm run typecheck`) — rien
+  n'est compilé, la production sert le JavaScript tel qu'il est écrit ;
 - Playwright (desktop + mobile) ;
 - audit Composer ;
 - absence de secrets versionnés ;

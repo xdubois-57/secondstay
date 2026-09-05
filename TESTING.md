@@ -97,6 +97,46 @@ Vitest pour :
 
 Produire LCOV.
 
+### 6.1 `tsc`, vérificateur du JavaScript
+
+```bash
+npm run typecheck
+```
+
+C'est la moitié manquante de l'analyse statique : les défauts du JavaScript
+navigateur qu'aucune des trois campagnes ne voit, **parce qu'ils vivent dans
+du code qu'elles n'exécutent pas**. Un gestionnaire d'événement qu'aucun test
+ne déclenche est du code que rien ne lit ; identifiants inconnus, mauvais
+nombre d'arguments, propriétés absentes de l'objet touché s'y installent sans
+que rien ne devienne rouge.
+
+**TypeScript est ici un vérificateur, jamais une étape de construction.**
+`noEmit` : rien n'est compilé, rien n'est empaqueté, la production continue de
+servir le JavaScript non transformé de `public/assets/js/` (AGENTS.md §2).
+Aucun fichier `.ts` n'existe dans ce dépôt et il ne doit pas en apparaître ;
+`allowJs` + `checkJs` pointent l'outil sur le JavaScript déjà écrit.
+
+`strict: false` volontairement : ce code a été écrit sans types, et activer la
+rigueur enterrerait les constats qui méritent une correction sous des
+centaines d'autres sur des annotations absentes. `noImplicitReturns` et
+`noFallthroughCasesInSwitch` sont conservés parce qu'ils attrapent de vraies
+fautes.
+
+Les onze constats de la mise en place ont été **payés**, pas gelés :
+`public/assets/js/modules/dom.js` porte les accesseurs typés
+(`queryElement`, `asInput`, `asFormField`, `documentOf`) qui disent une fois,
+à un seul endroit, ce que le code sait déjà du DOM qu'il manipule. Une
+assertion dispersée sur chaque appel se serait corrigée en quinze endroits.
+
+`scripts/js-typecheck.mjs` porte la mécanique de baseline. **Aucun fichier de
+baseline n'est commité** : « vert » veut dire *aucun constat*, et non *aucun
+constat nouveau*. La mécanique reste disponible (`npm run typecheck:baseline`)
+parce que l'alternative à une baseline n'est pas « pas de baseline » : c'est
+quelqu'un qui éteint le garde-fou le jour où une montée de dépendance produit
+cinquante constats un vendredi soir. Elle sert à accepter sciemment une dette
+existante, jamais à faire taire un constat que sa propre modification vient
+d'introduire.
+
 ## 7. Playwright E2E
 
 ### Principes
@@ -252,8 +292,8 @@ une fois par travail, avec la même liste partout :
   du fichier. Une exécution de CI produit un verdict, pas un pack de preuves.
 - `true` : chaque travail téléverse en plus, sous un artefact `evidence-*`, ce
   que son outil émet **nativement** — JUnit de PHPUnit (un par version de PHP)
-  et de Vitest, rapport HTML de Playwright, sortie de PHPStan, rapport JSON de
-  `composer audit`, inventaire et empreinte du ZIP.
+  et de Vitest, rapport HTML de Playwright, sortie de PHPStan et de `tsc`,
+  rapport JSON de `composer audit`, inventaire et empreinte du ZIP.
 
 Rien n'y écrit un résumé rédigé à la main : une preuve rédigée n'est pas
 maintenue, et une preuve non maintenue finit par mentir.
@@ -287,6 +327,14 @@ plancher déclaré, jamais les deux en silence.
 La couverture Clover et le JUnit consommés par SonarCloud ne sont produits que
 par la version de référence (8.4) : l'analyse n'en consomme qu'un jeu, et deux
 artefacts de même nom se refusent mutuellement.
+
+#### `static-analysis`
+
+- `npm run typecheck`.
+
+La moitié PHP de l'analyse statique — PHPStan — n'est pas ici mais dans le
+travail `php`, où elle est jouée sur les **deux** versions supportées ; un
+travail unique n'en verrait qu'une.
 
 #### `database`
 

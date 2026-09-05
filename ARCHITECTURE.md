@@ -540,6 +540,8 @@ Jobs séparés, dans `checks.yml` :
 
 - PHP static/unit, **en matrice 8.2 / 8.4** — 8.2 est le plancher déclaré par
   `composer.json` ;
+- analyse statique du JavaScript (`tsc`) — la moitié PHP, PHPStan, reste dans
+  le travail PHP pour être jouée sur les deux versions ;
 - DB integration ;
 - JS unit ;
 - Playwright, un exécuteur par navigateur ;
@@ -598,7 +600,9 @@ translations/{fr,en,nl,de}/   catalogues système versionnés avec le code
 config/app.php                valeurs par défaut, jamais de secret
 scripts/                      check.sh, release.sh, dev-server.sh, router.php,
                               build-release-zip.sh, release-artifact.php,
-                              check-secrets.sh, update-manifest.php
+                              check-secrets.sh, update-manifest.php,
+                              js-typecheck.mjs, coverage-bootstrap.php,
+                              coverage-merge.php, e2e-reset.php
 tests/php|js|e2e/             PHPUnit, Vitest, Playwright
 ```
 
