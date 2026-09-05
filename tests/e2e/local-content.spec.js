@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, signInAndWait, submitSignUp } from './helpers/fixtures.js';
 import { agendaPage, purgePages, storePage } from './helpers/fixtures-http.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
@@ -209,7 +209,7 @@ test.describe('contenu local', () => {
         await page.fill('#email', client);
         await page.fill('#password', PASSWORD);
         await page.check('#accept_terms');
-        await page.click('[data-testid="signup-form"] button[type="submit"]');
+        await submitSignUp(page);
 
         const mail = await waitForMail(request, client, 'account_confirmation');
         await page.goto(linkFrom(mail, '/account/confirm'));

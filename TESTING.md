@@ -831,49 +831,75 @@ Cette ligne est correcte en elle-même — c'est ce que Playwright exige pour qu
 n'a pas corrigé l'instabilité pour autant**, et il faut le dire ici plutôt que
 laisser croire le contraire à la prochaine personne qui lira ce paragraphe.
 
-### 18.6 bis L'instabilité du scan dynamique — ce qui est établi, et ce qui ne l'est pas
+### 18.6 bis L'instabilité du scan dynamique, et la course qui la causait
 
-La campagne du scan dynamique est verte environ une fois sur quatre. Les
-scénarios qui tombent changent à chaque exécution ; la campagne E2E ordinaire,
-elle, est verte. La différence est le proxy.
+La campagne du scan dynamique passait environ une fois sur quatre, sur des
+scénarios différents à chaque exécution. Le symptôme était toujours le même :
+après une inscription ou une connexion réussie, une navigation ultérieure était
+traitée comme anonyme. L'application répondait correctement — « Accès refusé »,
+ou un renvoi vers la page de connexion — et le scénario attendait six minutes un
+élément que cette page ne porte pas.
 
-**Le symptôme, observé quatre fois.** Après une authentification réussie, une
-requête ultérieure est traitée comme non authentifiée. L'application répond
-correctement — 403 sur une route authentifiée, ou une redirection vers la page
-de connexion — et le scénario meurt sur un élément que cette page ne porte pas,
-souvent au bout des six minutes du plafond mis à l'échelle.
+**La cause est une course dans le harnais**, et elle tient en quatre lignes :
 
-Dans le trace conservé par un travail en échec, en-têtes bruts :
-
-```text
-12:22:58.956 /fr/account         ss_locale=fr; secondstay_session=808c2587…  200
-12:22:59.068 /fr/account/export  secondstay_session=303f6bfc…; ss_locale=nl  403
-12:22:59.090 /icon-192.png       secondstay_session=303f6bfc…; ss_locale=nl
+```js
+await page.click('[data-testid="signup-form"] button[type="submit"]');
+const mail = await waitForMail(request, client, 'account_confirmation');
+await page.goto(linkFrom(mail, '/account/confirm'));
+await page.goto('/fr/booking?…');
 ```
 
-Les **deux** cookies changent ensemble, à cent douze millisecondes d'intervalle,
-et l'icône — une requête du navigateur, non du contexte d'API — part avec le
-même pot étranger. Ce n'est pas une session régénérée.
+`page.click()` rend la main dès que le clic est délivré, jamais quand la réponse
+est là : le POST d'inscription reste en vol. L'e-mail, lui, est écrit en base
+**pendant** le traitement, avant que la réponse ne parte — `waitForMail()` rend
+donc la main alors que la réponse n'est toujours pas revenue. Le lien de
+confirmation était alors ouvert, connectait et posait une session ; puis la
+réponse tardive de l'inscription arrivait avec son propre `Set-Cookie` et
+**réécrivait le pot** par-dessus la session fraîche.
 
-**Écarté, avec preuve :**
+C'est ce que montraient les en-têtes bruts d'un travail en échec : deux jeux de
+cookies cohérents mais différents sur deux requêtes consécutives, `ss_locale` et
+`secondstay_session` changeant **ensemble**. L'instrumentation ajoutée depuis a
+écarté l'explication la plus tentante en montrant qu'il n'existait qu'un **seul**
+contexte vivant, donc un seul pot : ce n'était pas un contexte étranger, c'était
+le même pot réécrit.
 
-- le drapeau `Secure` du cookie de session : posé, et constant ;
-- des contextes non fermés : créations et `.close()` s'équilibrent partout ;
-- le terminateur TLS : éprouvé isolément, `X-Forwarded-Proto: https` est présent
-  sur GET comme sur POST, y compris en connexion persistante ;
-- l'add-on HttpSessions de ZAP : `secondstay_session` ne figure dans aucun de
-  ses onze jetons de session par défaut ;
-- l'isolation du proxy par contexte : corrigée ci-dessus, sans effet sur le
-  symptôme.
+La fenêtre n'est que de quelques millisecondes en direct. La latence du proxy
+d'interception l'élargit à plusieurs centaines, ce qui explique pourquoi la
+campagne ordinaire ne la voyait presque jamais — sans qu'elle en soit moins
+réelle.
 
-**Non établi :** la cause. Le candidat restant est le service worker de la PWA,
-seul composant qui rejoue des requêtes hors du flux normal de la page.
+`submitSignUp()` de `helpers/fixtures.js` ferme la course : il attend la page
+`signup-sent`, que le POST produit, donc la réponse elle-même. Les douze sites
+d'appel l'utilisent.
 
-**Ne pas contourner cette gate en attendant.** Une campagne en échec fait
-échouer le scan même sans le moindre constat de sécurité, et c'est délibéré :
-un scan ne vaut que le trafic qu'on lui a donné. Une gate verte une fois sur
-quatre est une gate que l'on apprend à relancer, ce qui est à mi-chemin
-d'apprendre à la sauter.
+**Écarté au cours de l'enquête, avec preuve, avant d'arriver là :** le drapeau
+`Secure` du cookie de session, des contextes non fermés, le terminateur TLS,
+l'add-on HttpSessions de ZAP, l'isolation du proxy par contexte et le service
+worker de la PWA — dont `NEVER_CACHED` couvre justement tous les chemins
+concernés.
+
+**Ne pas contourner cette gate.** Une campagne en échec fait échouer le scan
+même sans le moindre constat de sécurité, et c'est délibéré : un scan ne vaut
+que le trafic qu'on lui a donné.
+
+### 18.6 ter Un défaut connu, non corrigé : l'allocation des mois en reprise
+
+Chaque scénario qui réserve possède son mois, dérivé de `getUTCMonth()` plus un
+décalage : de +1 pour `closing` à +16/+17 pour `inspection`. Seul `stay` ajoute
+un terme de reprise, `+ testInfo.retry * 2` — qui le fait atterrir sur les mois
+d'`inspection`, dont il recoupe la fenêtre de jours. Les autres n'en ont aucun
+et rejouent donc la réservation qu'ils viennent de faire, ce qui rend « Ces
+dates ne sont pas disponibles » et six minutes d'attente.
+
+Le remède évident — un pas de reprise plus grand que toute l'allocation — est
+**faux** : `booking.horizon_days` vaut 540 jours, soit un peu moins de dix-huit
+mois, et un décalage de vingt mois placerait la reprise au-delà de l'horizon,
+où l'application répond « indisponible » à juste titre. La correction demande
+de repenser l'allocation dans son ensemble, jours compris, et n'a pas été faite
+ici plutôt que faite au jugé.
+
+Ce défaut n'amplifie que des échecs déjà survenus. Il ne les cause pas.
 
 ### 18.7 Contrôle de l'artefact
 

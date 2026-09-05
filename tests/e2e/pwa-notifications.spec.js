@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits } from './helpers/fixtures.js';
+import { ADMIN_STATE_FILE, anonymousContext, clearRateLimits, submitSignUp } from './helpers/fixtures.js';
 import { linkFrom, waitForMail } from './helpers/mailbox.js';
 
 /**
@@ -170,7 +170,7 @@ test.describe('notifications et application installable', () => {
         await page.fill('#email', email);
         await page.fill('#password', PASSWORD);
         await page.check('#accept_terms');
-        await page.click('[data-testid="signup-form"] button[type="submit"]');
+        await submitSignUp(page);
 
         const confirmation = await waitForMail(request, email, 'account_confirmation');
         expect(confirmation.locale).toBe('nl');

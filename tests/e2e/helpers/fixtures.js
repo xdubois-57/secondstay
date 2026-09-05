@@ -121,6 +121,38 @@ export async function signInAndWait(page, email, password, locale = 'fr') {
 }
 
 /**
+ * Soumet le formulaire d'inscription **et attend que la réponse soit arrivée**.
+ *
+ * LA COURSE QUE CE HELPER FERME
+ * ---------------------------------------------------------------------------
+ * `page.click()` rend la main dès que le clic est délivré, jamais quand la
+ * réponse est là. Le POST d'inscription reste donc en vol. Or l'e-mail de
+ * confirmation est écrit en base **pendant** le traitement, avant que la
+ * réponse ne parte : `waitForMail()` rend donc la main, lui aussi, alors que
+ * la réponse n'est toujours pas revenue.
+ *
+ * La suite ouvrait le lien de confirmation, qui connecte et pose une session.
+ * Puis la réponse tardive de l'inscription arrivait enfin, avec son propre
+ * `Set-Cookie` — et **réécrivait le pot** par-dessus la session fraîche. La
+ * navigation suivante repartait avec la session périmée, l'application
+ * répondait correctement « Accès refusé » ou renvoyait vers la connexion, et
+ * le scénario attendait six minutes un élément que cette page ne porte pas.
+ *
+ * C'est ce qui rendait la campagne du scan dynamique verte une fois sur
+ * quatre, sur des scénarios différents à chaque fois : la fenêtre de course
+ * n'est que de quelques millisecondes en direct, mais la latence du proxy
+ * d'interception l'élargit à plusieurs centaines. La campagne ordinaire ne la
+ * voyait donc presque jamais — ce qui n'en faisait pas moins une course.
+ *
+ * `signup-sent` est la page que le POST produit, et son marqueur ne dépend pas
+ * de la langue : l'attendre, c'est attendre la réponse elle-même.
+ */
+export async function submitSignUp(page) {
+    await page.click('[data-testid="signup-form"] button[type="submit"]');
+    await expect(page.locator('[data-testid="signup-sent"]')).toBeVisible();
+}
+
+/**
  * Contexte réellement anonyme.
  *
  * `browser.newContext()` hérite du `storageState` déclaré par `test.use` :
