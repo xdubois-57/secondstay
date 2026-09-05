@@ -224,7 +224,8 @@ Ordre recommandé :
 13. calculer nouvelle version ;
 14. écrire `VERSION` ;
 15. commit version ;
-16. push commit ;
+16. publier ce commit sur la branche de release — directement, ou par une
+    pull request quand la branche l'exige (§5.1) ;
 17. créer/push tag annoté ;
 18. préparer Composer prod ;
 19. construire ZIP ;
@@ -232,6 +233,32 @@ Ordre recommandé :
 21. générer notes ;
 22. publier GitHub Release + asset ;
 23. restaurer l’environnement dev local si nécessaire.
+
+### 5.1 Le commit de version passe par où la branche l'exige
+
+Deux chemins, et c'est le dépôt qui choisit lequel, pas le script.
+
+Là où rien n'interdit d'écrire sur la branche de release, le commit de version
+y va directement.
+
+Là où une règle impose une pull request — le ruleset « Main » de ce dépôt le
+fait, sans aucun acteur en dérogation — le serveur refuse la poussée avec
+« Changes must be made through a pull request ». Le script ouvre alors une
+branche `release/<version>`, une pull request, l'auto-fusionne, attend la
+fusion, puis pose le tag sur le commit de fusion.
+
+**Ce n'est pas un contournement, et c'est même mieux.** Le commit de version
+subit exactement les mêmes gates que n'importe quel autre changement. Un commit
+qui échapperait aux contrôles parce qu'il « ne touche qu'un numéro » est
+précisément celui dont personne ne relit le diff.
+
+Le script **tente** la poussée directe plutôt que d'interroger l'API des
+rulesets : celle-ci dirait ce qui est *configuré*, quand seule la poussée dit
+ce qui est *appliqué*. Un refus ne laisse rien derrière lui.
+
+Conséquence à connaître : par ce chemin, publier demande d'attendre les gates
+**deux fois** — une fois sur la pull request de version, une fois sur le tag.
+C'est le prix d'une branche protégée, et il est assumé.
 
 ## 6. Gates
 
