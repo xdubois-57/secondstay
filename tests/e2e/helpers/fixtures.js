@@ -1,4 +1,72 @@
-import { expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+
+import { expect, test } from '@playwright/test';
+
+/**
+ * En cas d'échec, l'état des pots à cookies de tous les contextes vivants.
+ *
+ * POURQUOI CETTE INSTRUMENTATION EXISTE
+ * ---------------------------------------------------------------------------
+ * La campagne du scan dynamique tombe environ trois fois sur quatre, sur des
+ * scénarios différents et toujours de la même façon : après une
+ * authentification réussie, une requête ultérieure est traitée comme anonyme,
+ * l'application répond correctement 403 — ou renvoie vers la page de connexion
+ * — et le scénario meurt sur un élément que cette page ne porte pas.
+ *
+ * Le trace de Playwright montre les en-têtes **envoyés**. Il a établi que la
+ * requête fautive part avec un jeu de cookies complet et cohérent qui n'est pas
+ * celui du test : `secondstay_session` **et** `ss_locale` changent ensemble,
+ * d'une requête à la suivante, à cent douze millisecondes d'intervalle.
+ *
+ * Ce que le trace ne montre pas, c'est ce que le contexte **contenait** à cet
+ * instant. Or c'est la seule mesure qui sépare les deux explications
+ * restantes, et elles mènent dans des directions opposées :
+ *
+ *   - le contexte porte le bon cookie, et quelque chose le remplace en chemin
+ *     — l'enquête va alors vers le proxy ;
+ *   - le contexte porte lui-même le mauvais cookie — elle va vers Playwright.
+ *
+ * Chaque mesure coûte une demi-heure d'intégration continue. Ajouter une
+ * hypothèse de plus reviendrait à tirer à pile ou face à ce prix-là.
+ *
+ * `browser` est demandé plutôt que `page` : il est de portée « worker » et
+ * déjà instancié, là où demander `page` créerait un contexte pour les
+ * scénarios qui n'en utilisent pas — l'instrumentation changerait alors ce
+ * qu'elle mesure. `browser.contexts()` rend tous les contextes vivants, y
+ * compris ceux que les scénarios créent eux-mêmes par `anonymousContext()`.
+ */
+test.afterEach(async ({ browser }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) {
+        return;
+    }
+
+    const contexts = [];
+    for (const [index, context] of browser.contexts().entries()) {
+        try {
+            contexts.push({
+                index,
+                pages: context.pages().map((page) => page.url()),
+                cookies: await context.cookies(),
+            });
+        } catch (error) {
+            // Un contexte fermé pendant le démontage n'est pas une raison de
+            // faire échouer le démontage lui-même : on note l'impossibilité.
+            contexts.push({ index, error: String(error) });
+        }
+    }
+
+    // Écrit sur disque plutôt que joint par `body` : un attachement à corps
+    // vit dans le rapport, quand l'artefact que la CI conserve en cas d'échec
+    // est l'arborescence `test-results/`. Une preuve qui ne sort pas de la
+    // machine où elle a été produite n'en est pas une.
+    const target = testInfo.outputPath('pots-a-cookies.json');
+    await writeFile(
+        target,
+        JSON.stringify({ capturedAt: new Date().toISOString(), contexts }, null, 2),
+        'utf8'
+    );
+    await testInfo.attach('pots-a-cookies.json', { path: target, contentType: 'application/json' });
+});
 
 /**
  * Données de test partagées entre les scénarios E2E.
