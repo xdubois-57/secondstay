@@ -31,7 +31,8 @@ return [
         'outdoor' => 'Buitenruimte',
         'meters' => 'Meters',
     ],
-    'checkin_intro' => 'Meld binnen {hours} uur na uw aankomst wat niet in orde is. Is alles in orde, dan hoeft u niets te doen.',
+    'checkin_intro' => 'Meld binnen {hours} uur na uw aankomst wat niet in orde is. Is alles in orde, dan hoeft u '
+        . 'niets te doen.',
     'checkout_intro' => 'Bij vertrek is een foto verplicht voor elke zone die daarom vraagt.',
     'note' => 'Opmerking',
     'photo' => 'Foto',
@@ -57,9 +58,11 @@ return [
     ],
     'admin' => [
         'title' => 'Zones en referentiefoto’s',
-        'intro' => 'Bepaal de zones van de woning, hun volgorde, hun instructies en welke bij vertrek een foto vereisen.',
+        'intro' => 'Bepaal de zones van de woning, hun volgorde, hun instructies en welke bij vertrek een foto '
+            . 'vereisen.',
         'completeness' => 'Aangepaste namen',
-        'completeness_help' => 'Een zone zonder aangepaste naam gebruikt het ingebouwde label, dat al in de vier talen bestaat.',
+        'completeness_help' => 'Een zone zonder aangepaste naam gebruikt het ingebouwde label, dat al in de vier talen '
+            . 'bestaat.',
         'no_zone' => 'Geen zone bepaald.',
         'seed' => 'De voorgestelde zones aanmaken',
         'seeded' => 'Voorgestelde zones aangemaakt.',

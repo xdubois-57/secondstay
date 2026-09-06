@@ -31,7 +31,8 @@ return [
         'outdoor' => 'Outdoor',
         'meters' => 'Meters',
     ],
-    'checkin_intro' => 'Report anything that is not as expected within {hours} hours of your arrival. If everything is fine, there is nothing to do.',
+    'checkin_intro' => 'Report anything that is not as expected within {hours} hours of your arrival. If everything is '
+        . 'fine, there is nothing to do.',
     'checkout_intro' => 'On departure, a photo is required for every zone that asks for one.',
     'note' => 'Comment',
     'photo' => 'Photo',
@@ -57,9 +58,11 @@ return [
     ],
     'admin' => [
         'title' => 'Zones and reference photos',
-        'intro' => 'Define the zones of the property, their order, their instructions, and which ones require a photo on departure.',
+        'intro' => 'Define the zones of the property, their order, their instructions, and which ones require a photo '
+            . 'on departure.',
         'completeness' => 'Custom names',
-        'completeness_help' => 'A zone with no custom name uses the built-in label, already available in all four languages.',
+        'completeness_help' => 'A zone with no custom name uses the built-in label, already available in all four '
+            . 'languages.',
         'no_zone' => 'No zone defined.',
         'seed' => 'Create the suggested zones',
         'seeded' => 'Suggested zones created.',

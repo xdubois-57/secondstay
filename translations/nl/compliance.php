@@ -8,8 +8,10 @@ declare(strict_types=1);
 
 return [
     'title' => 'Franse conformiteit',
-    'intro' => 'Elk onderwerp wordt beschreven en vervolgens door u vastgesteld: status, officiële bron, datum van verificatie en volgende herziening.',
-    'disclaimer' => 'Deze informatie geeft richting, het is geen juridisch advies. De regels verschillen per gemeente en veranderen: de officiële bron en de datum van verificatie tellen.',
+    'intro' => 'Elk onderwerp wordt beschreven en vervolgens door u vastgesteld: status, officiële bron, datum van '
+        . 'verificatie en volgende herziening.',
+    'disclaimer' => 'Deze informatie geeft richting, het is geen juridisch advies. De regels verschillen per gemeente '
+        . 'en veranderen: de officiële bron en de datum van verificatie tellen.',
     'saved' => 'Onderwerp opgeslagen.',
     'evidence_added' => 'Bewijsstuk toegevoegd.',
     'overdue' => 'Herziening verlopen',
@@ -39,14 +41,16 @@ return [
     'topic' => [
         'furnished_tourism' => [
             'label' => 'Toeristisch gemeubileerde woning',
-            'definition' => 'Statuut van een gemeubileerde woning die wordt verhuurd aan reizigers die er niet gaan wonen.',
+            'definition' => 'Statuut van een gemeubileerde woning die wordt verhuurd aan reizigers die er niet gaan '
+                . 'wonen.',
             'applicability' => 'Geldt voor elke seizoensverhuur van een volledige gemeubileerde woning.',
             'where' => 'Dienst stedenbouw of website van de gemeente, en de nationale ondernemingsdienst.',
             'impact' => 'Bepaalt welke aangifte nodig is, welke belasting geldt en wat moet worden meegedeeld.',
         ],
         'declaration' => [
             'label' => 'Aangifte of registratie bij de gemeente',
-            'definition' => 'Aangifte van de gemeubileerde verhuur bij de gemeente, soms met een te tonen registratienummer.',
+            'definition' => 'Aangifte van de gemeubileerde verhuur bij de gemeente, soms met een te tonen '
+                . 'registratienummer.',
             'applicability' => 'Verplicht in veel gemeenten; registratie geldt waar de gemeente ze heeft ingevoerd.',
             'where' => 'De gemeente van de woning, via haar online loket indien aanwezig.',
             'impact' => 'Geen aangifte betekent een boete en geen registratienummer voor de platformen.',
@@ -60,7 +64,8 @@ return [
         ],
         'owner_status' => [
             'label' => 'Statuut van de verhuurder',
-            'definition' => 'Niet-professionele of professionele verhuurder van gemeubileerde woningen, afhankelijk van de ontvangsten en hun aandeel in het inkomen.',
+            'definition' => 'Niet-professionele of professionele verhuurder van gemeubileerde woningen, afhankelijk '
+                . 'van de ontvangsten en hun aandeel in het inkomen.',
             'applicability' => 'Betreft elke eigenaar die gemeubileerd verhuurt.',
             'where' => 'Officiële fiscale documentatie en uw boekhouder.',
             'impact' => 'Bepaalt het belastingstelsel, de bijdragen en de boekhoudkundige verplichtingen.',

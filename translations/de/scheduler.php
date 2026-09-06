@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Geplante Aufgaben',
-    'intro' => 'Das Produkt betreibt keinen dauerhaften Prozess: Ein einziger Cron-Eintrag startet alles, was fällig ist. Richten Sie ihn bei Ihrem Hoster ein, so oft wie erlaubt.',
+    'intro' => 'Das Produkt betreibt keinen dauerhaften Prozess: Ein einziger Cron-Eintrag startet alles, was fällig '
+        . 'ist. Richten Sie ihn bei Ihrem Hoster ein, so oft wie erlaubt.',
     'command_path' => '/pfad/zu/secondstay/src/Scheduler/cron.php',
     'never' => 'nie ausgeführt',
     'stale' => 'überfällig',

@@ -61,7 +61,8 @@ return [
         'bic' => 'BIC',
         'reference' => 'Reference to quote',
         'qr_alt' => 'SEPA transfer QR code',
-        'notice' => 'A transfer takes one or two working days to arrive. The booking is confirmed once it has been checked.',
+        'notice' => 'A transfer takes one or two working days to arrive. The booking is confirmed once it has been '
+            . 'checked.',
     ],
     'return' => [
         'title' => 'Payment result',

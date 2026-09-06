@@ -24,7 +24,8 @@ return [
     'account_exists' => [
         'subject' => 'Your account already exists',
         'heading' => 'An account already exists for this address',
-        'intro' => 'Someone just tried to create an account with your address. If it was you, sign in or reset your password.',
+        'intro' => 'Someone just tried to create an account with your address. If it was you, sign in or reset your '
+            . 'password.',
         'button' => 'Reset my password',
         'ignore' => 'Otherwise, no action is required.',
     ],

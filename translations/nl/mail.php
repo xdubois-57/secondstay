@@ -24,7 +24,8 @@ return [
     'account_exists' => [
         'subject' => 'Uw account bestaat al',
         'heading' => 'Er bestaat al een account voor dit adres',
-        'intro' => 'Iemand probeerde zojuist een account met uw adres aan te maken. Als u dat was, log in of stel uw wachtwoord opnieuw in.',
+        'intro' => 'Iemand probeerde zojuist een account met uw adres aan te maken. Als u dat was, log in of stel uw '
+            . 'wachtwoord opnieuw in.',
         'button' => 'Mijn wachtwoord resetten',
         'ignore' => 'Anders is geen actie nodig.',
     ],
@@ -45,6 +46,7 @@ return [
         'heading' => 'Er zijn data vrijgekomen',
         'intro' => 'De data van {arrival} tot {departure} zijn zojuist vrijgekomen.',
         'button' => 'Beschikbaarheid bekijken',
-        'first_come' => 'Reserveringen worden op volgorde van binnenkomst behandeld: deze data kunnen op elk moment opnieuw bezet raken.',
+        'first_come' => 'Reserveringen worden op volgorde van binnenkomst behandeld: deze data kunnen op elk moment '
+            . 'opnieuw bezet raken.',
     ],
 ];

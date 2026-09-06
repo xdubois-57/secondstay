@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Taxe de séjour',
-    'intro' => 'Un barème est voté, prend effet à une date, puis est remplacé. Chaque règle porte donc sa période de validité, et un séjour déjà réservé conserve le barème qui s’appliquait à son arrivée.',
+    'intro' => 'Un barème est voté, prend effet à une date, puis est remplacé. Chaque règle porte donc sa période de '
+        . 'validité, et un séjour déjà réservé conserve le barème qui s’appliquait à son arrivée.',
     'enabled' => 'La taxe de séjour est perçue.',
     'disabled' => 'La taxe de séjour n’est pas perçue.',
     'configure' => 'Configurer',
@@ -18,7 +19,8 @@ return [
     'new_rule' => 'Nouveau barème',
     'rule_created' => 'Barème enregistré.',
     'rule_deleted' => 'Barème supprimé.',
-    'overlap_warning' => 'Deux barèmes se recouvrent pour un même classement : le montant dépendrait de l’ordre des lignes.',
+    'overlap_warning' => 'Deux barèmes se recouvrent pour un même classement : le montant dépendrait de l’ordre des '
+        . 'lignes.',
     'field' => [
         'period' => 'Période',
         'effective_from' => 'Prend effet le',
@@ -40,7 +42,8 @@ return [
         'nights' => 'Nuits',
         'cap' => 'Plafond appliqué',
         'total' => 'Total',
-        'exemption_note' => 'Les mineurs sont exonérés (article L. 2333-31 du code général des collectivités territoriales).',
+        'exemption_note' => 'Les mineurs sont exonérés (article L. 2333-31 du code général des collectivités '
+            . 'territoriales).',
     ],
     'error' => [
         'effective_from' => 'La date de prise d’effet est obligatoire.',

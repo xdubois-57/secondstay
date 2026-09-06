@@ -180,7 +180,8 @@ return [
             'create' => 'Die Sicherung ist fehlgeschlagen.',
             'restore' => 'Die Wiederherstellung ist fehlgeschlagen.',
             'delete' => 'Das Löschen ist fehlgeschlagen.',
-            'download' => 'Diese Sicherung wurde nicht gefunden: Sie wurde möglicherweise gelöscht oder durch die Aufbewahrung ersetzt.',
+            'download' => 'Diese Sicherung wurde nicht gefunden: Sie wurde möglicherweise gelöscht oder durch die '
+                . 'Aufbewahrung ersetzt.',
         ],
     ],
     'updates' => [
@@ -201,7 +202,8 @@ return [
     ],
     'pricing' => [
         'title' => 'Verfügbarkeit und Preise',
-        'intro' => 'Der Referenzpreis beträgt {price} pro Nacht. Die unten fett dargestellten Nächte verwenden einen abweichenden Preis.',
+        'intro' => 'Der Referenzpreis beträgt {price} pro Nacht. Die unten fett dargestellten Nächte verwenden einen '
+            . 'abweichenden Preis.',
         'rates' => 'Preise pro Nacht',
         'rates_help' => 'Wenden Sie einen Preis auf einen Zeitraum an. Die angegebene letzte Nacht ist eingeschlossen.',
         'first_night' => 'Erste Nacht',
@@ -231,7 +233,8 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnose',
-        'notification_help' => 'Prüfen Sie die Versand- und Benachrichtigungseinstellungen. Die SMTP-Sonde öffnet eine echte Verbindung zu Ihrem Versandserver.',
+        'notification_help' => 'Prüfen Sie die Versand- und Benachrichtigungseinstellungen. Die SMTP-Sonde öffnet eine '
+            . 'echte Verbindung zu Ihrem Versandserver.',
         'probe_smtp' => 'SMTP-Verbindung testen',
         'probe_imap' => 'IMAP-Verbindung testen',
         'push_keys_generate' => 'Push-Schlüssel erzeugen',
@@ -240,7 +243,8 @@ return [
         'push_keys_created' => 'Push-Schlüssel erzeugt.',
         'push_keys_renewed' => 'Push-Schlüssel erneuert: Geräte müssen sich erneut anmelden.',
         'rate_limits' => 'Ratenbegrenzung',
-        'rate_limits_help' => 'Anmelde-, Registrierungs- und Zurücksetzungsversuche sind pro Adresse begrenzt. Sie können die Zähler zurücksetzen, wenn Sie sich selbst ausgesperrt haben.',
+        'rate_limits_help' => 'Anmelde-, Registrierungs- und Zurücksetzungsversuche sind pro Adresse begrenzt. Sie '
+            . 'können die Zähler zurücksetzen, wenn Sie sich selbst ausgesperrt haben.',
         'rate_limits_clear' => 'Zähler zurücksetzen',
         'rate_limits_cleared' => 'Zähler der Ratenbegrenzung zurückgesetzt.',
         'migrations' => 'Datenbankschema',
@@ -264,7 +268,8 @@ return [
     ],
     'audit' => [
         'title' => 'Audit',
-        'intro' => 'Protokoll sensibler Aktionen: Konfiguration, Konten, Sicherungen, Wiederherstellungen und Aktualisierungen.',
+        'intro' => 'Protokoll sensibler Aktionen: Konfiguration, Konten, Sicherungen, Wiederherstellungen und '
+            . 'Aktualisierungen.',
         'actor' => 'Ausführende Person',
         'action' => 'Aktion',
         'entity' => 'Objekt',
@@ -308,7 +313,8 @@ return [
             'menu_label' => 'Menübezeichnung',
             'lead' => 'Einleitung',
             'body' => 'Inhalt',
-            'body_help' => 'Einfaches HTML erlaubt: Absätze, Listen, Links, Bilder, Tabellen. Alles Übrige wird entfernt.',
+            'body_help' => 'Einfaches HTML erlaubt: Absätze, Listen, Links, Bilder, Tabellen. Alles Übrige wird '
+                . 'entfernt.',
             'meta_title' => 'SEO-Titel',
             'meta_description' => 'SEO-Beschreibung',
         ],
@@ -320,7 +326,8 @@ return [
         'saved' => 'Medium gespeichert.',
         'deleted' => 'Medium gelöscht.',
         'file' => 'Bilddatei',
-        'file_help' => 'JPEG, PNG, WebP oder AVIF, maximal {size} MB. Das Bild wird neu kodiert: Metadaten einschließlich Standort werden entfernt.',
+        'file_help' => 'JPEG, PNG, WebP oder AVIF, maximal {size} MB. Das Bild wird neu kodiert: Metadaten '
+            . 'einschließlich Standort werden entfernt.',
         'category' => 'Kategorie',
         'caption' => 'Bildunterschrift',
         'alt' => 'Alternativtext',

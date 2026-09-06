@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Disputes',
-    'intro' => 'A dispute gathers what the product already collected — deposit held, check-out inspection, incidents, accepted contract — so the discussion rests on dated facts.',
+    'intro' => 'A dispute gathers what the product already collected — deposit held, check-out inspection, incidents, '
+        . 'accepted contract — so the discussion rests on dated facts.',
     'empty' => 'No dispute.',
     'evidence' => 'Evidence on file',
     'actions' => 'Next step',

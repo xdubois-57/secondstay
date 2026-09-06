@@ -8,8 +8,10 @@ declare(strict_types=1);
 
 return [
     'title' => 'French compliance',
-    'intro' => 'Every topic is described, then established by you: status, official source, verification date and next review.',
-    'disclaimer' => 'These notes are landmarks, not legal advice. The rules vary by municipality and change over time: the official source and the verification date are what count.',
+    'intro' => 'Every topic is described, then established by you: status, official source, verification date and next '
+        . 'review.',
+    'disclaimer' => 'These notes are landmarks, not legal advice. The rules vary by municipality and change over time: '
+        . 'the official source and the verification date are what count.',
     'saved' => 'Topic saved.',
     'evidence_added' => 'Supporting document added.',
     'overdue' => 'Review overdue',
@@ -46,10 +48,13 @@ return [
         ],
         'declaration' => [
             'label' => 'Declaration or registration with the municipality',
-            'definition' => 'Declaring the furnished let to the municipality, sometimes with a registration number to display.',
-            'applicability' => 'Mandatory in many municipalities; registration applies where the municipality introduced it.',
+            'definition' => 'Declaring the furnished let to the municipality, sometimes with a registration number to '
+                . 'display.',
+            'applicability' => 'Mandatory in many municipalities; registration applies where the municipality '
+                . 'introduced it.',
             'where' => 'The municipality of the property, through its online desk where one exists.',
-            'impact' => 'Failing to declare exposes you to a fine and prevents displaying the number platforms require.',
+            'impact' => 'Failing to declare exposes you to a fine and prevents displaying the number platforms '
+                . 'require.',
         ],
         'siret' => [
             'label' => 'SIRET number',
@@ -60,7 +65,8 @@ return [
         ],
         'owner_status' => [
             'label' => 'Landlord status',
-            'definition' => 'Non-professional or professional furnished landlord, depending on receipts and their share of income.',
+            'definition' => 'Non-professional or professional furnished landlord, depending on receipts and their '
+                . 'share of income.',
             'applicability' => 'Concerns every owner letting a furnished home.',
             'where' => 'Official tax documentation and your accountant.',
             'impact' => 'Changes the tax regime, the contributions and the bookkeeping obligations.',

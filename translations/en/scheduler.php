@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Scheduled tasks',
-    'intro' => 'The product runs no permanent process: a single cron entry triggers everything that is due. Add it with your host, as often as it allows.',
+    'intro' => 'The product runs no permanent process: a single cron entry triggers everything that is due. Add it '
+        . 'with your host, as often as it allows.',
     'command_path' => '/path/to/secondstay/src/Scheduler/cron.php',
     'never' => 'never run',
     'stale' => 'overdue',

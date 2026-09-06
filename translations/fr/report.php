@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Reporting',
-    'disclaimer' => 'Ces chiffres comptent ce qui a été encaissé, attendu et détenu. Ils ne constituent ni un conseil fiscal ni une déclaration : leur lecture comptable relève de votre comptable.',
+    'disclaimer' => 'Ces chiffres comptent ce qui a été encaissé, attendu et détenu. Ils ne constituent ni un conseil '
+        . 'fiscal ni une déclaration : leur lecture comptable relève de votre comptable.',
     'apply' => 'Afficher',
     'export' => 'Exporter en XLSX',
     'whole_year' => 'Année entière',

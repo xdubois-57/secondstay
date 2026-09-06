@@ -9,7 +9,8 @@ declare(strict_types=1);
 return [
     'admin' => [
         'title' => 'Local content',
-        'intro' => 'List the pages to read, write your instruction, then run a test. The system adds the location, the season, the stay dates, the sources and the expected format.',
+        'intro' => 'List the pages to read, write your instruction, then run a test. The system adds the location, the '
+            . 'season, the stay dates, the sources and the expected format.',
     ],
     'enabled' => 'Local content is produced for upcoming stays.',
     'disabled' => 'Local content is disabled.',
@@ -25,7 +26,8 @@ return [
     'source_updated' => 'Source updated.',
     'source_deleted' => 'Source deleted.',
     'prompt' => 'Instruction',
-    'prompt_intro' => 'This text is yours. The system adds the location, the season, the exact dates, the sources and the output schema automatically.',
+    'prompt_intro' => 'This text is yours. The system adds the location, the season, the exact dates, the sources and '
+        . 'the output schema automatically.',
     'prompt_saved' => 'Instruction saved.',
     'suggest_prompt' => 'Generate the prompt from the location',
     'run' => 'Generation',
@@ -73,9 +75,12 @@ return [
     'verified_on' => 'verified on {date}',
     'stay' => [
         'title' => 'Around you',
-        'disclaimer' => 'These suggestions come from the sources cited and were verified on the date shown. Confirm times and availability with the organiser.',
+        'disclaimer' => 'These suggestions come from the sources cited and were verified on the date shown. Confirm '
+            . 'times and availability with the organiser.',
     ],
-    'suggested_prompt' => 'Suggest activities around {location} for travellers staying at {property}: markets, local festivals, museums, walks and good places to eat. Favour what can be reached on foot or within thirty minutes by car, and flag anything that needs booking.',
+    'suggested_prompt' => 'Suggest activities around {location} for travellers staying at {property}: markets, local '
+        . 'festivals, museums, walks and good places to eat. Favour what can be reached on foot or within thirty '
+        . 'minutes by car, and flag anything that needs booking.',
     'error' => [
         'no_location' => 'Set the property’s town in the configuration first.',
         'duplicate' => 'This address is already in the list.',

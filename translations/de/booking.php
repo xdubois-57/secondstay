@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'rule' => [
-        'min_nights' => 'Aufenthalt von mindestens {count} Nacht|Aufenthalt von mindestens {count} Nacht|Aufenthalt von mindestens {count} Nächten',
+        'min_nights' => 'Aufenthalt von mindestens {count} Nacht|Aufenthalt von mindestens {count} Nacht|Aufenthalt '
+            . 'von mindestens {count} Nächten',
         'max_guests' => 'Bis zu {count} Gast|Bis zu {count} Gast|Bis zu {count} Gästen',
         'times' => 'Anreise ab {checkin}, Abreise vor {checkout}',
         'fixed_week' => 'Aufenthalte von Samstag bis Samstag',
@@ -44,7 +45,8 @@ return [
         'cleaning_optional' => 'Nach Wahl',
         'deposit' => 'Anzahlung bei Buchung',
         'security_deposit' => 'Kaution',
-        'note' => 'Einzelne Nächte können vom Referenzpreis abweichen: Der Kalender zeigt den tatsächlichen Preis jeder Nacht.',
+        'note' => 'Einzelne Nächte können vom Referenzpreis abweichen: Der Kalender zeigt den tatsächlichen Preis '
+            . 'jeder Nacht.',
         'see_availability' => 'Verfügbarkeit ansehen',
     ],
     'rules' => [

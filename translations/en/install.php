@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'SecondStay installation',
-    'intro' => 'This installation manages a single property. Provide the database, the first administrator and the essential property information.',
+    'intro' => 'This installation manages a single property. Provide the database, the first administrator and the '
+        . 'essential property information.',
     'success' => 'Installation complete. Welcome to the administration area.',
     'requirements_not_met' => 'Some mandatory requirements are not met. Fix them before continuing.',
     'step' => [

@@ -55,7 +55,8 @@ return [
     ],
     'guest' => [
         'title' => 'Delen met mijn gasten',
-        'intro' => 'Een gastenlink geeft toegang tot deze praktische informatie — en tot niets anders: geen bedragen, geen documenten, geen account.',
+        'intro' => 'Een gastenlink geeft toegang tot deze praktische informatie — en tot niets anders: geen bedragen, '
+            . 'geen documenten, geen account.',
         'create' => 'Gastenlink aanmaken',
         'label' => 'Voor wie?',
         'created' => 'Gastenlink aangemaakt. Kopieer hem nu: hij wordt niet opnieuw getoond.',
@@ -72,15 +73,21 @@ return [
         'not_saved' => 'De gids is niet opgeslagen: corrigeer de gemarkeerde velden.',
         'link_url' => 'Nuttige link of kaart',
         'link_label' => 'Opschrift van de link',
-        'link_help' => 'Een adres dat opengaat: een kaart van het afvallokaal, een toegangsplan, de officiële openingsuren van een dienst. “Aan het einde van de straat links” volg je niet vanaf een telefoon, in het donker, met een koffer. Laat leeg als er niets te openen valt.',
+        'link_help' => 'Een adres dat opengaat: een kaart van het afvallokaal, een toegangsplan, de officiële '
+            . 'openingsuren van een dienst. “Aan het einde van de straat links” volg je niet vanaf een telefoon, in '
+            . 'het donker, met een koffer. Laat leeg als er niets te openen valt.',
         'source_url' => 'Bron van deze informatie',
         'source_checked_on' => 'Gecontroleerd op',
-        'source_help' => 'Waar deze informatie vandaan komt — de pagina van de gemeente, de afvalintercommunale, de netbeheerder. Ophaaldagen en gemeentelijke verordeningen veranderen: zonder gedateerde bron veroudert de gids ongemerkt. Zonder datum wordt die van vandaag genomen.',
+        'source_help' => 'Waar deze informatie vandaan komt — de pagina van de gemeente, de afvalintercommunale, de '
+            . 'netbeheerder. Ophaaldagen en gemeentelijke verordeningen veranderen: zonder gedateerde bron veroudert '
+            . 'de gids ongemerkt. Zonder datum wordt die van vandaag genomen.',
         'illustration' => 'Illustratie',
         'no_illustration' => 'Geen',
-        'illustration_help' => 'Gekozen uit de mediatheek, uit de gepubliceerde en niet-privé items. Een foto legt de afvalscheiding of de bediening van een apparaat beter uit dan een alinea, en leest in elke taal.',
+        'illustration_help' => 'Gekozen uit de mediatheek, uit de gepubliceerde en niet-privé items. Een foto legt de '
+            . 'afvalscheiding of de bediening van een apparaat beter uit dan een alinea, en leest in elke taal.',
         'public' => 'Openbaar adres voor QR',
-        'public_help' => 'Publiceert dit blok op een vast adres, leesbaar zonder account of verblijf. Zet dit alleen aan voor tekst die iedereen mag lezen: laat er geen toegangscode of wifiwachtwoord in staan.',
+        'public_help' => 'Publiceert dit blok op een vast adres, leesbaar zonder account of verblijf. Zet dit alleen '
+            . 'aan voor tekst die iedereen mag lezen: laat er geen toegangscode of wifiwachtwoord in staan.',
         'public_url' => 'Adres om in de QR-code te zetten',
         'qr_alt' => 'QR-code van de openbare pagina',
         'title' => 'Welkomstboek',
@@ -91,7 +98,8 @@ return [
         'save' => 'Opslaan',
         'saved' => 'Welkomstboek opgeslagen.',
         'secrets' => 'Toegangscodes',
-        'secrets_intro' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Een leeg veld behoudt de bestaande waarde.',
+        'secrets_intro' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Een leeg veld behoudt de bestaande '
+            . 'waarde.',
         'secrets_saved' => 'Toegangscodes opgeslagen.',
         'clear' => 'Wissen',
         'not_set' => 'Niet ingevuld',

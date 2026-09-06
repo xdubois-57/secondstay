@@ -45,7 +45,8 @@ return [
     ],
     'linked' => 'Nachricht dem Aufenthalt zugeordnet.',
     'reply_address' => 'Antwortadresse',
-    'reply_hint' => 'Antworten Sie einfach auf diese Nachricht: Ihre Antwort wird automatisch Ihrem Aufenthalt zugeordnet.',
+    'reply_hint' => 'Antworten Sie einfach auf diese Nachricht: Ihre Antwort wird automatisch Ihrem Aufenthalt '
+        . 'zugeordnet.',
     'error' => [
         'not_found' => 'Nachricht nicht gefunden.',
         'booking_not_found' => 'Aufenthalt nicht gefunden.',

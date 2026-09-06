@@ -17,7 +17,8 @@ return [
     'offline' => [
         'title' => 'Vous êtes hors ligne',
         'message' => 'Cette page n’est pas disponible sans connexion.',
-        'available' => 'Consultables hors ligne : les pages déjà visitées et les informations pratiques de votre séjour.',
+        'available' => 'Consultables hors ligne : les pages déjà visitées et les informations pratiques de votre '
+            . 'séjour.',
         'unavailable' => 'Indisponibles hors ligne : la réservation, le paiement et les documents personnels.',
     ],
     'error' => [

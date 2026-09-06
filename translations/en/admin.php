@@ -231,7 +231,8 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostics',
-        'notification_help' => 'Check the sending and notification setup. The SMTP probe opens a real connection to your sending server.',
+        'notification_help' => 'Check the sending and notification setup. The SMTP probe opens a real connection to '
+            . 'your sending server.',
         'probe_smtp' => 'Test the SMTP connection',
         'probe_imap' => 'Test the IMAP connection',
         'push_keys_generate' => 'Generate push keys',
@@ -240,7 +241,8 @@ return [
         'push_keys_created' => 'Push keys generated.',
         'push_keys_renewed' => 'Push keys renewed: devices will have to subscribe again.',
         'rate_limits' => 'Rate limiting',
-        'rate_limits_help' => 'Sign-in, sign-up and password reset attempts are limited per address. You can reset the counters if you locked yourself out.',
+        'rate_limits_help' => 'Sign-in, sign-up and password reset attempts are limited per address. You can reset the '
+            . 'counters if you locked yourself out.',
         'rate_limits_clear' => 'Reset the counters',
         'rate_limits_cleared' => 'Rate limit counters reset.',
         'migrations' => 'Database schema',
@@ -308,7 +310,8 @@ return [
             'menu_label' => 'Menu label',
             'lead' => 'Lead',
             'body' => 'Body',
-            'body_help' => 'Simple HTML allowed: paragraphs, lists, links, images, tables. Everything else is stripped.',
+            'body_help' => 'Simple HTML allowed: paragraphs, lists, links, images, tables. Everything else is '
+                . 'stripped.',
             'meta_title' => 'SEO title',
             'meta_description' => 'SEO description',
         ],
@@ -320,7 +323,8 @@ return [
         'saved' => 'Media saved.',
         'deleted' => 'Media deleted.',
         'file' => 'Image file',
-        'file_help' => 'JPEG, PNG, WebP or AVIF, {size} MB maximum. The image is re-encoded: metadata, including geolocation, is removed.',
+        'file_help' => 'JPEG, PNG, WebP or AVIF, {size} MB maximum. The image is re-encoded: metadata, including '
+            . 'geolocation, is removed.',
         'category' => 'Category',
         'caption' => 'Caption',
         'alt' => 'Alternative text',

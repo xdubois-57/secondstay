@@ -180,7 +180,8 @@ return [
             'create' => 'La sauvegarde a échoué.',
             'restore' => 'La restauration a échoué.',
             'delete' => 'La suppression a échoué.',
-            'download' => 'Cette sauvegarde est introuvable : elle a peut-être été supprimée ou remplacée par la rétention.',
+            'download' => 'Cette sauvegarde est introuvable : elle a peut-être été supprimée ou remplacée par la '
+                . 'rétention.',
         ],
     ],
     'updates' => [
@@ -201,7 +202,8 @@ return [
     ],
     'pricing' => [
         'title' => 'Disponibilités et tarifs',
-        'intro' => 'Le tarif de référence est de {price} par nuit. Les nuits ci-dessous en gras utilisent un tarif spécifique.',
+        'intro' => 'Le tarif de référence est de {price} par nuit. Les nuits ci-dessous en gras utilisent un tarif '
+            . 'spécifique.',
         'rates' => 'Tarifs par nuit',
         'rates_help' => 'Appliquez un tarif à une plage de nuits. La dernière nuit indiquée est incluse.',
         'first_night' => 'Première nuit',
@@ -231,7 +233,8 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostics',
-        'notification_help' => 'Vérifiez la configuration d’envoi et de notification. La sonde SMTP ouvre une connexion réelle vers votre serveur d’envoi.',
+        'notification_help' => 'Vérifiez la configuration d’envoi et de notification. La sonde SMTP ouvre une '
+            . 'connexion réelle vers votre serveur d’envoi.',
         'probe_smtp' => 'Tester la connexion SMTP',
         'probe_imap' => 'Tester la connexion IMAP',
         'push_keys_generate' => 'Générer les clés push',
@@ -240,7 +243,8 @@ return [
         'push_keys_created' => 'Clés push générées.',
         'push_keys_renewed' => 'Clés push renouvelées : les appareils devront se réabonner.',
         'rate_limits' => 'Limitation de débit',
-        'rate_limits_help' => 'Les tentatives de connexion, d’inscription et de réinitialisation sont limitées par adresse. Vous pouvez remettre les compteurs à zéro si vous vous êtes bloqué vous-même.',
+        'rate_limits_help' => 'Les tentatives de connexion, d’inscription et de réinitialisation sont limitées par '
+            . 'adresse. Vous pouvez remettre les compteurs à zéro si vous vous êtes bloqué vous-même.',
         'rate_limits_clear' => 'Réinitialiser les compteurs',
         'rate_limits_cleared' => 'Compteurs de limitation remis à zéro.',
         'migrations' => 'Schéma de base de données',
@@ -264,7 +268,8 @@ return [
     ],
     'audit' => [
         'title' => 'Audit',
-        'intro' => 'Journal des actions sensibles : configuration, comptes, sauvegardes, restaurations et mises à jour.',
+        'intro' => 'Journal des actions sensibles : configuration, comptes, sauvegardes, restaurations et mises à '
+            . 'jour.',
         'actor' => 'Auteur',
         'action' => 'Action',
         'entity' => 'Objet',
@@ -308,7 +313,8 @@ return [
             'menu_label' => 'Libellé de menu',
             'lead' => 'Accroche',
             'body' => 'Contenu',
-            'body_help' => 'HTML simple autorisé : paragraphes, listes, liens, images, tableaux. Tout le reste est retiré.',
+            'body_help' => 'HTML simple autorisé : paragraphes, listes, liens, images, tableaux. Tout le reste est '
+                . 'retiré.',
             'meta_title' => 'Titre SEO',
             'meta_description' => 'Description SEO',
         ],
@@ -320,7 +326,8 @@ return [
         'saved' => 'Média enregistré.',
         'deleted' => 'Média supprimé.',
         'file' => 'Fichier image',
-        'file_help' => 'JPEG, PNG, WebP ou AVIF, {size} Mo maximum. L’image est ré-encodée : les métadonnées, dont la géolocalisation, sont supprimées.',
+        'file_help' => 'JPEG, PNG, WebP ou AVIF, {size} Mo maximum. L’image est ré-encodée : les métadonnées, dont la '
+            . 'géolocalisation, sont supprimées.',
         'category' => 'Catégorie',
         'caption' => 'Légende',
         'alt' => 'Texte alternatif',

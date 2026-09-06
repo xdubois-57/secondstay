@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'SecondStay installeren',
-    'intro' => 'Deze installatie beheert één woning. Vul de database, de eerste beheerder en de essentiële gegevens van de woning in.',
+    'intro' => 'Deze installatie beheert één woning. Vul de database, de eerste beheerder en de essentiële gegevens '
+        . 'van de woning in.',
     'success' => 'Installatie voltooid. Welkom in het beheergedeelte.',
     'requirements_not_met' => 'Sommige verplichte vereisten zijn niet vervuld. Los ze op voordat u verdergaat.',
     'step' => [

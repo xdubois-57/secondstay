@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 return [
     'title' => 'Kurtaxe',
-    'intro' => 'Ein Tarif wird beschlossen, tritt zu einem Datum in Kraft und wird später ersetzt. Jede Regel trägt daher ihren Gültigkeitszeitraum, und ein bereits gebuchter Aufenthalt behält den bei seiner Anreise geltenden Tarif.',
+    'intro' => 'Ein Tarif wird beschlossen, tritt zu einem Datum in Kraft und wird später ersetzt. Jede Regel trägt '
+        . 'daher ihren Gültigkeitszeitraum, und ein bereits gebuchter Aufenthalt behält den bei seiner Anreise '
+        . 'geltenden Tarif.',
     'enabled' => 'Die Kurtaxe wird erhoben.',
     'disabled' => 'Die Kurtaxe wird nicht erhoben.',
     'configure' => 'Konfigurieren',
@@ -18,7 +20,8 @@ return [
     'new_rule' => 'Neuer Tarif',
     'rule_created' => 'Tarif gespeichert.',
     'rule_deleted' => 'Tarif gelöscht.',
-    'overlap_warning' => 'Zwei Tarife überschneiden sich für dieselbe Einstufung: der Betrag hinge von der Reihenfolge der Zeilen ab.',
+    'overlap_warning' => 'Zwei Tarife überschneiden sich für dieselbe Einstufung: der Betrag hinge von der Reihenfolge '
+        . 'der Zeilen ab.',
     'field' => [
         'period' => 'Zeitraum',
         'effective_from' => 'Tritt in Kraft am',
@@ -40,7 +43,8 @@ return [
         'nights' => 'Nächte',
         'cap' => 'Angewandter Höchstbetrag',
         'total' => 'Gesamt',
-        'exemption_note' => 'Minderjährige sind befreit (Artikel L. 2333-31 des französischen Code général des collectivités territoriales).',
+        'exemption_note' => 'Minderjährige sind befreit (Artikel L. 2333-31 des französischen Code général des '
+            . 'collectivités territoriales).',
     ],
     'error' => [
         'effective_from' => 'Das Datum des Inkrafttretens ist erforderlich.',

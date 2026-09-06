@@ -101,7 +101,8 @@ return [
         ],
         'requires_approval' => [
             'label' => 'Goedkeuring door de eigenaar',
-            'help' => 'Elke reserveringsaanvraag wacht op uw akkoord. Schakel dit uit om beschikbare verblijven automatisch te bevestigen.',
+            'help' => 'Elke reserveringsaanvraag wacht op uw akkoord. Schakel dit uit om beschikbare verblijven '
+                . 'automatisch te bevestigen.',
         ],
         'allow_waitlist' => [
             'label' => 'Wachtlijst',
@@ -121,7 +122,8 @@ return [
         ],
         'night_multiple' => [
             'label' => 'Blokken van nachten',
-            'help' => 'Legt een duur op die een veelvoud is van dit getal. 0 schakelt de regel uit, 7 legt hele weken op.',
+            'help' => 'Legt een duur op die een veelvoud is van dit getal. 0 schakelt de regel uit, 7 legt hele weken '
+                . 'op.',
         ],
         'max_nights' => [
             'label' => 'Maximale duur',
@@ -175,7 +177,8 @@ return [
     'scheduler' => [
         'http_token' => [
             'label' => 'Token voor de planner',
-            'help' => 'Vul dit alleen in als uw hostingprovider cron enkel via een URL aanbiedt. Leeg bestaat de start-URL niet.',
+            'help' => 'Vul dit alleen in als uw hostingprovider cron enkel via een URL aanbiedt. Leeg bestaat de '
+                . 'start-URL niet.',
         ],
     ],
     'backup' => [
@@ -274,7 +277,8 @@ return [
         ],
         'dkim_selector' => [
             'label' => 'DKIM-selector',
-            'help' => 'Selector van uw verzenddienst (vaak “default” of “mail”). Hij dient enkel voor de DNS-diagnose: het ondertekenen blijft de taak van de provider.',
+            'help' => 'Selector van uw verzenddienst (vaak “default” of “mail”). Hij dient enkel voor de DNS-diagnose: '
+                . 'het ondertekenen blijft de taak van de provider.',
         ],
     ],
     'notification' => [
@@ -294,15 +298,18 @@ return [
     'push' => [
         'subject' => [
             'label' => 'Pushcontact',
-            'help' => 'Contact-e-mailadres of URL die naar de pushdiensten wordt gestuurd, zoals de norm vereist. Bij leeg veld wordt het afzenderadres gebruikt.',
+            'help' => 'Contact-e-mailadres of URL die naar de pushdiensten wordt gestuurd, zoals de norm vereist. Bij '
+                . 'leeg veld wordt het afzenderadres gebruikt.',
         ],
         'vapid_public' => [
             'label' => 'Openbare VAPID-sleutel',
-            'help' => 'Door de installatie gegenereerd en aan browsers doorgegeven. Vervangen maakt alle bestaande abonnementen ongeldig.',
+            'help' => 'Door de installatie gegenereerd en aan browsers doorgegeven. Vervangen maakt alle bestaande '
+                . 'abonnementen ongeldig.',
         ],
         'vapid_private' => [
             'label' => 'Privé VAPID-sleutel',
-            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Hij ondertekent de verzendingen naar de pushdiensten.',
+            'help' => 'Versleuteld opgeslagen en nooit opnieuw getoond. Hij ondertekent de verzendingen naar de '
+                . 'pushdiensten.',
         ],
     ],
     'account' => [
@@ -322,7 +329,8 @@ return [
     'payment' => [
         'provider' => [
             'label' => 'Betaalprovider',
-            'help' => 'Mollie int online en bevestigt de reservering automatisch. Zonder provider blijft alleen de overschrijving over.',
+            'help' => 'Mollie int online en bevestigt de reservering automatisch. Zonder provider blijft alleen de '
+                . 'overschrijving over.',
         ],
         'mollie_api_key' => [
             'label' => 'Mollie API-sleutel',
@@ -406,11 +414,13 @@ return [
         ],
         'reply_address' => [
             'label' => 'Antwoordadres',
-            'help' => 'Adres dat aan reizigers wordt getoond. Het krijgt per reservering een label zodat antwoorden zichzelf koppelen.',
+            'help' => 'Adres dat aan reizigers wordt getoond. Het krijgt per reservering een label zodat antwoorden '
+                . 'zichzelf koppelen.',
         ],
         'uid_validity' => [
             'label' => 'Geldigheidskenmerk',
-            'help' => 'Ingevuld door de synchronisatie. Verandert het, dan is de postbus hernummerd en begint het ophalen opnieuw.',
+            'help' => 'Ingevuld door de synchronisatie. Verandert het, dan is de postbus hernummerd en begint het '
+                . 'ophalen opnieuw.',
         ],
         'batch_size' => [
             'label' => 'Berichten per ophaalronde',
@@ -496,8 +506,14 @@ return [
         ],
     ],
     'pwa' => [
-        'theme_color' => ['label' => 'Themakleur', 'help' => 'Tint van de systeembalk zodra de app is geïnstalleerd. Formaat #rrggbb.'],
-        'background_color' => ['label' => 'Achtergrondkleur', 'help' => 'Wordt bij het starten getoond, vóór de eerste weergave. Formaat #rrggbb.'],
+        'theme_color' => [
+            'label' => 'Themakleur',
+            'help' => 'Tint van de systeembalk zodra de app is geïnstalleerd. Formaat #rrggbb.',
+        ],
+        'background_color' => [
+            'label' => 'Achtergrondkleur',
+            'help' => 'Wordt bij het starten getoond, vóór de eerste weergave. Formaat #rrggbb.',
+        ],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quotum media (MB)', 'help' => 'Nul betekent geen limiet.'],

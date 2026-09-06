@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Tâches périodiques',
-    'intro' => 'Le produit ne fait tourner aucun processus permanent : une seule entrée cron déclenche tout ce qui est dû. Ajoutez-la chez votre hébergeur, aussi souvent qu’il l’autorise.',
+    'intro' => 'Le produit ne fait tourner aucun processus permanent : une seule entrée cron déclenche tout ce qui est '
+        . 'dû. Ajoutez-la chez votre hébergeur, aussi souvent qu’il l’autorise.',
     'command_path' => '/chemin/vers/secondstay/src/Scheduler/cron.php',
     'never' => 'jamais exécutée',
     'stale' => 'en retard',

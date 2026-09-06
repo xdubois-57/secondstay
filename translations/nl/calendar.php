@@ -38,7 +38,8 @@ return [
     'empty' => 'Geen actieve kalenderlink.',
     'import' => [
         'title' => 'Geïmporteerde externe agenda’s',
-        'intro' => 'Nachten die op een ander platform zijn verkocht, worden onbeschikbare data. Een geïmporteerde feed maakt nooit een reservering aan en raakt handmatig ingevoerde blokkades nooit aan.',
+        'intro' => 'Nachten die op een ander platform zijn verkocht, worden onbeschikbare data. Een geïmporteerde feed '
+            . 'maakt nooit een reservering aan en raakt handmatig ingevoerde blokkades nooit aan.',
         'url' => 'Adres van de feed',
         'label' => 'Label',
         'provider_label' => 'Platform',

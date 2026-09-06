@@ -10,7 +10,8 @@ return [
         'accept_terms' => 'J’accepte les',
         'already_registered' => 'J’ai déjà un compte',
         'sent_title' => 'Vérifiez votre boîte mail',
-        'sent_message' => 'Si une inscription est possible pour {email}, un message vient d’être envoyé à cette adresse.',
+        'sent_message' => 'Si une inscription est possible pour {email}, un message vient d’être envoyé à cette '
+            . 'adresse.',
         'sent_hint' => 'Le lien de confirmation reste valable sept jours.',
     ],
     'confirm' => [
@@ -53,7 +54,8 @@ return [
     ],
     'passkey' => [
         'title' => 'Clés d’accès (passkeys)',
-        'intro' => 'Une clé d’accès remplace le mot de passe : elle utilise l’empreinte, le visage ou le code de votre appareil.',
+        'intro' => 'Une clé d’accès remplace le mot de passe : elle utilise l’empreinte, le visage ou le code de votre '
+            . 'appareil.',
         'add' => 'Ajouter une clé d’accès',
         'remove' => 'Supprimer',
         'removed' => 'Clé d’accès supprimée.',
@@ -74,7 +76,8 @@ return [
         'consent_privacy' => 'Politique de confidentialité',
     ],
     'delete' => [
-        'warning' => 'La suppression anonymise définitivement votre compte. Les données conservées pour obligation légale restent anonymisées.',
+        'warning' => 'La suppression anonymise définitivement votre compte. Les données conservées pour obligation '
+            . 'légale restent anonymisées.',
         'action' => 'Supprimer mon compte',
         'done' => 'Votre compte a été supprimé.',
     ],

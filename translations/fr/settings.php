@@ -101,7 +101,8 @@ return [
         ],
         'requires_approval' => [
             'label' => 'Validation par le propriétaire',
-            'help' => 'Chaque demande de réservation attend votre accord. Désactivez ce réglage pour confirmer automatiquement les séjours disponibles.',
+            'help' => 'Chaque demande de réservation attend votre accord. Désactivez ce réglage pour confirmer '
+                . 'automatiquement les séjours disponibles.',
         ],
         'allow_waitlist' => [
             'label' => 'Liste d’attente',
@@ -121,7 +122,8 @@ return [
         ],
         'night_multiple' => [
             'label' => 'Tranches de nuits',
-            'help' => 'Impose une durée multiple de ce nombre. 0 désactive la contrainte, 7 impose des semaines entières.',
+            'help' => 'Impose une durée multiple de ce nombre. 0 désactive la contrainte, 7 impose des semaines '
+                . 'entières.',
         ],
         'max_nights' => [
             'label' => 'Durée maximale',
@@ -129,7 +131,8 @@ return [
         ],
         'arrival_weekday' => [
             'label' => 'Jour d’arrivée imposé',
-            'help' => 'Restreint les arrivées à un seul jour de la semaine. Le réglage samedi-samedi reste prioritaire.',
+            'help' => 'Restreint les arrivées à un seul jour de la semaine. Le réglage samedi-samedi reste '
+                . 'prioritaire.',
         ],
         'advance_days' => [
             'label' => 'Délai de prévenance',
@@ -175,7 +178,8 @@ return [
     'scheduler' => [
         'http_token' => [
             'label' => 'Jeton d’appel du planificateur',
-            'help' => 'À renseigner uniquement si votre hébergeur ne propose de cron que par URL. Vide, l’URL de déclenchement n’existe pas.',
+            'help' => 'À renseigner uniquement si votre hébergeur ne propose de cron que par URL. Vide, l’URL de '
+                . 'déclenchement n’existe pas.',
         ],
     ],
     'backup' => [
@@ -274,7 +278,8 @@ return [
         ],
         'dkim_selector' => [
             'label' => 'Sélecteur DKIM',
-            'help' => 'Sélecteur fourni par votre service d’envoi (souvent « default » ou « mail »). Il sert uniquement au diagnostic DNS : la signature reste assurée par le fournisseur.',
+            'help' => 'Sélecteur fourni par votre service d’envoi (souvent « default » ou « mail »). Il sert '
+                . 'uniquement au diagnostic DNS : la signature reste assurée par le fournisseur.',
         ],
     ],
     'notification' => [
@@ -294,11 +299,13 @@ return [
     'push' => [
         'subject' => [
             'label' => 'Contact push',
-            'help' => 'Adresse e-mail ou URL de contact transmise aux services de push, comme l’exige la norme. À défaut, l’adresse d’expédition est utilisée.',
+            'help' => 'Adresse e-mail ou URL de contact transmise aux services de push, comme l’exige la norme. À '
+                . 'défaut, l’adresse d’expédition est utilisée.',
         ],
         'vapid_public' => [
             'label' => 'Clé publique VAPID',
-            'help' => 'Générée par l’installation et transmise aux navigateurs. La remplacer invalide tous les abonnements existants.',
+            'help' => 'Générée par l’installation et transmise aux navigateurs. La remplacer invalide tous les '
+                . 'abonnements existants.',
         ],
         'vapid_private' => [
             'label' => 'Clé privée VAPID',
@@ -322,7 +329,8 @@ return [
     'payment' => [
         'provider' => [
             'label' => 'Fournisseur de paiement',
-            'help' => 'Mollie encaisse en ligne et confirme automatiquement la réservation. Sans fournisseur, seul le virement reste possible.',
+            'help' => 'Mollie encaisse en ligne et confirme automatiquement la réservation. Sans fournisseur, seul le '
+                . 'virement reste possible.',
         ],
         'mollie_api_key' => [
             'label' => 'Clé d’API Mollie',
@@ -330,7 +338,8 @@ return [
         ],
         'balance_days_before' => [
             'label' => 'Solde dû (jours avant l’arrivée)',
-            'help' => 'Le solde est exigible ce nombre de jours avant l’arrivée, ou immédiatement pour une réservation plus tardive.',
+            'help' => 'Le solde est exigible ce nombre de jours avant l’arrivée, ou immédiatement pour une réservation '
+                . 'plus tardive.',
         ],
         'transfer_enabled' => [
             'label' => 'Autoriser le virement bancaire',
@@ -406,11 +415,13 @@ return [
         ],
         'reply_address' => [
             'label' => 'Adresse de réponse',
-            'help' => 'Adresse annoncée aux voyageurs. Elle est étiquetée par séjour pour rattacher automatiquement les réponses.',
+            'help' => 'Adresse annoncée aux voyageurs. Elle est étiquetée par séjour pour rattacher automatiquement '
+                . 'les réponses.',
         ],
         'uid_validity' => [
             'label' => 'Identifiant de validité',
-            'help' => 'Renseigné par la synchronisation. S’il change, la boîte a été renumérotée et la relève repart du début.',
+            'help' => 'Renseigné par la synchronisation. S’il change, la boîte a été renumérotée et la relève repart '
+                . 'du début.',
         ],
         'batch_size' => [
             'label' => 'Messages par relève',
@@ -434,7 +445,8 @@ return [
     'operations' => [
         'default_manager' => [
             'label' => 'Responsable local par défaut',
-            'help' => 'Identifiant du compte responsable appliqué aux séjours sans affectation explicite. Zéro signifie aucun.',
+            'help' => 'Identifiant du compte responsable appliqué aux séjours sans affectation explicite. Zéro '
+                . 'signifie aucun.',
         ],
         'prepare_days' => [
             'label' => 'Fenêtre de préparation (jours)',
@@ -458,7 +470,8 @@ return [
     'compliance' => [
         'police_record_enabled' => [
             'label' => 'Fiche de police',
-            'help' => 'À activer seulement si l’obligation s’applique. Rien n’est collecté tant qu’elle est désactivée.',
+            'help' => 'À activer seulement si l’obligation s’applique. Rien n’est collecté tant qu’elle est '
+                . 'désactivée.',
         ],
         'police_retention_days' => [
             'label' => 'Conservation des fiches (jours)',
@@ -468,7 +481,8 @@ return [
     'llm' => [
         'enabled' => [
             'label' => 'Activer le contenu local',
-            'help' => 'Produit des suggestions d’activités pour les séjours à venir, à partir des sources que vous indiquez.',
+            'help' => 'Produit des suggestions d’activités pour les séjours à venir, à partir des sources que vous '
+                . 'indiquez.',
         ],
         'provider' => [
             'label' => 'Fournisseur',
@@ -484,7 +498,8 @@ return [
         ],
         'prompt' => [
             'label' => 'Consigne',
-            'help' => 'Votre consigne libre. La localisation, la saison, les dates, les sources et le format sont ajoutés automatiquement.',
+            'help' => 'Votre consigne libre. La localisation, la saison, les dates, les sources et le format sont '
+                . 'ajoutés automatiquement.',
         ],
         'window_weeks' => [
             'label' => 'Fenêtre avant l’arrivée (semaines)',
@@ -496,8 +511,14 @@ return [
         ],
     ],
     'pwa' => [
-        'theme_color' => ['label' => 'Couleur du thème', 'help' => 'Teinte de la barre système une fois l’application installée. Format #rrggbb.'],
-        'background_color' => ['label' => 'Couleur de fond', 'help' => 'Fond affiché au lancement, avant le premier rendu. Format #rrggbb.'],
+        'theme_color' => [
+            'label' => 'Couleur du thème',
+            'help' => 'Teinte de la barre système une fois l’application installée. Format #rrggbb.',
+        ],
+        'background_color' => [
+            'label' => 'Couleur de fond',
+            'help' => 'Fond affiché au lancement, avant le premier rendu. Format #rrggbb.',
+        ],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Quota médias (Mo)', 'help' => 'Zéro signifie aucune limite.'],

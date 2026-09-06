@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Streitfälle',
-    'intro' => 'Ein Streitfall bündelt, was das Produkt bereits erfasst hat — einbehaltene Kaution, Auszugsprotokoll, Vorfälle, angenommener Vertrag —, damit das Gespräch auf datierten Fakten beruht.',
+    'intro' => 'Ein Streitfall bündelt, was das Produkt bereits erfasst hat — einbehaltene Kaution, Auszugsprotokoll, '
+        . 'Vorfälle, angenommener Vertrag —, damit das Gespräch auf datierten Fakten beruht.',
     'empty' => 'Kein Streitfall.',
     'evidence' => 'Unterlagen in der Akte',
     'actions' => 'Nächster Schritt',

@@ -24,7 +24,8 @@ return [
     'account_exists' => [
         'subject' => 'Ihr Konto existiert bereits',
         'heading' => 'Für diese Adresse existiert bereits ein Konto',
-        'intro' => 'Jemand hat gerade versucht, ein Konto mit Ihrer Adresse zu erstellen. Wenn Sie das waren, melden Sie sich an oder setzen Sie Ihr Passwort zurück.',
+        'intro' => 'Jemand hat gerade versucht, ein Konto mit Ihrer Adresse zu erstellen. Wenn Sie das waren, melden '
+            . 'Sie sich an oder setzen Sie Ihr Passwort zurück.',
         'button' => 'Mein Passwort zurücksetzen',
         'ignore' => 'Andernfalls ist keine Aktion erforderlich.',
     ],
@@ -45,6 +46,7 @@ return [
         'heading' => 'Termine sind frei geworden',
         'intro' => 'Die Termine vom {arrival} bis {departure} sind soeben frei geworden.',
         'button' => 'Verfügbarkeit ansehen',
-        'first_come' => 'Buchungen werden in der Reihenfolge des Eingangs bearbeitet: Diese Termine können jederzeit wieder belegt sein.',
+        'first_come' => 'Buchungen werden in der Reihenfolge des Eingangs bearbeitet: Diese Termine können jederzeit '
+            . 'wieder belegt sein.',
     ],
 ];
