@@ -5,27 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ subject }}</title>
 </head>
+{#
+    MISE EN PAGE PAR BOÎTES, AVEC UNE TABLE FANTÔME POUR OUTLOOK
+
+    Un e-mail se met historiquement en page avec des tables, parce que le
+    moteur de rendu d'Outlook pour Windows est celui de Word et qu'il ignore
+    `max-width` sur une boîte. Une table est pourtant une table : elle annonce
+    des lignes et des colonnes à une technologie d'assistance, et `role`
+    « presentation » ne fait que demander de l'oublier.
+
+    D'où la « table fantôme » : la table reste, mais **dans un commentaire
+    conditionnel** que seul Outlook lit. Tous les autres clients — et tout
+    analyseur de HTML — ne voient que les boîtes. Personne n'y perd :
+    l'apparence est identique partout, et la structure annoncée est enfin
+    celle du contenu.
+
+    Les styles sont en ligne : aucune feuille externe n'est chargée par un
+    client de messagerie, et une balise `<style>` est retirée par plusieurs
+    d'entre eux.
+#}
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#212529;">
-    <table role="presentation" style="width:100%;border-collapse:collapse;border-spacing:0;background:#f5f5f5;padding:24px 0;">
-        <tr>
-            <td style="text-align:center;">
-                <table role="presentation"
-                       style="width:100%;border-collapse:collapse;border-spacing:0;max-width:600px;background:#ffffff;border-radius:8px;padding:32px;">
-                    <tr>
-                        <td>
-                            <p style="margin:0 0 24px;font-size:14px;color:#6c757d;">{{ property_name ?: 'SecondStay' }}</p>
-                            <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">{% block heading %}{{ subject }}{% endblock %}</h1>
-                            {% block body %}{% endblock %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding-top:32px;border-top:1px solid #e9ecef;">
-                            <p style="margin:16px 0 0;font-size:12px;color:#6c757d;">{{ t('mail.footer.automatic') }}</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+    <div style="background:#f5f5f5;padding:24px 0;">
+        <!--[if mso]>
+        <table role="presentation" align="center" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td>
+        <![endif]-->
+        <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;padding:32px;">
+            <p style="margin:0 0 24px;font-size:14px;color:#6c757d;">{{ property_name ?: 'SecondStay' }}</p>
+            <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">{% block heading %}{{ subject }}{% endblock %}</h1>
+            {% block body %}{% endblock %}
+            <div style="margin-top:32px;padding-top:32px;border-top:1px solid #e9ecef;">
+                <p style="margin:0;font-size:12px;color:#6c757d;">{{ t('mail.footer.automatic') }}</p>
+            </div>
+        </div>
+        <!--[if mso]>
+        </td></tr></table>
+        <![endif]-->
+    </div>
 </body>
 </html>

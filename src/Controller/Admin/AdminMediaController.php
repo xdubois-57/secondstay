@@ -57,8 +57,8 @@ final class AdminMediaController extends AdminController
         $this->flashSuccess('admin.media.uploaded');
 
         return $this->redirect(
-            $context->request->basePath . $this->router(
-                )->path('admin.media.edit',
+            $context->request->basePath . $this->router()->path(
+                'admin.media.edit',
                 ['id' => $item->id],
                 $context->locale,
             )

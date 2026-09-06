@@ -85,7 +85,7 @@ async function postJson(url, csrf, payload, fetcher) {
  */
 export async function registerServiceWorker(scope) {
     const target = scope || (typeof window === 'undefined' ? {} : window);
-    if (!target.navigator || !target.navigator.serviceWorker) {
+    if (!target.navigator?.serviceWorker) {
         return null;
     }
 
