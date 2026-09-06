@@ -29,8 +29,11 @@
         <!--[if mso]>
         <table role="presentation" align="center" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td>
         <![endif]-->
-        <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;padding:32px;">
-            <p style="margin:0 0 24px;font-size:14px;color:#6c757d;">{{ property_name ?: 'SecondStay' }}</p>
+        {# `box-sizing:border-box` : sans lui, les 64 px de remplissage s'ajoutent
+           au `max-width` en modèle `content-box`, et la boîte mesure 664 px là où
+           la table fantôme d'Outlook en mesure 600. Les deux rendus divergeraient. #}
+        <div style="max-width:600px;margin:0 auto;box-sizing:border-box;background:#ffffff;border-radius:8px;padding:32px;">
+            <p style="margin:0 0 24px;font-size:14px;color:#6c757d;">{{ property_name ?: t('common.app_name') }}</p>
             <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">{% block heading %}{{ subject }}{% endblock %}</h1>
             {% block body %}{% endblock %}
             <div style="margin-top:32px;padding-top:32px;border-top:1px solid #e9ecef;">
