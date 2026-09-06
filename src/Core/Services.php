@@ -330,9 +330,12 @@ final class Services
         // Le jeton d'adresse de réponse est dérivé de la clé de chiffrement
         // de l'installation : il n'ajoute donc aucun secret à gérer, et deux
         // installations ne signent jamais pareil.
-        $container->set(ReplyToken::class, static fn (Container $c): ReplyToken => new ReplyToken(
-            hash_hmac('sha256', 'reply-token', $c->get(Config::class)->string('security.encryption_key'))
-        ));
+        $container->set(
+            ReplyToken::class,
+            static fn (Container $c): ReplyToken => new ReplyToken(
+                hash_hmac('sha256', 'reply-token', $c->get(Config::class)->string('security.encryption_key'))
+            )
+        );
 
         $container->set(
             SettingsRepository::class,
@@ -347,13 +350,16 @@ final class Services
             )
         );
 
-        $container->set(SettingsService::class, static fn (Container $c): SettingsService => new SettingsService(
-            $c->get(SettingRegistry::class),
-            $c->get(SettingsRepository::class),
-            $c->get(Encryptor::class),
-            new \SecondStay\Settings\SettingValidator(),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            SettingsService::class,
+            static fn (Container $c): SettingsService => new SettingsService(
+                $c->get(SettingRegistry::class),
+                $c->get(SettingsRepository::class),
+                $c->get(Encryptor::class),
+                new \SecondStay\Settings\SettingValidator(),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(
             UserRepository::class,
@@ -370,16 +376,19 @@ final class Services
             static fn (Container $c): RateLimiter => new RateLimiter($c->get(Database::class))
         );
 
-        $container->set(AuthService::class, static fn (Container $c): AuthService => new AuthService(
-            $c->get(UserRepository::class),
-            $c->get(SessionRepository::class),
-            $c->get(Session::class),
-            $c->get(PasswordHasher::class),
-            $c->get(RateLimiter::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-            $c->get(Config::class)->int('security.session_lifetime_minutes', 120),
-        ));
+        $container->set(
+            AuthService::class,
+            static fn (Container $c): AuthService => new AuthService(
+                $c->get(UserRepository::class),
+                $c->get(SessionRepository::class),
+                $c->get(Session::class),
+                $c->get(PasswordHasher::class),
+                $c->get(RateLimiter::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+                $c->get(Config::class)->int('security.session_lifetime_minutes', 120),
+            )
+        );
 
         $container->set(
             Migrator::class,
@@ -389,23 +398,29 @@ final class Services
             )
         );
 
-        $container->set(BackupService::class, static fn (Container $c): BackupService => new BackupService(
-            $c->get(Database::class),
-            $c->get(Paths::class),
-            $c->get(MaintenanceMode::class),
-            $appVersion,
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            BackupService::class,
+            static fn (Container $c): BackupService => new BackupService(
+                $c->get(Database::class),
+                $c->get(Paths::class),
+                $c->get(MaintenanceMode::class),
+                $appVersion,
+                $c->get(AuditTrail::class),
+            )
+        );
 
-        $container->set(UpdateService::class, static fn (Container $c): UpdateService => new UpdateService(
-            $c->get(ReleaseProvider::class),
-            $c->get(Paths::class),
-            $c->get(Database::class),
-            $c->get(BackupService::class),
-            $c->get(MaintenanceMode::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            UpdateService::class,
+            static fn (Container $c): UpdateService => new UpdateService(
+                $c->get(ReleaseProvider::class),
+                $c->get(Paths::class),
+                $c->get(Database::class),
+                $c->get(BackupService::class),
+                $c->get(MaintenanceMode::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(HtmlSanitizer::class, static fn (): HtmlSanitizer => new HtmlSanitizer());
 
@@ -414,18 +429,24 @@ final class Services
             static fn (Container $c): ContentRepository => new ContentRepository($c->get(Database::class))
         );
 
-        $container->set(ContentService::class, static fn (Container $c): ContentService => new ContentService(
-            $c->get(ContentRepository::class),
-            $c->get(SettingsService::class),
-            $c->get(HtmlSanitizer::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            ContentService::class,
+            static fn (Container $c): ContentService => new ContentService(
+                $c->get(ContentRepository::class),
+                $c->get(SettingsService::class),
+                $c->get(HtmlSanitizer::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
-        $container->set(ContentSeeder::class, static fn (Container $c): ContentSeeder => new ContentSeeder(
-            $c->get(ContentRepository::class),
-            $c->get(Translator::class),
-            $c->get(Database::class),
-        ));
+        $container->set(
+            ContentSeeder::class,
+            static fn (Container $c): ContentSeeder => new ContentSeeder(
+                $c->get(ContentRepository::class),
+                $c->get(Translator::class),
+                $c->get(Database::class),
+            )
+        );
 
         $container->set(ImageProcessor::class, static fn (): ImageProcessor => new ImageProcessor());
 
@@ -434,18 +455,24 @@ final class Services
             static fn (Container $c): MediaRepository => new MediaRepository($c->get(Database::class))
         );
 
-        $container->set(MediaService::class, static fn (Container $c): MediaService => new MediaService(
-            $c->get(MediaRepository::class),
-            $c->get(Paths::class),
-            $c->get(ImageProcessor::class),
-            $c->get(AuditTrail::class),
-            $c->get(QuotaService::class),
-        ));
+        $container->set(
+            MediaService::class,
+            static fn (Container $c): MediaService => new MediaService(
+                $c->get(MediaRepository::class),
+                $c->get(Paths::class),
+                $c->get(ImageProcessor::class),
+                $c->get(AuditTrail::class),
+                $c->get(QuotaService::class),
+            )
+        );
 
-        $container->set(SeoBuilder::class, static fn (Container $c): SeoBuilder => new SeoBuilder(
-            $c->get(ContentService::class),
-            $c->get(SettingsService::class),
-        ));
+        $container->set(
+            SeoBuilder::class,
+            static fn (Container $c): SeoBuilder => new SeoBuilder(
+                $c->get(ContentService::class),
+                $c->get(SettingsService::class),
+            )
+        );
 
         $container->set(
             MailTransport::class,
@@ -493,15 +520,18 @@ final class Services
             static fn (Container $c): MailRepository => new MailRepository($c->get(Database::class))
         );
 
-        $container->set(MailService::class, static fn (Container $c): MailService => new MailService(
-            $c->get(MailTransport::class),
-            $c->get(View::class),
-            $c->get(Translator::class),
-            $c->get(SettingsService::class),
-            $c->get(MailRepository::class),
-            $c->get(Logger::class),
-            $c->get(ReplyToken::class),
-        ));
+        $container->set(
+            MailService::class,
+            static fn (Container $c): MailService => new MailService(
+                $c->get(MailTransport::class),
+                $c->get(View::class),
+                $c->get(Translator::class),
+                $c->get(SettingsService::class),
+                $c->get(MailRepository::class),
+                $c->get(Logger::class),
+                $c->get(ReplyToken::class),
+            )
+        );
 
         // --- Notifications et push ---------------------------------------
         $container->set(
@@ -577,11 +607,14 @@ final class Services
             static fn (Container $c): TaskStateRepository => new TaskStateRepository($c->get(Database::class))
         );
 
-        $container->set(Scheduler::class, static fn (Container $c): Scheduler => new Scheduler(
-            $c->get(TaskStateRepository::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            Scheduler::class,
+            static fn (Container $c): Scheduler => new Scheduler(
+                $c->get(TaskStateRepository::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         // --- Application installable --------------------------------------
         $container->set(
@@ -617,16 +650,22 @@ final class Services
             )
         );
 
-        $container->set(PriceCalculator::class, static fn (Container $c): PriceCalculator => new PriceCalculator(
-            $c->get(SettingsService::class),
-            $c->get(RateRepository::class),
-            $c->get(Config::class)->string('app.currency', 'EUR'),
-        ));
+        $container->set(
+            PriceCalculator::class,
+            static fn (Container $c): PriceCalculator => new PriceCalculator(
+                $c->get(SettingsService::class),
+                $c->get(RateRepository::class),
+                $c->get(Config::class)->string('app.currency', 'EUR'),
+            )
+        );
 
-        $container->set(StayRules::class, static fn (Container $c): StayRules => new StayRules(
-            $c->get(SettingsService::class),
-            self::propertyTimezone($c),
-        ));
+        $container->set(
+            StayRules::class,
+            static fn (Container $c): StayRules => new StayRules(
+                $c->get(SettingsService::class),
+                self::propertyTimezone($c),
+            )
+        );
 
         $container->set(
             BookingRepository::class,
@@ -658,28 +697,34 @@ final class Services
                 $c->get(BookingRepository::class),
             ));
 
-        $container->set(BookingService::class, static fn (Container $c): BookingService => new BookingService(
-            $c->get(BookingRepository::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(PromoCodeRepository::class),
-            $c->get(WaitlistRepository::class),
-            $c->get(StayRules::class),
-            $c->get(AvailabilityService::class),
-            $c->get(PriceCalculator::class),
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(NotificationService::class),
-            $c->get(MailService::class),
-            $c->get(AuditTrail::class),
-            $c->get(LegalService::class),
-            $c->get(TouristTaxCalculator::class),
-        ));
+        $container->set(
+            BookingService::class,
+            static fn (Container $c): BookingService => new BookingService(
+                $c->get(BookingRepository::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(PromoCodeRepository::class),
+                $c->get(WaitlistRepository::class),
+                $c->get(StayRules::class),
+                $c->get(AvailabilityService::class),
+                $c->get(PriceCalculator::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(NotificationService::class),
+                $c->get(MailService::class),
+                $c->get(AuditTrail::class),
+                $c->get(LegalService::class),
+                $c->get(TouristTaxCalculator::class),
+            )
+        );
 
-        $container->set(QuoteService::class, static fn (Container $c): QuoteService => new QuoteService(
-            $c->get(StayRules::class),
-            $c->get(AvailabilityService::class),
-            $c->get(PriceCalculator::class),
-        ));
+        $container->set(
+            QuoteService::class,
+            static fn (Container $c): QuoteService => new QuoteService(
+                $c->get(StayRules::class),
+                $c->get(AvailabilityService::class),
+                $c->get(PriceCalculator::class),
+            )
+        );
 
         $container->set(
             PaymentRepository::class,
@@ -743,20 +788,23 @@ final class Services
             }
         );
 
-        $container->set(PaymentService::class, static fn (Container $c): PaymentService => new PaymentService(
-            $c->get(PaymentRepository::class),
-            $c->get(WebhookRepository::class),
-            $c->get(BookingRepository::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(BookingService::class),
-            $c->get(PaymentProvider::class),
-            $c->get(SettingsService::class),
-            $c->get(TouristTaxCalculator::class),
-            $c->get(Logger::class),
-            $c->get(UserRepository::class),
-            $c->get(NotificationService::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            PaymentService::class,
+            static fn (Container $c): PaymentService => new PaymentService(
+                $c->get(PaymentRepository::class),
+                $c->get(WebhookRepository::class),
+                $c->get(BookingRepository::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(BookingService::class),
+                $c->get(PaymentProvider::class),
+                $c->get(SettingsService::class),
+                $c->get(TouristTaxCalculator::class),
+                $c->get(Logger::class),
+                $c->get(UserRepository::class),
+                $c->get(NotificationService::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         // --- Documents, contrats et courrier entrant ---------------------
         $container->set(
@@ -764,36 +812,45 @@ final class Services
             static fn (Container $c): DocumentRepository => new DocumentRepository($c->get(Database::class))
         );
 
-        $container->set(DocumentService::class, static fn (Container $c): DocumentService => new DocumentService(
-            $c->get(DocumentRepository::class),
-            $c->get(Paths::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-            $c->get(QuotaService::class),
-        ));
+        $container->set(
+            DocumentService::class,
+            static fn (Container $c): DocumentService => new DocumentService(
+                $c->get(DocumentRepository::class),
+                $c->get(Paths::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+                $c->get(QuotaService::class),
+            )
+        );
 
-        $container->set(ContractBuilder::class, static fn (Container $c): ContractBuilder => new ContractBuilder(
-            $c->get(Translator::class),
-            $c->get(Formatter::class),
-            $c->get(SettingsService::class),
-        ));
+        $container->set(
+            ContractBuilder::class,
+            static fn (Container $c): ContractBuilder => new ContractBuilder(
+                $c->get(Translator::class),
+                $c->get(Formatter::class),
+                $c->get(SettingsService::class),
+            )
+        );
 
         $container->set(
             ContractRepository::class,
             static fn (Container $c): ContractRepository => new ContractRepository($c->get(Database::class))
         );
 
-        $container->set(ContractService::class, static fn (Container $c): ContractService => new ContractService(
-            $c->get(ContractBuilder::class),
-            $c->get(ContractRepository::class),
-            $c->get(DocumentService::class),
-            $c->get(DocumentRepository::class),
-            $c->get(PaymentRepository::class),
-            $c->get(BookingRepository::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            ContractService::class,
+            static fn (Container $c): ContractService => new ContractService(
+                $c->get(ContractBuilder::class),
+                $c->get(ContractRepository::class),
+                $c->get(DocumentService::class),
+                $c->get(DocumentRepository::class),
+                $c->get(PaymentRepository::class),
+                $c->get(BookingRepository::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(
             InboundMailRepository::class,
@@ -846,42 +903,51 @@ final class Services
             static fn (Container $c): CalendarTokenRepository => new CalendarTokenRepository($c->get(Database::class))
         );
 
-        $container->set(CalendarService::class, static fn (Container $c): CalendarService => new CalendarService(
-            $c->get(CalendarTokenRepository::class),
-            $c->get(BookingRepository::class),
-            $c->get(UserRepository::class),
-            $c->get(SettingsService::class),
-            $c->get(Translator::class),
-            $c->get(Formatter::class),
-        ));
+        $container->set(
+            CalendarService::class,
+            static fn (Container $c): CalendarService => new CalendarService(
+                $c->get(CalendarTokenRepository::class),
+                $c->get(BookingRepository::class),
+                $c->get(UserRepository::class),
+                $c->get(SettingsService::class),
+                $c->get(Translator::class),
+                $c->get(Formatter::class),
+            )
+        );
 
         $container->set(
             TaskRepository::class,
             static fn (Container $c): TaskRepository => new TaskRepository($c->get(Database::class))
         );
 
-        $container->set(ChecklistService::class, static fn (Container $c): ChecklistService => new ChecklistService(
-            $c->get(PaymentRepository::class),
-            $c->get(ContractRepository::class),
-            $c->get(TaskRepository::class),
-            $c->get(CalendarService::class),
-        ));
+        $container->set(
+            ChecklistService::class,
+            static fn (Container $c): ChecklistService => new ChecklistService(
+                $c->get(PaymentRepository::class),
+                $c->get(ContractRepository::class),
+                $c->get(TaskRepository::class),
+                $c->get(CalendarService::class),
+            )
+        );
 
-        $container->set(TodoService::class, static fn (Container $c): TodoService => new TodoService(
-            $c->get(BookingRepository::class),
-            $c->get(PaymentRepository::class),
-            $c->get(InboundMailRepository::class),
-            $c->get(ChecklistService::class),
-            $c->get(Migrator::class),
-            $c->get(IncidentRepository::class),
-            $c->get(ComplianceService::class),
-            $c->get(DisputeRepository::class),
-            $c->get(BackupService::class),
-            $c->get(LogRepository::class),
-            $c->get(TaskStateRepository::class),
-            $c->get(MaintenanceMode::class),
-            $c->get(SettingsService::class),
-        ));
+        $container->set(
+            TodoService::class,
+            static fn (Container $c): TodoService => new TodoService(
+                $c->get(BookingRepository::class),
+                $c->get(PaymentRepository::class),
+                $c->get(InboundMailRepository::class),
+                $c->get(ChecklistService::class),
+                $c->get(Migrator::class),
+                $c->get(IncidentRepository::class),
+                $c->get(ComplianceService::class),
+                $c->get(DisputeRepository::class),
+                $c->get(BackupService::class),
+                $c->get(LogRepository::class),
+                $c->get(TaskStateRepository::class),
+                $c->get(MaintenanceMode::class),
+                $c->get(SettingsService::class),
+            )
+        );
 
         // --- Mon séjour et liens invité ------------------------------------
         $container->set(
@@ -907,16 +973,19 @@ final class Services
             static fn (Container $c): BlockIllustrations => new BlockIllustrations($c->get(MediaRepository::class))
         );
 
-        $container->set(StayService::class, static fn (Container $c): StayService => new StayService(
-            $c->get(StayInfoRepository::class),
-            $c->get(StaySecretRepository::class),
-            $c->get(GuestLinkRepository::class),
-            $c->get(BookingRepository::class),
-            $c->get(CalendarService::class),
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            StayService::class,
+            static fn (Container $c): StayService => new StayService(
+                $c->get(StayInfoRepository::class),
+                $c->get(StaySecretRepository::class),
+                $c->get(GuestLinkRepository::class),
+                $c->get(BookingRepository::class),
+                $c->get(CalendarService::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         // --- États des lieux et incidents -----------------------------------
         $container->set(
@@ -937,28 +1006,34 @@ final class Services
             static fn (Container $c): IncidentRepository => new IncidentRepository($c->get(Database::class))
         );
 
-        $container->set(IncidentService::class, static fn (Container $c): IncidentService => new IncidentService(
-            $c->get(IncidentRepository::class),
-            $c->get(DocumentService::class),
-            $c->get(UserRepository::class),
-            $c->get(NotificationService::class),
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            IncidentService::class,
+            static fn (Container $c): IncidentService => new IncidentService(
+                $c->get(IncidentRepository::class),
+                $c->get(DocumentService::class),
+                $c->get(UserRepository::class),
+                $c->get(NotificationService::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
-        $container->set(InspectionService::class, static fn (Container $c): InspectionService => new InspectionService(
-            $c->get(InspectionRepository::class),
-            $c->get(ZoneRepository::class),
-            $c->get(DocumentService::class),
-            $c->get(BookingRepository::class),
-            $c->get(IncidentService::class),
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            InspectionService::class,
+            static fn (Container $c): InspectionService => new InspectionService(
+                $c->get(InspectionRepository::class),
+                $c->get(ZoneRepository::class),
+                $c->get(DocumentService::class),
+                $c->get(BookingRepository::class),
+                $c->get(IncidentService::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         // --- Calendriers externes, litiges, reporting, quotas ------------------
         $container->set(IcsParser::class, static fn (): IcsParser => new IcsParser());
@@ -985,28 +1060,37 @@ final class Services
             static fn (Container $c): DisputeRepository => new DisputeRepository($c->get(Database::class))
         );
 
-        $container->set(DisputeService::class, static fn (Container $c): DisputeService => new DisputeService(
-            $c->get(DisputeRepository::class),
-            $c->get(PaymentRepository::class),
-            $c->get(InspectionRepository::class),
-            $c->get(IncidentRepository::class),
-            $c->get(ContractRepository::class),
-            $c->get(Logger::class),
-            $c->get(BookingEventRepository::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            DisputeService::class,
+            static fn (Container $c): DisputeService => new DisputeService(
+                $c->get(DisputeRepository::class),
+                $c->get(PaymentRepository::class),
+                $c->get(InspectionRepository::class),
+                $c->get(IncidentRepository::class),
+                $c->get(ContractRepository::class),
+                $c->get(Logger::class),
+                $c->get(BookingEventRepository::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
-        $container->set(QuotaService::class, static fn (Container $c): QuotaService => new QuotaService(
-            $c->get(Paths::class),
-            $c->get(SettingsService::class),
-        ));
+        $container->set(
+            QuotaService::class,
+            static fn (Container $c): QuotaService => new QuotaService(
+                $c->get(Paths::class),
+                $c->get(SettingsService::class),
+            )
+        );
 
-        $container->set(ReportService::class, static fn (Container $c): ReportService => new ReportService(
-            $c->get(Database::class),
-            $c->get(PaymentRepository::class),
-            $c->get(Translator::class),
-            $c->get(Config::class)->string('app.currency', 'EUR'),
-        ));
+        $container->set(
+            ReportService::class,
+            static fn (Container $c): ReportService => new ReportService(
+                $c->get(Database::class),
+                $c->get(PaymentRepository::class),
+                $c->get(Translator::class),
+                $c->get(Config::class)->string('app.currency', 'EUR'),
+            )
+        );
 
         // --- Contenu local généré --------------------------------------------
         // Le modèle factice n'est activable que par variable d'environnement,
@@ -1038,10 +1122,13 @@ final class Services
 
         $container->set(PageExtractor::class, static fn (): PageExtractor => new PageExtractor());
 
-        $container->set(PromptBuilder::class, static fn (Container $c): PromptBuilder => new PromptBuilder(
-            $c->get(SettingsService::class),
-            $c->get(Translator::class),
-        ));
+        $container->set(
+            PromptBuilder::class,
+            static fn (Container $c): PromptBuilder => new PromptBuilder(
+                $c->get(SettingsService::class),
+                $c->get(Translator::class),
+            )
+        );
 
         $container->set(
             LocalContentRepository::class,
@@ -1072,25 +1159,31 @@ final class Services
             static fn (Container $c): BookingConsentRepository => new BookingConsentRepository($c->get(Database::class))
         );
 
-        $container->set(LegalService::class, static fn (Container $c): LegalService => new LegalService(
-            $c->get(LegalDocumentRepository::class),
-            $c->get(BookingConsentRepository::class),
-            $c->get(ContentRepository::class),
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            LegalService::class,
+            static fn (Container $c): LegalService => new LegalService(
+                $c->get(LegalDocumentRepository::class),
+                $c->get(BookingConsentRepository::class),
+                $c->get(ContentRepository::class),
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(
             ComplianceRepository::class,
             static fn (Container $c): ComplianceRepository => new ComplianceRepository($c->get(Database::class))
         );
 
-        $container->set(ComplianceService::class, static fn (Container $c): ComplianceService => new ComplianceService(
-            $c->get(ComplianceRepository::class),
-            $c->get(LegalService::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            ComplianceService::class,
+            static fn (Container $c): ComplianceService => new ComplianceService(
+                $c->get(ComplianceRepository::class),
+                $c->get(LegalService::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(
             PoliceRecordRepository::class,
@@ -1108,20 +1201,23 @@ final class Services
                 $c->get(AuditTrail::class),
             ));
 
-        $container->set(RetentionService::class, static fn (Container $c): RetentionService => new RetentionService(
-            $c->get(SettingsService::class),
-            $c->get(Logger::class),
-            $c->get(NotificationRepository::class),
-            $c->get(SessionRepository::class),
-            $c->get(TokenRepository::class),
-            $c->get(GuestLinkRepository::class),
-            $c->get(WaitlistRepository::class),
-            $c->get(WebhookRepository::class),
-            $c->get(RateLimiter::class),
-            $c->get(PoliceRecordService::class),
-            $c->get(AvailabilityBlockRepository::class),
-            $c->get(AuditTrail::class),
-        ));
+        $container->set(
+            RetentionService::class,
+            static fn (Container $c): RetentionService => new RetentionService(
+                $c->get(SettingsService::class),
+                $c->get(Logger::class),
+                $c->get(NotificationRepository::class),
+                $c->get(SessionRepository::class),
+                $c->get(TokenRepository::class),
+                $c->get(GuestLinkRepository::class),
+                $c->get(WaitlistRepository::class),
+                $c->get(WebhookRepository::class),
+                $c->get(RateLimiter::class),
+                $c->get(PoliceRecordService::class),
+                $c->get(AvailabilityBlockRepository::class),
+                $c->get(AuditTrail::class),
+            )
+        );
 
         $container->set(
             TokenRepository::class,
@@ -1133,18 +1229,21 @@ final class Services
             static fn (Container $c): ConsentRepository => new ConsentRepository($c->get(Database::class))
         );
 
-        $container->set(AccountService::class, static fn (Container $c): AccountService => new AccountService(
-            $c->get(UserRepository::class),
-            $c->get(TokenRepository::class),
-            $c->get(SessionRepository::class),
-            $c->get(ConsentRepository::class),
-            $c->get(PasswordHasher::class),
-            $c->get(MailService::class),
-            $c->get(RateLimiter::class),
-            $c->get(Logger::class),
-            $c->get(AuditTrail::class),
-            $c->get(LegalService::class),
-        ));
+        $container->set(
+            AccountService::class,
+            static fn (Container $c): AccountService => new AccountService(
+                $c->get(UserRepository::class),
+                $c->get(TokenRepository::class),
+                $c->get(SessionRepository::class),
+                $c->get(ConsentRepository::class),
+                $c->get(PasswordHasher::class),
+                $c->get(MailService::class),
+                $c->get(RateLimiter::class),
+                $c->get(Logger::class),
+                $c->get(AuditTrail::class),
+                $c->get(LegalService::class),
+            )
+        );
 
         $container->set(
             WebAuthnCredentialRepository::class,

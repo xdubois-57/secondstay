@@ -58,8 +58,8 @@ final class AdminBackupController extends AdminController
             $backups->applyRetention($this->settings()->int('backup.retention_count'));
             $this->flashSuccess('admin.backups.created');
         } catch (Throwable $throwable) {
-            $this->logger(
-                )->error('backup',
+            $this->logger()->error(
+                'backup',
                 'Création de sauvegarde impossible',
                 ['reason' => $throwable->getMessage()],
             );

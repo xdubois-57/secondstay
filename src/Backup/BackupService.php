@@ -248,68 +248,69 @@ final class BackupService
         return $this->maintenance->during(
             'maintenance.reason.restore',
             function () use ($path, $manifest, $actorLabel, $actorId): array {
-            $zip = new ZipArchive();
-            if ($zip->open($path) !== true) {
-                throw new RuntimeException('Archive de sauvegarde illisible.');
-            }
-
-            $temporary = $this->paths->storage('temp') . '/restore-' . bin2hex(random_bytes(6));
-            if (!mkdir($temporary, 0o750, true) && !is_dir($temporary)) {
-                $zip->close();
-                throw new RuntimeException('Répertoire temporaire de restauration inaccessible.');
-            }
-
-            try {
-                $sql = $zip->getFromName(self::SQL_ENTRY);
-                if ($sql === false) {
-                    throw new RuntimeException('Dump SQL absent de la sauvegarde.');
-                }
-                $sqlFile = $temporary . '/database.sql';
-                file_put_contents($sqlFile, $sql);
-
-                $statements = (new SqlDumper($this->database))->restoreFromFile($sqlFile);
-
-                $restoredFiles = 0;
-                for ($index = 0; $index < $zip->numFiles; $index++) {
-                    $name = $zip->getNameIndex($index);
-                    if ($name === false || !str_starts_with($name, 'storage/')) {
-                        continue;
-                    }
-
-                    $target = $this->safeStorageTarget($name);
-                    $directory = dirname($target);
-                    if (!is_dir($directory) && !mkdir($directory, 0o750, true) && !is_dir($directory)) {
-                        throw new RuntimeException('Répertoire de restauration inaccessible.');
-                    }
-
-                    $contents = $zip->getFromIndex($index);
-                    if ($contents === false) {
-                        continue;
-                    }
-                    file_put_contents($target, $contents);
-                    $restoredFiles++;
+                $zip = new ZipArchive();
+                if ($zip->open($path) !== true) {
+                    throw new RuntimeException('Archive de sauvegarde illisible.');
                 }
 
-                $this->audit?->record(
-                    'backup.restored',
-                    'backup',
-                    $manifest->id,
-                    null,
-                    ['statements' => $statements, 'files' => $restoredFiles],
-                    $actorId,
-                    $actorLabel ?? 'system',
-                );
+                $temporary = $this->paths->storage('temp') . '/restore-' . bin2hex(random_bytes(6));
+                if (!mkdir($temporary, 0o750, true) && !is_dir($temporary)) {
+                    $zip->close();
+                    throw new RuntimeException('Répertoire temporaire de restauration inaccessible.');
+                }
 
-                return [
-                    'restored_statements' => $statements,
-                    'restored_files' => $restoredFiles,
-                    'manifest' => $manifest,
-                ];
-            } finally {
-                $zip->close();
-                $this->removeDirectory($temporary);
+                try {
+                    $sql = $zip->getFromName(self::SQL_ENTRY);
+                    if ($sql === false) {
+                        throw new RuntimeException('Dump SQL absent de la sauvegarde.');
+                    }
+                    $sqlFile = $temporary . '/database.sql';
+                    file_put_contents($sqlFile, $sql);
+
+                    $statements = (new SqlDumper($this->database))->restoreFromFile($sqlFile);
+
+                    $restoredFiles = 0;
+                    for ($index = 0; $index < $zip->numFiles; $index++) {
+                        $name = $zip->getNameIndex($index);
+                        if ($name === false || !str_starts_with($name, 'storage/')) {
+                            continue;
+                        }
+
+                        $target = $this->safeStorageTarget($name);
+                        $directory = dirname($target);
+                        if (!is_dir($directory) && !mkdir($directory, 0o750, true) && !is_dir($directory)) {
+                            throw new RuntimeException('Répertoire de restauration inaccessible.');
+                        }
+
+                        $contents = $zip->getFromIndex($index);
+                        if ($contents === false) {
+                            continue;
+                        }
+                        file_put_contents($target, $contents);
+                        $restoredFiles++;
+                    }
+
+                    $this->audit?->record(
+                        'backup.restored',
+                        'backup',
+                        $manifest->id,
+                        null,
+                        ['statements' => $statements, 'files' => $restoredFiles],
+                        $actorId,
+                        $actorLabel ?? 'system',
+                    );
+
+                    return [
+                        'restored_statements' => $statements,
+                        'restored_files' => $restoredFiles,
+                        'manifest' => $manifest,
+                    ];
+                } finally {
+                    $zip->close();
+                    $this->removeDirectory($temporary);
+                }
             }
-        });
+        );
     }
 
     /**

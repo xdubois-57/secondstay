@@ -176,9 +176,10 @@ final class AdminBookingController extends AdminController
             'promo_code',
             PromoCode::normalise((string) $request->input('code', '')),
             null,
-            [
-            'kind' => $kind,
-        ], $user->id, $user->email);
+            ['kind' => $kind],
+            $user->id,
+            $user->email
+        );
 
         $this->flashSuccess('booking.promo.applied');
 
