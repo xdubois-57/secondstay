@@ -140,7 +140,8 @@ final class PageController extends AbstractController
     }
 
     /**
-     * @return array{gallery_items: list<array<string, mixed>>, gallery_categories: list<string>, gallery_category: string}
+     * @return array{gallery_items: list<array<string, mixed>>, gallery_categories: list<string>,
+     *     gallery_category: string}
      */
     private function galleryContext(RequestContext $context): array
     {

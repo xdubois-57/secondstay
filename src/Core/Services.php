@@ -157,87 +157,121 @@ final class Services
 {
     public static function register(Container $container, string $projectRoot, string $appVersion): void
     {
-        $container->set(MaintenanceMode::class, static fn (Container $c): MaintenanceMode
-            => new MaintenanceMode($c->get(Paths::class)->storage('maintenance.json')));
+        $container->set(
+            MaintenanceMode::class,
+            static fn (Container $c): MaintenanceMode => new MaintenanceMode(
+                $c->get(Paths::class)->storage('maintenance.json'),
+            )
+        );
 
-        $container->set(Logger::class, static function (Container $c): Logger {
-            $config = $c->get(Config::class);
-            $logger = new Logger(
-                $c->get(Paths::class)->storage('logs'),
-                LogLevel::fromString($config->string('logging.level', 'info'))
-            );
+        $container->set(
+            Logger::class,
+            static function (Container $c): Logger {
+                $config = $c->get(Config::class);
+                $logger = new Logger(
+                    $c->get(Paths::class)->storage('logs'),
+                    LogLevel::fromString($config->string('logging.level', 'info'))
+                );
 
-            return $logger->withDatabase(self::optionalDatabase($c));
-        });
+                return $logger->withDatabase(self::optionalDatabase($c));
+            }
+        );
 
-        $container->set(LogRepository::class, static fn (Container $c): LogRepository
-            => new LogRepository($c->get(Database::class)));
+        $container->set(
+            LogRepository::class,
+            static fn (Container $c): LogRepository => new LogRepository($c->get(Database::class))
+        );
 
-        $container->set(InstallationState::class, static fn (Container $c): InstallationState
-            => new InstallationState($c->get(Paths::class)));
+        $container->set(
+            InstallationState::class,
+            static fn (Container $c): InstallationState => new InstallationState($c->get(Paths::class))
+        );
 
-        $container->set(RequirementChecker::class, static fn (Container $c): RequirementChecker
-            => new RequirementChecker($c->get(Paths::class)));
+        $container->set(
+            RequirementChecker::class,
+            static fn (Container $c): RequirementChecker => new RequirementChecker($c->get(Paths::class))
+        );
 
-        $container->set(InstallToken::class, static fn (Container $c): InstallToken
-            => InstallToken::forRoot($c->get(Paths::class)->root()));
+        $container->set(
+            InstallToken::class,
+            static fn (Container $c): InstallToken => InstallToken::forRoot($c->get(Paths::class)->root())
+        );
 
-        $container->set(InstallTokenGate::class, static fn (Container $c): InstallTokenGate
-            => new InstallTokenGate($c->get(InstallToken::class), $c->get(Session::class)));
+        $container->set(
+            InstallTokenGate::class,
+            static fn (Container $c): InstallTokenGate => new InstallTokenGate(
+                $c->get(InstallToken::class),
+                $c->get(Session::class),
+            )
+        );
 
-        $container->set(Installer::class, static fn (Container $c): Installer
-            => new Installer($c->get(Paths::class), $c->get(InstallationState::class)));
+        $container->set(
+            Installer::class,
+            static fn (Container $c): Installer => new Installer(
+                $c->get(Paths::class),
+                $c->get(InstallationState::class),
+            )
+        );
 
         $container->set(PasswordHasher::class, static fn (): PasswordHasher => new PasswordHasher());
 
         $container->set(SettingRegistry::class, static fn (): SettingRegistry => new SettingRegistry());
 
-        $container->set(HttpFetcher::class, static function (Container $c): HttpFetcher {
-            $real = new CurlHttpFetcher();
+        $container->set(
+            HttpFetcher::class,
+            static function (Container $c): HttpFetcher {
+                $real = new CurlHttpFetcher();
 
-            // Fixtures sur disque : activables uniquement par variable
-            // d'environnement, pour les scénarios de bout en bout. Tout ce qui
-            // n'a pas de fixture part réellement, garde SSRF compris.
-            if ($c->get(Config::class)->string('http.fetcher', '') === FixtureHttpFetcher::NAME) {
-                return new FixtureHttpFetcher($c->get(Paths::class)->storage('temp/http'), $real);
-            }
-
-            return $real;
-        });
-
-        $container->set(ReleaseProvider::class, static function (Container $c): ReleaseProvider {
-            $repository = 'xdubois-57/secondstay';
-            if ($c->has(SettingsService::class)) {
-                try {
-                    $configured = $c->get(SettingsService::class)->string('update.repository');
-                    if ($configured !== '') {
-                        $repository = $configured;
-                    }
-                } catch (Throwable) {
-                    // Réglages indisponibles : on garde le dépôt officiel.
+                // Fixtures sur disque : activables uniquement par variable
+                // d'environnement, pour les scénarios de bout en bout. Tout ce qui
+                // n'a pas de fixture part réellement, garde SSRF compris.
+                if ($c->get(Config::class)->string('http.fetcher', '') === FixtureHttpFetcher::NAME) {
+                    return new FixtureHttpFetcher($c->get(Paths::class)->storage('temp/http'), $real);
                 }
+
+                return $real;
             }
+        );
 
-            return new GitHubReleaseProvider($c->get(HttpFetcher::class), $repository);
-        });
+        $container->set(
+            ReleaseProvider::class,
+            static function (Container $c): ReleaseProvider {
+                $repository = 'xdubois-57/secondstay';
+                if ($c->has(SettingsService::class)) {
+                    try {
+                        $configured = $c->get(SettingsService::class)->string('update.repository');
+                        if ($configured !== '') {
+                            $repository = $configured;
+                        }
+                    } catch (Throwable) {
+                        // Réglages indisponibles : on garde le dépôt officiel.
+                    }
+                }
 
-        $container->set(Session::class, static function (Container $c): Session {
-            $config = $c->get(Config::class);
+                return new GitHubReleaseProvider($c->get(HttpFetcher::class), $repository);
+            }
+        );
 
-            // `Secure` dès que la requête est arrivée en HTTPS — jamais en
-            // clair, où le drapeau rendrait le cookie inutilisable et donc la
-            // connexion impossible. `isSecure()` tient compte du
-            // `X-Forwarded-Proto` d'un répartiteur, cas normal en hébergement
-            // mutualisé, sans quoi la protection disparaîtrait précisément là
-            // où le TLS est réellement terminé.
-            $request = $c->has(Request::class) ? $c->get(Request::class) : null;
+        $container->set(
+            Session::class,
+            static function (Container $c): Session {
+                $config = $c->get(Config::class);
 
-            return new PhpSession(
-                $config->string('security.session_name', 'secondstay_session'),
-                $config->int('security.session_lifetime_minutes', 120),
-                $request instanceof Request && $request->isSecure(),
-            );
-        });
+                // `Secure` dès que la requête est arrivée en HTTPS — jamais en
+                // clair, où le drapeau rendrait le cookie inutilisable et donc la
+                // connexion impossible. `isSecure()` tient compte du
+                // `X-Forwarded-Proto` d'un répartiteur, cas normal en hébergement
+                // mutualisé, sans quoi la protection disparaîtrait précisément là
+                // où le TLS est réellement terminé.
+                $request = $c->has(Request::class) ? $c->get(Request::class) : null;
+
+                return new PhpSession(
+                    $config->string('security.session_name', 'secondstay_session'),
+                    $config->int('security.session_lifetime_minutes', 120),
+                    $request instanceof Request && $request->isSecure(),
+                );
+            }
+        );
 
         $container->set(Csrf::class, static fn (Container $c): Csrf => new Csrf($c->get(Session::class)));
 
@@ -245,45 +279,53 @@ final class Services
         // Services dépendant de la base de données.
         // ------------------------------------------------------------------
 
-        $container->set(DatabaseConfig::class, static function (Container $c): DatabaseConfig {
-            $config = $c->get(Config::class);
+        $container->set(
+            DatabaseConfig::class,
+            static function (Container $c): DatabaseConfig {
+                $config = $c->get(Config::class);
 
-            return new DatabaseConfig(
-                $config->string('database.host', '127.0.0.1'),
-                $config->int('database.port', 3306),
-                $config->string('database.name'),
-                $config->string('database.user'),
-                $config->string('database.password'),
-                $config->string('database.charset', 'utf8mb4'),
-            );
-        });
+                return new DatabaseConfig(
+                    $config->string('database.host', '127.0.0.1'),
+                    $config->int('database.port', 3306),
+                    $config->string('database.name'),
+                    $config->string('database.user'),
+                    $config->string('database.password'),
+                    $config->string('database.charset', 'utf8mb4'),
+                );
+            }
+        );
 
-        $container->set(Database::class, static fn (Container $c): Database
-            => new Database($c->get(DatabaseConfig::class)));
+        $container->set(
+            Database::class,
+            static fn (Container $c): Database => new Database($c->get(DatabaseConfig::class))
+        );
 
-        $container->set(Encryptor::class, static function (Container $c): Encryptor {
-            $config = $c->get(Config::class);
+        $container->set(
+            Encryptor::class,
+            static function (Container $c): Encryptor {
+                $config = $c->get(Config::class);
 
-            /** @var array<string, string> $keys */
-            $keys = [];
-            foreach ($config->array('security.encryption_keys') as $id => $key) {
-                if (is_string($key) && $key !== '') {
-                    $keys[(string) $id] = $key;
+                /** @var array<string, string> $keys */
+                $keys = [];
+                foreach ($config->array('security.encryption_keys') as $id => $key) {
+                    if (is_string($key) && $key !== '') {
+                        $keys[(string) $id] = $key;
+                    }
                 }
-            }
 
-            $single = $config->string('security.encryption_key');
-            if ($keys === [] && $single !== '') {
-                $keys = ['k1' => $single];
-            }
+                $single = $config->string('security.encryption_key');
+                if ($keys === [] && $single !== '') {
+                    $keys = ['k1' => $single];
+                }
 
-            $active = $config->string('security.active_encryption_key', 'k1');
-            if (!isset($keys[$active])) {
-                $active = (string) array_key_first($keys);
-            }
+                $active = $config->string('security.active_encryption_key', 'k1');
+                if (!isset($keys[$active])) {
+                    $active = (string) array_key_first($keys);
+                }
 
-            return new Encryptor($keys, $active);
-        });
+                return new Encryptor($keys, $active);
+            }
+        );
 
         // Le jeton d'adresse de réponse est dérivé de la clé de chiffrement
         // de l'installation : il n'ajoute donc aucun secret à gérer, et deux
@@ -292,11 +334,18 @@ final class Services
             hash_hmac('sha256', 'reply-token', $c->get(Config::class)->string('security.encryption_key'))
         ));
 
-        $container->set(SettingsRepository::class, static fn (Container $c): SettingsRepository
-            => new SettingsRepository($c->get(Database::class)));
+        $container->set(
+            SettingsRepository::class,
+            static fn (Container $c): SettingsRepository => new SettingsRepository($c->get(Database::class))
+        );
 
-        $container->set(AuditTrail::class, static fn (Container $c): AuditTrail
-            => new AuditTrail($c->get(Database::class), $c->get(Logger::class)->correlationId()));
+        $container->set(
+            AuditTrail::class,
+            static fn (Container $c): AuditTrail => new AuditTrail(
+                $c->get(Database::class),
+                $c->get(Logger::class)->correlationId(),
+            )
+        );
 
         $container->set(SettingsService::class, static fn (Container $c): SettingsService => new SettingsService(
             $c->get(SettingRegistry::class),
@@ -306,14 +355,20 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
-        $container->set(UserRepository::class, static fn (Container $c): UserRepository
-            => new UserRepository($c->get(Database::class)));
+        $container->set(
+            UserRepository::class,
+            static fn (Container $c): UserRepository => new UserRepository($c->get(Database::class))
+        );
 
-        $container->set(SessionRepository::class, static fn (Container $c): SessionRepository
-            => new SessionRepository($c->get(Database::class)));
+        $container->set(
+            SessionRepository::class,
+            static fn (Container $c): SessionRepository => new SessionRepository($c->get(Database::class))
+        );
 
-        $container->set(RateLimiter::class, static fn (Container $c): RateLimiter
-            => new RateLimiter($c->get(Database::class)));
+        $container->set(
+            RateLimiter::class,
+            static fn (Container $c): RateLimiter => new RateLimiter($c->get(Database::class))
+        );
 
         $container->set(AuthService::class, static fn (Container $c): AuthService => new AuthService(
             $c->get(UserRepository::class),
@@ -326,8 +381,13 @@ final class Services
             $c->get(Config::class)->int('security.session_lifetime_minutes', 120),
         ));
 
-        $container->set(Migrator::class, static fn (Container $c): Migrator
-            => new Migrator($c->get(Database::class), $c->get(Paths::class)->migrations()));
+        $container->set(
+            Migrator::class,
+            static fn (Container $c): Migrator => new Migrator(
+                $c->get(Database::class),
+                $c->get(Paths::class)->migrations(),
+            )
+        );
 
         $container->set(BackupService::class, static fn (Container $c): BackupService => new BackupService(
             $c->get(Database::class),
@@ -349,8 +409,10 @@ final class Services
 
         $container->set(HtmlSanitizer::class, static fn (): HtmlSanitizer => new HtmlSanitizer());
 
-        $container->set(ContentRepository::class, static fn (Container $c): ContentRepository
-            => new ContentRepository($c->get(Database::class)));
+        $container->set(
+            ContentRepository::class,
+            static fn (Container $c): ContentRepository => new ContentRepository($c->get(Database::class))
+        );
 
         $container->set(ContentService::class, static fn (Container $c): ContentService => new ContentService(
             $c->get(ContentRepository::class),
@@ -367,8 +429,10 @@ final class Services
 
         $container->set(ImageProcessor::class, static fn (): ImageProcessor => new ImageProcessor());
 
-        $container->set(MediaRepository::class, static fn (Container $c): MediaRepository
-            => new MediaRepository($c->get(Database::class)));
+        $container->set(
+            MediaRepository::class,
+            static fn (Container $c): MediaRepository => new MediaRepository($c->get(Database::class))
+        );
 
         $container->set(MediaService::class, static fn (Container $c): MediaService => new MediaService(
             $c->get(MediaRepository::class),
@@ -383,46 +447,51 @@ final class Services
             $c->get(SettingsService::class),
         ));
 
-        $container->set(MailTransport::class, static function (Container $c): MailTransport {
-            $config = $c->get(Config::class);
+        $container->set(
+            MailTransport::class,
+            static function (Container $c): MailTransport {
+                $config = $c->get(Config::class);
 
-            // Le transport factice n'est activable que par variable
-            // d'environnement : il ne peut jamais être choisi depuis l'UI.
-            if ($config->string('mail.transport', 'smtp') === 'fake') {
-                return new FakeMailTransport($c->get(Paths::class)->storage('temp/mail'));
+                // Le transport factice n'est activable que par variable
+                // d'environnement : il ne peut jamais être choisi depuis l'UI.
+                if ($config->string('mail.transport', 'smtp') === 'fake') {
+                    return new FakeMailTransport($c->get(Paths::class)->storage('temp/mail'));
+                }
+
+                $settings = $c->get(SettingsService::class);
+
+                $publicUrl = $settings->string('site.public_url');
+                $helo = $publicUrl === '' ? 'localhost' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? 'localhost');
+
+                $fromAddress = $settings->string('mail.from_address');
+                if (filter_var($fromAddress, FILTER_VALIDATE_EMAIL) === false) {
+                    // `localhost` seul ne forme pas une adresse e-mail valide.
+                    $candidate = 'noreply@' . $helo;
+                    $fromAddress = filter_var($candidate, FILTER_VALIDATE_EMAIL) !== false
+                        ? $candidate
+                        : 'noreply@localhost.localdomain';
+                }
+
+                $from = new MailAddress($fromAddress, $settings->string('mail.from_name'));
+
+                return new SmtpMailTransport(
+                    $settings->string('mail.smtp_host'),
+                    $settings->int('mail.smtp_port'),
+                    $settings->string('mail.smtp_username'),
+                    $settings->isSecretDefined('mail.smtp_password')
+                        ? (string) $settings->get('mail.smtp_password')
+                        : '',
+                    $settings->string('mail.smtp_encryption'),
+                    $from,
+                    $helo,
+                );
             }
+        );
 
-            $settings = $c->get(SettingsService::class);
-
-            $publicUrl = $settings->string('site.public_url');
-            $helo = $publicUrl === '' ? 'localhost' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? 'localhost');
-
-            $fromAddress = $settings->string('mail.from_address');
-            if (filter_var($fromAddress, FILTER_VALIDATE_EMAIL) === false) {
-                // `localhost` seul ne forme pas une adresse e-mail valide.
-                $candidate = 'noreply@' . $helo;
-                $fromAddress = filter_var($candidate, FILTER_VALIDATE_EMAIL) !== false
-                    ? $candidate
-                    : 'noreply@localhost.localdomain';
-            }
-
-            $from = new MailAddress($fromAddress, $settings->string('mail.from_name'));
-
-            return new SmtpMailTransport(
-                $settings->string('mail.smtp_host'),
-                $settings->int('mail.smtp_port'),
-                $settings->string('mail.smtp_username'),
-                $settings->isSecretDefined('mail.smtp_password')
-                    ? (string) $settings->get('mail.smtp_password')
-                    : '',
-                $settings->string('mail.smtp_encryption'),
-                $from,
-                $helo,
-            );
-        });
-
-        $container->set(MailRepository::class, static fn (Container $c): MailRepository
-            => new MailRepository($c->get(Database::class)));
+        $container->set(
+            MailRepository::class,
+            static fn (Container $c): MailRepository => new MailRepository($c->get(Database::class))
+        );
 
         $container->set(MailService::class, static fn (Container $c): MailService => new MailService(
             $c->get(MailTransport::class),
@@ -435,33 +504,48 @@ final class Services
         ));
 
         // --- Notifications et push ---------------------------------------
-        $container->set(VapidKeyManager::class, static fn (Container $c): VapidKeyManager
-            => new VapidKeyManager($c->get(SettingsService::class)));
+        $container->set(
+            VapidKeyManager::class,
+            static fn (Container $c): VapidKeyManager => new VapidKeyManager($c->get(SettingsService::class))
+        );
 
-        $container->set(PushSubscriptionRepository::class, static fn (Container $c): PushSubscriptionRepository
-            => new PushSubscriptionRepository($c->get(Database::class)));
+        $container->set(
+            PushSubscriptionRepository::class,
+            static fn (Container $c): PushSubscriptionRepository => new PushSubscriptionRepository(
+                $c->get(Database::class),
+            )
+        );
 
-        $container->set(PushProvider::class, static function (Container $c): PushProvider {
-            $config = $c->get(Config::class);
-            $keys = $c->get(VapidKeyManager::class);
+        $container->set(
+            PushProvider::class,
+            static function (Container $c): PushProvider {
+                $config = $c->get(Config::class);
+                $keys = $c->get(VapidKeyManager::class);
 
-            // Le fournisseur factice partage la clé publique de l'installation :
-            // le parcours d'abonnement du navigateur est réellement exercé.
-            if ($config->string('push.provider', 'webpush') === 'fake') {
-                return new FakePushProvider(
-                    $keys->publicKey(),
-                    $c->get(Paths::class)->storage('temp/push')
-                );
+                // Le fournisseur factice partage la clé publique de l'installation :
+                // le parcours d'abonnement du navigateur est réellement exercé.
+                if ($config->string('push.provider', 'webpush') === 'fake') {
+                    return new FakePushProvider(
+                        $keys->publicKey(),
+                        $c->get(Paths::class)->storage('temp/push')
+                    );
+                }
+
+                return new WebPushProvider($keys->vapid(), $c->get(HttpFetcher::class));
             }
+        );
 
-            return new WebPushProvider($keys->vapid(), $c->get(HttpFetcher::class));
-        });
+        $container->set(
+            NotificationRepository::class,
+            static fn (Container $c): NotificationRepository => new NotificationRepository($c->get(Database::class))
+        );
 
-        $container->set(NotificationRepository::class, static fn (Container $c): NotificationRepository
-            => new NotificationRepository($c->get(Database::class)));
-
-        $container->set(NotificationPreferenceRepository::class, static fn (Container $c): NotificationPreferenceRepository
-            => new NotificationPreferenceRepository($c->get(Database::class)));
+        $container->set(
+            NotificationPreferenceRepository::class,
+            static fn (Container $c): NotificationPreferenceRepository => new NotificationPreferenceRepository(
+                $c->get(Database::class),
+            )
+        );
 
         $container->set(NotificationService::class, static fn (Container $c): NotificationService
             => new NotificationService(
@@ -488,8 +572,10 @@ final class Services
         // Le planificateur n'est qu'un ordonnanceur : il ne connaît aucune
         // tâche par lui-même, `SchedulerFactory` les lui branche au moment de
         // l'exécution afin qu'une tâche non due ne construise rien.
-        $container->set(TaskStateRepository::class, static fn (Container $c): TaskStateRepository
-            => new TaskStateRepository($c->get(Database::class)));
+        $container->set(
+            TaskStateRepository::class,
+            static fn (Container $c): TaskStateRepository => new TaskStateRepository($c->get(Database::class))
+        );
 
         $container->set(Scheduler::class, static fn (Container $c): Scheduler => new Scheduler(
             $c->get(TaskStateRepository::class),
@@ -498,27 +584,38 @@ final class Services
         ));
 
         // --- Application installable --------------------------------------
-        $container->set(ManifestBuilder::class, static function (Container $c): ManifestBuilder {
-            $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
+        $container->set(
+            ManifestBuilder::class,
+            static function (Container $c): ManifestBuilder {
+                $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
 
-            return new ManifestBuilder(
-                $c->get(SettingsService::class),
-                $c->get(Translator::class),
-                $context instanceof RequestContext ? $context->request->basePath : '',
-            );
-        });
+                return new ManifestBuilder(
+                    $c->get(SettingsService::class),
+                    $c->get(Translator::class),
+                    $context instanceof RequestContext ? $context->request->basePath : '',
+                );
+            }
+        );
 
-        $container->set(IconGenerator::class, static fn (Container $c): IconGenerator
-            => new IconGenerator($c->get(Paths::class)->storage('cache/icons')));
+        $container->set(
+            IconGenerator::class,
+            static fn (Container $c): IconGenerator => new IconGenerator($c->get(Paths::class)->storage('cache/icons'))
+        );
 
         $container->set(MailDnsChecker::class, static fn (): MailDnsChecker => new MailDnsChecker());
 
         // --- Disponibilités et prix ---------------------------------------
-        $container->set(RateRepository::class, static fn (Container $c): RateRepository
-            => new RateRepository($c->get(Database::class)));
+        $container->set(
+            RateRepository::class,
+            static fn (Container $c): RateRepository => new RateRepository($c->get(Database::class))
+        );
 
-        $container->set(AvailabilityBlockRepository::class, static fn (Container $c): AvailabilityBlockRepository
-            => new AvailabilityBlockRepository($c->get(Database::class)));
+        $container->set(
+            AvailabilityBlockRepository::class,
+            static fn (Container $c): AvailabilityBlockRepository => new AvailabilityBlockRepository(
+                $c->get(Database::class),
+            )
+        );
 
         $container->set(PriceCalculator::class, static fn (Container $c): PriceCalculator => new PriceCalculator(
             $c->get(SettingsService::class),
@@ -531,17 +628,25 @@ final class Services
             self::propertyTimezone($c),
         ));
 
-        $container->set(BookingRepository::class, static fn (Container $c): BookingRepository
-            => new BookingRepository($c->get(Database::class)));
+        $container->set(
+            BookingRepository::class,
+            static fn (Container $c): BookingRepository => new BookingRepository($c->get(Database::class))
+        );
 
-        $container->set(BookingEventRepository::class, static fn (Container $c): BookingEventRepository
-            => new BookingEventRepository($c->get(Database::class)));
+        $container->set(
+            BookingEventRepository::class,
+            static fn (Container $c): BookingEventRepository => new BookingEventRepository($c->get(Database::class))
+        );
 
-        $container->set(PromoCodeRepository::class, static fn (Container $c): PromoCodeRepository
-            => new PromoCodeRepository($c->get(Database::class)));
+        $container->set(
+            PromoCodeRepository::class,
+            static fn (Container $c): PromoCodeRepository => new PromoCodeRepository($c->get(Database::class))
+        );
 
-        $container->set(WaitlistRepository::class, static fn (Container $c): WaitlistRepository
-            => new WaitlistRepository($c->get(Database::class)));
+        $container->set(
+            WaitlistRepository::class,
+            static fn (Container $c): WaitlistRepository => new WaitlistRepository($c->get(Database::class))
+        );
 
         $container->set(AvailabilityService::class, static fn (Container $c): AvailabilityService
             => new AvailabilityService(
@@ -576,17 +681,27 @@ final class Services
             $c->get(PriceCalculator::class),
         ));
 
-        $container->set(PaymentRepository::class, static fn (Container $c): PaymentRepository
-            => new PaymentRepository($c->get(Database::class)));
+        $container->set(
+            PaymentRepository::class,
+            static fn (Container $c): PaymentRepository => new PaymentRepository($c->get(Database::class))
+        );
 
-        $container->set(WebhookRepository::class, static fn (Container $c): WebhookRepository
-            => new WebhookRepository($c->get(Database::class)));
+        $container->set(
+            WebhookRepository::class,
+            static fn (Container $c): WebhookRepository => new WebhookRepository($c->get(Database::class))
+        );
 
-        $container->set(TouristTaxRuleRepository::class, static fn (Container $c): TouristTaxRuleRepository
-            => new TouristTaxRuleRepository($c->get(Database::class)));
+        $container->set(
+            TouristTaxRuleRepository::class,
+            static fn (Container $c): TouristTaxRuleRepository => new TouristTaxRuleRepository($c->get(Database::class))
+        );
 
-        $container->set(TouristTaxContextRepository::class, static fn (Container $c): TouristTaxContextRepository
-            => new TouristTaxContextRepository($c->get(Database::class)));
+        $container->set(
+            TouristTaxContextRepository::class,
+            static fn (Container $c): TouristTaxContextRepository => new TouristTaxContextRepository(
+                $c->get(Database::class),
+            )
+        );
 
         $container->set(TouristTaxCalculator::class, static fn (Container $c): TouristTaxCalculator
             => new TouristTaxCalculator(
@@ -595,35 +710,38 @@ final class Services
                 $c->get(TouristTaxContextRepository::class),
             ));
 
-        $container->set(PaymentProvider::class, static function (Container $c): PaymentProvider {
-            // Le fournisseur factice n'est activable que par variable
-            // d'environnement, jamais depuis l'interface : sinon un visiteur
-            // pourrait confirmer un séjour sans avoir rien payé.
-            if ($c->get(Config::class)->string('payment.provider', '') === FakePaymentProvider::NAME) {
-                return new FakePaymentProvider(
-                    '/fr/payment/return',
-                    $c->get(Paths::class)->storage('temp/payments.json'),
-                );
-            }
-
-            $settings = $c->get(SettingsService::class);
-
-            if ($settings->string('payment.provider') === MolliePaymentProvider::NAME) {
-                $key = $settings->get('payment.mollie_api_key');
-                $provider = new MolliePaymentProvider(
-                    is_string($key) ? $key : '',
-                    $c->get(HttpFetcher::class),
-                );
-
-                if ($provider->isConfigured()) {
-                    return $provider;
+        $container->set(
+            PaymentProvider::class,
+            static function (Container $c): PaymentProvider {
+                // Le fournisseur factice n'est activable que par variable
+                // d'environnement, jamais depuis l'interface : sinon un visiteur
+                // pourrait confirmer un séjour sans avoir rien payé.
+                if ($c->get(Config::class)->string('payment.provider', '') === FakePaymentProvider::NAME) {
+                    return new FakePaymentProvider(
+                        '/fr/payment/return',
+                        $c->get(Paths::class)->storage('temp/payments.json'),
+                    );
                 }
-            }
 
-            // Sans clé utilisable : pas de paiement en ligne du tout. Le
-            // virement et l'encaissement manuel restent disponibles.
-            return new NullPaymentProvider();
-        });
+                $settings = $c->get(SettingsService::class);
+
+                if ($settings->string('payment.provider') === MolliePaymentProvider::NAME) {
+                    $key = $settings->get('payment.mollie_api_key');
+                    $provider = new MolliePaymentProvider(
+                        is_string($key) ? $key : '',
+                        $c->get(HttpFetcher::class),
+                    );
+
+                    if ($provider->isConfigured()) {
+                        return $provider;
+                    }
+                }
+
+                // Sans clé utilisable : pas de paiement en ligne du tout. Le
+                // virement et l'encaissement manuel restent disponibles.
+                return new NullPaymentProvider();
+            }
+        );
 
         $container->set(PaymentService::class, static fn (Container $c): PaymentService => new PaymentService(
             $c->get(PaymentRepository::class),
@@ -641,8 +759,10 @@ final class Services
         ));
 
         // --- Documents, contrats et courrier entrant ---------------------
-        $container->set(DocumentRepository::class, static fn (Container $c): DocumentRepository
-            => new DocumentRepository($c->get(Database::class)));
+        $container->set(
+            DocumentRepository::class,
+            static fn (Container $c): DocumentRepository => new DocumentRepository($c->get(Database::class))
+        );
 
         $container->set(DocumentService::class, static fn (Container $c): DocumentService => new DocumentService(
             $c->get(DocumentRepository::class),
@@ -658,8 +778,10 @@ final class Services
             $c->get(SettingsService::class),
         ));
 
-        $container->set(ContractRepository::class, static fn (Container $c): ContractRepository
-            => new ContractRepository($c->get(Database::class)));
+        $container->set(
+            ContractRepository::class,
+            static fn (Container $c): ContractRepository => new ContractRepository($c->get(Database::class))
+        );
 
         $container->set(ContractService::class, static fn (Container $c): ContractService => new ContractService(
             $c->get(ContractBuilder::class),
@@ -673,30 +795,35 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
-        $container->set(InboundMailRepository::class, static fn (Container $c): InboundMailRepository
-            => new InboundMailRepository($c->get(Database::class)));
+        $container->set(
+            InboundMailRepository::class,
+            static fn (Container $c): InboundMailRepository => new InboundMailRepository($c->get(Database::class))
+        );
 
         $container->set(MimeParser::class, static fn (): MimeParser => new MimeParser());
 
         // La boîte factice n'est activable que par variable d'environnement,
         // comme les autres fournisseurs de test.
-        $container->set(ImapProvider::class, static function (Container $c): ImapProvider {
-            if ($c->get(Config::class)->string('imap.provider', '') === FakeImapProvider::NAME) {
-                return new FakeImapProvider($c->get(Paths::class)->storage('temp/imap'));
+        $container->set(
+            ImapProvider::class,
+            static function (Container $c): ImapProvider {
+                if ($c->get(Config::class)->string('imap.provider', '') === FakeImapProvider::NAME) {
+                    return new FakeImapProvider($c->get(Paths::class)->storage('temp/imap'));
+                }
+
+                $settings = $c->get(SettingsService::class);
+                $password = $settings->get('imap.password');
+
+                return new ImapClient(
+                    $settings->string('imap.host'),
+                    $settings->int('imap.port'),
+                    $settings->string('imap.username'),
+                    is_string($password) ? $password : '',
+                    $settings->string('imap.mailbox'),
+                    $settings->string('imap.encryption'),
+                );
             }
-
-            $settings = $c->get(SettingsService::class);
-            $password = $settings->get('imap.password');
-
-            return new ImapClient(
-                $settings->string('imap.host'),
-                $settings->int('imap.port'),
-                $settings->string('imap.username'),
-                is_string($password) ? $password : '',
-                $settings->string('imap.mailbox'),
-                $settings->string('imap.encryption'),
-            );
-        });
+        );
 
         $container->set(InboundMailService::class, static fn (Container $c): InboundMailService
             => new InboundMailService(
@@ -714,8 +841,10 @@ final class Services
             ));
 
         // --- Exploitation et calendriers ----------------------------------
-        $container->set(CalendarTokenRepository::class, static fn (Container $c): CalendarTokenRepository
-            => new CalendarTokenRepository($c->get(Database::class)));
+        $container->set(
+            CalendarTokenRepository::class,
+            static fn (Container $c): CalendarTokenRepository => new CalendarTokenRepository($c->get(Database::class))
+        );
 
         $container->set(CalendarService::class, static fn (Container $c): CalendarService => new CalendarService(
             $c->get(CalendarTokenRepository::class),
@@ -726,8 +855,10 @@ final class Services
             $c->get(Formatter::class),
         ));
 
-        $container->set(TaskRepository::class, static fn (Container $c): TaskRepository
-            => new TaskRepository($c->get(Database::class)));
+        $container->set(
+            TaskRepository::class,
+            static fn (Container $c): TaskRepository => new TaskRepository($c->get(Database::class))
+        );
 
         $container->set(ChecklistService::class, static fn (Container $c): ChecklistService => new ChecklistService(
             $c->get(PaymentRepository::class),
@@ -753,17 +884,28 @@ final class Services
         ));
 
         // --- Mon séjour et liens invité ------------------------------------
-        $container->set(StayInfoRepository::class, static fn (Container $c): StayInfoRepository
-            => new StayInfoRepository($c->get(Database::class)));
+        $container->set(
+            StayInfoRepository::class,
+            static fn (Container $c): StayInfoRepository => new StayInfoRepository($c->get(Database::class))
+        );
 
-        $container->set(StaySecretRepository::class, static fn (Container $c): StaySecretRepository
-            => new StaySecretRepository($c->get(Database::class), $c->get(Encryptor::class)));
+        $container->set(
+            StaySecretRepository::class,
+            static fn (Container $c): StaySecretRepository => new StaySecretRepository(
+                $c->get(Database::class),
+                $c->get(Encryptor::class),
+            )
+        );
 
-        $container->set(GuestLinkRepository::class, static fn (Container $c): GuestLinkRepository
-            => new GuestLinkRepository($c->get(Database::class)));
+        $container->set(
+            GuestLinkRepository::class,
+            static fn (Container $c): GuestLinkRepository => new GuestLinkRepository($c->get(Database::class))
+        );
 
-        $container->set(BlockIllustrations::class, static fn (Container $c): BlockIllustrations
-            => new BlockIllustrations($c->get(MediaRepository::class)));
+        $container->set(
+            BlockIllustrations::class,
+            static fn (Container $c): BlockIllustrations => new BlockIllustrations($c->get(MediaRepository::class))
+        );
 
         $container->set(StayService::class, static fn (Container $c): StayService => new StayService(
             $c->get(StayInfoRepository::class),
@@ -777,14 +919,23 @@ final class Services
         ));
 
         // --- États des lieux et incidents -----------------------------------
-        $container->set(ZoneRepository::class, static fn (Container $c): ZoneRepository
-            => new ZoneRepository($c->get(Database::class)));
+        $container->set(
+            ZoneRepository::class,
+            static fn (Container $c): ZoneRepository => new ZoneRepository($c->get(Database::class))
+        );
 
-        $container->set(InspectionRepository::class, static fn (Container $c): InspectionRepository
-            => new InspectionRepository($c->get(Database::class), $c->get(ZoneRepository::class)));
+        $container->set(
+            InspectionRepository::class,
+            static fn (Container $c): InspectionRepository => new InspectionRepository(
+                $c->get(Database::class),
+                $c->get(ZoneRepository::class),
+            )
+        );
 
-        $container->set(IncidentRepository::class, static fn (Container $c): IncidentRepository
-            => new IncidentRepository($c->get(Database::class)));
+        $container->set(
+            IncidentRepository::class,
+            static fn (Container $c): IncidentRepository => new IncidentRepository($c->get(Database::class))
+        );
 
         $container->set(IncidentService::class, static fn (Container $c): IncidentService => new IncidentService(
             $c->get(IncidentRepository::class),
@@ -812,8 +963,12 @@ final class Services
         // --- Calendriers externes, litiges, reporting, quotas ------------------
         $container->set(IcsParser::class, static fn (): IcsParser => new IcsParser());
 
-        $container->set(ExternalCalendarRepository::class, static fn (Container $c): ExternalCalendarRepository
-            => new ExternalCalendarRepository($c->get(Database::class)));
+        $container->set(
+            ExternalCalendarRepository::class,
+            static fn (Container $c): ExternalCalendarRepository => new ExternalCalendarRepository(
+                $c->get(Database::class),
+            )
+        );
 
         $container->set(ExternalCalendarService::class, static fn (Container $c): ExternalCalendarService
             => new ExternalCalendarService(
@@ -825,8 +980,10 @@ final class Services
                 $c->get(AuditTrail::class),
             ));
 
-        $container->set(DisputeRepository::class, static fn (Container $c): DisputeRepository
-            => new DisputeRepository($c->get(Database::class)));
+        $container->set(
+            DisputeRepository::class,
+            static fn (Container $c): DisputeRepository => new DisputeRepository($c->get(Database::class))
+        );
 
         $container->set(DisputeService::class, static fn (Container $c): DisputeService => new DisputeService(
             $c->get(DisputeRepository::class),
@@ -854,27 +1011,30 @@ final class Services
         // --- Contenu local généré --------------------------------------------
         // Le modèle factice n'est activable que par variable d'environnement,
         // comme les autres fournisseurs de test : jamais depuis l'interface.
-        $container->set(LlmProvider::class, static function (Container $c): LlmProvider {
-            if ($c->get(Config::class)->string('llm.provider', '') === FakeLlmProvider::NAME) {
-                return new FakeLlmProvider();
+        $container->set(
+            LlmProvider::class,
+            static function (Container $c): LlmProvider {
+                if ($c->get(Config::class)->string('llm.provider', '') === FakeLlmProvider::NAME) {
+                    return new FakeLlmProvider();
+                }
+
+                $settings = $c->get(SettingsService::class);
+                if ($settings->string('llm.provider') !== AnthropicLlmProvider::NAME) {
+                    return new NullLlmProvider();
+                }
+
+                $key = $settings->get('llm.api_key');
+
+                return new AnthropicLlmProvider(
+                    $c->get(HttpFetcher::class),
+                    $c->get(Logger::class),
+                    is_string($key) ? $key : '',
+                    $settings->string('llm.model') === ''
+                        ? AnthropicLlmProvider::DEFAULT_MODEL
+                        : $settings->string('llm.model'),
+                );
             }
-
-            $settings = $c->get(SettingsService::class);
-            if ($settings->string('llm.provider') !== AnthropicLlmProvider::NAME) {
-                return new NullLlmProvider();
-            }
-
-            $key = $settings->get('llm.api_key');
-
-            return new AnthropicLlmProvider(
-                $c->get(HttpFetcher::class),
-                $c->get(Logger::class),
-                is_string($key) ? $key : '',
-                $settings->string('llm.model') === ''
-                    ? AnthropicLlmProvider::DEFAULT_MODEL
-                    : $settings->string('llm.model'),
-            );
-        });
+        );
 
         $container->set(PageExtractor::class, static fn (): PageExtractor => new PageExtractor());
 
@@ -883,8 +1043,10 @@ final class Services
             $c->get(Translator::class),
         ));
 
-        $container->set(LocalContentRepository::class, static fn (Container $c): LocalContentRepository
-            => new LocalContentRepository($c->get(Database::class)));
+        $container->set(
+            LocalContentRepository::class,
+            static fn (Container $c): LocalContentRepository => new LocalContentRepository($c->get(Database::class))
+        );
 
         $container->set(LocalContentService::class, static fn (Container $c): LocalContentService
             => new LocalContentService(
@@ -900,11 +1062,15 @@ final class Services
             ));
 
         // --- Textes légaux, conformité et rétention -------------------------
-        $container->set(LegalDocumentRepository::class, static fn (Container $c): LegalDocumentRepository
-            => new LegalDocumentRepository($c->get(Database::class)));
+        $container->set(
+            LegalDocumentRepository::class,
+            static fn (Container $c): LegalDocumentRepository => new LegalDocumentRepository($c->get(Database::class))
+        );
 
-        $container->set(BookingConsentRepository::class, static fn (Container $c): BookingConsentRepository
-            => new BookingConsentRepository($c->get(Database::class)));
+        $container->set(
+            BookingConsentRepository::class,
+            static fn (Container $c): BookingConsentRepository => new BookingConsentRepository($c->get(Database::class))
+        );
 
         $container->set(LegalService::class, static fn (Container $c): LegalService => new LegalService(
             $c->get(LegalDocumentRepository::class),
@@ -915,8 +1081,10 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
-        $container->set(ComplianceRepository::class, static fn (Container $c): ComplianceRepository
-            => new ComplianceRepository($c->get(Database::class)));
+        $container->set(
+            ComplianceRepository::class,
+            static fn (Container $c): ComplianceRepository => new ComplianceRepository($c->get(Database::class))
+        );
 
         $container->set(ComplianceService::class, static fn (Container $c): ComplianceService => new ComplianceService(
             $c->get(ComplianceRepository::class),
@@ -924,8 +1092,13 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
-        $container->set(PoliceRecordRepository::class, static fn (Container $c): PoliceRecordRepository
-            => new PoliceRecordRepository($c->get(Database::class), $c->get(Encryptor::class)));
+        $container->set(
+            PoliceRecordRepository::class,
+            static fn (Container $c): PoliceRecordRepository => new PoliceRecordRepository(
+                $c->get(Database::class),
+                $c->get(Encryptor::class),
+            )
+        );
 
         $container->set(PoliceRecordService::class, static fn (Container $c): PoliceRecordService
             => new PoliceRecordService(
@@ -950,11 +1123,15 @@ final class Services
             $c->get(AuditTrail::class),
         ));
 
-        $container->set(TokenRepository::class, static fn (Container $c): TokenRepository
-            => new TokenRepository($c->get(Database::class)));
+        $container->set(
+            TokenRepository::class,
+            static fn (Container $c): TokenRepository => new TokenRepository($c->get(Database::class))
+        );
 
-        $container->set(ConsentRepository::class, static fn (Container $c): ConsentRepository
-            => new ConsentRepository($c->get(Database::class)));
+        $container->set(
+            ConsentRepository::class,
+            static fn (Container $c): ConsentRepository => new ConsentRepository($c->get(Database::class))
+        );
 
         $container->set(AccountService::class, static fn (Container $c): AccountService => new AccountService(
             $c->get(UserRepository::class),
@@ -969,96 +1146,107 @@ final class Services
             $c->get(LegalService::class),
         ));
 
-        $container->set(WebAuthnCredentialRepository::class, static fn (Container $c): WebAuthnCredentialRepository
-            => new WebAuthnCredentialRepository($c->get(Database::class)));
+        $container->set(
+            WebAuthnCredentialRepository::class,
+            static fn (Container $c): WebAuthnCredentialRepository => new WebAuthnCredentialRepository(
+                $c->get(Database::class),
+            )
+        );
 
-        $container->set(WebAuthnService::class, static function (Container $c) : WebAuthnService {
-            $settings = $c->get(SettingsService::class);
-            $publicUrl = rtrim($settings->string('site.public_url'), '/');
+        $container->set(
+            WebAuthnService::class,
+            static function (Container $c) : WebAuthnService {
+                $settings = $c->get(SettingsService::class);
+                $publicUrl = rtrim($settings->string('site.public_url'), '/');
 
-            $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
-            $origin = $publicUrl;
-            $host = $publicUrl === '' ? '' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? '');
+                $context = $c->has(RequestContext::class) ? $c->get(RequestContext::class) : null;
+                $origin = $publicUrl;
+                $host = $publicUrl === '' ? '' : (string) (parse_url($publicUrl, PHP_URL_HOST) ?? '');
 
-            if ($context instanceof RequestContext) {
-                // En l'absence d'URL publique configurée, l'origine effective de
-                // la requête fait foi : WebAuthn exige une correspondance exacte.
-                $requestOrigin = ($context->request->isSecure() ? 'https://' : 'http://') . $context->request->host();
-                if ($origin === '') {
-                    $origin = $requestOrigin;
+                if ($context instanceof RequestContext) {
+                    // En l'absence d'URL publique configurée, l'origine effective de
+                    // la requête fait foi : WebAuthn exige une correspondance exacte.
+                    $scheme = $context->request->isSecure() ? 'https://' : 'http://';
+                    $requestOrigin = $scheme . $context->request->host();
+                    if ($origin === '') {
+                        $origin = $requestOrigin;
+                    }
+                    if ($host === '') {
+                        $host = (string) (parse_url($requestOrigin, PHP_URL_HOST) ?? 'localhost');
+                    }
                 }
-                if ($host === '') {
-                    $host = (string) (parse_url($requestOrigin, PHP_URL_HOST) ?? 'localhost');
+
+                return new WebAuthnService(
+                    $c->get(WebAuthnCredentialRepository::class),
+                    $c->get(Session::class),
+                    $host === '' ? 'localhost' : $host,
+                    $settings->string('property.name') !== '' ? $settings->string('property.name') : 'SecondStay',
+                    $origin === '' ? 'http://localhost' : $origin,
+                    $c->get(AuditTrail::class),
+                );
+            }
+        );
+
+        $container->set(
+            DiagnosticRunner::class,
+            static function (Container $c) use ($appVersion): DiagnosticRunner {
+                $database = self::optionalDatabase($c);
+                $settings = null;
+                if ($database !== null) {
+                    try {
+                        $settings = $c->get(SettingsService::class);
+                    } catch (Throwable) {
+                        $settings = null;
+                    }
                 }
-            }
 
-            return new WebAuthnService(
-                $c->get(WebAuthnCredentialRepository::class),
-                $c->get(Session::class),
-                $host === '' ? 'localhost' : $host,
-                $settings->string('property.name') !== '' ? $settings->string('property.name') : 'SecondStay',
-                $origin === '' ? 'http://localhost' : $origin,
-                $c->get(AuditTrail::class),
-            );
-        });
+                $runner = new DiagnosticRunner(
+                    $c->get(Paths::class),
+                    $database,
+                    $settings,
+                    $c->get(MaintenanceMode::class),
+                    $appVersion,
+                );
 
-        $container->set(DiagnosticRunner::class, static function (Container $c) use ($appVersion): DiagnosticRunner {
-            $database = self::optionalDatabase($c);
-            $settings = null;
-            if ($database !== null) {
-                try {
-                    $settings = $c->get(SettingsService::class);
-                } catch (Throwable) {
-                    $settings = null;
+                if ($database !== null && $settings !== null) {
+                    // La sonde SMTP n'est déclenchée que sur demande explicite :
+                    // afficher la page ne doit pas ouvrir de connexion sortante.
+                    $probe = $c->has(RequestContext::class)
+                        && $c->get(RequestContext::class)->request->query('probe') === 'smtp';
+
+                    $runner->register(new NotificationDiagnostics(
+                        $settings,
+                        $c->get(MailService::class),
+                        $c->get(MailDnsChecker::class),
+                        $c->get(PushProvider::class),
+                        $c->get(PushSubscriptionRepository::class),
+                        $probe,
+                    ));
+
+                    // Paiement, IA, cron, sauvegarde et mise à jour : tous ces
+                    // contrôles se lisent localement, sans un seul appel sortant.
+                    $runner->register(new OperationsDiagnostics(
+                        $settings,
+                        $c->get(PaymentProvider::class),
+                        $c->get(LlmProvider::class),
+                        $c->get(TaskStateRepository::class),
+                        $c->get(BackupService::class),
+                        $c->get(UpdateService::class),
+                    ));
+
+                    // Comme la sonde SMTP, la connexion IMAP n'est ouverte que
+                    // sur demande explicite.
+                    $runner->register(new MailboxDiagnostics(
+                        $settings,
+                        $c->get(ImapProvider::class),
+                        $c->has(RequestContext::class)
+                            && $c->get(RequestContext::class)->request->query('probe') === 'imap',
+                    ));
                 }
+
+                return $runner;
             }
-
-            $runner = new DiagnosticRunner(
-                $c->get(Paths::class),
-                $database,
-                $settings,
-                $c->get(MaintenanceMode::class),
-                $appVersion,
-            );
-
-            if ($database !== null && $settings !== null) {
-                // La sonde SMTP n'est déclenchée que sur demande explicite :
-                // afficher la page ne doit pas ouvrir de connexion sortante.
-                $probe = $c->has(RequestContext::class)
-                    && $c->get(RequestContext::class)->request->query('probe') === 'smtp';
-
-                $runner->register(new NotificationDiagnostics(
-                    $settings,
-                    $c->get(MailService::class),
-                    $c->get(MailDnsChecker::class),
-                    $c->get(PushProvider::class),
-                    $c->get(PushSubscriptionRepository::class),
-                    $probe,
-                ));
-
-                // Paiement, IA, cron, sauvegarde et mise à jour : tous ces
-                // contrôles se lisent localement, sans un seul appel sortant.
-                $runner->register(new OperationsDiagnostics(
-                    $settings,
-                    $c->get(PaymentProvider::class),
-                    $c->get(LlmProvider::class),
-                    $c->get(TaskStateRepository::class),
-                    $c->get(BackupService::class),
-                    $c->get(UpdateService::class),
-                ));
-
-                // Comme la sonde SMTP, la connexion IMAP n'est ouverte que
-                // sur demande explicite.
-                $runner->register(new MailboxDiagnostics(
-                    $settings,
-                    $c->get(ImapProvider::class),
-                    $c->has(RequestContext::class)
-                        && $c->get(RequestContext::class)->request->query('probe') === 'imap',
-                ));
-            }
-
-            return $runner;
-        });
+        );
     }
 
     /**

@@ -47,7 +47,11 @@ final class BlockIllustrations
 
         $illustrations = [];
         foreach ($blocks as $block) {
-            $entry = $this->describe($block, $locale, $block->mediaId === null ? null : ($items[$block->mediaId] ?? null));
+            $entry = $this->describe(
+                $block,
+                $locale,
+                $block->mediaId === null ? null : ($items[$block->mediaId] ?? null),
+            );
             if ($entry !== null) {
                 $illustrations[$block->code] = $entry;
             }

@@ -72,8 +72,10 @@ final class Installer
 
         return match (true) {
             str_contains($exception->getMessage(), 'Unknown database') => 'install.database.error.unknown_database',
-            $code === '1045' || str_contains($exception->getMessage(), 'Access denied') => 'install.database.error.access_denied',
-            str_contains($exception->getMessage(), 'getaddrinfo') || $code === '2002' => 'install.database.error.host_unreachable',
+            $code === '1045' || str_contains($exception->getMessage(), 'Access denied')
+                => 'install.database.error.access_denied',
+            str_contains($exception->getMessage(), 'getaddrinfo') || $code === '2002'
+                => 'install.database.error.host_unreachable',
             default => 'install.database.error.generic',
         };
     }

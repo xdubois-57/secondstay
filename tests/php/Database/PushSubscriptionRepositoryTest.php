@@ -7,7 +7,7 @@ namespace SecondStay\Tests\Database;
 use SecondStay\Auth\Role;
 use SecondStay\Auth\UserRepository;
 use SecondStay\Auth\UserStatus;
-use SecondStay\Push\Base64Url;
+use SecondStay\Push\UrlSafeEncoding;
 use SecondStay\Push\PushSubscription;
 use SecondStay\Push\PushSubscriptionRepository;
 use SecondStay\Push\Vapid;
@@ -54,7 +54,7 @@ final class PushSubscriptionRepositoryTest extends DatabaseTestCase
         return new PushSubscription(
             $endpoint,
             Vapid::generateKeyPair()['public'],
-            Base64Url::encode(random_bytes(16)),
+            UrlSafeEncoding::encode(random_bytes(16)),
             $userId === 0 ? $this->userId : $userId,
             'fr',
         );
@@ -219,7 +219,7 @@ final class PushSubscriptionRepositoryTest extends DatabaseTestCase
         $header = $manager->vapid()->authorizationHeader('https://push.example.test/s/1');
         [$token] = explode(', k=', substr($header['authorization'], strlen('vapid t=')));
         /** @var array{sub: string} $claims */
-        $claims = json_decode(Base64Url::decode(explode('.', $token)[1]), true);
+        $claims = json_decode(UrlSafeEncoding::decode(explode('.', $token)[1]), true);
 
         self::assertSame('mailto:proprietaire@example.test', $claims['sub']);
     }

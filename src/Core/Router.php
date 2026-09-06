@@ -8,7 +8,11 @@ use SecondStay\Core\Exception\NotFoundException;
 
 final class Router
 {
-    /** @var list<array{method: string, pattern: string, regex: string, handler: array{0: class-string, 1: string}, name: string, localised: bool, access: Access}> */
+    /**
+     * @var list<array{method: string, pattern: string, regex: string,
+     *     handler: array{0: class-string, 1: string}, name: string,
+     *     localised: bool, access: Access}>
+     */
     private array $routes = [];
 
     /** @var array<string, array{pattern: string, localised: bool}> */
@@ -170,7 +174,9 @@ final class Router
     }
 
     /**
-     * @return list<array{method: string, pattern: string, name: string, localised: bool, access: Access, handler: array{0: class-string, 1: string}}>
+     * @return list<array{method: string, pattern: string, name: string,
+     *     localised: bool, access: Access,
+     *     handler: array{0: class-string, 1: string}}>
      */
     public function routes(): array
     {

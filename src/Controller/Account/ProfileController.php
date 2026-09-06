@@ -254,7 +254,9 @@ final class ProfileController extends AbstractController
             'passkeys_enabled' => $this->passkeysUsable(),
             'consents' => $this->container->get(ConsentRepository::class)->forUser($user->id),
             'bookings' => $this->container->get(BookingRepository::class)->forUser($user->id),
-            'notification_preferences' => $this->container->get(NotificationPreferenceRepository::class)->forUser($user->id),
+            'notification_preferences' => $this->container
+                ->get(NotificationPreferenceRepository::class)
+                ->forUser($user->id),
             'push_enabled' => $this->container->get(NotificationService::class)->isPushEnabled(),
             'push_devices' => count($this->container->get(PushSubscriptionRepository::class)->forUser($user->id)),
             'errors' => $errors,

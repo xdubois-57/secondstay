@@ -78,7 +78,10 @@ final class PasskeyController extends AbstractController
     {
         $this->assertEnabled();
 
-        $limit = $this->container->get(RateLimiter::class)->hit('passkey:ip:' . $context->request->ip(), self::MAX_ATTEMPTS);
+        $limit = $this->container->get(
+            RateLimiter::class)->hit('passkey:ip:' . $context->request->ip(),
+            self::MAX_ATTEMPTS,
+        );
         if (!$limit['allowed']) {
             return Response::json(['ok' => false, 'error' => $this->trans('auth.login.rate_limited')], 429);
         }

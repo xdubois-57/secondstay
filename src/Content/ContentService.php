@@ -202,7 +202,15 @@ final class ContentService
             'is_system' => 0,
         ]);
 
-        $this->audit?->record('content.page_created', 'content_page', (string) $id, null, ['slug' => $slug], $actorId, $actorLabel ?? 'system');
+        $this->audit?->record(
+            'content.page_created',
+            'content_page',
+            (string) $id,
+            null,
+            ['slug' => $slug],
+            $actorId,
+            $actorLabel ?? 'system',
+        );
 
         return $id;
     }
@@ -271,7 +279,12 @@ final class ContentService
      *
      * @param array<string, array<string, string>> $translations locale => champs
      */
-    public function saveTranslations(int $pageId, array $translations, ?string $actorLabel = null, ?int $actorId = null): void
+    public function saveTranslations(
+        int $pageId,
+        array $translations,
+        ?string $actorLabel = null,
+        ?int $actorId = null
+    ): void
     {
         foreach ($translations as $locale => $values) {
             if (!Locales::isSupported($locale)) {
@@ -310,7 +323,15 @@ final class ContentService
         }
 
         $this->repository->delete($id);
-        $this->audit?->record('content.page_deleted', 'content_page', (string) $id, ['slug' => $page->slug], null, $actorId, $actorLabel ?? 'system');
+        $this->audit?->record(
+            'content.page_deleted',
+            'content_page',
+            (string) $id,
+            ['slug' => $page->slug],
+            null,
+            $actorId,
+            $actorLabel ?? 'system',
+        );
     }
 
     /**

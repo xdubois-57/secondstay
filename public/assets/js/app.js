@@ -2,16 +2,16 @@
  * SecondStay — point d'entrée client (module ES, aucune étape de build).
  */
 import { applyTheme, nextTheme, readStoredTheme, storeTheme } from './modules/theme.js';
-import { asInput, queryElement } from './modules/dom.js';
+import { asInput, asProgress, queryElement } from './modules/dom.js';
 import { focusFirstInvalid } from './modules/forms.js';
-import { evaluatePassword, levelClass } from './modules/password.js';
+import { evaluatePassword } from './modules/password.js';
 import { initCalendar } from './modules/calendar.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
 import { initPasskeyRegistration, initPasskeySignIn } from './modules/passkey.js';
 import { initPushControls, registerServiceWorker } from './modules/push.js';
 
 function prefersDark() {
-    return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
 }
 
 function initTheme() {
@@ -22,11 +22,11 @@ function initTheme() {
     const toggle = document.querySelector('[data-theme-toggle]');
     if (toggle) {
         toggle.addEventListener('click', () => {
-            mode = nextTheme(root.getAttribute('data-theme-mode') || 'auto');
+            mode = nextTheme(root.dataset.themeMode || 'auto');
             storeTheme(window.localStorage, mode);
             applyTheme(root, mode, prefersDark());
             const label = queryElement(toggle, '[data-theme-label]');
-            if (label && label.dataset[mode]) {
+            if (label?.dataset[mode]) {
                 label.textContent = label.dataset[mode];
             }
         });
@@ -36,7 +36,7 @@ function initTheme() {
         const query = window.matchMedia('(prefers-color-scheme: dark)');
         if (query.addEventListener) {
             query.addEventListener('change', () => {
-                if ((root.getAttribute('data-theme-mode') || 'auto') === 'auto') {
+                if ((root.dataset.themeMode || 'auto') === 'auto') {
                     applyTheme(root, 'auto', prefersDark());
                 }
             });
@@ -52,15 +52,15 @@ function initPasswordStrength() {
         if (!bar) {
             return;
         }
-        const progress = bar.parentElement;
+        const meter = asProgress(bar);
         const update = () => {
             const result = evaluatePassword(input.value);
-            bar.style.width = result.score + '%';
-            bar.className = 'progress-bar ' + levelClass(result.level);
-            bar.dataset.level = result.level;
-            if (progress) {
-                progress.setAttribute('aria-valuenow', String(result.score));
-            }
+            // `<progress>` porte lui-même sa valeur et son nom accessible :
+            // il n'y a plus ni largeur à calculer ni `aria-valuenow` à tenir
+            // à jour. La couleur suit `data-level` depuis la feuille de
+            // style, là où la présentation a sa place.
+            meter.value = result.score;
+            meter.dataset.level = result.level;
         };
         input.addEventListener('input', update);
         update();
@@ -88,5 +88,5 @@ ready(() => {
     initPushControls(document, window);
     // Le service worker apporte le cache hors ligne et la réception du push.
     registerServiceWorker(window);
-    document.documentElement.setAttribute('data-js-ready', 'true');
+    document.documentElement.dataset.jsReady = 'true';
 });

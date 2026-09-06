@@ -15,11 +15,11 @@ export function base64UrlToBytes(value) {
     if (!BASE64URL.test(input)) {
         throw new Error('invalid base64url');
     }
-    const padded = input.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((input.length + 3) % 4);
+    const padded = input.replaceAll('-', '+').replaceAll('_', '/') + '==='.slice((input.length + 3) % 4);
     const binary = atob(padded);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
+        bytes[i] = binary.codePointAt(i);
     }
     return bytes;
 }
@@ -27,19 +27,20 @@ export function base64UrlToBytes(value) {
 export function bytesToBase64Url(buffer) {
     const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
     let binary = '';
-    for (let i = 0; i < bytes.length; i += 1) {
-        binary += String.fromCharCode(bytes[i]);
+    for (const byte of bytes) {
+        binary += String.fromCodePoint(byte);
     }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // `={1,3}$` plutôt que `=+$` : le remplissage base64 ne dépasse jamais
+    // trois signes, et un quantificateur borné retire le retour arrière que
+    // `+` autorise sur une chaîne qui n'en contiendrait que.
+    return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/={1,3}$/, '');
 }
 
 export function isSupported(scope) {
     const target = scope || (typeof window === 'undefined' ? {} : window);
     return Boolean(
         target.PublicKeyCredential
-        && target.navigator
-        && target.navigator.credentials
-        && typeof target.navigator.credentials.create === 'function'
+        && typeof target.navigator?.credentials?.create === 'function'
     );
 }
 
@@ -185,7 +186,7 @@ export function initPasskeyRegistration(root, scope) {
             status(feedback, button.dataset.successLabel || '', 'success');
             target.location.reload();
         } catch (error) {
-            status(feedback, error && error.message ? error.message : String(error), 'error');
+            status(feedback, error?.message ? error.message : String(error), 'error');
             button.disabled = false;
         }
     });
@@ -234,7 +235,7 @@ export function initPasskeySignIn(root, scope) {
             }
             target.location.assign(result.body.redirect);
         } catch (error) {
-            status(feedback, error && error.message ? error.message : String(error), 'error');
+            status(feedback, error?.message ? error.message : String(error), 'error');
             button.disabled = false;
         }
     });

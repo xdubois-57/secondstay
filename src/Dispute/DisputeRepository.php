@@ -28,13 +28,16 @@ final class DisputeRepository
         $now = gmdate('Y-m-d H:i:s');
 
         try {
-            return $this->database->insert('dispute', $data + [
-                'booking_id' => $bookingId,
-                'kind' => $kind,
-                'status' => DisputeStatus::Open->value,
-                'opened_at' => $now,
-                'updated_at' => $now,
-            ]);
+            return $this->database->insert(
+                'dispute',
+                $data + [
+                    'booking_id' => $bookingId,
+                    'kind' => $kind,
+                    'status' => DisputeStatus::Open->value,
+                    'opened_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
         } catch (PDOException $exception) {
             if ($exception->getCode() !== self::INTEGRITY_VIOLATION) {
                 throw $exception;

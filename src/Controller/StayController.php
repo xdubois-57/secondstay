@@ -137,31 +137,36 @@ final class StayController extends AbstractController
     {
         $token = is_string($extra['guest_token'] ?? null) ? $extra['guest_token'] : '';
 
-        return $this->render('stay/show.html.twig', $extra + [
-            // L'état des lieux demande un compte : un invité n'y a pas accès,
-            // et le propriétaire peut préférer le remplir lui-même.
-            'inspection_enabled' => !$view->isGuest && $this->settings()->bool('inspection.guest_enabled'),
-            // Activités locales : filtrées sur les dates exactes du séjour, et
-            // visibles aussi d'un invité — ce sont des informations pratiques,
-            // pas des données de réservation (SPECIFICATIONS.md §58).
-            'activities' => $this->container->get(LocalContentService::class)
-                ->activitiesFor($view->booking, $view->locale),
-            'meta_title' => $this->trans('stay.title'),
-            'stay' => $view,
-            // Les illustrations sont résolues ici, une fois : un gabarit ne
-            // va pas chercher un média en base.
-            'illustrations' => $this->container->get(BlockIllustrations::class)
-                ->forBlocks($view->visibleBlocks(), $view->locale),
-            'booking' => $view->booking,
-            'guest_url' => $token === '' ? '' : $this->guestUrl($context, $token),
-            // Le QR est rendu en ligne plutôt que servi par une seconde
-            // requête : le jeton n'apparaît ainsi dans aucune URL, et le
-            // navigateur n'a rien de plus à demander (SPECIFICATIONS.md §47).
-            'guest_qr' => $token === '' ? '' : QrCode::toSvg($this->guestUrl($context, $token), 4, 2),
-            // La page hors ligne ne doit jamais être indexée : elle porte des
-            // informations propres à un séjour.
-            'meta_robots' => 'noindex, nofollow',
-        ]);
+        return $this->render(
+            'stay/show.html.twig',
+            $extra + [
+                // L'état des lieux demande un compte : un invité n'y a pas accès,
+                // et le propriétaire peut préférer le remplir lui-même.
+                'inspection_enabled' => !$view->isGuest && $this->settings()->bool('inspection.guest_enabled'),
+                // Activités locales : filtrées sur les dates exactes du séjour, et
+                // visibles aussi d'un invité — ce sont des informations pratiques,
+                // pas des données de réservation (SPECIFICATIONS.md §58).
+                'activities' => $this->container->get(LocalContentService::class)
+                    ->activitiesFor($view->booking, $view->locale),
+                'meta_title' => $this->trans('stay.title'),
+                'stay' => $view,
+                // Les illustrations sont résolues ici, une fois : un gabarit ne
+                // va pas chercher un média en base.
+                'illustrations' => $this->container->get(BlockIllustrations::class)
+                    ->forBlocks($view->visibleBlocks(), $view->locale),
+                'booking' => $view->booking,
+                'guest_url' => $token === '' ? '' : $this->guestUrl($context, $token),
+                // Le QR est rendu en ligne plutôt que servi par une seconde
+                // requête : le jeton n'apparaît ainsi dans aucune URL, et le
+                // navigateur n'a rien de plus à demander (SPECIFICATIONS.md §47).
+                'guest_qr' => $token === ''
+                    ? ''
+                    : QrCode::toSvg($this->guestUrl($context, $token), 4, 2, $this->trans('stay.guest.qr_alt')),
+                // La page hors ligne ne doit jamais être indexée : elle porte des
+                // informations propres à un séjour.
+                'meta_robots' => 'noindex, nofollow',
+            ]
+        );
     }
 
     private function guestUrl(RequestContext $context, string $token): string

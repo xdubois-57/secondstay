@@ -123,7 +123,12 @@ final class DiagnosticRunner
     {
         $results = [];
 
-        foreach (['media', 'documents', 'inspections', 'mail-attachments', 'backups', 'logs', 'cache', 'temp'] as $directory) {
+        $directories = [
+            'media', 'documents', 'inspections', 'mail-attachments',
+            'backups', 'logs', 'cache', 'temp',
+        ];
+
+        foreach ($directories as $directory) {
             $path = $this->paths->storage($directory);
             $writable = is_dir($path) && is_writable($path);
             $results[] = new DiagnosticResult(

@@ -61,7 +61,10 @@ final class InboundMailService
     public function synchronise(int $limit = self::BATCH): array
     {
         if (!$this->provider->isConfigured()) {
-            return ['ok' => false, 'imported' => 0, 'linked' => 0, 'documents' => 0, 'error' => 'mailbox.error.not_configured'];
+            return [
+                'ok' => false, 'imported' => 0, 'linked' => 0, 'documents' => 0,
+                'error' => 'mailbox.error.not_configured',
+            ];
         }
 
         $mailbox = $this->provider->mailbox();
@@ -72,7 +75,10 @@ final class InboundMailService
         } catch (\RuntimeException $exception) {
             $this->logger->error('imap', 'Synchronisation impossible', ['error' => $exception->getMessage()]);
 
-            return ['ok' => false, 'imported' => 0, 'linked' => 0, 'documents' => 0, 'error' => $exception->getMessage()];
+            return [
+                'ok' => false, 'imported' => 0, 'linked' => 0, 'documents' => 0,
+                'error' => $exception->getMessage(),
+            ];
         }
 
         $imported = 0;
@@ -337,13 +343,23 @@ final class InboundMailService
     {
         $haystack = mb_strtolower($filename . ' ' . $subject);
 
-        foreach (['contrat', 'contract', 'overeenkomst', 'vertrag', 'signe', 'signed', 'getekend', 'unterschrieb'] as $needle) {
+        $needles = [
+            'contrat', 'contract', 'overeenkomst', 'vertrag',
+            'signe', 'signed', 'getekend', 'unterschrieb',
+        ];
+
+        foreach ($needles as $needle) {
             if (str_contains($haystack, $needle)) {
                 return DocumentKind::SignedContract;
             }
         }
 
-        foreach (['facture', 'invoice', 'factuur', 'rechnung', 'recu', 'reçu', 'receipt', 'kwitantie', 'quittung'] as $needle) {
+        $needles = [
+            'facture', 'invoice', 'factuur', 'rechnung', 'recu',
+            'reçu', 'receipt', 'kwitantie', 'quittung',
+        ];
+
+        foreach ($needles as $needle) {
             if (str_contains($haystack, $needle)) {
                 return DocumentKind::Receipt;
             }

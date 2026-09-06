@@ -105,8 +105,16 @@ final class NotificationService
                 $context + [
                     'first_name' => $user->firstName,
                     'event' => $event->value,
-                    'heading' => $this->translator->trans($event->titleKey(), $this->parameters($context, $user), $locale),
-                    'message' => $this->translator->trans($event->mailBodyKey(), $this->parameters($context, $user), $locale),
+                    'heading' => $this->translator->trans(
+                        $event->titleKey(),
+                        $this->parameters($context, $user),
+                        $locale,
+                    ),
+                    'message' => $this->translator->trans(
+                        $event->mailBodyKey(),
+                        $this->parameters($context, $user),
+                        $locale,
+                    ),
                     'action_label' => $this->translator->trans($event->actionKey(), [], $locale),
                 ],
                 $user->id,

@@ -221,7 +221,12 @@ final class PaymentController extends AbstractController
     /**
      * @param array<string, string> $parameters
      */
-    private function absoluteUrl(RequestContext $context, string $route, array $parameters = [], bool $localised = true): string
+    private function absoluteUrl(
+        RequestContext $context,
+        string $route,
+        array $parameters = [],
+        bool $localised = true
+    ): string
     {
         $base = rtrim($this->settings()->string('site.public_url'), '/');
         if ($base === '') {

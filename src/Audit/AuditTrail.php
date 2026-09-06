@@ -50,8 +50,14 @@ final class AuditTrail
             'action' => mb_substr($action, 0, 96),
             'entity_type' => mb_substr($entityType, 0, 64),
             'entity_id' => mb_substr($entityId, 0, 64),
-            'before_state' => $before === null ? null : json_encode(LogSanitizer::sanitize($before), JSON_UNESCAPED_UNICODE),
-            'after_state' => $after === null ? null : json_encode(LogSanitizer::sanitize($after), JSON_UNESCAPED_UNICODE),
+            'before_state' => $before === null ? null : json_encode(
+                LogSanitizer::sanitize($before),
+                JSON_UNESCAPED_UNICODE,
+            ),
+            'after_state' => $after === null ? null : json_encode(
+                LogSanitizer::sanitize($after),
+                JSON_UNESCAPED_UNICODE,
+            ),
             'ip' => $this->ip,
             'correlation_id' => $this->correlationId,
         ]);

@@ -38,11 +38,14 @@ final class FixtureHttpFetcher implements HttpFetcher
             return;
         }
 
-        file_put_contents($this->pathFor($url), (string) json_encode([
-            'url' => $url,
-            'status' => $status,
-            'body' => $body,
-        ], JSON_UNESCAPED_UNICODE));
+        file_put_contents(
+            $this->pathFor($url),
+            (string) json_encode([
+                'url' => $url,
+                'status' => $status,
+                'body' => $body,
+            ], JSON_UNESCAPED_UNICODE)
+        );
     }
 
     public function purge(): void

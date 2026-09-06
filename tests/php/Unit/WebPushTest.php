@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SecondStay\Http\FakeHttpFetcher;
 use SecondStay\Http\UrlGuard;
-use SecondStay\Push\Base64Url;
+use SecondStay\Push\UrlSafeEncoding;
 use SecondStay\Push\FakePushProvider;
 use SecondStay\Push\PushEncryption;
 use SecondStay\Push\PushMessage;
@@ -56,10 +56,10 @@ final class WebPushTest extends TestCase
         // Chaque reste modulo 4 est couvert, y compris la chaîne vide.
         foreach ([0, 1, 2, 3, 4, 5, 6, 7] as $length) {
             $binary = $length === 0 ? '' : random_bytes($length);
-            $encoded = Base64Url::encode($binary);
+            $encoded = UrlSafeEncoding::encode($binary);
 
             self::assertMatchesRegularExpression('/^[A-Za-z0-9_-]*$/', $encoded);
-            self::assertSame($binary, Base64Url::decode($encoded));
+            self::assertSame($binary, UrlSafeEncoding::decode($encoded));
         }
     }
 
@@ -67,7 +67,7 @@ final class WebPushTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        Base64Url::decode('abc+def/ghi=');
+        UrlSafeEncoding::decode('abc+def/ghi=');
     }
 
     // --- VAPID -------------------------------------------------------------
@@ -76,10 +76,10 @@ final class WebPushTest extends TestCase
     {
         $pair = Vapid::generateKeyPair();
 
-        $public = Base64Url::decode($pair['public']);
+        $public = UrlSafeEncoding::decode($pair['public']);
         self::assertSame(65, strlen($public));
         self::assertSame("\x04", $public[0]);
-        self::assertSame(32, strlen(Base64Url::decode($pair['private'])));
+        self::assertSame(32, strlen(UrlSafeEncoding::decode($pair['private'])));
 
         // Deux générations ne produisent jamais la même clé.
         self::assertNotSame($pair['public'], Vapid::generateKeyPair()['public']);
@@ -93,7 +93,7 @@ final class WebPushTest extends TestCase
         self::assertFalse((new Vapid('', $pair['private']))->isUsable());
         self::assertFalse((new Vapid($pair['public'], ''))->isUsable());
         self::assertFalse((new Vapid('pas-du-base64url!', $pair['private']))->isUsable());
-        self::assertFalse((new Vapid(Base64Url::encode('trop court'), $pair['private']))->isUsable());
+        self::assertFalse((new Vapid(UrlSafeEncoding::encode('trop court'), $pair['private']))->isUsable());
     }
 
     /**
@@ -136,23 +136,23 @@ final class WebPushTest extends TestCase
         [$encodedHeader, $encodedClaims, $encodedSignature] = explode('.', $token);
 
         /** @var array{typ: string, alg: string} $jwtHeader */
-        $jwtHeader = json_decode(Base64Url::decode($encodedHeader), true);
+        $jwtHeader = json_decode(UrlSafeEncoding::decode($encodedHeader), true);
         self::assertSame(['typ' => 'JWT', 'alg' => 'ES256'], $jwtHeader);
 
         /** @var array{aud: string, exp: int, sub: string} $claims */
-        $claims = json_decode(Base64Url::decode($encodedClaims), true);
+        $claims = json_decode(UrlSafeEncoding::decode($encodedClaims), true);
         self::assertSame('https://push.example.test', $claims['aud']);
         self::assertSame(1_770_000_000 + Vapid::TOKEN_LIFETIME, $claims['exp']);
         self::assertSame('mailto:proprietaire@example.test', $claims['sub']);
 
         // La signature brute r||s doit être vérifiable par la clé publique.
-        $signature = Base64Url::decode($encodedSignature);
+        $signature = UrlSafeEncoding::decode($encodedSignature);
         self::assertSame(64, strlen($signature));
 
         $verified = openssl_verify(
             $encodedHeader . '.' . $encodedClaims,
             self::rawSignatureToDer($signature),
-            PushEncryption::publicKeyPem(Base64Url::decode($pair['public'])),
+            PushEncryption::publicKeyPem(UrlSafeEncoding::decode($pair['public'])),
             OPENSSL_ALGO_SHA256
         );
 
@@ -167,7 +167,7 @@ final class WebPushTest extends TestCase
             $header = $vapid->authorizationHeader(self::ENDPOINT);
             [$token] = explode(', k=', substr($header['authorization'], strlen('vapid t=')));
             /** @var array{sub: string} $decoded */
-            $decoded = json_decode(Base64Url::decode(explode('.', $token)[1]), true);
+            $decoded = json_decode(UrlSafeEncoding::decode(explode('.', $token)[1]), true);
 
             return $decoded;
         };
@@ -195,7 +195,7 @@ final class WebPushTest extends TestCase
 
         $body = (new PushEncryption())->encrypt(
             $payload,
-            Base64Url::decode($browser['public']),
+            UrlSafeEncoding::decode($browser['public']),
             $authSecret,
         );
 
@@ -214,7 +214,7 @@ final class WebPushTest extends TestCase
 
         $body = (new PushEncryption())->encrypt(
             'x',
-            Base64Url::decode($browser['public']),
+            UrlSafeEncoding::decode($browser['public']),
             random_bytes(16),
             str_repeat("\x01", 16),
         );
@@ -233,8 +233,8 @@ final class WebPushTest extends TestCase
         $authSecret = random_bytes(16);
         $encryption = new PushEncryption();
 
-        $first = $encryption->encrypt('même message', Base64Url::decode($browser['public']), $authSecret);
-        $second = $encryption->encrypt('même message', Base64Url::decode($browser['public']), $authSecret);
+        $first = $encryption->encrypt('même message', UrlSafeEncoding::decode($browser['public']), $authSecret);
+        $second = $encryption->encrypt('même message', UrlSafeEncoding::decode($browser['public']), $authSecret);
 
         self::assertNotSame($first, $second);
         self::assertNotSame(substr($first, 0, 16), substr($second, 0, 16));
@@ -248,7 +248,7 @@ final class WebPushTest extends TestCase
     public function testMalformedSubscriptionKeysAreRefused(): void
     {
         $encryption = new PushEncryption();
-        $valid = Base64Url::decode(Vapid::generateKeyPair()['public']);
+        $valid = UrlSafeEncoding::decode(Vapid::generateKeyPair()['public']);
 
         foreach ([
             ['x', random_bytes(16)],
@@ -273,7 +273,7 @@ final class WebPushTest extends TestCase
 
         (new PushEncryption())->encrypt(
             str_repeat('a', PushEncryption::RECORD_SIZE),
-            Base64Url::decode($browser['public']),
+            UrlSafeEncoding::decode($browser['public']),
             random_bytes(16),
         );
     }
@@ -292,7 +292,7 @@ final class WebPushTest extends TestCase
         self::assertTrue(PushSubscription::isValidEndpoint(self::ENDPOINT));
 
         $this->expectException(InvalidArgumentException::class);
-        new PushSubscription('http://push.example.test/a', $pair['public'], Base64Url::encode(random_bytes(16)));
+        new PushSubscription('http://push.example.test/a', $pair['public'], UrlSafeEncoding::encode(random_bytes(16)));
     }
 
     public function testSubscriptionRefusesMalformedKeys(): void
@@ -300,13 +300,13 @@ final class WebPushTest extends TestCase
         $pair = Vapid::generateKeyPair();
 
         $this->expectExceptionMessage('push.error.invalid_subscription_key');
-        new PushSubscription(self::ENDPOINT, $pair['public'], Base64Url::encode(random_bytes(8)));
+        new PushSubscription(self::ENDPOINT, $pair['public'], UrlSafeEncoding::encode(random_bytes(8)));
     }
 
     public function testSubscriptionExposesOnlyItsServiceHost(): void
     {
         $pair = Vapid::generateKeyPair();
-        $subscription = new PushSubscription(self::ENDPOINT, $pair['public'], Base64Url::encode(random_bytes(16)));
+        $subscription = new PushSubscription(self::ENDPOINT, $pair['public'], UrlSafeEncoding::encode(random_bytes(16)));
 
         self::assertSame('push.example.test', $subscription->serviceHost());
         self::assertSame(hash('sha256', self::ENDPOINT), $subscription->endpointHash());
@@ -340,7 +340,7 @@ final class WebPushTest extends TestCase
         self::assertTrue($provider->isConfigured());
 
         $result = $provider->send(
-            new PushSubscription(self::ENDPOINT, $browser['public'], Base64Url::encode($authSecret)),
+            new PushSubscription(self::ENDPOINT, $browser['public'], UrlSafeEncoding::encode($authSecret)),
             new PushMessage('Titre', 'Corps', '/fr/account', 'tag', 'fr'),
         );
 
@@ -370,7 +370,7 @@ final class WebPushTest extends TestCase
         self::assertFalse($provider->isConfigured());
 
         $result = $provider->send(
-            new PushSubscription(self::ENDPOINT, $browser['public'], Base64Url::encode(random_bytes(16))),
+            new PushSubscription(self::ENDPOINT, $browser['public'], UrlSafeEncoding::encode(random_bytes(16))),
             new PushMessage('Titre', 'Corps'),
         );
 
@@ -403,7 +403,7 @@ final class WebPushTest extends TestCase
         $http->addResponse(self::ENDPOINT, 'UnsubscribedError: gone at 10.0.0.1', $status);
 
         $result = (new WebPushProvider(new Vapid($pair['public'], $pair['private']), $http))->send(
-            new PushSubscription(self::ENDPOINT, $browser['public'], Base64Url::encode(random_bytes(16))),
+            new PushSubscription(self::ENDPOINT, $browser['public'], UrlSafeEncoding::encode(random_bytes(16))),
             new PushMessage('Titre', 'Corps'),
         );
 
@@ -420,7 +420,7 @@ final class WebPushTest extends TestCase
         $browser = Vapid::generateKeyPair();
 
         $result = (new WebPushProvider(new Vapid($pair['public'], $pair['private']), self::fetcher()))->send(
-            new PushSubscription('https://127.0.0.1/push', $browser['public'], Base64Url::encode(random_bytes(16))),
+            new PushSubscription('https://127.0.0.1/push', $browser['public'], UrlSafeEncoding::encode(random_bytes(16))),
             new PushMessage('Titre', 'Corps'),
         );
 
@@ -431,7 +431,7 @@ final class WebPushTest extends TestCase
     public function testTheFakeProviderRecordsWhatItWouldHaveSent(): void
     {
         $browser = Vapid::generateKeyPair();
-        $subscription = new PushSubscription(self::ENDPOINT, $browser['public'], Base64Url::encode(random_bytes(16)));
+        $subscription = new PushSubscription(self::ENDPOINT, $browser['public'], UrlSafeEncoding::encode(random_bytes(16)));
 
         $provider = new FakePushProvider('cle-publique-de-test');
         self::assertTrue($provider->isConfigured());
@@ -470,9 +470,9 @@ final class WebPushTest extends TestCase
         $tag = substr($rest, -16);
         $ciphertext = substr($rest, 0, -16);
 
-        $browserPublic = Base64Url::decode($browser['public']);
+        $browserPublic = UrlSafeEncoding::decode($browser['public']);
         $private = openssl_pkey_get_private(
-            Vapid::privateKeyPem(Base64Url::decode($browser['private']), $browserPublic)
+            Vapid::privateKeyPem(UrlSafeEncoding::decode($browser['private']), $browserPublic)
         );
         $peer = openssl_pkey_get_public(PushEncryption::publicKeyPem($serverPublic));
         if ($private === false || $peer === false) {

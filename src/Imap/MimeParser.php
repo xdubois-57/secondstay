@@ -228,7 +228,8 @@ final class MimeParser
 
     /**
      * @param array<string, string>                                                                   $headers
-     * @param array{text: string, html: string, attachments: list<array{filename: string, mime: string, contents: string, content_id: string}>} $collected
+     * @param array{text: string, html: string,
+     *     attachments: list<array{filename: string, mime: string, contents: string, content_id: string}>} $collected
      */
     private function walk(array $headers, string $body, array &$collected, int $depth): void
     {

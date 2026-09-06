@@ -48,7 +48,12 @@ final class MediaController extends AbstractController
             throw new NotFoundException('Fichier absent.');
         }
 
-        $response = new FileResponse($path, $item->originalFilename !== '' ? $item->originalFilename : $item->filename, $item->mimeType, true);
+        $response = new FileResponse(
+            $path,
+            $item->originalFilename !== '' ? $item->originalFilename : $item->filename,
+            $item->mimeType,
+            true,
+        );
 
         // Les médias publics sont immuables : leur nom contient un identifiant
         // aléatoire, un remplacement produit un nouveau nom.

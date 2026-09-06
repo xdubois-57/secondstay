@@ -149,7 +149,8 @@ final class AvailabilityService
      *     previous: string,
      *     next: string,
      *     first_day: string,
-     *     weeks: list<list<array{day: string, in_month: bool, state: string, price_cents: int, label: string, is_override: bool}>>
+     *     weeks: list<list<array{day: string, in_month: bool, state: string,
+     *         price_cents: int, label: string, is_override: bool}>>
      * }
      */
     public function month(string $month): array

@@ -12,11 +12,11 @@ export function base64UrlToUint8Array(value) {
         throw new Error('invalid application server key');
     }
 
-    const padded = input.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (input.length % 4)) % 4);
+    const padded = input.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - (input.length % 4)) % 4);
     const binary = atob(padded);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
+        bytes[i] = binary.codePointAt(i);
     }
 
     return bytes;
@@ -25,19 +25,20 @@ export function base64UrlToUint8Array(value) {
 export function arrayBufferToBase64Url(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = '';
-    for (let i = 0; i < bytes.length; i += 1) {
-        binary += String.fromCharCode(bytes[i]);
+    for (const byte of bytes) {
+        binary += String.fromCodePoint(byte);
     }
 
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // `={1,3}$` plutôt que `=+$` : le remplissage base64 ne dépasse jamais
+    // trois signes, et un quantificateur borné retire le retour arrière.
+    return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/={1,3}$/, '');
 }
 
 export function isSupported(scope) {
     const target = scope || (typeof window === 'undefined' ? {} : window);
 
     return Boolean(
-        target.navigator
-        && target.navigator.serviceWorker
+        target.navigator?.serviceWorker
         && target.PushManager
         && target.Notification
     );
@@ -88,9 +89,7 @@ export async function registerServiceWorker(scope) {
         return null;
     }
 
-    const base = target.document && target.document.documentElement
-        ? target.document.documentElement.getAttribute('data-base-path') || ''
-        : '';
+    const base = target.document?.documentElement?.dataset.basePath || '';
 
     try {
         return await target.navigator.serviceWorker.register(base + '/sw.js', { scope: base + '/' });
@@ -188,7 +187,7 @@ export function initPushControls(root, scope) {
                 showState(true);
             } catch (error) {
                 if (status) {
-                    status.textContent = error && error.message ? error.message : String(error);
+                    status.textContent = error?.message ? error.message : String(error);
                     status.className = 'small mt-2 mb-0 text-danger';
                 }
             } finally {
@@ -213,7 +212,7 @@ export function initPushControls(root, scope) {
                 showState(false);
             } catch (error) {
                 if (status) {
-                    status.textContent = error && error.message ? error.message : String(error);
+                    status.textContent = error?.message ? error.message : String(error);
                     status.className = 'small mt-2 mb-0 text-danger';
                 }
             } finally {

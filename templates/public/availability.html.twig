@@ -112,7 +112,7 @@
                         <dt class="col-7">{{ t('booking.quote.total') }}</dt>
                         <dd class="col-5 text-end fw-bold mb-0" data-quote-total></dd>
                     </dl>
-                    <p class="small text-body-secondary mt-3 mb-0" data-quote-errors role="status"></p>
+                    <output class="small text-body-secondary mt-3 mb-0 d-block" data-quote-errors></output>
                     <div class="d-flex gap-2 flex-wrap mt-3">
                         <form method="post" action="{{ path('booking.summary.submit') }}" data-quote-book>
                             <input type="hidden" name="_csrf" value="{{ csrf_token }}">

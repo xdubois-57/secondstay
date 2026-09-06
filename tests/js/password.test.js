@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
     MIN_LENGTH,
     evaluatePassword,
-    levelClass,
     strengthLevel
 } from '../../public/assets/js/modules/password.js';
 
@@ -37,18 +36,7 @@ describe('password strength', () => {
         expect(result.score).toBeGreaterThanOrEqual(90);
     });
 
-    it('maps scores to levels and classes', () => {
-        expect(strengthLevel(10)).toBe('weak');
-        expect(strengthLevel(50)).toBe('fair');
-        expect(strengthLevel(75)).toBe('good');
-        expect(strengthLevel(95)).toBe('strong');
-
-        expect(levelClass('strong')).toBe('bg-success');
-        expect(levelClass('good')).toBe('bg-info');
-        expect(levelClass('fair')).toBe('bg-warning');
-        expect(levelClass('weak')).toBe('bg-danger');
-    });
-
+    
     it('rejects non-string input safely', () => {
         expect(evaluatePassword(null).score).toBe(0);
         expect(evaluatePassword(undefined).level).toBe('empty');

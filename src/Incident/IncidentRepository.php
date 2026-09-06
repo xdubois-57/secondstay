@@ -34,10 +34,13 @@ final class IncidentRepository
     {
         $now = gmdate('Y-m-d H:i:s');
 
-        return $this->database->insert('incident', $data + [
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        return $this->database->insert(
+            'incident',
+            $data + [
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
     }
 
     public function find(int $id, string $locale = 'fr'): ?Incident
@@ -55,7 +58,12 @@ final class IncidentRepository
      *
      * @return list<Incident>
      */
-    public function listing(?IncidentStatus $status = null, ?int $bookingId = null, string $locale = 'fr', int $limit = 200): array
+    public function listing(
+        ?IncidentStatus $status = null,
+        ?int $bookingId = null,
+        string $locale = 'fr',
+        int $limit = 200
+    ): array
     {
         $conditions = [];
         $parameters = ['locale' => $locale];

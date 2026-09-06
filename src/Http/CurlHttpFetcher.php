@@ -190,7 +190,9 @@ final class CurlHttpFetcher implements HttpFetcher
         curl_close($curl);
 
         if ($body === false) {
-            throw new RuntimeException('Requête sortante échouée : ' . ($error !== '' ? 'erreur réseau' : 'inconnue'));
+            throw new RuntimeException(
+                'Requête sortante échouée : ' . ($error !== '' ? 'erreur réseau' : 'inconnue')
+            );
         }
 
         /** @var array<string, string> $responseHeaders */
@@ -217,15 +219,18 @@ final class CurlHttpFetcher implements HttpFetcher
             $formatted[] = $name . ': ' . $value;
         }
 
-        curl_setopt_array($curl, self::protocolRestrictionOptions() + [
-            CURLOPT_HTTPHEADER => $formatted,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => $this->timeoutSeconds,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_USERAGENT => 'SecondStay',
-        ]);
+        curl_setopt_array(
+            $curl,
+            self::protocolRestrictionOptions() + [
+                CURLOPT_HTTPHEADER => $formatted,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT => $this->timeoutSeconds,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_USERAGENT => 'SecondStay',
+            ]
+        );
 
         return $curl;
     }

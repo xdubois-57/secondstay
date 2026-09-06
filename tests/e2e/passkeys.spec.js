@@ -13,6 +13,13 @@ import { linkFrom, waitForMail } from './helpers/mailbox.js';
  */
 test.describe('clés d’accès', () => {
     test.describe.configure({ mode: 'serial' });
+    // Ce groupe n'est pas désactivé : il est **conditionné** au seul moteur
+    // capable de l'exécuter. Le protocole CDP qui installe un authentificateur
+    // virtuel WebAuthn n'existe que dans Chromium ; sous WebKit, les scénarios
+    // ne pourraient qu'échouer sur l'absence d'un matériel qu'aucun harnais ne
+    // sait simuler. Les parcours de clés d'accès sont donc couverts sur
+    // `desktop-chromium`, et rien ne les couvre ailleurs — c'est une limite du
+    // navigateur, pas un choix.
     test.skip(
         ({ browserName }) => browserName !== 'chromium',
         'L’authentificateur virtuel WebAuthn n’existe que dans Chromium.'

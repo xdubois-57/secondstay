@@ -47,7 +47,7 @@
         </div>
     </article>
 
-    <div class="ss-lightbox" data-lightbox hidden role="dialog" aria-modal="true" aria-label="{{ t('nav.gallery') }}">
+    <dialog class="ss-lightbox" data-lightbox aria-label="{{ t('nav.gallery') }}">
         <button type="button" class="ss-lightbox__close btn btn-light" data-lightbox-close
                 aria-label="{{ t('common.close') }}">&times;</button>
         <button type="button" class="ss-lightbox__nav ss-lightbox__nav--prev btn btn-light" data-lightbox-prev
@@ -58,5 +58,5 @@
         </figure>
         <button type="button" class="ss-lightbox__nav ss-lightbox__nav--next btn btn-light" data-lightbox-next
                 aria-label="{{ t('content.gallery.next') }}">&rsaquo;</button>
-    </div>
+    </dialog>
 {% endblock %}

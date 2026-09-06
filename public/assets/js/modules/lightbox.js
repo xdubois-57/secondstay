@@ -67,9 +67,19 @@ export function initGalleryLightbox(root, document) {
         image.setAttribute('src', item.src);
         image.setAttribute('alt', item.alt);
         caption.textContent = item.caption;
-        dialog.hidden = !state.open;
+
+        // `showModal()` plutôt qu'un attribut `hidden` : c'est lui qui met la
+        // boîte dans la couche supérieure, piège le focus et rend le reste de
+        // la page inerte. Les appels sont gardés parce que `showModal()` sur
+        // une boîte déjà ouverte lève, et `close()` sur une boîte fermée
+        // n'émettrait pas d'événement.
         if (state.open) {
+            if (!dialog.open) {
+                dialog.showModal();
+            }
             dialog.dataset.index = String(state.index);
+        } else if (dialog.open) {
+            dialog.close();
         }
     }
 
@@ -82,8 +92,15 @@ export function initGalleryLightbox(root, document) {
     });
 
     dialog.querySelector('[data-lightbox-close]')?.addEventListener('click', () => {
+        dialog.close();
+    });
+
+    // Un seul endroit remet l'état et le focus, quelle que soit la façon dont
+    // la boîte s'est fermée : le bouton, la touche Échap que le navigateur
+    // traite lui-même, ou un `close()` venu d'ailleurs. Les trois passent par
+    // cet événement.
+    dialog.addEventListener('close', () => {
         state = close(state);
-        dialog.hidden = true;
         triggers[state.index]?.focus();
     });
     dialog.querySelector('[data-lightbox-next]')?.addEventListener('click', () => {
@@ -96,13 +113,12 @@ export function initGalleryLightbox(root, document) {
     });
 
     document.addEventListener('keydown', (event) => {
-        if (dialog.hidden) {
+        if (!dialog.open) {
             return;
         }
-        if (event.key === 'Escape') {
-            state = close(state);
-            dialog.hidden = true;
-        } else if (event.key === 'ArrowRight') {
+        // Échap n'est plus traité ici : `<dialog>` ferme de lui-même, et
+        // l'événement `close` ci-dessus remet l'état.
+        if (event.key === 'ArrowRight') {
             state = next(state);
             render();
         } else if (event.key === 'ArrowLeft') {

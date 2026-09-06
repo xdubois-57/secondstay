@@ -122,7 +122,7 @@ final class AdminStayController extends AdminController
                 // Le QR est rendu en ligne : c'est une image à imprimer, pas
                 // une ressource à demander au serveur à chaque affichage de
                 // l'écran d'administration.
-                'qr' => $url === '' ? '' : QrCode::toSvg($url, 4, 2),
+                'qr' => $url === '' ? '' : QrCode::toSvg($url, 4, 2, $this->trans('stay.admin.qr_alt')),
                 'link_error' => $errors['link_url_' . $code] ?? null,
                 'source_error' => $errors['source_url_' . $code] ?? null,
                 'date_error' => $errors['source_checked_on_' . $code] ?? null,

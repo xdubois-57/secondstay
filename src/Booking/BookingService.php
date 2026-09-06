@@ -229,9 +229,13 @@ final class BookingService
             'status' => $target->value,
         ], $user->id, $user->email);
 
-        $this->notify($updated, $user, $target === BookingStatus::Confirmed
-            ? NotificationEvent::BookingConfirmed
-            : NotificationEvent::BookingCreated);
+        $this->notify(
+            $updated,
+            $user,
+            $target === BookingStatus::Confirmed
+                ? NotificationEvent::BookingConfirmed
+                : NotificationEvent::BookingCreated
+        );
 
         $this->audit?->record('booking.requested', 'booking', (string) $booking->id, null, [
             'reference' => $booking->reference,

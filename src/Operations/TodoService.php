@@ -67,7 +67,8 @@ final class TodoService
      * une autre grandeur : il s'affiche tel quel dans une pastille à côté du
      * libellé, et un âge ou un pourcentage s'y lirait comme une quantité.
      *
-     * @return list<array{code: string, key: string, severity: string, count: int, route: string, params: array<string, string|int>}>
+     * @return list<array{code: string, key: string, severity: string,
+     *     count: int, route: string, params: array<string, string|int>}>
      */
     public function items(?string $today = null): array
     {
@@ -176,7 +177,8 @@ final class TodoService
      * n'avoir aucune sauvegarde est une bombe à retardement, en avoir une trop
      * ancienne est une perte de données bornée.
      *
-     * @return array{code: string, key: string, severity: string, count: int, route: string, params: array<string, string|int>}|null
+     * @return array{code: string, key: string, severity: string, count: int, route: string,
+     *     params: array<string, string|int>}|null
      */
     private function backupItem(): ?array
     {
@@ -277,7 +279,8 @@ final class TodoService
     /**
      * @param array<string, string|int> $params
      *
-     * @return array{code: string, key: string, severity: string, count: int, route: string, params: array<string, string|int>}
+     * @return array{code: string, key: string, severity: string, count: int, route: string,
+     *     params: array<string, string|int>}
      */
     private function item(string $code, string $severity, int $count, string $route, array $params = []): array
     {

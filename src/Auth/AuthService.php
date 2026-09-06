@@ -208,7 +208,15 @@ final class AuthService
         }
 
         $count = $this->sessions->revokeAllForUser($user->id, Tokens::hash($this->session->id()));
-        $this->audit?->record('auth.sessions_revoked', 'user', (string) $user->id, null, ['count' => $count], $user->id, $user->email);
+        $this->audit?->record(
+            'auth.sessions_revoked',
+            'user',
+            (string) $user->id,
+            null,
+            ['count' => $count],
+            $user->id,
+            $user->email,
+        );
 
         return $count;
     }

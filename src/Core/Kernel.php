@@ -57,22 +57,31 @@ final class Kernel
         $container->instance(Config::class, $config);
         $container->instance(Paths::class, $paths);
 
-        $container->set(Translator::class, static fn (Container $c): Translator => new Translator(
-            $c->get(Paths::class)->translations(),
-            $c->get(Config::class)->string('i18n.default_locale', Locales::FALLBACK),
-            $c->get(Config::class)->string('i18n.fallback_locale', Locales::FALLBACK),
-        ));
+        $container->set(
+            Translator::class,
+            static fn (Container $c): Translator => new Translator(
+                $c->get(Paths::class)->translations(),
+                $c->get(Config::class)->string('i18n.default_locale', Locales::FALLBACK),
+                $c->get(Config::class)->string('i18n.fallback_locale', Locales::FALLBACK),
+            )
+        );
 
-        $container->set(LocaleResolver::class, static fn (Container $c): LocaleResolver => new LocaleResolver(
-            $c->get(Config::class)->string('i18n.default_locale', Locales::FALLBACK),
-            $c->get(Config::class)->string('i18n.cookie_name', 'ss_locale'),
-        ));
+        $container->set(
+            LocaleResolver::class,
+            static fn (Container $c): LocaleResolver => new LocaleResolver(
+                $c->get(Config::class)->string('i18n.default_locale', Locales::FALLBACK),
+                $c->get(Config::class)->string('i18n.cookie_name', 'ss_locale'),
+            )
+        );
 
-        $container->set(Formatter::class, static fn (Container $c): Formatter => new Formatter(
-            $c->get(Translator::class)->locale(),
-            $c->get(Config::class)->string('app.timezone', 'Europe/Paris'),
-            $c->get(Config::class)->string('app.currency', 'EUR'),
-        ));
+        $container->set(
+            Formatter::class,
+            static fn (Container $c): Formatter => new Formatter(
+                $c->get(Translator::class)->locale(),
+                $c->get(Config::class)->string('app.timezone', 'Europe/Paris'),
+                $c->get(Config::class)->string('app.currency', 'EUR'),
+            )
+        );
 
         $container->set(Router::class, static function (): Router {
             $router = new Router();
@@ -293,7 +302,11 @@ final class Kernel
      *   inaccessible et le site répond 503. Une panne ne doit jamais permettre
      *   de réinstaller une instance existante (SECURITY.md §5).
      */
-    private function installationGate(Container $container, RequestContext $context, InstallationStatus $status): ?Response
+    private function installationGate(
+        Container $container,
+        RequestContext $context,
+        InstallationStatus $status
+    ): ?Response
     {
         $isInstallRoute = str_starts_with($context->routePath, '/install');
         $isTechnical = str_starts_with($context->routePath, '/api/');

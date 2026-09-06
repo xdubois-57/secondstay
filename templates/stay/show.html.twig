@@ -144,8 +144,7 @@
                             <code class="d-block text-break mb-3" data-testid="guest-url">{{ guest_url }}</code>
                             <figure class="text-center mb-0">
                                 {# QR rendu en ligne : le jeton n'apparaît dans aucune URL. #}
-                                <div data-testid="guest-qr" role="img"
-                                     aria-label="{{ t('stay.guest.qr_alt') }}">{{ guest_qr|raw }}</div>
+                                <div data-testid="guest-qr">{{ guest_qr|raw }}</div>
                                 <figcaption class="small text-body-secondary">{{ t('stay.guest.qr') }}</figcaption>
                             </figure>
                         {% else %}

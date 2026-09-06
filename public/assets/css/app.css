@@ -98,10 +98,21 @@
     cursor: zoom-in;
 }
 
+/* `<dialog>` plutôt qu'un `div[role="dialog"]` : le navigateur fournit le
+   piège à focus, l'inertie de l'arrière-plan et la fermeture par Échap. Ce
+   qu'il apporte aussi, ce sont des styles par défaut — bordure, largeur
+   contrainte, marge automatique — qu'il faut défaire pour une visionneuse
+   plein écran. */
 .ss-lightbox {
     position: fixed;
     inset: 0;
     z-index: 1090;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    color: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -110,8 +121,14 @@
     background: rgba(0, 0, 0, .92);
 }
 
-.ss-lightbox[hidden] {
+.ss-lightbox:not([open]) {
     display: none;
+}
+
+/* Le fond sombre est peint par la boîte elle-même, qui couvre déjà la fenêtre.
+   Le voile du navigateur est neutralisé pour ne pas s'y ajouter. */
+.ss-lightbox::backdrop {
+    background: transparent;
 }
 
 .ss-lightbox__figure {
@@ -272,4 +289,98 @@
 .ss-link-muted:focus {
     color: var(--bs-emphasis-color);
     text-decoration-color: currentColor;
+}
+
+/* ---------------------------------------------------------------------------
+   Jauges natives
+
+   `<progress>` porte lui-même sa valeur, son minimum et son maximum : le
+   lecteur d'écran les annonce sans qu'aucun attribut ARIA n'ait à être tenu à
+   jour par du JavaScript. Ce que l'élément natif ne porte pas, c'est son
+   apparence — aucun navigateur ne s'accorde, et Bootstrap ne le style pas.
+   D'où ces règles, qui sont le prix de la sémantique native.
+
+   Les trois sélecteurs de remplissage sont dupliqués à dessein : un sélecteur
+   à pseudo-élément inconnu invalide **toute** la règle qui le contient, et les
+   regrouper les ferait donc tomber ensemble.
+   --------------------------------------------------------------------------- */
+.ss-strength,
+.ss-usage {
+    display: block;
+    width: 100%;
+    height: .4rem;
+    border: 0;
+    border-radius: var(--bs-border-radius-sm);
+    background-color: var(--bs-secondary-bg);
+    /* Retire l'apparence par défaut, qui l'emporterait sinon sur la couleur
+       de fond sous WebKit. */
+    appearance: none;
+    -webkit-appearance: none;
+    overflow: hidden;
+}
+
+.ss-usage {
+    height: .5rem;
+}
+
+.ss-strength::-webkit-progress-bar,
+.ss-usage::-webkit-progress-bar {
+    background-color: var(--bs-secondary-bg);
+}
+
+.ss-strength::-webkit-progress-value {
+    background-color: var(--bs-danger);
+    transition: width .2s ease-in-out;
+}
+
+.ss-strength::-moz-progress-bar {
+    background-color: var(--bs-danger);
+}
+
+.ss-strength[data-level="fair"]::-webkit-progress-value {
+    background-color: var(--bs-warning);
+}
+
+.ss-strength[data-level="fair"]::-moz-progress-bar {
+    background-color: var(--bs-warning);
+}
+
+.ss-strength[data-level="good"]::-webkit-progress-value {
+    background-color: var(--bs-info);
+}
+
+.ss-strength[data-level="good"]::-moz-progress-bar {
+    background-color: var(--bs-info);
+}
+
+.ss-strength[data-level="strong"]::-webkit-progress-value {
+    background-color: var(--bs-success);
+}
+
+.ss-strength[data-level="strong"]::-moz-progress-bar {
+    background-color: var(--bs-success);
+}
+
+.ss-usage::-webkit-progress-value {
+    background-color: var(--bs-primary);
+}
+
+.ss-usage::-moz-progress-bar {
+    background-color: var(--bs-primary);
+}
+
+.ss-usage[data-level="warning"]::-webkit-progress-value {
+    background-color: var(--bs-warning);
+}
+
+.ss-usage[data-level="warning"]::-moz-progress-bar {
+    background-color: var(--bs-warning);
+}
+
+.ss-usage[data-level="danger"]::-webkit-progress-value {
+    background-color: var(--bs-danger);
+}
+
+.ss-usage[data-level="danger"]::-moz-progress-bar {
+    background-color: var(--bs-danger);
 }

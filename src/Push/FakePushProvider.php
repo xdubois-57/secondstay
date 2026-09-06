@@ -61,7 +61,11 @@ final class FakePushProvider implements PushProvider
         $this->sent[] = $record;
 
         if ($this->spoolDirectory !== null) {
-            if (is_dir($this->spoolDirectory) || mkdir($this->spoolDirectory, 0o750, true) || is_dir($this->spoolDirectory)) {
+            if (
+            is_dir($this->spoolDirectory)
+            || mkdir($this->spoolDirectory, 0o750, true)
+            || is_dir($this->spoolDirectory)
+        ) {
                 file_put_contents(
                     $this->spoolDirectory . '/' . gmdate('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.json',
                     (string) json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
