@@ -577,8 +577,9 @@ final class Services
             )
         );
 
-        $container->set(NotificationService::class, static fn (Container $c): NotificationService
-            => new NotificationService(
+        $container->set(
+            NotificationService::class,
+            static fn (Container $c): NotificationService => new NotificationService(
                 $c->get(MailService::class),
                 $c->get(PushProvider::class),
                 $c->get(PushSubscriptionRepository::class),
@@ -587,16 +588,19 @@ final class Services
                 $c->get(Translator::class),
                 $c->get(SettingsService::class),
                 $c->get(Logger::class),
-            ));
+            )
+        );
 
-        $container->set(StayReminderService::class, static fn (Container $c): StayReminderService
-            => new StayReminderService(
+        $container->set(
+            StayReminderService::class,
+            static fn (Container $c): StayReminderService => new StayReminderService(
                 $c->get(BookingRepository::class),
                 $c->get(UserRepository::class),
                 $c->get(NotificationService::class),
                 $c->get(NotificationRepository::class),
                 $c->get(SettingsService::class),
-            ));
+            )
+        );
 
         // --- Tâches périodiques (ARCHITECTURE.md §23) ----------------------
         // Le planificateur n'est qu'un ordonnanceur : il ne connaît aucune
@@ -687,15 +691,17 @@ final class Services
             static fn (Container $c): WaitlistRepository => new WaitlistRepository($c->get(Database::class))
         );
 
-        $container->set(AvailabilityService::class, static fn (Container $c): AvailabilityService
-            => new AvailabilityService(
+        $container->set(
+            AvailabilityService::class,
+            static fn (Container $c): AvailabilityService => new AvailabilityService(
                 $c->get(AvailabilityBlockRepository::class),
                 $c->get(RateRepository::class),
                 $c->get(PriceCalculator::class),
                 $c->get(StayRules::class),
                 self::propertyTimezone($c),
                 $c->get(BookingRepository::class),
-            ));
+            )
+        );
 
         $container->set(
             BookingService::class,
@@ -748,12 +754,14 @@ final class Services
             )
         );
 
-        $container->set(TouristTaxCalculator::class, static fn (Container $c): TouristTaxCalculator
-            => new TouristTaxCalculator(
+        $container->set(
+            TouristTaxCalculator::class,
+            static fn (Container $c): TouristTaxCalculator => new TouristTaxCalculator(
                 $c->get(SettingsService::class),
                 $c->get(TouristTaxRuleRepository::class),
                 $c->get(TouristTaxContextRepository::class),
-            ));
+            )
+        );
 
         $container->set(
             PaymentProvider::class,
@@ -882,8 +890,9 @@ final class Services
             }
         );
 
-        $container->set(InboundMailService::class, static fn (Container $c): InboundMailService
-            => new InboundMailService(
+        $container->set(
+            InboundMailService::class,
+            static fn (Container $c): InboundMailService => new InboundMailService(
                 $c->get(ImapProvider::class),
                 $c->get(InboundMailRepository::class),
                 $c->get(BookingRepository::class),
@@ -895,7 +904,8 @@ final class Services
                 $c->get(SettingsService::class),
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
-            ));
+            )
+        );
 
         // --- Exploitation et calendriers ----------------------------------
         $container->set(
@@ -1045,15 +1055,17 @@ final class Services
             )
         );
 
-        $container->set(ExternalCalendarService::class, static fn (Container $c): ExternalCalendarService
-            => new ExternalCalendarService(
+        $container->set(
+            ExternalCalendarService::class,
+            static fn (Container $c): ExternalCalendarService => new ExternalCalendarService(
                 $c->get(ExternalCalendarRepository::class),
                 $c->get(AvailabilityBlockRepository::class),
                 $c->get(IcsParser::class),
                 $c->get(HttpFetcher::class),
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
-            ));
+            )
+        );
 
         $container->set(
             DisputeRepository::class,
@@ -1135,8 +1147,9 @@ final class Services
             static fn (Container $c): LocalContentRepository => new LocalContentRepository($c->get(Database::class))
         );
 
-        $container->set(LocalContentService::class, static fn (Container $c): LocalContentService
-            => new LocalContentService(
+        $container->set(
+            LocalContentService::class,
+            static fn (Container $c): LocalContentService => new LocalContentService(
                 $c->get(LocalContentRepository::class),
                 $c->get(LlmProvider::class),
                 $c->get(HttpFetcher::class),
@@ -1146,7 +1159,8 @@ final class Services
                 $c->get(SettingsService::class),
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
-            ));
+            )
+        );
 
         // --- Textes légaux, conformité et rétention -------------------------
         $container->set(
@@ -1193,13 +1207,15 @@ final class Services
             )
         );
 
-        $container->set(PoliceRecordService::class, static fn (Container $c): PoliceRecordService
-            => new PoliceRecordService(
+        $container->set(
+            PoliceRecordService::class,
+            static fn (Container $c): PoliceRecordService => new PoliceRecordService(
                 $c->get(PoliceRecordRepository::class),
                 $c->get(SettingsService::class),
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
-            ));
+            )
+        );
 
         $container->set(
             RetentionService::class,
