@@ -26,7 +26,8 @@ final class FakeLlmProvider implements LlmProvider
     public const NAME = 'fake';
 
     /** Une activité par ligne, avec sa ou ses dates. */
-    private const LINE = '/^(?<title>.+?)\s+—\s+(?<start>\d{4}-\d{2}-\d{2})(?:\s*→\s*(?<end>\d{4}-\d{2}-\d{2}))?(?<tail>.*)$/u';
+    private const LINE = '/^(?<title>.+?)\s+—\s+(?<start>\d{4}-\d{2}-\d{2})'
+        . '(?:\s*→\s*(?<end>\d{4}-\d{2}-\d{2}))?(?<tail>.*)$/u';
 
     /** @var list<LlmPrompt> demandes reçues, pour inspection dans les tests */
     public array $prompts = [];

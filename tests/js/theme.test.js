@@ -23,8 +23,23 @@ function fakeStorage(initial = {}) {
 
 function fakeRoot() {
     const attributes = {};
+
+    // `dataset` est modélisé fidèlement, et non simulé par un simple objet :
+    // le code de production y écrit `themeMode`, et ce que la page porte
+    // réellement est `data-theme-mode`. Un double qui stockerait la clé
+    // camelCase telle quelle laisserait passer une erreur de conversion, et
+    // les assertions ci-dessous portent justement sur le nom rendu.
+    const dataset = new Proxy({}, {
+        set: (_target, key, value) => {
+            attributes['data-' + String(key).replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())] = String(value);
+            return true;
+        },
+        get: (_target, key) => attributes['data-' + String(key).replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())]
+    });
+
     return {
         attributes,
+        dataset,
         setAttribute: (name, value) => {
             attributes[name] = value;
         },

@@ -55,7 +55,8 @@ return [
     ],
     'guest' => [
         'title' => 'Partager avec mes invités',
-        'intro' => 'Un lien invité donne accès à ces informations pratiques — et à rien d’autre : ni montants, ni documents, ni compte.',
+        'intro' => 'Un lien invité donne accès à ces informations pratiques — et à rien d’autre : ni montants, ni '
+            . 'documents, ni compte.',
         'create' => 'Créer un lien invité',
         'label' => 'Pour qui ?',
         'created' => 'Lien invité créé. Copiez-le maintenant : il ne sera plus affiché.',
@@ -72,19 +73,27 @@ return [
         'not_saved' => 'Le livret n’a pas été enregistré : corrigez les champs signalés.',
         'link_url' => 'Lien utile ou carte',
         'link_label' => 'Intitulé du lien',
-        'link_help' => 'Une adresse ouvrable : carte du local à poubelles, plan d’accès, horaires officiels d’un service. « Au bout de la rue à gauche » ne se suit pas depuis un téléphone, dans le noir, avec une valise. Laissez vide s’il n’y a rien à ouvrir.',
+        'link_help' => 'Une adresse ouvrable : carte du local à poubelles, plan d’accès, horaires officiels d’un '
+            . 'service. « Au bout de la rue à gauche » ne se suit pas depuis un téléphone, dans le noir, avec une '
+            . 'valise. Laissez vide s’il n’y a rien à ouvrir.',
         'source_url' => 'Source de l’information',
         'source_checked_on' => 'Vérifiée le',
-        'source_help' => 'D’où vient cette information — page de la commune, du syndicat de déchets, du gestionnaire du réseau. Les jours de collecte et les arrêtés municipaux changent : sans source datée, le livret vieillit sans prévenir. La date du jour est prise si vous n’en indiquez pas.',
+        'source_help' => 'D’où vient cette information — page de la commune, du syndicat de déchets, du gestionnaire '
+            . 'du réseau. Les jours de collecte et les arrêtés municipaux changent : sans source datée, le livret '
+            . 'vieillit sans prévenir. La date du jour est prise si vous n’en indiquez pas.',
         'illustration' => 'Illustration',
         'no_illustration' => 'Aucune',
-        'illustration_help' => 'Choisie dans la médiathèque, parmi les médias publiés et non privés. Une photo explique le tri des déchets ou la manœuvre d’un appareil mieux qu’un paragraphe, et se lit dans toutes les langues.',
+        'illustration_help' => 'Choisie dans la médiathèque, parmi les médias publiés et non privés. Une photo '
+            . 'explique le tri des déchets ou la manœuvre d’un appareil mieux qu’un paragraphe, et se lit dans toutes '
+            . 'les langues.',
         'public' => 'Adresse publique pour QR',
-        'public_help' => 'Publie ce bloc à une adresse fixe, lisible sans compte ni séjour. N’activez ce réglage que pour un texte qui peut être lu par n’importe qui : n’y laissez ni code d’accès, ni mot de passe Wi-Fi.',
+        'public_help' => 'Publie ce bloc à une adresse fixe, lisible sans compte ni séjour. N’activez ce réglage que '
+            . 'pour un texte qui peut être lu par n’importe qui : n’y laissez ni code d’accès, ni mot de passe Wi-Fi.',
         'public_url' => 'Adresse à encoder dans le QR',
         'qr_alt' => 'QR code de la page publique',
         'title' => 'Livret d’accueil',
-        'intro' => 'Ces textes s’affichent dans « Mon séjour » et derrière les liens invité. Ils sont consultables hors ligne.',
+        'intro' => 'Ces textes s’affichent dans « Mon séjour » et derrière les liens invité. Ils sont consultables '
+            . 'hors ligne.',
         'block_title' => 'Titre',
         'block_body' => 'Texte',
         'published' => 'Publié',

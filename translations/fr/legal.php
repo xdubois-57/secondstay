@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Textes légaux versionnés',
-    'intro' => 'Publier une version fige le texte de chaque langue. Une réservation conserve alors la version et la langue réellement acceptées, même si le texte change ensuite.',
+    'intro' => 'Publier une version fige le texte de chaque langue. Une réservation conserve alors la version et la '
+        . 'langue réellement acceptées, même si le texte change ensuite.',
     'type' => [
         'terms' => 'Conditions générales',
         'privacy' => 'Confidentialité',

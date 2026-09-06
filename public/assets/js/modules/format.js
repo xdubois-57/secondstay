@@ -5,6 +5,17 @@
 
 const ICU = { fr: 'fr-FR', en: 'en-GB', nl: 'nl-NL', de: 'de-DE' };
 
+/**
+ * Options par défaut du formatage de date, partagées.
+ *
+ * Un littéral en valeur par défaut de paramètre serait reconstruit à chaque
+ * appel, et `Intl.DateTimeFormat` ne pourrait alors pas s'appuyer sur son
+ * cache interne, qui compare les options par identité.
+ *
+ * @type {Intl.DateTimeFormatOptions}
+ */
+const DEFAULT_DATE_OPTIONS = Object.freeze({ dateStyle: 'medium' });
+
 export function icuLocale(locale) {
     return ICU[locale] || ICU.fr;
 }
@@ -24,12 +35,12 @@ export function formatMoney(cents, locale, currency = 'EUR') {
  * @param {string} locale
  * @param {Intl.DateTimeFormatOptions} [options]
  */
-export function formatDate(isoDate, locale, options = { dateStyle: 'medium' }) {
+export function formatDate(isoDate, locale, options) {
     const date = isoDate instanceof Date ? isoDate : new Date(isoDate + 'T00:00:00');
     if (Number.isNaN(date.getTime())) {
         return '';
     }
-    return new Intl.DateTimeFormat(icuLocale(locale), options).format(date);
+    return new Intl.DateTimeFormat(icuLocale(locale), options ?? DEFAULT_DATE_OPTIONS).format(date);
 }
 
 export function parseIsoDate(value) {

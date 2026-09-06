@@ -45,8 +45,8 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="primary-navigation">
+                {% block navigation %}
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0" data-testid="primary-menu">
-                    {% block navigation %}
                         <li class="nav-item">
                             <a class="nav-link{{ current_path == '/' ? ' active' : '' }}" href="{{ path('home') }}">{{ t('nav.home') }}</a>
                         </li>
@@ -78,8 +78,8 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
-                    {% endblock %}
                 </ul>
+                {% endblock %}
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     {% if current_user %}
                         {% if is_operational %}
@@ -103,8 +103,8 @@
                     </button>
                     <div class="dropdown" data-locale-switcher>
                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                id="locale-switcher" data-bs-toggle="dropdown" aria-expanded="false"
-                                aria-label="{{ t('common.language_selector') }}">
+                                id="locale-switcher" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="visually-hidden">{{ t('common.language_selector') }} :</span>
                             {{ locale_name(locale) }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="locale-switcher">

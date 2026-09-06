@@ -8,8 +8,10 @@ declare(strict_types=1);
 
 return [
     'title' => 'Französische Konformität',
-    'intro' => 'Jedes Thema wird beschrieben und anschließend von Ihnen festgestellt: Status, offizielle Quelle, Prüfdatum und nächste Überprüfung.',
-    'disclaimer' => 'Diese Hinweise sind Orientierung, keine Rechtsberatung. Die Regeln unterscheiden sich je Gemeinde und ändern sich: maßgeblich sind die offizielle Quelle und das Prüfdatum.',
+    'intro' => 'Jedes Thema wird beschrieben und anschließend von Ihnen festgestellt: Status, offizielle Quelle, '
+        . 'Prüfdatum und nächste Überprüfung.',
+    'disclaimer' => 'Diese Hinweise sind Orientierung, keine Rechtsberatung. Die Regeln unterscheiden sich je Gemeinde '
+        . 'und ändern sich: maßgeblich sind die offizielle Quelle und das Prüfdatum.',
     'saved' => 'Thema gespeichert.',
     'evidence_added' => 'Nachweis hinzugefügt.',
     'overdue' => 'Überprüfung überfällig',
@@ -39,15 +41,18 @@ return [
     'topic' => [
         'furnished_tourism' => [
             'label' => 'Touristische Ferienwohnung',
-            'definition' => 'Status einer möblierten Wohnung, die an durchreisende Gäste vermietet wird, die dort keinen Wohnsitz begründen.',
+            'definition' => 'Status einer möblierten Wohnung, die an durchreisende Gäste vermietet wird, die dort '
+                . 'keinen Wohnsitz begründen.',
             'applicability' => 'Gilt für jede saisonale Vermietung einer vollständigen möblierten Wohnung.',
             'where' => 'Bauamt oder Website der Gemeinde sowie der nationale Unternehmensdienst.',
             'impact' => 'Bestimmt die erforderliche Anmeldung, die anwendbare Steuer und die Informationspflichten.',
         ],
         'declaration' => [
             'label' => 'Anmeldung oder Registrierung bei der Gemeinde',
-            'definition' => 'Anmeldung der Ferienwohnung bei der Gemeinde, teils mit einer anzuzeigenden Registriernummer.',
-            'applicability' => 'In vielen Gemeinden verpflichtend; die Registrierung gilt dort, wo die Gemeinde sie eingeführt hat.',
+            'definition' => 'Anmeldung der Ferienwohnung bei der Gemeinde, teils mit einer anzuzeigenden '
+                . 'Registriernummer.',
+            'applicability' => 'In vielen Gemeinden verpflichtend; die Registrierung gilt dort, wo die Gemeinde sie '
+                . 'eingeführt hat.',
             'where' => 'Gemeinde der Unterkunft, gegebenenfalls über deren Online-Schalter.',
             'impact' => 'Ohne Anmeldung drohen ein Bußgeld und das Fehlen der von Plattformen verlangten Nummer.',
         ],
@@ -60,7 +65,8 @@ return [
         ],
         'owner_status' => [
             'label' => 'Status des Vermieters',
-            'definition' => 'Nicht gewerblicher oder gewerblicher Vermieter möblierter Wohnungen, je nach Einnahmen und deren Anteil am Einkommen.',
+            'definition' => 'Nicht gewerblicher oder gewerblicher Vermieter möblierter Wohnungen, je nach Einnahmen '
+                . 'und deren Anteil am Einkommen.',
             'applicability' => 'Betrifft jeden Eigentümer, der möbliert vermietet.',
             'where' => 'Offizielle Steuerunterlagen und Ihre Steuerberatung.',
             'impact' => 'Bestimmt Besteuerung, Beiträge und Buchführungspflichten.',
@@ -105,7 +111,8 @@ return [
             'definition' => 'Bei der Anreise für bestimmte ausländische Gäste auszufüllender Schein.',
             'applicability' => 'Nur wenn die Pflicht Sie betrifft.',
             'where' => 'Präfektur oder zuständige Polizeidienststelle.',
-            'impact' => 'Verlangt eine geregelte Erhebung, eine begrenzte Aufbewahrung und die Herausgabe auf Verlangen.',
+            'impact' => 'Verlangt eine geregelte Erhebung, eine begrenzte Aufbewahrung und die Herausgabe auf '
+                . 'Verlangen.',
         ],
         'contract' => [
             'label' => 'Vertrag über die saisonale Vermietung',

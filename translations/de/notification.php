@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Benachrichtigungen',
-    'intro' => 'Wählen Sie, wie Sie informiert werden möchten. Wichtige Nachrichten zu Ihrem Aufenthalt werden immer per E-Mail versendet.',
+    'intro' => 'Wählen Sie, wie Sie informiert werden möchten. Wichtige Nachrichten zu Ihrem Aufenthalt werden immer '
+        . 'per E-Mail versendet.',
     'send_test' => 'Testbenachrichtigung senden',
     'test_sent' => 'Testbenachrichtigung gesendet.',
     'test_no_device' => 'Kein angemeldetes Gerät für diesen Test.',
@@ -45,14 +46,16 @@ return [
         'subject' => 'Ihr Konto ist aktiv',
         'title' => 'Willkommen {first_name}',
         'body' => 'Willkommen {first_name}, Ihr Konto für {property} ist bestätigt.',
-        'mail_body' => 'Ihre E-Mail-Adresse ist bestätigt: Sie können Ihren Aufenthalt in Ihrem Kundenbereich verfolgen.',
+        'mail_body' => 'Ihre E-Mail-Adresse ist bestätigt: Sie können Ihren Aufenthalt in Ihrem Kundenbereich '
+            . 'verfolgen.',
         'action' => 'Meinen Bereich öffnen',
     ],
     'booking_created' => [
         'subject' => 'Buchungsanfrage erfasst',
         'title' => 'Anfrage erfasst',
         'body' => 'Ihre Anfrage für {property} wurde erfasst.',
-        'mail_body' => 'Wir haben Ihre Buchungsanfrage erhalten. Sie erhalten eine Bestätigung, sobald sie freigegeben ist.',
+        'mail_body' => 'Wir haben Ihre Buchungsanfrage erhalten. Sie erhalten eine Bestätigung, sobald sie freigegeben '
+            . 'ist.',
         'action' => 'Meine Buchung ansehen',
     ],
     'booking_confirmed' => [
@@ -94,7 +97,8 @@ return [
         'subject' => 'Vorfall gemeldet',
         'title' => 'Vorfall gemeldet',
         'body' => 'In {property} wurde ein Vorfall gemeldet.',
-        'mail_body' => 'Soeben wurde ein Vorfall gemeldet. Öffnen Sie den Eintrag, um über das weitere Vorgehen zu entscheiden.',
+        'mail_body' => 'Soeben wurde ein Vorfall gemeldet. Öffnen Sie den Eintrag, um über das weitere Vorgehen zu '
+            . 'entscheiden.',
         'action' => 'Vorfall ansehen',
     ],
     'task_assigned' => [

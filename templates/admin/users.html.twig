@@ -21,9 +21,10 @@
                         <td>
                             <form method="post" action="{{ path('admin.users.role', {'id': user.id}) }}" class="d-flex gap-2">
                                 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-                                <select class="form-select form-select-sm" name="role" aria-label="{{ t('admin.users.role') }}">
-                                    {% for role in roles %}
-                                        <option value="{{ role }}"{{ role == user.role ? ' selected' : '' }}>{{ t('auth.role.' ~ role) }}</option>
+                                <label class="visually-hidden" for="user-role-{{ user.id }}">{{ t('admin.users.role') }}</label>
+                                <select class="form-select form-select-sm" name="role" id="user-role-{{ user.id }}">
+                                    {% for available in roles %}
+                                        <option value="{{ available }}"{% if available == user.role %} selected{% endif %}>{{ t('auth.role.' ~ available) }}</option>
                                     {% endfor %}
                                 </select>
                                 <button class="btn btn-sm btn-outline-primary" type="submit">{{ t('common.save') }}</button>
@@ -77,17 +78,15 @@
                         <input class="form-control{{ errors.password is defined ? ' is-invalid' : '' }}" id="new_password"
                                name="password" type="password" autocomplete="new-password"
                                minlength="{{ min_password_length }}" required data-password-input>
-                        <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
-                             aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
-                            <div class="progress-bar" data-password-strength style="width: 0"></div>
-                        </div>
+                        <progress class="ss-strength mt-2" max="100" value="0" data-password-strength
+                                  aria-label="{{ t('auth.password.strength') }}"></progress>
                         {% if errors.password is defined %}<div class="invalid-feedback">{{ t(errors.password) }}</div>{% endif %}
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="form-label" for="new_role">{{ t('admin.users.role') }}</label>
                         <select class="form-select" id="new_role" name="role">
-                            {% for role in roles %}
-                                <option value="{{ role }}"{{ role == (values.role|default('local_manager')) ? ' selected' : '' }}>{{ t('auth.role.' ~ role) }}</option>
+                            {% for available in roles %}
+                                <option value="{{ available }}"{% if available == (values.role|default('local_manager')) %} selected{% endif %}>{{ t('auth.role.' ~ available) }}</option>
                             {% endfor %}
                         </select>
                     </div>

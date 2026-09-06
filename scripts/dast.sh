@@ -357,6 +357,21 @@ fi
 # derrière un proxy et un certificat auto-signé apporte de la fragilité sans
 # surface supplémentaire : le même serveur répond aux deux.
 # ---------------------------------------------------------------
+# AUCUNE REPRISE ICI, ET C'EST DÉLIBÉRÉ
+# ---------------------------------------------------------------------------
+# Les scénarios de cette campagne sont `serial` et partagent une installation :
+# comptes inscrits, séjours réservés, réglages modifiés. Rejouer un groupe
+# après un échec le fait donc repartir sur l'état que la tentative précédente a
+# laissé — un compte déjà inscrit, des dates déjà prises — et l'application
+# répond correctement « ces dates ne sont pas disponibles ». Le scénario attend
+# alors six minutes un bouton que la page ne propose plus.
+#
+# Une reprise ne répare donc rien ici : elle remplace un échec net par un
+# blocage long, et fait de deux échecs ce qui n'en était qu'un. Le verdict est
+# le même, obtenu six minutes plus tôt et lisible.
+#
+# `npm run e2e` garde ses reprises : sans proxy, la campagne est rapide et une
+# reprise y absorbe une vraie intermittence.
 echo "DAST : campagne Playwright à travers ZAP..."
 set +e
 SECONDSTAY_E2E_TLS=1 \
@@ -370,7 +385,7 @@ SECONDSTAY_E2E_PROXY="${ZAP_PROXY}" \
 SECONDSTAY_EXTRA_SPKI="${ZAP_ROOT_SPKI}" \
 SECONDSTAY_CA_BUNDLE="${DAST_CA_BUNDLE}" \
 SECONDSTAY_TIMEOUT_FACTOR="${DAST_TIMEOUT_FACTOR}" \
-    npx playwright test --project=desktop-chromium \
+    npx playwright test --project=desktop-chromium --retries=0 \
         ${PLAYWRIGHT_ARGS[@]+"${PLAYWRIGHT_ARGS[@]}"} &
 PLAYWRIGHT_PID=$!
 wait "${PLAYWRIGHT_PID}"

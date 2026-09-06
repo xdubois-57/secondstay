@@ -63,10 +63,13 @@ final class ContentRepository
     {
         $now = gmdate('Y-m-d H:i:s');
 
-        return $this->database->insert('content_page', $data + [
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        return $this->database->insert(
+            'content_page',
+            $data + [
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
     }
 
     /**
@@ -89,7 +92,8 @@ final class ContentRepository
     {
         $this->database->execute(
             'INSERT INTO `content_translation` '
-            . '(`content_page_id`, `locale`, `title`, `menu_label`, `lead`, `body`, `meta_title`, `meta_description`, `updated_at`) '
+            . '(`content_page_id`, `locale`, `title`, `menu_label`, `lead`, `body`, '
+            . '`meta_title`, `meta_description`, `updated_at`) '
             . 'VALUES (:page, :locale, :title, :menu_label, :lead, :body, :meta_title, :meta_description, :updated_at) '
             . 'ON DUPLICATE KEY UPDATE `title` = VALUES(`title`), `menu_label` = VALUES(`menu_label`), '
             . '`lead` = VALUES(`lead`), `body` = VALUES(`body`), `meta_title` = VALUES(`meta_title`), '
@@ -111,7 +115,9 @@ final class ContentRepository
     public function nextPosition(?int $parentId): int
     {
         $value = $parentId === null
-            ? $this->database->fetchValue('SELECT COALESCE(MAX(`position`), 0) FROM `content_page` WHERE `parent_id` IS NULL')
+            ? $this->database->fetchValue(
+                'SELECT COALESCE(MAX(`position`), 0) FROM `content_page` WHERE `parent_id` IS NULL'
+            )
             : $this->database->fetchValue(
                 'SELECT COALESCE(MAX(`position`), 0) FROM `content_page` WHERE `parent_id` = :parent',
                 ['parent' => $parentId]

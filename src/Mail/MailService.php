@@ -138,12 +138,15 @@ final class MailService
                 $locale
             );
 
-            $html = $this->view->render('mail/' . $template . '.html.twig', $context + [
-                'locale' => $locale,
-                'subject' => $subject,
-                'property_name' => $this->settings->string('property.name'),
-                'site_url' => rtrim($this->settings->string('site.public_url'), '/'),
-            ]);
+            $html = $this->view->render(
+                'mail/' . $template . '.html.twig',
+                $context + [
+                    'locale' => $locale,
+                    'subject' => $subject,
+                    'property_name' => $this->settings->string('property.name'),
+                    'site_url' => rtrim($this->settings->string('site.public_url'), '/'),
+                ]
+            );
 
             $message = new MailMessage(
                 $this->from(),

@@ -180,7 +180,8 @@ return [
             'create' => 'De back-up is mislukt.',
             'restore' => 'Het terugzetten is mislukt.',
             'delete' => 'Het verwijderen is mislukt.',
-            'download' => 'Deze back-up is niet gevonden: mogelijk is ze verwijderd of door de bewaartermijn vervangen.',
+            'download' => 'Deze back-up is niet gevonden: mogelijk is ze verwijderd of door de bewaartermijn '
+                . 'vervangen.',
         ],
     ],
     'updates' => [
@@ -201,7 +202,8 @@ return [
     ],
     'pricing' => [
         'title' => 'Beschikbaarheid en tarieven',
-        'intro' => 'Het referentietarief is {price} per nacht. De hieronder vetgedrukte nachten gebruiken een specifiek tarief.',
+        'intro' => 'Het referentietarief is {price} per nacht. De hieronder vetgedrukte nachten gebruiken een '
+            . 'specifiek tarief.',
         'rates' => 'Tarieven per nacht',
         'rates_help' => 'Pas een tarief toe op een reeks nachten. De laatst opgegeven nacht is inbegrepen.',
         'first_night' => 'Eerste nacht',
@@ -231,7 +233,8 @@ return [
     ],
     'diagnostics' => [
         'title' => 'Diagnostiek',
-        'notification_help' => 'Controleer de verzend- en meldingsinstellingen. De SMTP-sonde opent een echte verbinding met uw verzendserver.',
+        'notification_help' => 'Controleer de verzend- en meldingsinstellingen. De SMTP-sonde opent een echte '
+            . 'verbinding met uw verzendserver.',
         'probe_smtp' => 'SMTP-verbinding testen',
         'probe_imap' => 'IMAP-verbinding testen',
         'push_keys_generate' => 'Pushsleutels genereren',
@@ -240,7 +243,8 @@ return [
         'push_keys_created' => 'Pushsleutels gegenereerd.',
         'push_keys_renewed' => 'Pushsleutels vernieuwd: apparaten moeten zich opnieuw abonneren.',
         'rate_limits' => 'Snelheidsbeperking',
-        'rate_limits_help' => 'Pogingen om in te loggen, te registreren of een wachtwoord te herstellen zijn per adres beperkt. U kunt de tellers opnieuw instellen als u zichzelf hebt buitengesloten.',
+        'rate_limits_help' => 'Pogingen om in te loggen, te registreren of een wachtwoord te herstellen zijn per adres '
+            . 'beperkt. U kunt de tellers opnieuw instellen als u zichzelf hebt buitengesloten.',
         'rate_limits_clear' => 'Tellers opnieuw instellen',
         'rate_limits_cleared' => 'Tellers voor snelheidsbeperking opnieuw ingesteld.',
         'migrations' => 'Databaseschema',
@@ -308,7 +312,8 @@ return [
             'menu_label' => 'Menulabel',
             'lead' => 'Inleiding',
             'body' => 'Inhoud',
-            'body_help' => 'Eenvoudige HTML toegestaan: alinea’s, lijsten, links, afbeeldingen, tabellen. De rest wordt verwijderd.',
+            'body_help' => 'Eenvoudige HTML toegestaan: alinea’s, lijsten, links, afbeeldingen, tabellen. De rest '
+                . 'wordt verwijderd.',
             'meta_title' => 'SEO-titel',
             'meta_description' => 'SEO-beschrijving',
         ],
@@ -320,7 +325,8 @@ return [
         'saved' => 'Media opgeslagen.',
         'deleted' => 'Media verwijderd.',
         'file' => 'Afbeeldingsbestand',
-        'file_help' => 'JPEG, PNG, WebP of AVIF, maximaal {size} MB. De afbeelding wordt opnieuw gecodeerd: metadata, waaronder locatie, wordt verwijderd.',
+        'file_help' => 'JPEG, PNG, WebP of AVIF, maximaal {size} MB. De afbeelding wordt opnieuw gecodeerd: metadata, '
+            . 'waaronder locatie, wordt verwijderd.',
         'category' => 'Categorie',
         'caption' => 'Bijschrift',
         'alt' => 'Alternatieve tekst',

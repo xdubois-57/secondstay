@@ -9,7 +9,8 @@ declare(strict_types=1);
 return [
     'admin' => [
         'title' => 'Lokale Inhalte',
-        'intro' => 'Geben Sie die zu lesenden Seiten an, schreiben Sie Ihre Anweisung und starten Sie einen Test. Das System ergänzt Ort, Jahreszeit, Aufenthaltsdaten, Quellen und erwartetes Format.',
+        'intro' => 'Geben Sie die zu lesenden Seiten an, schreiben Sie Ihre Anweisung und starten Sie einen Test. Das '
+            . 'System ergänzt Ort, Jahreszeit, Aufenthaltsdaten, Quellen und erwartetes Format.',
     ],
     'enabled' => 'Lokale Inhalte werden für kommende Aufenthalte erstellt.',
     'disabled' => 'Lokale Inhalte sind deaktiviert.',
@@ -25,7 +26,8 @@ return [
     'source_updated' => 'Quelle aktualisiert.',
     'source_deleted' => 'Quelle gelöscht.',
     'prompt' => 'Anweisung',
-    'prompt_intro' => 'Dieser Text gehört Ihnen. Das System ergänzt automatisch Ort, Jahreszeit, genaue Daten, Quellen und Ausgabeschema.',
+    'prompt_intro' => 'Dieser Text gehört Ihnen. Das System ergänzt automatisch Ort, Jahreszeit, genaue Daten, Quellen '
+        . 'und Ausgabeschema.',
     'prompt_saved' => 'Anweisung gespeichert.',
     'suggest_prompt' => 'Prompt aus dem Ort erzeugen',
     'run' => 'Generierung',
@@ -73,9 +75,12 @@ return [
     'verified_on' => 'geprüft am {date}',
     'stay' => [
         'title' => 'In Ihrer Nähe',
-        'disclaimer' => 'Diese Vorschläge stammen aus den genannten Quellen und wurden am angegebenen Datum geprüft. Bestätigen Sie Zeiten und Verfügbarkeit beim Veranstalter.',
+        'disclaimer' => 'Diese Vorschläge stammen aus den genannten Quellen und wurden am angegebenen Datum geprüft. '
+            . 'Bestätigen Sie Zeiten und Verfügbarkeit beim Veranstalter.',
     ],
-    'suggested_prompt' => 'Schlage Aktivitäten rund um {location} für die Gäste von {property} vor: Märkte, lokale Feste, Museen, Wanderungen und gute Adressen zum Essen. Bevorzuge, was zu Fuß oder innerhalb von dreißig Autominuten erreichbar ist, und weise darauf hin, was reserviert werden muss.',
+    'suggested_prompt' => 'Schlage Aktivitäten rund um {location} für die Gäste von {property} vor: Märkte, lokale '
+        . 'Feste, Museen, Wanderungen und gute Adressen zum Essen. Bevorzuge, was zu Fuß oder innerhalb von dreißig '
+        . 'Autominuten erreichbar ist, und weise darauf hin, was reserviert werden muss.',
     'error' => [
         'no_location' => 'Tragen Sie zuerst den Ort der Unterkunft in der Konfiguration ein.',
         'duplicate' => 'Diese Adresse steht bereits in der Liste.',

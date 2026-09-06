@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Geschillen',
-    'intro' => 'Een geschil verzamelt wat het product al heeft vastgelegd — ingehouden waarborg, eindinspectie, incidenten, aanvaard contract — zodat het gesprek op gedateerde feiten steunt.',
+    'intro' => 'Een geschil verzamelt wat het product al heeft vastgelegd — ingehouden waarborg, eindinspectie, '
+        . 'incidenten, aanvaard contract — zodat het gesprek op gedateerde feiten steunt.',
     'empty' => 'Geen geschil.',
     'evidence' => 'Stukken in het dossier',
     'actions' => 'Vervolgstap',

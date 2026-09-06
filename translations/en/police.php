@@ -10,7 +10,8 @@ return [
     'title' => 'Police records',
     'record' => 'Police record',
     'open_record' => 'Open the record',
-    'intro' => 'The individual record is required only in certain cases. While it is off, no identity data is collected.',
+    'intro' => 'The individual record is required only in certain cases. While it is off, no identity data is '
+        . 'collected.',
     'record_intro' => 'The data is encrypted and erased automatically when the retention period ends.',
     'enabled' => 'The police record is requested for the stays concerned.',
     'disabled' => 'The police record is disabled: nothing is collected.',

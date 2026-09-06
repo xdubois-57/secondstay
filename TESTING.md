@@ -883,23 +883,39 @@ concernés.
 même sans le moindre constat de sécurité, et c'est délibéré : un scan ne vaut
 que le trafic qu'on lui a donné.
 
-### 18.6 ter Un défaut connu, non corrigé : l'allocation des mois en reprise
+### 18.6 ter Le scan dynamique ne rejoue rien, et c'est délibéré
 
-Chaque scénario qui réserve possède son mois, dérivé de `getUTCMonth()` plus un
-décalage : de +1 pour `closing` à +16/+17 pour `inspection`. Seul `stay` ajoute
-un terme de reprise, `+ testInfo.retry * 2` — qui le fait atterrir sur les mois
-d'`inspection`, dont il recoupe la fenêtre de jours. Les autres n'en ont aucun
-et rejouent donc la réservation qu'ils viennent de faire, ce qui rend « Ces
-dates ne sont pas disponibles » et six minutes d'attente.
+`scripts/dast.sh` passe `--retries=0`. Les scénarios de cette campagne sont
+`serial` et partagent une installation : comptes inscrits, séjours réservés,
+réglages modifiés. Rejouer un groupe après un échec le fait repartir sur l'état
+que la tentative précédente a laissé — un compte déjà inscrit, des dates déjà
+prises — et l'application répond correctement « ces dates ne sont pas
+disponibles ». Le scénario attend alors six minutes un bouton que la page ne
+propose plus.
+
+Une reprise ne répare donc rien ici : elle remplace un échec net par un blocage
+long, et fait de deux échecs ce qui n'en était qu'un. Le verdict est le même,
+obtenu six minutes plus tôt et lisible. `npm run e2e` garde ses reprises :
+sans proxy la campagne est rapide, et une reprise y absorbe une vraie
+intermittence.
+
+**Le défaut d'allocation qui rendait la reprise nuisible reste, et il est
+connu.** Chaque scénario qui réserve possède son mois, dérivé de
+`getUTCMonth()` plus un décalage : de +1 pour `closing` à +16/+17 pour
+`inspection`. Seul `stay` porte un terme de reprise, `+ testInfo.retry * 2`,
+qui le fait atterrir sur les mois d'`inspection` dont il recoupe la fenêtre de
+jours.
 
 Le remède évident — un pas de reprise plus grand que toute l'allocation — est
 **faux** : `booking.horizon_days` vaut 540 jours, soit un peu moins de dix-huit
-mois, et un décalage de vingt mois placerait la reprise au-delà de l'horizon,
-où l'application répond « indisponible » à juste titre. La correction demande
-de repenser l'allocation dans son ensemble, jours compris, et n'a pas été faite
-ici plutôt que faite au jugé.
+mois, et l'allocation en occupe déjà dix-sept. Il n'y a pas la place pour un
+mois par reprise, et un décalage plus grand placerait les dates au-delà de
+l'horizon, où l'application répond « indisponible » à juste titre. La
+correction demande de repenser l'allocation, jours compris ; elle n'est pas
+faite au jugé.
 
-Ce défaut n'amplifie que des échecs déjà survenus. Il ne les cause pas.
+Ce défaut ne se manifeste que lors d'une reprise. La campagne du scan dynamique
+n'en fait plus.
 
 ### 18.7 Contrôle de l'artefact
 

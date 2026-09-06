@@ -141,7 +141,7 @@
                     </div>
 
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch"
+                        <input class="form-check-input" type="checkbox"
                                id="published_{{ field.code }}" name="published_{{ field.code }}" value="1"
                                {{ field.published ? 'checked' : '' }}>
                         <label class="form-check-label" for="published_{{ field.code }}">{{ t('stay.admin.published') }}</label>
@@ -151,7 +151,7 @@
                        défaut, décidé bloc par bloc. Le livret contient des
                        choses qui n'ont rien à faire sur le web ouvert. #}
                     <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" type="checkbox" role="switch"
+                        <input class="form-check-input" type="checkbox"
                                id="public_{{ field.code }}" name="public_{{ field.code }}" value="1"
                                {{ field.public ? 'checked' : '' }}>
                         <label class="form-check-label" for="public_{{ field.code }}">{{ t('stay.admin.public') }}</label>
@@ -161,8 +161,7 @@
                     {% if field.public %}
                         <div class="d-flex align-items-center gap-3 mt-3 flex-wrap"
                              data-testid="qr-{{ field.code }}">
-                            <div style="width: 7rem;" role="img"
-                                 aria-label="{{ t('stay.admin.qr_alt') }}">{{ field.qr|raw }}</div>
+                            <div style="width: 7rem;">{{ field.qr|raw }}</div>
                             <div>
                                 <p class="mb-1 small text-body-secondary">{{ t('stay.admin.public_url') }}</p>
                                 <code class="text-break" data-testid="qr-url-{{ field.code }}">{{ field.url }}</code>

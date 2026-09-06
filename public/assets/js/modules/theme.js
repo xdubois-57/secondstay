@@ -7,7 +7,7 @@ export const THEME_STORAGE_KEY = 'secondstay.theme';
 export const THEME_ORDER = ['auto', 'light', 'dark'];
 
 export function isValidTheme(mode) {
-    return THEME_ORDER.indexOf(mode) !== -1;
+    return THEME_ORDER.includes(mode);
 }
 
 export function nextTheme(mode) {
@@ -24,9 +24,12 @@ export function resolveTheme(mode, prefersDark) {
 
 export function readStoredTheme(storage) {
     try {
-        const value = storage && storage.getItem(THEME_STORAGE_KEY);
+        const value = storage?.getItem(THEME_STORAGE_KEY);
         return isValidTheme(value) ? value : 'auto';
-    } catch (error) {
+    } catch {
+        // Un navigateur qui refuse le stockage — fenêtre privée, cookies
+        // bloqués — n'est pas une panne : le thème automatique est le défaut,
+        // et c'est exactement ce qu'il faut rendre.
         return 'auto';
     }
 }
@@ -38,14 +41,17 @@ export function storeTheme(storage, mode) {
     try {
         storage.setItem(THEME_STORAGE_KEY, mode);
         return true;
-    } catch (error) {
+    } catch {
+        // Même raison qu'à la lecture : ne pas pouvoir mémoriser la préférence
+        // ne casse rien, l'appelant apprend seulement qu'elle n'a pas été
+        // retenue.
         return false;
     }
 }
 
 export function applyTheme(root, mode, prefersDark) {
     const effective = resolveTheme(mode, prefersDark);
-    root.setAttribute('data-theme-mode', mode);
-    root.setAttribute('data-bs-theme', effective);
+    root.dataset.themeMode = mode;
+    root.dataset.bsTheme = effective;
     return effective;
 }

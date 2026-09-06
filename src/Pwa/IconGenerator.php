@@ -40,7 +40,11 @@ final class IconGenerator
             return $file;
         }
 
-        if (!is_dir($this->cacheDirectory) && !mkdir($this->cacheDirectory, 0o750, true) && !is_dir($this->cacheDirectory)) {
+        if (
+            !is_dir($this->cacheDirectory)
+            && !mkdir($this->cacheDirectory, 0o750, true)
+            && !is_dir($this->cacheDirectory)
+        ) {
             throw new RuntimeException('pwa.error.cache_unavailable');
         }
 
@@ -89,7 +93,12 @@ final class IconGenerator
 
             throw new RuntimeException('pwa.error.generation_failed');
         }
-        $layerBackground = (int) imagecolorallocate($layer, self::BACKGROUND[0], self::BACKGROUND[1], self::BACKGROUND[2]);
+        $layerBackground = (int) imagecolorallocate(
+            $layer,
+            self::BACKGROUND[0],
+            self::BACKGROUND[1],
+            self::BACKGROUND[2]
+        );
         $layerForeground = (int) imagecolorallocate($layer, 255, 255, 255);
         imagefilledrectangle($layer, 0, 0, imagesx($layer) - 1, imagesy($layer) - 1, $layerBackground);
         imagestring($layer, $font, 0, 0, $initials, $layerForeground);

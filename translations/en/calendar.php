@@ -38,7 +38,8 @@ return [
     'empty' => 'No active calendar link.',
     'import' => [
         'title' => 'Imported external calendars',
-        'intro' => 'Nights sold on another platform become unavailable dates. An imported feed never creates a booking and never touches manually entered blocks.',
+        'intro' => 'Nights sold on another platform become unavailable dates. An imported feed never creates a booking '
+            . 'and never touches manually entered blocks.',
         'url' => 'Feed address',
         'label' => 'Label',
         'provider_label' => 'Platform',

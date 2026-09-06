@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Private Kalender',
-    'intro' => 'Diese Adressen sind persönlich: Sie geben ohne Passwort Zugriff auf den Kalender. Geben Sie sie nicht weiter.',
+    'intro' => 'Diese Adressen sind persönlich: Sie geben ohne Passwort Zugriff auf den Kalender. Geben Sie sie nicht '
+        . 'weiter.',
     'scope' => [
         'admin' => 'Verwaltung',
         'manager' => 'Ansprechpartner vor Ort',
@@ -38,7 +39,8 @@ return [
     'empty' => 'Kein aktiver Kalenderlink.',
     'import' => [
         'title' => 'Importierte externe Kalender',
-        'intro' => 'Auf einer anderen Plattform verkaufte Nächte werden zu Sperrzeiten. Ein importierter Feed erstellt nie eine Buchung und rührt manuell eingetragene Sperren nie an.',
+        'intro' => 'Auf einer anderen Plattform verkaufte Nächte werden zu Sperrzeiten. Ein importierter Feed erstellt '
+            . 'nie eine Buchung und rührt manuell eingetragene Sperren nie an.',
         'url' => 'Adresse des Feeds',
         'label' => 'Bezeichnung',
         'provider_label' => 'Plattform',

@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Auswertung',
-    'disclaimer' => 'Diese Zahlen zählen, was eingenommen, erwartet und einbehalten wurde. Sie sind weder Steuerberatung noch Erklärung: Die buchhalterische Auslegung obliegt Ihrer Steuerberatung.',
+    'disclaimer' => 'Diese Zahlen zählen, was eingenommen, erwartet und einbehalten wurde. Sie sind weder '
+        . 'Steuerberatung noch Erklärung: Die buchhalterische Auslegung obliegt Ihrer Steuerberatung.',
     'apply' => 'Anzeigen',
     'export' => 'Als XLSX exportieren',
     'whole_year' => 'Ganzes Jahr',

@@ -9,6 +9,7 @@ declare(strict_types=1);
 return [
     'title' => 'Opslagruimte',
     'mb' => 'MB',
+    'usage' => 'Gebruikte ruimte voor deze categorie',
     'no_limit' => 'geen limiet',
     'configure' => 'Quota instellen',
     'category' => [
@@ -19,7 +20,8 @@ return [
     ],
     'error' => [
         'media' => 'Het mediaquotum is bereikt. Maak ruimte vrij of verhoog de limiet voordat u een bestand toevoegt.',
-        'documents' => 'Het documentquotum is bereikt. Maak ruimte vrij of verhoog de limiet voordat u een bestand toevoegt.',
+        'documents' => 'Het documentquotum is bereikt. Maak ruimte vrij of verhoog de limiet voordat u een bestand '
+            . 'toevoegt.',
         'backups' => 'Het back-upquotum is bereikt. Verwijder oude back-ups of verhoog de limiet.',
         'mail-attachments' => 'Het bijlagequotum is bereikt.',
     ],

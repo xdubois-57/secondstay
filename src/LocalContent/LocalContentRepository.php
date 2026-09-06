@@ -138,12 +138,15 @@ final class LocalContentRepository
             }
 
             foreach ($activities as $activity) {
-                $this->database->insert('local_activity', $activity + [
-                    'generation_id' => $generationId,
-                    'booking_id' => $bookingId,
-                    'locale' => $locale,
-                    'created_at' => gmdate('Y-m-d H:i:s'),
-                ]);
+                $this->database->insert(
+                    'local_activity',
+                    $activity + [
+                        'generation_id' => $generationId,
+                        'booking_id' => $bookingId,
+                        'locale' => $locale,
+                        'created_at' => gmdate('Y-m-d H:i:s'),
+                    ]
+                );
             }
         });
 

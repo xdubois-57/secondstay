@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Calendriers privés',
-    'intro' => 'Ces adresses sont personnelles : elles donnent accès au calendrier sans mot de passe. Ne les partagez pas.',
+    'intro' => 'Ces adresses sont personnelles : elles donnent accès au calendrier sans mot de passe. Ne les partagez '
+        . 'pas.',
     'scope' => [
         'admin' => 'Administration',
         'manager' => 'Responsable local',
@@ -38,7 +39,8 @@ return [
     'empty' => 'Aucun lien de calendrier actif.',
     'import' => [
         'title' => 'Calendriers externes importés',
-        'intro' => 'Les nuits vendues sur une autre plateforme deviennent des indisponibilités. Un flux importé ne crée jamais de réservation et ne touche jamais aux blocages saisis à la main.',
+        'intro' => 'Les nuits vendues sur une autre plateforme deviennent des indisponibilités. Un flux importé ne '
+            . 'crée jamais de réservation et ne touche jamais aux blocages saisis à la main.',
         'url' => 'Adresse du flux',
         'label' => 'Libellé',
         'provider_label' => 'Plateforme',

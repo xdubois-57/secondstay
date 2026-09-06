@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Versionierte Rechtstexte',
-    'intro' => 'Eine Version zu veröffentlichen friert den Text jeder Sprache ein. Eine Buchung bewahrt dann die tatsächlich angenommene Version und Sprache, auch wenn der Text sich später ändert.',
+    'intro' => 'Eine Version zu veröffentlichen friert den Text jeder Sprache ein. Eine Buchung bewahrt dann die '
+        . 'tatsächlich angenommene Version und Sprache, auch wenn der Text sich später ändert.',
     'type' => [
         'terms' => 'Allgemeine Geschäftsbedingungen',
         'privacy' => 'Datenschutz',

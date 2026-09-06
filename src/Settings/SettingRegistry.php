@@ -108,7 +108,13 @@ final class SettingRegistry
             ),
             new SettingDefinition('site.timezone', SettingType::String, 'Europe/Paris', 'site', required: true),
             new SettingDefinition('site.public_url', SettingType::Url, '', 'site'),
-            new SettingDefinition('site.season', SettingType::Enum, 'auto', 'site', enumValues: ['auto', 'summer', 'winter']),
+            new SettingDefinition(
+                'site.season',
+                SettingType::Enum,
+                'auto',
+                'site',
+                enumValues: ['auto', 'summer', 'winter'],
+            ),
 
             // --- Application installable ----------------------------------
             //
@@ -292,11 +298,25 @@ final class SettingRegistry
 
             // --- Notifications ----------------------------------------------
             new SettingDefinition('notification.push_enabled', SettingType::Bool, false, 'notification'),
-            new SettingDefinition('notification.retention_days', SettingType::Integer, 180, 'notification', min: 7, max: 3650),
+            new SettingDefinition(
+                'notification.retention_days',
+                SettingType::Integer,
+                180,
+                'notification',
+                min: 7,
+                max: 3650,
+            ),
             // Combien de jours avant l'arrivée part le rappel de séjour. Une
             // semaine laisse le temps de s'organiser sans que le message soit
             // oublié d'ici l'arrivée.
-            new SettingDefinition('notification.reminder_days', SettingType::Integer, 7, 'notification', min: 1, max: 60),
+            new SettingDefinition(
+                'notification.reminder_days',
+                SettingType::Integer,
+                7,
+                'notification',
+                min: 1,
+                max: 60,
+            ),
             new SettingDefinition('push.subject', SettingType::String, '', 'notification', max: 190),
             // Générées par l'installation, jamais versionnées.
             new SettingDefinition('push.vapid_public', SettingType::String, '', 'notification', max: 255),
@@ -318,7 +338,13 @@ final class SettingRegistry
             new SettingDefinition('backup.auto_enabled', SettingType::Bool, true, 'backup'),
 
             // --- Mise à jour ----------------------------------------------
-            new SettingDefinition('update.channel', SettingType::Enum, 'stable', 'update', enumValues: ['stable', 'prerelease']),
+            new SettingDefinition(
+                'update.channel',
+                SettingType::Enum,
+                'stable',
+                'update',
+                enumValues: ['stable', 'prerelease'],
+            ),
             new SettingDefinition('update.auto_install', SettingType::Bool, false, 'update'),
             new SettingDefinition(
                 'update.repository',

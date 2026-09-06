@@ -64,7 +64,7 @@
                             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                             <input type="hidden" name="code" value="{{ item.code }}">
                             <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" role="switch"
+                                <input class="form-check-input" type="checkbox"
                                        name="done" value="1" id="task-{{ item.code }}"
                                        {{ item.isDone ? 'checked' : '' }}>
                                 <label class="visually-hidden" for="task-{{ item.code }}">{{ t(item.labelKey) }}</label>

@@ -8,8 +8,10 @@ declare(strict_types=1);
 
 return [
     'retention' => 'Bewaartermijnen',
-    'retention_intro' => 'Gegevens beschermen volstaat niet: ze mogen ook niet langer worden bewaard dan gerechtvaardigd is.',
-    'kept_intro' => 'Verblijven, betalingen, aanvaarde contracten en plaatsbeschrijvingen worden nooit automatisch gewist: het zijn contractuele bewijsstukken, en het verwijderen ervan blijft een menselijke beslissing.',
+    'retention_intro' => 'Gegevens beschermen volstaat niet: ze mogen ook niet langer worden bewaard dan '
+        . 'gerechtvaardigd is.',
+    'kept_intro' => 'Verblijven, betalingen, aanvaarde contracten en plaatsbeschrijvingen worden nooit automatisch '
+        . 'gewist: het zijn contractuele bewijsstukken, en het verwijderen ervan blijft een menselijke beslissing.',
     'purge_now' => 'Nu toepassen',
     'purged' => 'Bewaartermijnen toegepast.',
     'nothing_to_purge' => 'Niets op te schonen.',

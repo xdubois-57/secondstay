@@ -44,7 +44,11 @@ final class FakeMailTransport implements MailTransport
         $built = $message->build('example.test');
 
         if ($this->spoolDirectory !== null) {
-            if (!is_dir($this->spoolDirectory) && !mkdir($this->spoolDirectory, 0o750, true) && !is_dir($this->spoolDirectory)) {
+            if (
+            !is_dir($this->spoolDirectory)
+            && !mkdir($this->spoolDirectory, 0o750, true)
+            && !is_dir($this->spoolDirectory)
+        ) {
                 throw new RuntimeException('mail.error.write_failed');
             }
 

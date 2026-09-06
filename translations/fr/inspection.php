@@ -31,7 +31,8 @@ return [
         'outdoor' => 'Extérieur',
         'meters' => 'Compteurs',
     ],
-    'checkin_intro' => 'Signalez ce qui ne va pas dans les {hours} heures suivant votre arrivée. Si tout est conforme, vous n’avez rien à faire.',
+    'checkin_intro' => 'Signalez ce qui ne va pas dans les {hours} heures suivant votre arrivée. Si tout est conforme, '
+        . 'vous n’avez rien à faire.',
     'checkout_intro' => 'Au départ, une photo est obligatoire pour chaque zone qui le demande.',
     'note' => 'Commentaire',
     'photo' => 'Photo',
@@ -57,9 +58,11 @@ return [
     ],
     'admin' => [
         'title' => 'Zones et photos de référence',
-        'intro' => 'Définissez les zones du logement, leur ordre, leurs consignes et celles qui exigent une photo au départ.',
+        'intro' => 'Définissez les zones du logement, leur ordre, leurs consignes et celles qui exigent une photo au '
+            . 'départ.',
         'completeness' => 'Noms personnalisés',
-        'completeness_help' => 'Une zone sans nom personnalisé utilise le libellé intégré, déjà disponible dans les quatre langues.',
+        'completeness_help' => 'Une zone sans nom personnalisé utilise le libellé intégré, déjà disponible dans les '
+            . 'quatre langues.',
         'no_zone' => 'Aucune zone n’est définie.',
         'seed' => 'Créer les zones proposées',
         'seeded' => 'Zones proposées créées.',

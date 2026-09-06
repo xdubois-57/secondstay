@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Tourist tax',
-    'intro' => 'A scale is voted, takes effect on a date, then is replaced. Every rule therefore carries its validity period, and a stay already booked keeps the scale that applied on its arrival.',
+    'intro' => 'A scale is voted, takes effect on a date, then is replaced. Every rule therefore carries its validity '
+        . 'period, and a stay already booked keeps the scale that applied on its arrival.',
     'enabled' => 'The tourist tax is collected.',
     'disabled' => 'The tourist tax is not collected.',
     'configure' => 'Configure',
@@ -18,7 +19,8 @@ return [
     'new_rule' => 'New scale',
     'rule_created' => 'Scale saved.',
     'rule_deleted' => 'Scale deleted.',
-    'overlap_warning' => 'Two scales overlap for the same classification: the amount would depend on the order of the rows.',
+    'overlap_warning' => 'Two scales overlap for the same classification: the amount would depend on the order of the '
+        . 'rows.',
     'field' => [
         'period' => 'Period',
         'effective_from' => 'Takes effect on',

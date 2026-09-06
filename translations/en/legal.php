@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Versioned legal texts',
-    'intro' => 'Publishing a version freezes the text of every language. A booking then keeps the version and language that were actually accepted, even if the text changes later.',
+    'intro' => 'Publishing a version freezes the text of every language. A booking then keeps the version and language '
+        . 'that were actually accepted, even if the text changes later.',
     'type' => [
         'terms' => 'Terms and conditions',
         'privacy' => 'Privacy',

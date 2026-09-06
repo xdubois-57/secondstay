@@ -53,8 +53,8 @@ final class PushEncryption
         }
 
         $keys = $serverKeys ?? Vapid::generateKeyPair();
-        $serverPublic = Base64Url::decode($keys['public']);
-        $serverPrivate = Base64Url::decode($keys['private']);
+        $serverPublic = UrlSafeEncoding::decode($keys['public']);
+        $serverPrivate = UrlSafeEncoding::decode($keys['private']);
 
         $sharedSecret = $this->deriveSharedSecret($serverPrivate, $serverPublic, $userPublicKey);
 

@@ -37,29 +37,50 @@ final class QrCode
     /**
      * Nombre total de codets et découpage en blocs, niveau M.
      *
-     * @var array<int, array{total: int, ec_per_block: int, group1_blocks: int, group1_data: int, group2_blocks: int, group2_data: int}>
+     * @var array<int, array{total: int, ec_per_block: int, group1_blocks: int,
+     *     group1_data: int, group2_blocks: int, group2_data: int}>
      */
     private const BLOCKS = [
-        1 => ['total' => 26, 'ec_per_block' => 10, 'group1_blocks' => 1, 'group1_data' => 16, 'group2_blocks' => 0, 'group2_data' => 0],
-        2 => ['total' => 44, 'ec_per_block' => 16, 'group1_blocks' => 1, 'group1_data' => 28, 'group2_blocks' => 0, 'group2_data' => 0],
-        3 => ['total' => 70, 'ec_per_block' => 26, 'group1_blocks' => 1, 'group1_data' => 44, 'group2_blocks' => 0, 'group2_data' => 0],
-        4 => ['total' => 100, 'ec_per_block' => 18, 'group1_blocks' => 2, 'group1_data' => 32, 'group2_blocks' => 0, 'group2_data' => 0],
-        5 => ['total' => 134, 'ec_per_block' => 24, 'group1_blocks' => 2, 'group1_data' => 43, 'group2_blocks' => 0, 'group2_data' => 0],
-        6 => ['total' => 172, 'ec_per_block' => 16, 'group1_blocks' => 4, 'group1_data' => 27, 'group2_blocks' => 0, 'group2_data' => 0],
-        7 => ['total' => 196, 'ec_per_block' => 18, 'group1_blocks' => 4, 'group1_data' => 31, 'group2_blocks' => 0, 'group2_data' => 0],
-        8 => ['total' => 242, 'ec_per_block' => 22, 'group1_blocks' => 2, 'group1_data' => 38, 'group2_blocks' => 2, 'group2_data' => 39],
-        9 => ['total' => 292, 'ec_per_block' => 22, 'group1_blocks' => 3, 'group1_data' => 36, 'group2_blocks' => 2, 'group2_data' => 37],
-        10 => ['total' => 346, 'ec_per_block' => 26, 'group1_blocks' => 4, 'group1_data' => 43, 'group2_blocks' => 1, 'group2_data' => 44],
-        11 => ['total' => 404, 'ec_per_block' => 30, 'group1_blocks' => 1, 'group1_data' => 50, 'group2_blocks' => 4, 'group2_data' => 51],
-        12 => ['total' => 466, 'ec_per_block' => 22, 'group1_blocks' => 6, 'group1_data' => 36, 'group2_blocks' => 2, 'group2_data' => 37],
-        13 => ['total' => 532, 'ec_per_block' => 22, 'group1_blocks' => 8, 'group1_data' => 37, 'group2_blocks' => 1, 'group2_data' => 38],
-        14 => ['total' => 581, 'ec_per_block' => 24, 'group1_blocks' => 4, 'group1_data' => 40, 'group2_blocks' => 5, 'group2_data' => 41],
-        15 => ['total' => 655, 'ec_per_block' => 24, 'group1_blocks' => 5, 'group1_data' => 41, 'group2_blocks' => 5, 'group2_data' => 42],
-        16 => ['total' => 733, 'ec_per_block' => 28, 'group1_blocks' => 7, 'group1_data' => 45, 'group2_blocks' => 3, 'group2_data' => 46],
-        17 => ['total' => 815, 'ec_per_block' => 28, 'group1_blocks' => 10, 'group1_data' => 46, 'group2_blocks' => 1, 'group2_data' => 47],
-        18 => ['total' => 901, 'ec_per_block' => 26, 'group1_blocks' => 9, 'group1_data' => 43, 'group2_blocks' => 4, 'group2_data' => 44],
-        19 => ['total' => 991, 'ec_per_block' => 26, 'group1_blocks' => 3, 'group1_data' => 44, 'group2_blocks' => 11, 'group2_data' => 45],
-        20 => ['total' => 1085, 'ec_per_block' => 26, 'group1_blocks' => 3, 'group1_data' => 41, 'group2_blocks' => 13, 'group2_data' => 42],
+        1 => ['total' => 26, 'ec_per_block' => 10,
+            'group1_blocks' => 1, 'group1_data' => 16, 'group2_blocks' => 0, 'group2_data' => 0],
+        2 => ['total' => 44, 'ec_per_block' => 16,
+            'group1_blocks' => 1, 'group1_data' => 28, 'group2_blocks' => 0, 'group2_data' => 0],
+        3 => ['total' => 70, 'ec_per_block' => 26,
+            'group1_blocks' => 1, 'group1_data' => 44, 'group2_blocks' => 0, 'group2_data' => 0],
+        4 => ['total' => 100, 'ec_per_block' => 18,
+            'group1_blocks' => 2, 'group1_data' => 32, 'group2_blocks' => 0, 'group2_data' => 0],
+        5 => ['total' => 134, 'ec_per_block' => 24,
+            'group1_blocks' => 2, 'group1_data' => 43, 'group2_blocks' => 0, 'group2_data' => 0],
+        6 => ['total' => 172, 'ec_per_block' => 16,
+            'group1_blocks' => 4, 'group1_data' => 27, 'group2_blocks' => 0, 'group2_data' => 0],
+        7 => ['total' => 196, 'ec_per_block' => 18,
+            'group1_blocks' => 4, 'group1_data' => 31, 'group2_blocks' => 0, 'group2_data' => 0],
+        8 => ['total' => 242, 'ec_per_block' => 22,
+            'group1_blocks' => 2, 'group1_data' => 38, 'group2_blocks' => 2, 'group2_data' => 39],
+        9 => ['total' => 292, 'ec_per_block' => 22,
+            'group1_blocks' => 3, 'group1_data' => 36, 'group2_blocks' => 2, 'group2_data' => 37],
+        10 => ['total' => 346, 'ec_per_block' => 26,
+            'group1_blocks' => 4, 'group1_data' => 43, 'group2_blocks' => 1, 'group2_data' => 44],
+        11 => ['total' => 404, 'ec_per_block' => 30,
+            'group1_blocks' => 1, 'group1_data' => 50, 'group2_blocks' => 4, 'group2_data' => 51],
+        12 => ['total' => 466, 'ec_per_block' => 22,
+            'group1_blocks' => 6, 'group1_data' => 36, 'group2_blocks' => 2, 'group2_data' => 37],
+        13 => ['total' => 532, 'ec_per_block' => 22,
+            'group1_blocks' => 8, 'group1_data' => 37, 'group2_blocks' => 1, 'group2_data' => 38],
+        14 => ['total' => 581, 'ec_per_block' => 24,
+            'group1_blocks' => 4, 'group1_data' => 40, 'group2_blocks' => 5, 'group2_data' => 41],
+        15 => ['total' => 655, 'ec_per_block' => 24,
+            'group1_blocks' => 5, 'group1_data' => 41, 'group2_blocks' => 5, 'group2_data' => 42],
+        16 => ['total' => 733, 'ec_per_block' => 28,
+            'group1_blocks' => 7, 'group1_data' => 45, 'group2_blocks' => 3, 'group2_data' => 46],
+        17 => ['total' => 815, 'ec_per_block' => 28,
+            'group1_blocks' => 10, 'group1_data' => 46, 'group2_blocks' => 1, 'group2_data' => 47],
+        18 => ['total' => 901, 'ec_per_block' => 26,
+            'group1_blocks' => 9, 'group1_data' => 43, 'group2_blocks' => 4, 'group2_data' => 44],
+        19 => ['total' => 991, 'ec_per_block' => 26,
+            'group1_blocks' => 3, 'group1_data' => 44, 'group2_blocks' => 11, 'group2_data' => 45],
+        20 => ['total' => 1085, 'ec_per_block' => 26,
+            'group1_blocks' => 3, 'group1_data' => 41, 'group2_blocks' => 13, 'group2_data' => 42],
     ];
 
     /**
@@ -151,9 +172,19 @@ final class QrCode
 
     /**
      * Rendu SVG, avec la zone de silence exigée par la norme.
+     *
+     * `$label` porte le nom accessible **dans** l'image, par un `<title>`,
+     * plutôt que sur un conteneur qui l'entoure. Un `<div role="img">` autour
+     * d'une image qui se déclare déjà comme telle empile deux fois la même
+     * sémantique, et le nom se perd si le conteneur disparaît. Vide, aucun
+     * titre n'est émis : une image sans nom vaut mieux qu'un nom faux.
      */
-    public static function toSvg(string $text, int $moduleSize = 4, int $quietZone = 4): string
-    {
+    public static function toSvg(
+        string $text,
+        int $moduleSize = 4,
+        int $quietZone = 4,
+        string $label = ''
+    ): string {
         $modules = self::encode($text);
         $count = count($modules);
         $side = ($count + 2 * $quietZone) * $moduleSize;
@@ -174,13 +205,18 @@ final class QrCode
             }
         }
 
+        $title = $label === ''
+            ? ''
+            : sprintf('<title>%s</title>', htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+
         return sprintf(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d" role="img">'
-            . '<rect width="%d" height="%d" fill="#ffffff"/><path d="%s" fill="#000000"/></svg>',
+            . '%s<rect width="%d" height="%d" fill="#ffffff"/><path d="%s" fill="#000000"/></svg>',
             $side,
             $side,
             $side,
             $side,
+            $title,
             $side,
             $side,
             $path
@@ -243,8 +279,9 @@ final class QrCode
     /**
      * Découpe en blocs, calcule la correction d'erreur et entrelace.
      *
-     * @param list<int>                                                                                                       $data
-     * @param array{total: int, ec_per_block: int, group1_blocks: int, group1_data: int, group2_blocks: int, group2_data: int} $spec
+     * @param list<int> $data
+     * @param array{total: int, ec_per_block: int, group1_blocks: int,
+     *     group1_data: int, group2_blocks: int, group2_data: int} $spec
      *
      * @return list<int>
      */
@@ -253,7 +290,12 @@ final class QrCode
         $blocks = [];
         $offset = 0;
 
-        foreach ([[$spec['group1_blocks'], $spec['group1_data']], [$spec['group2_blocks'], $spec['group2_data']]] as [$count, $length]) {
+        $groups = [
+            [$spec['group1_blocks'], $spec['group1_data']],
+            [$spec['group2_blocks'], $spec['group2_data']],
+        ];
+
+        foreach ($groups as [$count, $length]) {
             for ($index = 0; $index < $count; $index++) {
                 $blocks[] = array_slice($data, $offset, $length);
                 $offset += $length;

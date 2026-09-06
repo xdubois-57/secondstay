@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Rapportage',
-    'disclaimer' => 'Deze cijfers tellen wat is ontvangen, verwacht en ingehouden. Ze vormen geen fiscaal advies en geen aangifte: de boekhoudkundige lezing is de taak van uw boekhouder.',
+    'disclaimer' => 'Deze cijfers tellen wat is ontvangen, verwacht en ingehouden. Ze vormen geen fiscaal advies en '
+        . 'geen aangifte: de boekhoudkundige lezing is de taak van uw boekhouder.',
     'apply' => 'Tonen',
     'export' => 'Exporteren naar XLSX',
     'whole_year' => 'Heel het jaar',

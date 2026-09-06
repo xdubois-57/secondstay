@@ -31,7 +31,8 @@ return [
         'outdoor' => 'Außenbereich',
         'meters' => 'Zähler',
     ],
-    'checkin_intro' => 'Melden Sie innerhalb von {hours} Stunden nach Ihrer Anreise, was nicht in Ordnung ist. Ist alles in Ordnung, müssen Sie nichts tun.',
+    'checkin_intro' => 'Melden Sie innerhalb von {hours} Stunden nach Ihrer Anreise, was nicht in Ordnung ist. Ist '
+        . 'alles in Ordnung, müssen Sie nichts tun.',
     'checkout_intro' => 'Bei der Abreise ist für jeden entsprechend gekennzeichneten Bereich ein Foto verpflichtend.',
     'note' => 'Anmerkung',
     'photo' => 'Foto',
@@ -57,9 +58,11 @@ return [
     ],
     'admin' => [
         'title' => 'Bereiche und Referenzfotos',
-        'intro' => 'Legen Sie die Bereiche der Unterkunft fest: Reihenfolge, Hinweise und welche bei der Abreise ein Foto verlangen.',
+        'intro' => 'Legen Sie die Bereiche der Unterkunft fest: Reihenfolge, Hinweise und welche bei der Abreise ein '
+            . 'Foto verlangen.',
         'completeness' => 'Eigene Bezeichnungen',
-        'completeness_help' => 'Ein Bereich ohne eigene Bezeichnung verwendet die eingebaute Beschriftung, die bereits in allen vier Sprachen vorliegt.',
+        'completeness_help' => 'Ein Bereich ohne eigene Bezeichnung verwendet die eingebaute Beschriftung, die bereits '
+            . 'in allen vier Sprachen vorliegt.',
         'no_zone' => 'Kein Bereich festgelegt.',
         'seed' => 'Vorgeschlagene Bereiche anlegen',
         'seeded' => 'Vorgeschlagene Bereiche angelegt.',

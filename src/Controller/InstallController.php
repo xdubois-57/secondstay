@@ -78,7 +78,12 @@ final class InstallController extends AbstractController
         ];
 
         if ((string) $request->input('admin_password', '') !== (string) $request->input('admin_password_confirm', '')) {
-            return $this->renderForm($context, ['admin_password_confirm' => 'install.error.password_mismatch'], $input, 422);
+            return $this->renderForm(
+                $context,
+                ['admin_password_confirm' => 'install.error.password_mismatch'],
+                $input,
+                422,
+            );
         }
 
         try {

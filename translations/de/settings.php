@@ -101,7 +101,8 @@ return [
         ],
         'requires_approval' => [
             'label' => 'Freigabe durch die Eigentümer',
-            'help' => 'Jede Buchungsanfrage wartet auf Ihre Zustimmung. Deaktivieren Sie dies, um verfügbare Aufenthalte automatisch zu bestätigen.',
+            'help' => 'Jede Buchungsanfrage wartet auf Ihre Zustimmung. Deaktivieren Sie dies, um verfügbare '
+                . 'Aufenthalte automatisch zu bestätigen.',
         ],
         'allow_waitlist' => [
             'label' => 'Warteliste',
@@ -121,7 +122,8 @@ return [
         ],
         'night_multiple' => [
             'label' => 'Nächteblöcke',
-            'help' => 'Erzwingt eine Dauer als Vielfaches dieser Zahl. 0 deaktiviert die Regel, 7 erzwingt ganze Wochen.',
+            'help' => 'Erzwingt eine Dauer als Vielfaches dieser Zahl. 0 deaktiviert die Regel, 7 erzwingt ganze '
+                . 'Wochen.',
         ],
         'max_nights' => [
             'label' => 'Maximale Dauer',
@@ -175,7 +177,8 @@ return [
     'scheduler' => [
         'http_token' => [
             'label' => 'Token für den Planer',
-            'help' => 'Nur ausfüllen, wenn Ihr Hoster Cron ausschließlich per URL anbietet. Leer existiert die Auslöse-URL nicht.',
+            'help' => 'Nur ausfüllen, wenn Ihr Hoster Cron ausschließlich per URL anbietet. Leer existiert die '
+                . 'Auslöse-URL nicht.',
         ],
     ],
     'backup' => [
@@ -270,11 +273,13 @@ return [
         ],
         'smtp_password' => [
             'label' => 'SMTP-Passwort',
-            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Leer lassen, um den aktuellen Wert zu behalten.',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Leer lassen, um den aktuellen Wert zu '
+                . 'behalten.',
         ],
         'dkim_selector' => [
             'label' => 'DKIM-Selektor',
-            'help' => 'Vom Versanddienst vorgegebener Selektor (oft „default“ oder „mail“). Er dient nur der DNS-Diagnose: Das Signieren bleibt Sache des Anbieters.',
+            'help' => 'Vom Versanddienst vorgegebener Selektor (oft „default“ oder „mail“). Er dient nur der '
+                . 'DNS-Diagnose: Das Signieren bleibt Sache des Anbieters.',
         ],
     ],
     'notification' => [
@@ -294,15 +299,18 @@ return [
     'push' => [
         'subject' => [
             'label' => 'Push-Kontakt',
-            'help' => 'Kontakt-E-Mail-Adresse oder URL, die den Push-Diensten übermittelt wird, wie es die Norm verlangt. Ist das Feld leer, wird die Absenderadresse verwendet.',
+            'help' => 'Kontakt-E-Mail-Adresse oder URL, die den Push-Diensten übermittelt wird, wie es die Norm '
+                . 'verlangt. Ist das Feld leer, wird die Absenderadresse verwendet.',
         ],
         'vapid_public' => [
             'label' => 'Öffentlicher VAPID-Schlüssel',
-            'help' => 'Von der Installation erzeugt und an die Browser übergeben. Ein Austausch macht alle bestehenden Abonnements ungültig.',
+            'help' => 'Von der Installation erzeugt und an die Browser übergeben. Ein Austausch macht alle bestehenden '
+                . 'Abonnements ungültig.',
         ],
         'vapid_private' => [
             'label' => 'Privater VAPID-Schlüssel',
-            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Er signiert die Zustellungen an die Push-Dienste.',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Er signiert die Zustellungen an die '
+                . 'Push-Dienste.',
         ],
     ],
     'account' => [
@@ -322,11 +330,13 @@ return [
     'payment' => [
         'provider' => [
             'label' => 'Zahlungsanbieter',
-            'help' => 'Mollie zieht online ein und bestätigt die Buchung automatisch. Ohne Anbieter bleibt nur die Überweisung.',
+            'help' => 'Mollie zieht online ein und bestätigt die Buchung automatisch. Ohne Anbieter bleibt nur die '
+                . 'Überweisung.',
         ],
         'mollie_api_key' => [
             'label' => 'Mollie-API-Schlüssel',
-            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Ein „test_“-Schlüssel zieht nichts wirklich ein.',
+            'help' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Ein „test_“-Schlüssel zieht nichts wirklich '
+                . 'ein.',
         ],
         'balance_days_before' => [
             'label' => 'Restbetrag fällig (Tage vor Anreise)',
@@ -406,11 +416,13 @@ return [
         ],
         'reply_address' => [
             'label' => 'Antwortadresse',
-            'help' => 'Den Gästen angezeigte Adresse. Sie wird je Buchung markiert, damit Antworten sich selbst zuordnen.',
+            'help' => 'Den Gästen angezeigte Adresse. Sie wird je Buchung markiert, damit Antworten sich selbst '
+                . 'zuordnen.',
         ],
         'uid_validity' => [
             'label' => 'Gültigkeitskennung',
-            'help' => 'Wird von der Synchronisation gesetzt. Ändert sie sich, wurde das Postfach neu nummeriert und der Abruf beginnt von vorn.',
+            'help' => 'Wird von der Synchronisation gesetzt. Ändert sie sich, wurde das Postfach neu nummeriert und '
+                . 'der Abruf beginnt von vorn.',
         ],
         'batch_size' => [
             'label' => 'Nachrichten je Abruf',
@@ -434,7 +446,8 @@ return [
     'operations' => [
         'default_manager' => [
             'label' => 'Standard-Ansprechpartner vor Ort',
-            'help' => 'Konto-ID des Ansprechpartners für Aufenthalte ohne ausdrückliche Zuweisung. Null bedeutet keiner.',
+            'help' => 'Konto-ID des Ansprechpartners für Aufenthalte ohne ausdrückliche Zuweisung. Null bedeutet '
+                . 'keiner.',
         ],
         'prepare_days' => [
             'label' => 'Vorbereitungsfenster (Tage)',
@@ -496,8 +509,14 @@ return [
         ],
     ],
     'pwa' => [
-        'theme_color' => ['label' => 'Themenfarbe', 'help' => 'Farbton der Systemleiste, sobald die App installiert ist. Format #rrggbb.'],
-        'background_color' => ['label' => 'Hintergrundfarbe', 'help' => 'Wird beim Start angezeigt, vor der ersten Darstellung. Format #rrggbb.'],
+        'theme_color' => [
+            'label' => 'Themenfarbe',
+            'help' => 'Farbton der Systemleiste, sobald die App installiert ist. Format #rrggbb.',
+        ],
+        'background_color' => [
+            'label' => 'Hintergrundfarbe',
+            'help' => 'Wird beim Start angezeigt, vor der ersten Darstellung. Format #rrggbb.',
+        ],
     ],
     'quota' => [
         'media_mb' => ['label' => 'Kontingent Medien (MB)', 'help' => 'Null bedeutet keine Grenze.'],

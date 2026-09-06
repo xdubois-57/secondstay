@@ -12,7 +12,8 @@ return [
         'subject' => 'Mietvertrag für eine möblierte Ferienunterkunft',
         'reference' => 'Referenz',
         'version' => 'Vorlagenversion {version} — Sprache {locale}',
-        'acceptance_notice' => 'Die Annahme dieses Vertrags wird elektronisch mit Datum, Version und Sprache festgehalten.',
+        'acceptance_notice' => 'Die Annahme dieses Vertrags wird elektronisch mit Datum, Version und Sprache '
+            . 'festgehalten.',
     ],
     'section' => [
         'parties' => 'Die Parteien',
@@ -53,23 +54,32 @@ return [
     'clause' => [
         'cancellation' => [
             'title' => 'Stornierung',
-            'body' => 'Der Gast kann jederzeit stornieren. Bereits gezahlte Beträge werden nach den zum Buchungszeitpunkt geltenden Allgemeinen Geschäftsbedingungen erstattet oder einbehalten; deren Version ist unten angegeben. Storniert der Eigentümer, werden alle gezahlten Beträge vollständig erstattet.',
+            'body' => 'Der Gast kann jederzeit stornieren. Bereits gezahlte Beträge werden nach den zum '
+                . 'Buchungszeitpunkt geltenden Allgemeinen Geschäftsbedingungen erstattet oder einbehalten; deren '
+                . 'Version ist unten angegeben. Storniert der Eigentümer, werden alle gezahlten Beträge vollständig '
+                . 'erstattet.',
         ],
         'inventory' => [
             'title' => 'Übergabeprotokoll',
-            'body' => 'Bei An- und Abreise wird ein Übergabeprotokoll erstellt. Bleibt eine Rüge des Gastes innerhalb von vierundzwanzig Stunden nach Anreise aus, gilt die Unterkunft als dem Anreiseprotokoll entsprechend.',
+            'body' => 'Bei An- und Abreise wird ein Übergabeprotokoll erstellt. Bleibt eine Rüge des Gastes innerhalb '
+                . 'von vierundzwanzig Stunden nach Anreise aus, gilt die Unterkunft als dem Anreiseprotokoll '
+                . 'entsprechend.',
         ],
         'rules' => [
             'title' => 'Nutzung der Unterkunft',
-            'body' => 'Die Unterkunft wird möbliert und ausschließlich zur vorübergehenden Wohnnutzung vermietet. Die Zahl der Bewohner darf die angegebene Kapazität nicht überschreiten. Untervermietung ist untersagt.',
+            'body' => 'Die Unterkunft wird möbliert und ausschließlich zur vorübergehenden Wohnnutzung vermietet. Die '
+                . 'Zahl der Bewohner darf die angegebene Kapazität nicht überschreiten. Untervermietung ist untersagt.',
         ],
         'liability' => [
             'title' => 'Haftung und Versicherung',
-            'body' => 'Der Gast haftet für während des Aufenthalts verursachte Schäden und erklärt, für die Dauer der Miete haftpflichtversichert zu sein.',
+            'body' => 'Der Gast haftet für während des Aufenthalts verursachte Schäden und erklärt, für die Dauer der '
+                . 'Miete haftpflichtversichert zu sein.',
         ],
         'data' => [
             'title' => 'Personenbezogene Daten',
-            'body' => 'Die erhobenen Daten dienen ausschließlich der Verwaltung der Vermietung. Der Gast hat ein Recht auf Auskunft, Berichtigung, Übertragbarkeit und Löschung, ausübbar über seinen persönlichen Bereich.',
+            'body' => 'Die erhobenen Daten dienen ausschließlich der Verwaltung der Vermietung. Der Gast hat ein Recht '
+                . 'auf Auskunft, Berichtigung, Übertragbarkeit und Löschung, ausübbar über seinen persönlichen '
+                . 'Bereich.',
         ],
     ],
     'accept' => [

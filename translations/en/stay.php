@@ -55,7 +55,8 @@ return [
     ],
     'guest' => [
         'title' => 'Share with my guests',
-        'intro' => 'A guest link gives access to this practical information — and nothing else: no amounts, no documents, no account.',
+        'intro' => 'A guest link gives access to this practical information — and nothing else: no amounts, no '
+            . 'documents, no account.',
         'create' => 'Create a guest link',
         'label' => 'For whom?',
         'created' => 'Guest link created. Copy it now: it will not be shown again.',
@@ -72,15 +73,21 @@ return [
         'not_saved' => 'The guide was not saved: correct the fields flagged below.',
         'link_url' => 'Useful link or map',
         'link_label' => 'Link label',
-        'link_help' => 'An openable address: a map of the bin store, an access plan, a service’s official opening hours. “Down the road on the left” cannot be followed from a phone, in the dark, with a suitcase. Leave empty when there is nothing to open.',
+        'link_help' => 'An openable address: a map of the bin store, an access plan, a service’s official opening '
+            . 'hours. “Down the road on the left” cannot be followed from a phone, in the dark, with a suitcase. Leave '
+            . 'empty when there is nothing to open.',
         'source_url' => 'Source of this information',
         'source_checked_on' => 'Checked on',
-        'source_help' => 'Where this information comes from — the town’s page, the waste authority, the network operator. Collection days and municipal by-laws change: without a dated source, the guide ages without warning. Today’s date is used when you leave it empty.',
+        'source_help' => 'Where this information comes from — the town’s page, the waste authority, the network '
+            . 'operator. Collection days and municipal by-laws change: without a dated source, the guide ages without '
+            . 'warning. Today’s date is used when you leave it empty.',
         'illustration' => 'Illustration',
         'no_illustration' => 'None',
-        'illustration_help' => 'Picked from the media library, among published and non-private items. A photo explains waste sorting or how an appliance works better than a paragraph, and reads in any language.',
+        'illustration_help' => 'Picked from the media library, among published and non-private items. A photo explains '
+            . 'waste sorting or how an appliance works better than a paragraph, and reads in any language.',
         'public' => 'Public address for a QR code',
-        'public_help' => 'Publishes this block at a fixed address, readable without an account or a stay. Only enable it for text anyone may read: leave no access code and no Wi-Fi password in it.',
+        'public_help' => 'Publishes this block at a fixed address, readable without an account or a stay. Only enable '
+            . 'it for text anyone may read: leave no access code and no Wi-Fi password in it.',
         'public_url' => 'Address to encode in the QR code',
         'qr_alt' => 'QR code of the public page',
         'title' => 'Welcome book',

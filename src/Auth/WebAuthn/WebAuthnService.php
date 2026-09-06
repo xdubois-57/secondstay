@@ -53,7 +53,10 @@ final class WebAuthnService
 
         // Un domaine enregistrable comporte au moins un point et aucun
         // caractère interdit.
-        return preg_match('/^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i', $host) === 1;
+        $pattern = '/^(?=.{1,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?'
+            . '(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i';
+
+        return preg_match($pattern, $host) === 1;
     }
 
     public function relyingPartyId(): string
@@ -182,7 +185,15 @@ final class WebAuthnService
             $label === '' ? 'Passkey' : $label,
         );
 
-        $this->audit?->record('auth.passkey_registered', 'user', (string) $user->id, null, null, $user->id, $user->email);
+        $this->audit?->record(
+            'auth.passkey_registered',
+            'user',
+            (string) $user->id,
+            null,
+            null,
+            $user->id,
+            $user->email,
+        );
 
         return $id;
     }
@@ -248,7 +259,15 @@ final class WebAuthnService
     {
         $deleted = $this->credentials->delete($credentialId, $user->id);
         if ($deleted) {
-            $this->audit?->record('auth.passkey_removed', 'user', (string) $user->id, null, null, $user->id, $user->email);
+            $this->audit?->record(
+                'auth.passkey_removed',
+                'user',
+                (string) $user->id,
+                null,
+                null,
+                $user->id,
+                $user->email,
+            );
         }
 
         return $deleted;

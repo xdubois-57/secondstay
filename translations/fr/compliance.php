@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 return [
     'title' => 'Conformité France',
-    'intro' => 'Chaque sujet est décrit, puis constaté par vous : statut, source officielle, date de vérification et prochaine échéance.',
-    'disclaimer' => 'Ces informations sont des repères, pas un conseil juridique. La réglementation varie selon la commune et évolue : la source officielle et la date de vérification font foi.',
+    'intro' => 'Chaque sujet est décrit, puis constaté par vous : statut, source officielle, date de vérification et '
+        . 'prochaine échéance.',
+    'disclaimer' => 'Ces informations sont des repères, pas un conseil juridique. La réglementation varie selon la '
+        . 'commune et évolue : la source officielle et la date de vérification font foi.',
     'saved' => 'Sujet enregistré.',
     'evidence_added' => 'Pièce justificative ajoutée.',
     'overdue' => 'Revue dépassée',
@@ -51,10 +53,13 @@ return [
         ],
         'declaration' => [
             'label' => 'Déclaration ou enregistrement en mairie',
-            'definition' => 'Déclaration du meublé auprès de la commune, avec parfois un numéro d’enregistrement à afficher.',
-            'applicability' => 'Obligatoire dans de nombreuses communes ; l’enregistrement l’est là où la commune l’a instauré.',
+            'definition' => 'Déclaration du meublé auprès de la commune, avec parfois un numéro d’enregistrement à '
+                . 'afficher.',
+            'applicability' => 'Obligatoire dans de nombreuses communes ; l’enregistrement l’est là où la commune l’a '
+                . 'instauré.',
             'where' => 'Mairie de la commune du logement, guichet en ligne le cas échéant.',
-            'impact' => 'L’absence de déclaration expose à une amende et empêche l’affichage du numéro exigé par les plateformes.',
+            'impact' => 'L’absence de déclaration expose à une amende et empêche l’affichage du numéro exigé par les '
+                . 'plateformes.',
         ],
         'siret' => [
             'label' => 'SIRET',
@@ -65,7 +70,8 @@ return [
         ],
         'owner_status' => [
             'label' => 'Statut du loueur',
-            'definition' => 'Loueur en meublé non professionnel ou professionnel, selon les recettes et leur part dans les revenus.',
+            'definition' => 'Loueur en meublé non professionnel ou professionnel, selon les recettes et leur part dans '
+                . 'les revenus.',
             'applicability' => 'Concerne tout propriétaire qui loue en meublé.',
             'where' => 'Documentation fiscale officielle et conseil de votre comptable.',
             'impact' => 'Change le régime d’imposition, les cotisations et les obligations comptables.',

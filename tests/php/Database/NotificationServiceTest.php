@@ -22,7 +22,7 @@ use SecondStay\Notification\NotificationEvent;
 use SecondStay\Notification\NotificationPreferenceRepository;
 use SecondStay\Notification\NotificationRepository;
 use SecondStay\Notification\NotificationService;
-use SecondStay\Push\Base64Url;
+use SecondStay\Push\UrlSafeEncoding;
 use SecondStay\Push\FakePushProvider;
 use SecondStay\Push\PushSubscription;
 use SecondStay\Push\PushSubscriptionRepository;
@@ -132,7 +132,7 @@ final class NotificationServiceTest extends DatabaseTestCase
         $subscription = new PushSubscription(
             $endpoint,
             $browser['public'],
-            Base64Url::encode(random_bytes(16)),
+            UrlSafeEncoding::encode(random_bytes(16)),
             $user->id,
             $user->locale,
         );

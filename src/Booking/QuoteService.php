@@ -26,7 +26,8 @@ final class QuoteService
     }
 
     /**
-     * @param array{arrival?: string, departure?: string, adults?: int, children?: int, infants?: int, cleaning?: bool} $input
+     * @param array{arrival?: string, departure?: string, adults?: int, children?: int, infants?: int,
+     *     cleaning?: bool} $input
      *
      * @return array{
      *     ok: bool,
@@ -56,11 +57,14 @@ final class QuoteService
         }
 
         $errors = $this->rules->validateRange($range);
-        $errors = array_merge($errors, $this->rules->validateGuests(
-            (int) ($input['adults'] ?? 0),
-            (int) ($input['children'] ?? 0),
-            (int) ($input['infants'] ?? 0),
-        ));
+        $errors = array_merge(
+            $errors,
+            $this->rules->validateGuests(
+                (int) ($input['adults'] ?? 0),
+                (int) ($input['children'] ?? 0),
+                (int) ($input['infants'] ?? 0),
+            )
+        );
 
         $conflicts = $range->isValid() ? $this->availability->conflictingNights($range) : [];
         if ($conflicts !== []) {

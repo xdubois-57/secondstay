@@ -44,6 +44,17 @@ export function asInput(node) {
 }
 
 /**
+ * Restreint un élément à `<progress>`, pour que `value` et `dataset` soient
+ * connus du vérificateur.
+ *
+ * @param {Element} node
+ * @returns {HTMLProgressElement}
+ */
+export function asProgress(node) {
+    return /** @type {HTMLProgressElement} */ (node);
+}
+
+/**
  * @param {Element} node
  * @returns {FormField}
  */

@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Geversioneerde juridische teksten',
-    'intro' => 'Een versie publiceren legt de tekst van elke taal vast. Een reservering bewaart dan de versie en de taal die werkelijk zijn aanvaard, ook als de tekst later verandert.',
+    'intro' => 'Een versie publiceren legt de tekst van elke taal vast. Een reservering bewaart dan de versie en de '
+        . 'taal die werkelijk zijn aanvaard, ook als de tekst later verandert.',
     'type' => [
         'terms' => 'Algemene voorwaarden',
         'privacy' => 'Privacy',

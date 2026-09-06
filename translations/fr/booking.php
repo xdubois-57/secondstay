@@ -44,7 +44,8 @@ return [
         'cleaning_optional' => 'À votre choix',
         'deposit' => 'Acompte à la réservation',
         'security_deposit' => 'Caution',
-        'note' => 'Le tarif de certaines nuits peut différer du tarif de référence : le calendrier affiche le prix réel de chaque nuit.',
+        'note' => 'Le tarif de certaines nuits peut différer du tarif de référence : le calendrier affiche le prix '
+            . 'réel de chaque nuit.',
         'see_availability' => 'Voir les disponibilités',
     ],
     'rules' => [

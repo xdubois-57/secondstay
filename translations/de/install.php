@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 return [
     'title' => 'SecondStay installieren',
-    'intro' => 'Diese Installation verwaltet ein einziges Objekt. Geben Sie die Datenbank, den ersten Administrator und die wichtigsten Objektdaten an.',
+    'intro' => 'Diese Installation verwaltet ein einziges Objekt. Geben Sie die Datenbank, den ersten Administrator '
+        . 'und die wichtigsten Objektdaten an.',
     'success' => 'Installation abgeschlossen. Willkommen im Verwaltungsbereich.',
-    'requirements_not_met' => 'Einige Pflichtvoraussetzungen sind nicht erfüllt. Beheben Sie diese, bevor Sie fortfahren.',
+    'requirements_not_met' => 'Einige Pflichtvoraussetzungen sind nicht erfüllt. Beheben Sie diese, bevor Sie '
+        . 'fortfahren.',
     'step' => [
         'requirements' => 'Servervoraussetzungen',
         'database' => 'Datenbank',

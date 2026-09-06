@@ -77,7 +77,8 @@ return [
         'booking' => 'Reservering',
         'provider' => 'Provider',
         'provider_ready' => 'Provider geconfigureerd',
-        'provider_missing' => 'Geen provider geconfigureerd: alleen overschrijvingen en handmatige inning zijn mogelijk.',
+        'provider_missing' => 'Geen provider geconfigureerd: alleen overschrijvingen en handmatige inning zijn '
+            . 'mogelijk.',
         'confirm_booking' => 'Ook de reservering bevestigen',
         'reason' => 'Reden',
         'scheduled' => 'Schema bijgewerkt.',

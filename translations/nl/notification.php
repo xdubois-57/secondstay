@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Meldingen',
-    'intro' => 'Kies hoe u op de hoogte wilt worden gebracht. Belangrijke berichten over uw verblijf worden altijd per e-mail verstuurd.',
+    'intro' => 'Kies hoe u op de hoogte wilt worden gebracht. Belangrijke berichten over uw verblijf worden altijd per '
+        . 'e-mail verstuurd.',
     'send_test' => 'Een testmelding versturen',
     'test_sent' => 'Testmelding verzonden.',
     'test_no_device' => 'Geen geabonneerd apparaat voor deze test.',
@@ -52,7 +53,8 @@ return [
         'subject' => 'Reserveringsaanvraag geregistreerd',
         'title' => 'Aanvraag geregistreerd',
         'body' => 'Uw aanvraag voor {property} is geregistreerd.',
-        'mail_body' => 'Wij hebben uw reserveringsaanvraag ontvangen. U krijgt een bevestiging zodra deze is goedgekeurd.',
+        'mail_body' => 'Wij hebben uw reserveringsaanvraag ontvangen. U krijgt een bevestiging zodra deze is '
+            . 'goedgekeurd.',
         'action' => 'Mijn reservering bekijken',
     ],
     'booking_confirmed' => [

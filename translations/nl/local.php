@@ -9,7 +9,8 @@ declare(strict_types=1);
 return [
     'admin' => [
         'title' => 'Lokale inhoud',
-        'intro' => 'Geef de te lezen pagina’s op, schrijf uw instructie en voer een test uit. Het systeem voegt de locatie, het seizoen, de verblijfsdata, de bronnen en het verwachte formaat toe.',
+        'intro' => 'Geef de te lezen pagina’s op, schrijf uw instructie en voer een test uit. Het systeem voegt de '
+            . 'locatie, het seizoen, de verblijfsdata, de bronnen en het verwachte formaat toe.',
     ],
     'enabled' => 'Lokale inhoud wordt gemaakt voor komende verblijven.',
     'disabled' => 'Lokale inhoud is uitgeschakeld.',
@@ -25,7 +26,8 @@ return [
     'source_updated' => 'Bron bijgewerkt.',
     'source_deleted' => 'Bron verwijderd.',
     'prompt' => 'Instructie',
-    'prompt_intro' => 'Deze tekst is van u. Het systeem voegt automatisch de locatie, het seizoen, de exacte data, de bronnen en het uitvoerschema toe.',
+    'prompt_intro' => 'Deze tekst is van u. Het systeem voegt automatisch de locatie, het seizoen, de exacte data, de '
+        . 'bronnen en het uitvoerschema toe.',
     'prompt_saved' => 'Instructie opgeslagen.',
     'suggest_prompt' => 'Prompt genereren op basis van de locatie',
     'run' => 'Generatie',
@@ -73,9 +75,12 @@ return [
     'verified_on' => 'gecontroleerd op {date}',
     'stay' => [
         'title' => 'In de buurt',
-        'disclaimer' => 'Deze suggesties komen uit de vermelde bronnen en zijn gecontroleerd op de aangegeven datum. Bevestig uren en beschikbaarheid bij de organisator.',
+        'disclaimer' => 'Deze suggesties komen uit de vermelde bronnen en zijn gecontroleerd op de aangegeven datum. '
+            . 'Bevestig uren en beschikbaarheid bij de organisator.',
     ],
-    'suggested_prompt' => 'Stel activiteiten voor rond {location} voor de gasten van {property}: markten, lokale feesten, musea, wandelingen en goede adressen om te eten. Geef voorrang aan wat te voet of binnen dertig minuten rijden bereikbaar is, en meld wat gereserveerd moet worden.',
+    'suggested_prompt' => 'Stel activiteiten voor rond {location} voor de gasten van {property}: markten, lokale '
+        . 'feesten, musea, wandelingen en goede adressen om te eten. Geef voorrang aan wat te voet of binnen dertig '
+        . 'minuten rijden bereikbaar is, en meld wat gereserveerd moet worden.',
     'error' => [
         'no_location' => 'Vul eerst de gemeente van de woning in bij de configuratie.',
         'duplicate' => 'Dit adres staat al in de lijst.',

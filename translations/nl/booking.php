@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'rule' => [
-        'min_nights' => 'Verblijf van minstens {count} nacht|Verblijf van minstens {count} nacht|Verblijf van minstens {count} nachten',
+        'min_nights' => 'Verblijf van minstens {count} nacht|Verblijf van minstens {count} nacht|Verblijf van minstens '
+            . '{count} nachten',
         'max_guests' => 'Tot {count} gast|Tot {count} gast|Tot {count} gasten',
         'times' => 'Aankomst vanaf {checkin}, vertrek vóór {checkout}',
         'fixed_week' => 'Verblijven van zaterdag tot zaterdag',
@@ -44,7 +45,8 @@ return [
         'cleaning_optional' => 'Naar keuze',
         'deposit' => 'Aanbetaling bij reservering',
         'security_deposit' => 'Waarborg',
-        'note' => 'Sommige nachten kunnen afwijken van het referentietarief: de kalender toont de werkelijke prijs van elke nacht.',
+        'note' => 'Sommige nachten kunnen afwijken van het referentietarief: de kalender toont de werkelijke prijs van '
+            . 'elke nacht.',
         'see_availability' => 'Beschikbaarheid bekijken',
     ],
     'rules' => [

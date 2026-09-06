@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Geplande taken',
-    'intro' => 'Het product draait geen permanent proces: één cron-regel start alles wat aan de beurt is. Voeg die toe bij uw hostingprovider, zo vaak als toegestaan.',
+    'intro' => 'Het product draait geen permanent proces: één cron-regel start alles wat aan de beurt is. Voeg die toe '
+        . 'bij uw hostingprovider, zo vaak als toegestaan.',
     'command_path' => '/pad/naar/secondstay/src/Scheduler/cron.php',
     'never' => 'nooit uitgevoerd',
     'stale' => 'achterstallig',

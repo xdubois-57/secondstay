@@ -67,7 +67,8 @@ final class SeoBuilder
 
         $address = array_filter([
             'streetAddress' => trim(
-                $this->settings->string('property.address_line1') . ' ' . $this->settings->string('property.address_line2')
+                $this->settings->string('property.address_line1')
+                . ' ' . $this->settings->string('property.address_line2')
             ),
             'postalCode' => $this->settings->string('property.postal_code'),
             'addressLocality' => $this->settings->string('property.city'),

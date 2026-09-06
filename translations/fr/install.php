@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 return [
     'title' => 'Installation de SecondStay',
-    'intro' => 'Cette installation gère un seul logement. Renseignez la base de données, le premier administrateur et les informations essentielles du logement.',
+    'intro' => 'Cette installation gère un seul logement. Renseignez la base de données, le premier administrateur et '
+        . 'les informations essentielles du logement.',
     'success' => 'Installation terminée. Bienvenue dans l’administration.',
-    'requirements_not_met' => 'Certains prérequis obligatoires ne sont pas satisfaits. Corrigez-les avant de poursuivre.',
+    'requirements_not_met' => 'Certains prérequis obligatoires ne sont pas satisfaits. Corrigez-les avant de '
+        . 'poursuivre.',
     'step' => [
         'requirements' => 'Prérequis serveur',
         'database' => 'Base de données',

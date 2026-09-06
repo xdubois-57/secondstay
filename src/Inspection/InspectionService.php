@@ -315,10 +315,13 @@ final class InspectionService
             return 'ok';
         }
 
-        return 'anomalies:' . implode(',', array_map(
-            static fn (InspectionEntry $entry): string => $entry->zone->code,
-            $anomalies
-        ));
+        return 'anomalies:' . implode(
+            ',',
+            array_map(
+                static fn (InspectionEntry $entry): string => $entry->zone->code,
+                $anomalies
+            )
+        );
     }
 
     /**

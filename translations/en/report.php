@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Reporting',
-    'disclaimer' => 'These figures count what has been received, expected and held. They are neither tax advice nor a declaration: their accounting reading is your accountant’s business.',
+    'disclaimer' => 'These figures count what has been received, expected and held. They are neither tax advice nor a '
+        . 'declaration: their accounting reading is your accountant’s business.',
     'apply' => 'Show',
     'export' => 'Export to XLSX',
     'whole_year' => 'Whole year',

@@ -71,10 +71,8 @@
                                        id="new_password" name="new_password" type="password"
                                        autocomplete="new-password" minlength="{{ min_password_length }}" required
                                        data-password-input>
-                                <div class="progress mt-2" role="progressbar" aria-label="{{ t('auth.password.strength') }}"
-                                     aria-valuemin="0" aria-valuemax="100" style="height: .4rem;">
-                                    <div class="progress-bar" data-password-strength style="width: 0"></div>
-                                </div>
+                                <progress class="ss-strength mt-2" max="100" value="0" data-password-strength
+                                  aria-label="{{ t('auth.password.strength') }}"></progress>
                                 {% if errors.new_password is defined %}<div class="invalid-feedback d-block">{{ t(errors.new_password) }}</div>{% endif %}
                             </div>
                             <div class="col-12 col-md-4">
@@ -128,7 +126,7 @@
                                     data-error-label="{{ t('webauthn.error.generic') }}"
                                     data-testid="passkey-add">{{ t('account.passkey.add') }}</button>
                         </div>
-                        <p class="small mt-2 mb-0" data-passkey-status role="status"></p>
+                        <output class="small mt-2 mb-0 d-block" data-passkey-status></output>
                         <p class="small text-body-secondary mb-0" data-passkey-unsupported hidden>{{ t('account.passkey.unsupported') }}</p>
                     </div>
                 </div>
@@ -198,11 +196,11 @@
                             <button class="btn btn-outline-secondary btn-sm" type="submit"
                                     data-testid="send-test-notification">{{ t('notification.send_test') }}</button>
                         </form>
-                        <p class="small mt-2 mb-0" data-push-status role="status"
+                        <output class="small mt-2 mb-0 d-block" data-push-status
                            data-enabled="{{ t('notification.push.enabled') }}"
                            data-disabled="{{ t('notification.push.disabled') }}"
                            data-unsupported="{{ t('notification.push.unsupported') }}"
-                           data-denied="{{ t('notification.push.denied') }}"></p>
+                           data-denied="{{ t('notification.push.denied') }}"></output>
                     {% else %}
                         <p class="small text-body-secondary mb-0" data-testid="push-unavailable">{{ t('notification.push.unavailable') }}</p>
                     {% endif %}

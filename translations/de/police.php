@@ -10,8 +10,10 @@ return [
     'title' => 'Meldescheine',
     'record' => 'Meldeschein',
     'open_record' => 'Meldeschein öffnen',
-    'intro' => 'Der individuelle Meldeschein ist nur in bestimmten Fällen erforderlich. Solange er nicht aktiviert ist, werden keine Identitätsdaten erhoben.',
-    'record_intro' => 'Die Daten sind verschlüsselt und werden nach Ablauf der Aufbewahrungsfrist automatisch gelöscht.',
+    'intro' => 'Der individuelle Meldeschein ist nur in bestimmten Fällen erforderlich. Solange er nicht aktiviert '
+        . 'ist, werden keine Identitätsdaten erhoben.',
+    'record_intro' => 'Die Daten sind verschlüsselt und werden nach Ablauf der Aufbewahrungsfrist automatisch '
+        . 'gelöscht.',
     'enabled' => 'Der Meldeschein wird für die betroffenen Aufenthalte verlangt.',
     'disabled' => 'Der Meldeschein ist deaktiviert: es wird nichts erhoben.',
     'configure' => 'Konfigurieren',

@@ -53,10 +53,10 @@ final class Vapid
         $details = openssl_pkey_get_details($resource);
 
         return [
-            'public' => Base64Url::encode(
+            'public' => UrlSafeEncoding::encode(
                 "\x04" . self::pad($details['ec']['x']) . self::pad($details['ec']['y'])
             ),
-            'private' => Base64Url::encode(self::pad($details['ec']['d'])),
+            'private' => UrlSafeEncoding::encode(self::pad($details['ec']['d'])),
         ];
     }
 
@@ -67,8 +67,8 @@ final class Vapid
         }
 
         try {
-            return strlen(Base64Url::decode($this->publicKey)) === 65
-                && strlen(Base64Url::decode($this->privateKey)) === 32;
+            return strlen(UrlSafeEncoding::decode($this->publicKey)) === 65
+                && strlen(UrlSafeEncoding::decode($this->privateKey)) === 32;
         } catch (\InvalidArgumentException) {
             return false;
         }
@@ -88,11 +88,12 @@ final class Vapid
         $header = ['typ' => 'JWT', 'alg' => 'ES256'];
         $claims = ['aud' => $audience, 'exp' => $expiresAt, 'sub' => $this->subjectOrDefault()];
 
-        $signingInput = Base64Url::encode(self::json($header)) . '.' . Base64Url::encode(self::json($claims));
+        $signingInput = UrlSafeEncoding::encode(self::json($header))
+            . '.' . UrlSafeEncoding::encode(self::json($claims));
         $signature = $this->sign($signingInput);
 
         return [
-            'authorization' => 'vapid t=' . $signingInput . '.' . Base64Url::encode($signature)
+            'authorization' => 'vapid t=' . $signingInput . '.' . UrlSafeEncoding::encode($signature)
                 . ', k=' . $this->publicKey,
             'expires_at' => $expiresAt,
         ];
@@ -119,7 +120,10 @@ final class Vapid
      */
     private function sign(string $payload): string
     {
-        $pem = self::privateKeyPem(Base64Url::decode($this->privateKey), Base64Url::decode($this->publicKey));
+        $pem = self::privateKeyPem(
+            UrlSafeEncoding::decode($this->privateKey),
+            UrlSafeEncoding::decode($this->publicKey),
+        );
 
         $key = openssl_pkey_get_private($pem);
         if ($key === false) {
@@ -154,7 +158,8 @@ final class Vapid
         // et l'analyse de secrets reste stricte sans exception.
         $label = 'EC PRIVATE KEY';
 
-        return sprintf("-----%s %s-----\n%s-----%s %s-----\n",
+        return sprintf(
+            "-----%s %s-----\n%s-----%s %s-----\n",
             'BEGIN',
             $label,
             chunk_split(base64_encode($sequence), 64, "\n"),

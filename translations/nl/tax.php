@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Toeristenbelasting',
-    'intro' => 'Een tarief wordt vastgesteld, treedt op een datum in werking en wordt daarna vervangen. Elke regel draagt dus haar geldigheidsperiode, en een reeds geboekt verblijf behoudt het tarief dat bij aankomst gold.',
+    'intro' => 'Een tarief wordt vastgesteld, treedt op een datum in werking en wordt daarna vervangen. Elke regel '
+        . 'draagt dus haar geldigheidsperiode, en een reeds geboekt verblijf behoudt het tarief dat bij aankomst gold.',
     'enabled' => 'De toeristenbelasting wordt geïnd.',
     'disabled' => 'De toeristenbelasting wordt niet geïnd.',
     'configure' => 'Configureren',
@@ -18,7 +19,8 @@ return [
     'new_rule' => 'Nieuw tarief',
     'rule_created' => 'Tarief opgeslagen.',
     'rule_deleted' => 'Tarief verwijderd.',
-    'overlap_warning' => 'Twee tarieven overlappen voor dezelfde classificatie: het bedrag zou afhangen van de volgorde van de rijen.',
+    'overlap_warning' => 'Twee tarieven overlappen voor dezelfde classificatie: het bedrag zou afhangen van de '
+        . 'volgorde van de rijen.',
     'field' => [
         'period' => 'Periode',
         'effective_from' => 'Treedt in werking op',
@@ -40,7 +42,8 @@ return [
         'nights' => 'Nachten',
         'cap' => 'Toegepast maximum',
         'total' => 'Totaal',
-        'exemption_note' => 'Minderjarigen zijn vrijgesteld (artikel L. 2333-31 van de Franse code générale des collectivités territoriales).',
+        'exemption_note' => 'Minderjarigen zijn vrijgesteld (artikel L. 2333-31 van de Franse code générale des '
+            . 'collectivités territoriales).',
     ],
     'error' => [
         'effective_from' => 'De ingangsdatum is verplicht.',

@@ -10,7 +10,8 @@ return [
         'accept_terms' => 'Ik aanvaard de',
         'already_registered' => 'Ik heb al een account',
         'sent_title' => 'Controleer uw mailbox',
-        'sent_message' => 'Als registratie mogelijk is voor {email}, is er zojuist een bericht naar dat adres gestuurd.',
+        'sent_message' => 'Als registratie mogelijk is voor {email}, is er zojuist een bericht naar dat adres '
+            . 'gestuurd.',
         'sent_hint' => 'De bevestigingslink blijft zeven dagen geldig.',
     ],
     'confirm' => [
@@ -74,7 +75,8 @@ return [
         'consent_privacy' => 'Privacybeleid',
     ],
     'delete' => [
-        'warning' => 'Verwijdering anonimiseert uw account definitief. Gegevens die wettelijk bewaard blijven, blijven geanonimiseerd.',
+        'warning' => 'Verwijdering anonimiseert uw account definitief. Gegevens die wettelijk bewaard blijven, blijven '
+            . 'geanonimiseerd.',
         'action' => 'Mijn account verwijderen',
         'done' => 'Uw account is verwijderd.',
     ],

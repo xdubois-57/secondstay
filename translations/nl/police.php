@@ -10,7 +10,8 @@ return [
     'title' => 'Politiefiches',
     'record' => 'Politiefiche',
     'open_record' => 'Fiche openen',
-    'intro' => 'De individuele fiche is alleen in bepaalde gevallen vereist. Zolang ze uit staat, worden geen identiteitsgegevens verzameld.',
+    'intro' => 'De individuele fiche is alleen in bepaalde gevallen vereist. Zolang ze uit staat, worden geen '
+        . 'identiteitsgegevens verzameld.',
     'record_intro' => 'De gegevens zijn versleuteld en worden aan het einde van de bewaartermijn automatisch gewist.',
     'enabled' => 'De politiefiche wordt gevraagd voor de betrokken verblijven.',
     'disabled' => 'De politiefiche is uitgeschakeld: er wordt niets verzameld.',

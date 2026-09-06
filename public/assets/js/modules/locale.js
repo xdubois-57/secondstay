@@ -7,7 +7,7 @@ export const SUPPORTED_LOCALES = ['fr', 'en', 'nl', 'de'];
 export const FALLBACK_LOCALE = 'fr';
 
 export function isSupportedLocale(locale) {
-    return typeof locale === 'string' && SUPPORTED_LOCALES.indexOf(locale.toLowerCase()) !== -1;
+    return typeof locale === 'string' && SUPPORTED_LOCALES.includes(locale.toLowerCase());
 }
 
 export function normaliseLocale(locale) {
@@ -24,7 +24,7 @@ export function normaliseLocale(locale) {
  */
 export function localisePath(path, locale) {
     const target = normaliseLocale(locale) || FALLBACK_LOCALE;
-    if (typeof path !== 'string' || path === '' || path.charAt(0) !== '/' || path.slice(0, 2) === '//') {
+    if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//')) {
         return '/' + target + '/';
     }
 

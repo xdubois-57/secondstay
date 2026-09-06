@@ -34,7 +34,7 @@ export function evaluatePassword(password) {
     score += /\d/.test(password) ? 15 : 0;
     score += /[^\p{L}\d]/u.test(password) ? 15 : 0;
 
-    const unique = new Set([...password]).size;
+    const unique = new Set(password).size;
     if (unique < 5) {
         score = Math.round(score / 2);
         issues.push('auth.password.too_repetitive');
@@ -58,15 +58,3 @@ export function strengthLevel(score) {
     return 'strong';
 }
 
-export function levelClass(level) {
-    switch (level) {
-        case 'strong':
-            return 'bg-success';
-        case 'good':
-            return 'bg-info';
-        case 'fair':
-            return 'bg-warning';
-        default:
-            return 'bg-danger';
-    }
-}

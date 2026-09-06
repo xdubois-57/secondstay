@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'rule' => [
-        'min_nights' => 'Stays of at least {count} night|Stays of at least {count} night|Stays of at least {count} nights',
+        'min_nights' => 'Stays of at least {count} night|Stays of at least {count} night|Stays of at least {count} '
+            . 'nights',
         'max_guests' => 'Up to {count} guest|Up to {count} guest|Up to {count} guests',
         'times' => 'Arrival from {checkin}, departure before {checkout}',
         'fixed_week' => 'Saturday to Saturday stays',

@@ -70,8 +70,18 @@
                                 <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                                 <input type="hidden" name="zone" value="{{ entry.zone.id }}">
 
-                                <div class="btn-group w-100 mb-3" role="group"
-                                     aria-label="{{ t('inspection.state.legend') }}">
+                                {#
+                                    `<fieldset>` plutôt qu'un `role="group"` :
+                                    l'élément natif porte la sémantique, et sa
+                                    légende porte le nom — visible pour un
+                                    lecteur d'écran là où un `aria-label` ne
+                                    l'est jamais à l'écran. Le « reboot » de
+                                    Bootstrap remet déjà bordure, marge et
+                                    remplissage à zéro sur `fieldset`, si bien
+                                    que `.btn-group` s'y applique tel quel.
+                                #}
+                                <fieldset class="btn-group w-100 mb-3">
+                                    <legend class="visually-hidden">{{ t('inspection.state.legend') }}</legend>
                                     <input type="radio" class="btn-check" name="state" value="ok"
                                            id="state_ok_{{ entry.zone.code }}"
                                            {{ entry.state.value == 'ok' ? 'checked' : '' }}>
@@ -83,7 +93,7 @@
                                            {{ entry.state.value == 'anomaly' ? 'checked' : '' }}>
                                     <label class="btn btn-outline-danger"
                                            for="state_anomaly_{{ entry.zone.code }}">{{ t('inspection.state.anomaly') }}</label>
-                                </div>
+                                </fieldset>
 
                                 <div class="mb-3">
                                     <label class="form-label"

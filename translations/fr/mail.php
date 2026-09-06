@@ -24,7 +24,8 @@ return [
     'account_exists' => [
         'subject' => 'Votre compte existe déjà',
         'heading' => 'Un compte existe déjà pour cette adresse',
-        'intro' => 'Quelqu’un vient de tenter de créer un compte avec votre adresse. Si c’était vous, connectez-vous ou réinitialisez votre mot de passe.',
+        'intro' => 'Quelqu’un vient de tenter de créer un compte avec votre adresse. Si c’était vous, connectez-vous '
+            . 'ou réinitialisez votre mot de passe.',
         'button' => 'Réinitialiser mon mot de passe',
         'ignore' => 'Sinon, aucune action n’est nécessaire.',
     ],
@@ -45,6 +46,7 @@ return [
         'heading' => 'Des dates se sont libérées',
         'intro' => 'Les dates du {arrival} au {departure} viennent de se libérer.',
         'button' => 'Voir les disponibilités',
-        'first_come' => 'Les réservations sont traitées dans l’ordre d’arrivée : ces dates peuvent être reprises à tout moment.',
+        'first_come' => 'Les réservations sont traitées dans l’ordre d’arrivée : ces dates peuvent être reprises à '
+            . 'tout moment.',
     ],
 ];

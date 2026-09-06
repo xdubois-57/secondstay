@@ -61,7 +61,8 @@ return [
         'bic' => 'BIC',
         'reference' => 'Référence à indiquer',
         'qr_alt' => 'QR code de virement SEPA',
-        'notice' => 'Un virement met un à deux jours ouvrés à parvenir. La réservation est confirmée après vérification.',
+        'notice' => 'Un virement met un à deux jours ouvrés à parvenir. La réservation est confirmée après '
+            . 'vérification.',
     ],
     'return' => [
         'title' => 'Retour de paiement',
@@ -77,7 +78,8 @@ return [
         'booking' => 'Réservation',
         'provider' => 'Fournisseur',
         'provider_ready' => 'Fournisseur configuré',
-        'provider_missing' => 'Aucun fournisseur configuré : seuls les virements et encaissements manuels sont possibles.',
+        'provider_missing' => 'Aucun fournisseur configuré : seuls les virements et encaissements manuels sont '
+            . 'possibles.',
         'confirm_booking' => 'Confirmer aussi la réservation',
         'reason' => 'Motif',
         'scheduled' => 'Échéancier mis à jour.',

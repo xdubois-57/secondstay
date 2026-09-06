@@ -23,7 +23,30 @@ jobs:
         # assurent cette couverture (voir TESTING.md §12).
         language: ['javascript-typescript', 'actions']
     steps:
+      # ANALYSER LA TÊTE DE LA PULL REQUEST, ET NON SA FUSION D'ESSAI
+      # -------------------------------------------------------------------
+      # Sur un événement `pull_request`, `actions/checkout` récupère par
+      # défaut `refs/pull/<n>/merge` : une fusion d'essai que **GitHub
+      # recalcule**, à chaque tentative de fusion et à chaque réévaluation de
+      # la fusionnabilité. L'analyse porte alors sur un commit qui n'existe
+      # déjà plus, la protection de branche ne trouve pas de résultat pour le
+      # commit courant, et la pull request reste « bloquée » alors que tous
+      # ses contrôles sont verts. Quatre pull requests de suite l'ont montré,
+      # chacune débloquée seulement en relançant CodeQL à la main — et
+      # rebloquée dès qu'on y touchait de nouveau.
+      #
+      # La tête, elle, ne bouge pas tant que personne ne pousse. C'est ce que
+      # SonarCloud analyse depuis toujours, et c'est exactement pourquoi lui
+      # n'a jamais eu ce problème.
+      #
+      # Ce qu'on y perd : les constats que la fusion introduirait sans être
+      # dans la branche. La protection de branche accepte les résultats de la
+      # tête, `main` est analysée à chaque poussée par ce même workflow, et
+      # une pull request en retard sur `main` est de toute façon signalée
+      # comme telle.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Initialisation CodeQL
         uses: github/codeql-action/init@v3

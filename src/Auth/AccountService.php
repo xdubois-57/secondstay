@@ -136,13 +136,23 @@ final class AccountService
         }
 
         $token = $this->tokens->issue($userId, TokenType::EmailConfirmation, $ip);
-        $result = $this->mail->send('account_confirmation', new MailAddress($email, trim($firstName . ' ' . $lastName)), $locale, [
+        $recipient = new MailAddress($email, trim($firstName . ' ' . $lastName));
+
+        $result = $this->mail->send('account_confirmation', $recipient, $locale, [
             'first_name' => $firstName,
             'confirmation_token' => $token,
             'confirmation_path' => '/' . $locale . '/account/confirm?token=' . rawurlencode($token),
         ], $userId);
 
-        $this->audit?->record('account.registered', 'user', (string) $userId, null, ['locale' => $locale], $userId, $email);
+        $this->audit?->record(
+            'account.registered',
+            'user',
+            (string) $userId,
+            null,
+            ['locale' => $locale],
+            $userId,
+            $email,
+        );
         $this->logger->info('account', 'Compte créé', ['user_id' => $userId, 'locale' => $locale]);
 
         return ['user_id' => $userId, 'mail_sent' => $result['ok']];
@@ -209,7 +219,15 @@ final class AccountService
             'expires_in_hours' => (int) (TokenType::PasswordReset->lifetimeSeconds() / 3600),
         ], $user->id);
 
-        $this->audit?->record('account.reset_requested', 'user', (string) $user->id, null, null, $user->id, $user->email);
+        $this->audit?->record(
+            'account.reset_requested',
+            'user',
+            (string) $user->id,
+            null,
+            null,
+            $user->id,
+            $user->email,
+        );
     }
 
     /**
@@ -275,7 +293,15 @@ final class AccountService
         $this->users->updatePasswordHash($user->id, $this->hasher->hash($newPassword));
         $this->sessions->revokeAllForUser($user->id, $currentSessionHash === '' ? null : $currentSessionHash);
 
-        $this->audit?->record('account.password_changed', 'user', (string) $user->id, null, null, $user->id, $user->email);
+        $this->audit?->record(
+            'account.password_changed',
+            'user',
+            (string) $user->id,
+            null,
+            null,
+            $user->id,
+            $user->email,
+        );
 
         return ['ok' => true, 'error' => ''];
     }

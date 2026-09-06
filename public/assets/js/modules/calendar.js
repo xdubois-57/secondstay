@@ -95,9 +95,9 @@ export function quoteUrl(base, selection, guests) {
     const parameters = new URLSearchParams({
         arrival: selection.arrival,
         departure: selection.departure,
-        adults: String((guests && guests.adults) || 2),
-        children: String((guests && guests.children) || 0),
-        infants: String((guests && guests.infants) || 0)
+        adults: String(guests?.adults || 2),
+        children: String(guests?.children || 0),
+        infants: String(guests?.infants || 0)
     });
 
     return base + '/api/quote?' + parameters.toString();
@@ -150,7 +150,7 @@ export function initCalendar(root, scope) {
         const highlighted = highlightedDays(selection);
         for (const button of root.querySelectorAll('[data-day]')) {
             const day = button.dataset.day;
-            button.dataset.selected = highlighted.indexOf(day) === -1 ? '0' : '1';
+            button.dataset.selected = highlighted.includes(day) ? '1' : '0';
             button.dataset.edge = day === selection.arrival || day === selection.departure ? '1' : '0';
         }
     };
@@ -163,6 +163,39 @@ export function initCalendar(root, scope) {
         }
     };
 
+    /**
+     * Écrit un devis dans les champs du panneau.
+     *
+     * Extrait de `show()` : chacun de ces champs est facultatif — un gabarit
+     * peut n'en afficher qu'une partie — et la suite de gardes qui en découle
+     * portait à elle seule l'essentiel de la complexité de `show()`, dont le
+     * propos est ailleurs : montrer le panneau, rendre les erreurs, reporter
+     * la sélection dans le formulaire.
+     */
+    const paintQuote = (target, quote, quoteLocale, quoteCurrency) => {
+        if (target.range) {
+            target.range.textContent =
+                formatDay(quote.arrival, quoteLocale) + ' – ' + formatDay(quote.departure, quoteLocale);
+        }
+        if (target.nights) {
+            target.nights.textContent = String(quote.night_count);
+            target.nights.dataset.nights = String(quote.night_count);
+        }
+        if (target.accommodation) {
+            target.accommodation.textContent = formatMoney(quote.accommodation_cents, quoteLocale, quoteCurrency);
+        }
+        if (target.total) {
+            target.total.textContent = formatMoney(quote.total_cents, quoteLocale, quoteCurrency);
+            target.total.dataset.cents = String(quote.total_cents);
+        }
+        if (target.cleaning && target.cleaningLabel) {
+            const visible = quote.cleaning_cents > 0;
+            target.cleaning.hidden = !visible;
+            target.cleaningLabel.hidden = !visible;
+            target.cleaning.textContent = formatMoney(quote.cleaning_cents, quoteLocale, quoteCurrency);
+        }
+    };
+
     const show = (result) => {
         if (!panel) {
             return;
@@ -172,27 +205,7 @@ export function initCalendar(root, scope) {
 
         const quote = result.quote;
         if (quote) {
-            if (fields.range) {
-                fields.range.textContent =
-                    formatDay(quote.arrival, locale) + ' – ' + formatDay(quote.departure, locale);
-            }
-            if (fields.nights) {
-                fields.nights.textContent = String(quote.night_count);
-                fields.nights.dataset.nights = String(quote.night_count);
-            }
-            if (fields.accommodation) {
-                fields.accommodation.textContent = formatMoney(quote.accommodation_cents, locale, currency);
-            }
-            if (fields.total) {
-                fields.total.textContent = formatMoney(quote.total_cents, locale, currency);
-                fields.total.dataset.cents = String(quote.total_cents);
-            }
-            if (fields.cleaning && fields.cleaningLabel) {
-                const visible = quote.cleaning_cents > 0;
-                fields.cleaning.hidden = !visible;
-                fields.cleaningLabel.hidden = !visible;
-                fields.cleaning.textContent = formatMoney(quote.cleaning_cents, locale, currency);
-            }
+            paintQuote(fields, quote, locale, currency);
         }
 
         if (fields.errors) {

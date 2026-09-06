@@ -12,7 +12,8 @@ return [
         'subject' => 'Rental agreement for a furnished holiday let',
         'reference' => 'Reference',
         'version' => 'Template version {version} — language {locale}',
-        'acceptance_notice' => 'Acceptance of this agreement is recorded electronically, with its date, version and language.',
+        'acceptance_notice' => 'Acceptance of this agreement is recorded electronically, with its date, version and '
+            . 'language.',
     ],
     'section' => [
         'parties' => 'The parties',
@@ -53,23 +54,29 @@ return [
     'clause' => [
         'cancellation' => [
             'title' => 'Cancellation',
-            'body' => 'The traveller may cancel at any time. Amounts already paid are refunded or retained according to the terms and conditions in force at the date of booking, whose version is stated below. If the owner cancels, every amount paid is refunded in full.',
+            'body' => 'The traveller may cancel at any time. Amounts already paid are refunded or retained according '
+                . 'to the terms and conditions in force at the date of booking, whose version is stated below. If the '
+                . 'owner cancels, every amount paid is refunded in full.',
         ],
         'inventory' => [
             'title' => 'Inventory',
-            'body' => 'An inventory is drawn up on arrival and on departure. Without an observation from the traveller within twenty-four hours of arrival, the property is deemed to match the arrival inventory.',
+            'body' => 'An inventory is drawn up on arrival and on departure. Without an observation from the traveller '
+                . 'within twenty-four hours of arrival, the property is deemed to match the arrival inventory.',
         ],
         'rules' => [
             'title' => 'Use of the property',
-            'body' => 'The property is let furnished, for temporary residential use only. The number of occupants may not exceed the stated capacity. Subletting is prohibited.',
+            'body' => 'The property is let furnished, for temporary residential use only. The number of occupants may '
+                . 'not exceed the stated capacity. Subletting is prohibited.',
         ],
         'liability' => [
             'title' => 'Liability and insurance',
-            'body' => 'The traveller is answerable for damage caused during the stay and declares being covered by public liability insurance for the duration of the rental.',
+            'body' => 'The traveller is answerable for damage caused during the stay and declares being covered by '
+                . 'public liability insurance for the duration of the rental.',
         ],
         'data' => [
             'title' => 'Personal data',
-            'body' => 'The information collected is used solely to manage the rental. The traveller has a right of access, rectification, portability and erasure, exercisable from their personal area.',
+            'body' => 'The information collected is used solely to manage the rental. The traveller has a right of '
+                . 'access, rectification, portability and erasure, exercisable from their personal area.',
         ],
     ],
     'accept' => [

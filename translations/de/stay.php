@@ -55,7 +55,8 @@ return [
     ],
     'guest' => [
         'title' => 'Mit meinen Gästen teilen',
-        'intro' => 'Ein Gästelink gibt Zugang zu diesen praktischen Angaben — und zu sonst nichts: keine Beträge, keine Dokumente, kein Konto.',
+        'intro' => 'Ein Gästelink gibt Zugang zu diesen praktischen Angaben — und zu sonst nichts: keine Beträge, '
+            . 'keine Dokumente, kein Konto.',
         'create' => 'Gästelink erstellen',
         'label' => 'Für wen?',
         'created' => 'Gästelink erstellt. Kopieren Sie ihn jetzt: er wird nicht erneut angezeigt.',
@@ -72,15 +73,23 @@ return [
         'not_saved' => 'Das Handbuch wurde nicht gespeichert: Bitte die markierten Felder korrigieren.',
         'link_url' => 'Nützlicher Link oder Karte',
         'link_label' => 'Beschriftung des Links',
-        'link_help' => 'Eine Adresse, die sich öffnen lässt: eine Karte zum Müllraum, ein Anfahrtsplan, die offiziellen Öffnungszeiten einer Dienststelle. „Die Straße runter, dann links“ folgt niemand vom Telefon aus, im Dunkeln, mit einem Koffer. Leer lassen, wenn es nichts zu öffnen gibt.',
+        'link_help' => 'Eine Adresse, die sich öffnen lässt: eine Karte zum Müllraum, ein Anfahrtsplan, die '
+            . 'offiziellen Öffnungszeiten einer Dienststelle. „Die Straße runter, dann links“ folgt niemand vom '
+            . 'Telefon aus, im Dunkeln, mit einem Koffer. Leer lassen, wenn es nichts zu öffnen gibt.',
         'source_url' => 'Quelle dieser Angabe',
         'source_checked_on' => 'Geprüft am',
-        'source_help' => 'Woher die Angabe stammt — die Seite der Gemeinde, des Abfallverbands, des Netzbetreibers. Abfuhrtage und kommunale Satzungen ändern sich: ohne datierte Quelle veraltet das Handbuch unbemerkt. Ohne Datum wird das heutige genommen.',
+        'source_help' => 'Woher die Angabe stammt — die Seite der Gemeinde, des Abfallverbands, des Netzbetreibers. '
+            . 'Abfuhrtage und kommunale Satzungen ändern sich: ohne datierte Quelle veraltet das Handbuch unbemerkt. '
+            . 'Ohne Datum wird das heutige genommen.',
         'illustration' => 'Abbildung',
         'no_illustration' => 'Keine',
-        'illustration_help' => 'Aus der Mediathek gewählt, unter den veröffentlichten und nicht privaten Dateien. Ein Foto erklärt die Mülltrennung oder die Bedienung eines Geräts besser als ein Absatz — und in jeder Sprache.',
+        'illustration_help' => 'Aus der Mediathek gewählt, unter den veröffentlichten und nicht privaten Dateien. Ein '
+            . 'Foto erklärt die Mülltrennung oder die Bedienung eines Geräts besser als ein Absatz — und in jeder '
+            . 'Sprache.',
         'public' => 'Öffentliche Adresse für QR',
-        'public_help' => 'Veröffentlicht diesen Block unter einer festen Adresse, lesbar ohne Konto und ohne Aufenthalt. Aktivieren Sie das nur für Text, den jeder lesen darf: kein Zugangscode, kein WLAN-Passwort.',
+        'public_help' => 'Veröffentlicht diesen Block unter einer festen Adresse, lesbar ohne Konto und ohne '
+            . 'Aufenthalt. Aktivieren Sie das nur für Text, den jeder lesen darf: kein Zugangscode, kein '
+            . 'WLAN-Passwort.',
         'public_url' => 'Adresse für den QR-Code',
         'qr_alt' => 'QR-Code der öffentlichen Seite',
         'title' => 'Willkommensmappe',
@@ -91,7 +100,8 @@ return [
         'save' => 'Speichern',
         'saved' => 'Willkommensmappe gespeichert.',
         'secrets' => 'Zugangscodes',
-        'secrets_intro' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Ein leeres Feld behält den bestehenden Wert.',
+        'secrets_intro' => 'Verschlüsselt gespeichert und nie erneut angezeigt. Ein leeres Feld behält den bestehenden '
+            . 'Wert.',
         'secrets_saved' => 'Zugangscodes gespeichert.',
         'clear' => 'Löschen',
         'not_set' => 'Nicht gesetzt',
@@ -103,7 +113,8 @@ return [
         'checked_on' => 'geprüft am {date}',
     ],
     'info' => [
-        'fallback' => 'Dieser Text gibt es noch nicht in Ihrer Sprache; er wird in der Sprache der Unterkunft angezeigt.',
+        'fallback' => 'Dieser Text gibt es noch nicht in Ihrer Sprache; er wird in der Sprache der Unterkunft '
+            . 'angezeigt.',
         'notice' => 'Informationsseite der Unterkunft. Sie enthält keine Buchungsdaten.',
     ],
     'error' => [

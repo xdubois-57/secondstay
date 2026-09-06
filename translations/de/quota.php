@@ -9,6 +9,7 @@ declare(strict_types=1);
 return [
     'title' => 'Speicherplatz',
     'mb' => 'MB',
+    'usage' => 'Belegter Speicher für diese Kategorie',
     'no_limit' => 'keine Grenze',
     'configure' => 'Kontingente einstellen',
     'category' => [
@@ -18,8 +19,10 @@ return [
         'mail-attachments' => 'Anhänge',
     ],
     'error' => [
-        'media' => 'Das Medienkontingent ist erreicht. Geben Sie Platz frei oder erhöhen Sie die Grenze, bevor Sie eine Datei hinzufügen.',
-        'documents' => 'Das Dokumentenkontingent ist erreicht. Geben Sie Platz frei oder erhöhen Sie die Grenze, bevor Sie eine Datei hinzufügen.',
+        'media' => 'Das Medienkontingent ist erreicht. Geben Sie Platz frei oder erhöhen Sie die Grenze, bevor Sie '
+            . 'eine Datei hinzufügen.',
+        'documents' => 'Das Dokumentenkontingent ist erreicht. Geben Sie Platz frei oder erhöhen Sie die Grenze, bevor '
+            . 'Sie eine Datei hinzufügen.',
         'backups' => 'Das Sicherungskontingent ist erreicht. Löschen Sie alte Sicherungen oder erhöhen Sie die Grenze.',
         'mail-attachments' => 'Das Anhangkontingent ist erreicht.',
     ],

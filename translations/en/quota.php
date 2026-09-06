@@ -9,6 +9,7 @@ declare(strict_types=1);
 return [
     'title' => 'Storage space',
     'mb' => 'MB',
+    'usage' => 'Space used for this category',
     'no_limit' => 'no limit',
     'configure' => 'Set the quotas',
     'category' => [

@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Notifications',
-    'intro' => 'Choisissez comment vous souhaitez être prévenu. Les messages importants liés à votre séjour restent envoyés par e-mail.',
+    'intro' => 'Choisissez comment vous souhaitez être prévenu. Les messages importants liés à votre séjour restent '
+        . 'envoyés par e-mail.',
     'send_test' => 'Envoyer une notification de test',
     'test_sent' => 'Notification de test envoyée.',
     'test_no_device' => 'Aucun appareil abonné pour ce test.',
@@ -45,14 +46,16 @@ return [
         'subject' => 'Votre compte est actif',
         'title' => 'Bienvenue {first_name}',
         'body' => 'Bienvenue {first_name}, votre compte {property} est confirmé.',
-        'mail_body' => 'Votre adresse e-mail est confirmée : vous pouvez suivre votre séjour depuis votre espace client.',
+        'mail_body' => 'Votre adresse e-mail est confirmée : vous pouvez suivre votre séjour depuis votre espace '
+            . 'client.',
         'action' => 'Ouvrir mon espace',
     ],
     'booking_created' => [
         'subject' => 'Demande de réservation enregistrée',
         'title' => 'Demande enregistrée',
         'body' => 'Votre demande pour {property} est enregistrée.',
-        'mail_body' => 'Nous avons bien reçu votre demande de réservation. Vous recevrez une confirmation dès qu’elle sera validée.',
+        'mail_body' => 'Nous avons bien reçu votre demande de réservation. Vous recevrez une confirmation dès qu’elle '
+            . 'sera validée.',
         'action' => 'Voir ma réservation',
     ],
     'booking_confirmed' => [
@@ -73,7 +76,8 @@ return [
         'subject' => 'Votre séjour approche',
         'title' => 'Votre séjour approche',
         'body' => 'Votre séjour à {property} commence bientôt.',
-        'mail_body' => 'Retrouvez les informations d’arrivée, les codes d’accès et le livret d’accueil dans votre espace.',
+        'mail_body' => 'Retrouvez les informations d’arrivée, les codes d’accès et le livret d’accueil dans votre '
+            . 'espace.',
         'action' => 'Préparer mon séjour',
     ],
     'arrival' => [

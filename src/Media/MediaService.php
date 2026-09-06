@@ -93,9 +93,17 @@ final class MediaService
         $filename = $this->generateFilename($info['extension']);
 
         try {
-            $original = $this->processor->reencode($temporary, $this->variantPath($filename, 'original'), ImageProcessor::LARGE_WIDTH * 2);
+            $original = $this->processor->reencode(
+                $temporary,
+                $this->variantPath($filename, 'original'),
+                ImageProcessor::LARGE_WIDTH * 2,
+            );
             $this->processor->reencode($temporary, $this->variantPath($filename, 'large'), ImageProcessor::LARGE_WIDTH);
-            $this->processor->reencode($temporary, $this->variantPath($filename, 'thumb'), ImageProcessor::THUMBNAIL_WIDTH);
+            $this->processor->reencode(
+                $temporary,
+                $this->variantPath($filename, 'thumb'),
+                ImageProcessor::THUMBNAIL_WIDTH,
+            );
         } catch (RuntimeException $exception) {
             throw new ValidationException(['file' => $exception->getMessage()]);
         }
@@ -177,7 +185,15 @@ final class MediaService
 
         if ($data !== []) {
             $this->repository->update($id, $data);
-            $this->audit?->record('media.updated', 'media', (string) $id, null, $data, $actorId, $actorLabel ?? 'system');
+            $this->audit?->record(
+                'media.updated',
+                'media',
+                (string) $id,
+                null,
+                $data,
+                $actorId,
+                $actorLabel ?? 'system',
+            );
         }
     }
 
@@ -196,7 +212,15 @@ final class MediaService
         }
 
         $this->repository->delete($id);
-        $this->audit?->record('media.deleted', 'media', (string) $id, ['filename' => $item->filename], null, $actorId, $actorLabel ?? 'system');
+        $this->audit?->record(
+            'media.deleted',
+            'media',
+            (string) $id,
+            ['filename' => $item->filename],
+            null,
+            $actorId,
+            $actorLabel ?? 'system',
+        );
     }
 
     /**

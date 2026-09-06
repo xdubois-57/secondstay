@@ -10,7 +10,8 @@ return [
         'accept_terms' => 'Ich akzeptiere die',
         'already_registered' => 'Ich habe bereits ein Konto',
         'sent_title' => 'Prüfen Sie Ihr Postfach',
-        'sent_message' => 'Wenn eine Registrierung für {email} möglich ist, wurde soeben eine Nachricht an diese Adresse gesendet.',
+        'sent_message' => 'Wenn eine Registrierung für {email} möglich ist, wurde soeben eine Nachricht an diese '
+            . 'Adresse gesendet.',
         'sent_hint' => 'Der Bestätigungslink bleibt sieben Tage gültig.',
     ],
     'confirm' => [
@@ -19,7 +20,8 @@ return [
     ],
     'forgot' => [
         'title' => 'Passwort vergessen',
-        'intro' => 'Geben Sie Ihre E-Mail-Adresse an: Wenn ein Konto existiert, erhalten Sie einen Link zum Zurücksetzen.',
+        'intro' => 'Geben Sie Ihre E-Mail-Adresse an: Wenn ein Konto existiert, erhalten Sie einen Link zum '
+            . 'Zurücksetzen.',
         'action' => 'Link senden',
         'sent' => 'Wenn für diese Adresse ein Konto existiert, wurde soeben ein Link zum Zurücksetzen gesendet.',
     ],
@@ -74,7 +76,8 @@ return [
         'consent_privacy' => 'Datenschutzerklärung',
     ],
     'delete' => [
-        'warning' => 'Die Löschung anonymisiert Ihr Konto dauerhaft. Gesetzlich aufzubewahrende Daten bleiben anonymisiert.',
+        'warning' => 'Die Löschung anonymisiert Ihr Konto dauerhaft. Gesetzlich aufzubewahrende Daten bleiben '
+            . 'anonymisiert.',
         'action' => 'Mein Konto löschen',
         'done' => 'Ihr Konto wurde gelöscht.',
     ],

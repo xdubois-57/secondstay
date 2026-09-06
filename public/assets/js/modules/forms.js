@@ -43,7 +43,7 @@ export function focusFirstInvalid(root) {
     // et testable sans navigateur.
     const owner = documentOf(root);
     const active = owner.activeElement;
-    if (active && active !== owner.body && active.matches && active.matches(FIELDS)) {
+    if (active && active !== owner.body && active.matches?.(FIELDS)) {
         return null;
     }
 
@@ -65,7 +65,7 @@ export function markInvalid(root) {
     let marked = 0;
 
     fields.forEach((field) => {
-        if (field.matches && field.matches(FIELDS)) {
+        if (field.matches?.(FIELDS)) {
             field.setAttribute('aria-invalid', 'true');
             marked++;
         }

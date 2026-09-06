@@ -132,7 +132,9 @@ final class AdminBookingController extends AdminController
             (string) $context->request->input('reason', ''),
         );
 
-        $result['ok'] ? $this->flashSuccess('booking.status.' . $target->value) : $this->flashError($result['errors'][0]);
+        $result['ok']
+            ? $this->flashSuccess('booking.status.' . $target->value)
+            : $this->flashError($result['errors'][0]);
 
         return $this->redirectToRoute($context, 'admin.bookings.show', ['id' => $booking->id]);
     }
@@ -169,7 +171,12 @@ final class AdminBookingController extends AdminController
             (string) $request->input('label', ''),
         );
 
-        $this->audit()->record('promo.created', 'promo_code', PromoCode::normalise((string) $request->input('code', '')), null, [
+        $this->audit()->record(
+            'promo.created',
+            'promo_code',
+            PromoCode::normalise((string) $request->input('code', '')),
+            null,
+            [
             'kind' => $kind,
         ], $user->id, $user->email);
 

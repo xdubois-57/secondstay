@@ -8,7 +8,8 @@ declare(strict_types=1);
 
 return [
     'title' => 'Litiges',
-    'intro' => 'Un litige rassemble ce que le produit a déjà collecté — caution détenue, état des lieux de départ, incidents, contrat accepté — pour que la discussion s’appuie sur des faits datés.',
+    'intro' => 'Un litige rassemble ce que le produit a déjà collecté — caution détenue, état des lieux de départ, '
+        . 'incidents, contrat accepté — pour que la discussion s’appuie sur des faits datés.',
     'empty' => 'Aucun litige.',
     'evidence' => 'Pièces au dossier',
     'actions' => 'Suite à donner',

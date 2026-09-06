@@ -26,11 +26,11 @@ final class PushSubscription
             throw new InvalidArgumentException('push.error.invalid_endpoint');
         }
 
-        if (strlen(Base64Url::decode($publicKey)) !== 65) {
+        if (strlen(UrlSafeEncoding::decode($publicKey)) !== 65) {
             throw new InvalidArgumentException('push.error.invalid_subscription_key');
         }
 
-        if (strlen(Base64Url::decode($authSecret)) !== 16) {
+        if (strlen(UrlSafeEncoding::decode($authSecret)) !== 16) {
             throw new InvalidArgumentException('push.error.invalid_subscription_key');
         }
     }
@@ -64,12 +64,12 @@ final class PushSubscription
 
     public function binaryPublicKey(): string
     {
-        return Base64Url::decode($this->publicKey);
+        return UrlSafeEncoding::decode($this->publicKey);
     }
 
     public function binaryAuthSecret(): string
     {
-        return Base64Url::decode($this->authSecret);
+        return UrlSafeEncoding::decode($this->authSecret);
     }
 
     /**

@@ -168,7 +168,10 @@ final class ReportService
                     XlsxWriter::text($this->trans('report.tourist_tax', $locale)),
                     XlsxWriter::money($report->touristTaxCents),
                 ],
-                [XlsxWriter::text($this->trans('report.nights_sold', $locale)), XlsxWriter::number($report->nightsSold)],
+                [
+                    XlsxWriter::text($this->trans('report.nights_sold', $locale)),
+                    XlsxWriter::number($report->nightsSold),
+                ],
                 [
                     XlsxWriter::text($this->trans('report.nights_available', $locale)),
                     XlsxWriter::number($report->nightsAvailable),

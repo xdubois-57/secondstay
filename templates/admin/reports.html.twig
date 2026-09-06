@@ -103,11 +103,10 @@
                         </span>
                     </div>
                     {% if entry.limit_bytes > 0 %}
-                        <div class="progress mt-1" role="progressbar"
-                             aria-valuenow="{{ entry.percent }}" aria-valuemin="0" aria-valuemax="100">
-                            <div class="progress-bar {{ entry.exceeded ? 'bg-danger' : (entry.warning ? 'bg-warning' : '') }}"
-                                 style="width: {{ entry.percent > 100 ? 100 : entry.percent }}%"></div>
-                        </div>
+                        <progress class="ss-usage mt-1" max="100"
+                                  value="{{ entry.percent > 100 ? 100 : entry.percent }}"
+                                  data-level="{{ entry.exceeded ? 'danger' : (entry.warning ? 'warning' : 'ok') }}"
+                                  aria-label="{{ t('quota.usage') }}"></progress>
                     {% endif %}
                 </li>
             {% endfor %}

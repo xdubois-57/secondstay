@@ -10,7 +10,8 @@ return [
     'title' => 'Fiches de police',
     'record' => 'Fiche de police',
     'open_record' => 'Ouvrir la fiche',
-    'intro' => 'La fiche individuelle n’est exigée que dans certains cas. Tant qu’elle n’est pas activée, aucune donnée d’identité n’est collectée.',
+    'intro' => 'La fiche individuelle n’est exigée que dans certains cas. Tant qu’elle n’est pas activée, aucune '
+        . 'donnée d’identité n’est collectée.',
     'record_intro' => 'Les données sont chiffrées et effacées automatiquement à l’échéance de conservation.',
     'enabled' => 'La fiche de police est demandée pour les séjours concernés.',
     'disabled' => 'La fiche de police est désactivée : rien n’est collecté.',

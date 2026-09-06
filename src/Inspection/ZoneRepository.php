@@ -133,10 +133,13 @@ final class ZoneRepository
         );
 
         if ($existing === null) {
-            return $this->database->insert('inspection_zone', $data + [
-                'code' => mb_substr($code, 0, 32),
-                'created_at' => gmdate('Y-m-d H:i:s'),
-            ]);
+            return $this->database->insert(
+                'inspection_zone',
+                $data + [
+                    'code' => mb_substr($code, 0, 32),
+                    'created_at' => gmdate('Y-m-d H:i:s'),
+                ]
+            );
         }
 
         $this->database->update('inspection_zone', $data, ['id' => (int) $existing['id']]);

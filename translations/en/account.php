@@ -74,7 +74,8 @@ return [
         'consent_privacy' => 'Privacy policy',
     ],
     'delete' => [
-        'warning' => 'Deletion permanently anonymises your account. Data kept for legal obligations remains anonymised.',
+        'warning' => 'Deletion permanently anonymises your account. Data kept for legal obligations remains '
+            . 'anonymised.',
         'action' => 'Delete my account',
         'done' => 'Your account has been deleted.',
     ],

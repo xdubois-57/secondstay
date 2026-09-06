@@ -83,7 +83,10 @@ final class MediaRepository
 
     public function findByFilename(string $filename): ?MediaItem
     {
-        $row = $this->database->fetchOne('SELECT * FROM `media` WHERE `filename` = :filename', ['filename' => $filename]);
+        $row = $this->database->fetchOne(
+            'SELECT * FROM `media` WHERE `filename` = :filename',
+            ['filename' => $filename],
+        );
 
         return $row === null ? null : $this->hydrate([$row])[0];
     }

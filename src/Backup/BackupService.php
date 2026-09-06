@@ -245,7 +245,9 @@ final class BackupService
 
         $manifest = $verification['manifest'];
 
-        return $this->maintenance->during('maintenance.reason.restore', function () use ($path, $manifest, $actorLabel, $actorId): array {
+        return $this->maintenance->during(
+            'maintenance.reason.restore',
+            function () use ($path, $manifest, $actorLabel, $actorId): array {
             $zip = new ZipArchive();
             if ($zip->open($path) !== true) {
                 throw new RuntimeException('Archive de sauvegarde illisible.');

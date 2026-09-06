@@ -130,7 +130,15 @@ final class PoliceRecordService
     {
         $this->records->delete($booking->id);
 
-        $this->audit?->record('police.deleted', 'booking', (string) $booking->id, null, null, $actor?->id, $actor === null ? '' : $actor->email);
+        $this->audit?->record(
+            'police.deleted',
+            'booking',
+            (string) $booking->id,
+            null,
+            null,
+            $actor?->id,
+            $actor === null ? '' : $actor->email,
+        );
     }
 
     /**
