@@ -183,6 +183,29 @@ nativement.
 | `SonarCloud` | scanner et Quality Gate, consommant les couvertures |
 | `CodeQL` | `.github/workflows/codeql.yml` |
 
+### CodeQL analyse la tête d'une pull request, pas sa fusion d'essai
+
+Sur un événement `pull_request`, `actions/checkout` récupère par défaut
+`refs/pull/<n>/merge` : une fusion d'essai que **GitHub recalcule**, à chaque
+tentative de fusion et à chaque réévaluation de la fusionnabilité. L'analyse
+porte alors sur un commit qui n'existe déjà plus ; la protection de branche ne
+trouve aucun résultat pour le commit courant, et la pull request reste
+« bloquée » alors que tous ses contrôles sont verts.
+
+Quatre pull requests de suite l'ont montré : chacune ne se débloquait qu'en
+relançant CodeQL à la main, et se rebloquait dès qu'on y touchait de nouveau —
+y compris en armant l'auto-fusion, qui déclenche elle-même un recalcul.
+
+`codeql.yml` récupère donc explicitement `github.event.pull_request.head.sha`.
+La tête ne bouge pas tant que personne ne pousse. C'est ce que SonarCloud
+analyse depuis toujours, et c'est exactement pourquoi lui n'a jamais eu ce
+problème.
+
+Ce qu'on y perd : les constats qu'introduirait la fusion sans être présents
+dans la branche. La protection de branche accepte les résultats de la tête,
+`main` est analysée à chaque poussée par ce même workflow, et une pull request
+en retard sur `main` est signalée comme telle.
+
 ## Revue de code
 
 Trois lecteurs, dont aucun ne bloque une fusion sur son seul jugement.
