@@ -349,7 +349,7 @@ jobs:
           head -20 evidence/SHA256SUMS
 
       - name: Attestation de provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: evidence.zip
 
