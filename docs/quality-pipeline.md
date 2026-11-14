@@ -306,11 +306,13 @@ inverse de celui fait au départ — un vert accompagné d'un commentaire disant
 « aucune revue n'a eu lieu » — et il est délibéré : une revue obligatoire qui
 passe quand elle n'a pas eu lieu n'est pas obligatoire.
 
-**Dependabot** n'a pas accès aux secrets Actions : ses pull requests lisent les
-*Dependabot secrets*, une liste distincte. Pour qu'elles soient relues, et donc
-fusionnables, `CLAUDE_CODE_OAUTH_TOKEN` doit aussi y être enregistré
-(Settings → Secrets and variables → Dependabot). Sans cela, chacune reste
-bloquée sur ce check.
+**Dependabot n'ouvre plus de pull request** (`.github/dependabot.yml` retiré) :
+ses exécutions ne reçoivent pas les secrets Actions, ses pull requests
+restaient donc rouges sur SonarCloud et sur la revue Claude. Seules ses
+**alertes de sécurité** restent actives, et elles n'ouvrent rien : elles
+bloquent une release (étape 9 de `release.sh`). Pour qu'aucune pull request
+automatique ne reparaisse, *Dependabot security updates* doit aussi rester
+désactivé (Settings → Code security), sans toucher à *Dependabot alerts*.
 
 ### Étiquettes
 

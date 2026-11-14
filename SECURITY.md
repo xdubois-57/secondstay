@@ -270,7 +270,7 @@ Après install :
 - composer.lock commité ;
 - package-lock commité ;
 - composer audit ;
-- Dependabot ;
+- alertes de sécurité Dependabot (aucune pull request automatique) ;
 - CodeQL supporté ;
 - SonarCloud ;
 - dépendances frontend vendorisées maintenues à jour.

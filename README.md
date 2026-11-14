@@ -895,7 +895,7 @@ npm run dast                   # scan dynamique passif (OWASP ZAP, Docker requis
 `./scripts/check.sh` reste la commande documentée : ces alias exécutent
 exactement ce qu'elle exécute, ils ne la remplacent pas.
 
-GitHub ajoute CodeQL, Dependabot et SonarCloud. Les mêmes validations sont
+GitHub ajoute CodeQL, les alertes de sécurité Dependabot et SonarCloud. Les mêmes validations sont
 utilisables depuis Claude Code sur macOS et déclenchables dans GitHub Actions
 depuis mobile.
 

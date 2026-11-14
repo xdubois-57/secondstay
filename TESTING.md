@@ -637,13 +637,19 @@ PHP n’étant pas couvert par CodeQL de la même façon, PHPStan + SonarCloud +
 
 ## 13. Dependabot
 
-Activer pour :
+**Alertes seulement, aucune pull request automatique.** Les alertes de sécurité
+Dependabot restent actives sur le dépôt : ouvertes et de gravité haute ou
+critique, elles bloquent une release (`RELEASE.md` §6, `release.sh` étape 9).
 
-- Composer ;
-- npm ;
-- GitHub Actions.
+Les pull requests de mise à jour automatiques ont été retirées à la demande du
+mainteneur (`.github/dependabot.yml` supprimé). Elles ne recevaient aucun
+secret — ni `SONAR_TOKEN` ni `CLAUDE_CODE_OAUTH_TOKEN` —, restaient donc
+rouges, et la revue Claude étant exigée, ne pouvaient plus être fusionnées.
 
-Les alertes sécurité ouvertes bloquent une release selon `RELEASE.md`.
+Le retard de mise à jour reste surveillé : la gate de fraîcheur
+(`scripts/dependency-freshness.php`) le mesure à chaque release. Une montée de
+version se fait dans une pull request ordinaire, relue et analysée comme les
+autres.
 
 ## 14. SonarCloud
 

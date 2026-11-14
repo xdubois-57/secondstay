@@ -555,7 +555,7 @@ campagne Playwright rejouée à travers OWASP ZAP. Il est hors de `check.sh` :
 il demande Docker et une image de 1,2 Go, ce qu'une commande de validation
 courante ne doit pas exiger.
 
-GitHub ajoute CodeQL, Dependabot, SonarCloud, et joue le scan dynamique à
+GitHub ajoute CodeQL, les alertes de sécurité Dependabot, SonarCloud, et joue le scan dynamique à
 chaque exécution.
 
 ## 71. Fake providers

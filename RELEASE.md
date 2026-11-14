@@ -50,7 +50,7 @@ Avant release, les contrôles suivants doivent être verts :
 - Composer audit ;
 - absence de secret ou de donnée runtime versionné ;
 - CodeQL applicable ;
-- Dependabot security state ;
+- alertes de sécurité Dependabot (aucune pull request automatique) ;
 - fraîcheur des dépendances directes et vendorisées ;
 - SonarCloud Quality Gate ;
 - i18n FR/EN/NL/DE checks ;

@@ -363,7 +363,7 @@ Doit couvrir :
 CI ajoute :
 
 - CodeQL pour langages supportés ;
-- Dependabot ;
+- alertes de sécurité Dependabot (aucune pull request automatique) ;
 - SonarCloud.
 
 ### Aucune baseline commitée
