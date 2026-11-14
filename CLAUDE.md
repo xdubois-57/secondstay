@@ -37,9 +37,16 @@ sur `main` sur GitHub**, pour que rien ne reste sur une branche de travail.
 
 1. pousser la branche de travail ;
 2. ouvrir une pull request vers `main` ;
-3. attendre que les contrôles obligatoires soient verts — ne jamais fusionner
-   au rouge, ni contourner une protection de branche ;
+3. attendre que les contrôles obligatoires soient verts — dont
+   `Claude review status`, qui prouve qu'une revue Claude a réellement eu
+   lieu — ne jamais fusionner au rouge, ni contourner une protection de
+   branche ;
 4. fusionner la pull request.
 
 Si la fusion est impossible (contrôle rouge, conflit, protection), le dire
 explicitement plutôt que de laisser la branche en suspens.
+
+Une pull request qui modifie `.github/workflows/claude-review.yml` ne peut pas
+obtenir de revue Claude (l'action refuse de relire un workflow différent de
+`main`) : ne jamais la fusionner soi-même, la laisser au mainteneur, qui seul
+peut décider d'une dérogation (`docs/quality-pipeline.md`).
