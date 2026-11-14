@@ -210,7 +210,8 @@ return [
         'found' => 'Controle uitgevoerd: er is een update beschikbaar.',
         'checked_at' => 'Laatst gecontroleerd',
         'mode' => 'Modus',
-        'recovered' => 'Een update werd onderbroken voordat ze klaar was. De site is teruggezet naar de vorige toestand.',
+        'recovered' => 'Een update werd onderbroken voordat ze klaar was. De site is teruggezet naar de vorige '
+            . 'toestand.',
     ],
     'pricing' => [
         'title' => 'Beschikbaarheid en tarieven',

@@ -209,7 +209,8 @@ return [
         'found' => 'Check complete: an update is available.',
         'checked_at' => 'Last checked',
         'mode' => 'Mode',
-        'recovered' => 'An update was interrupted before it finished. The site has been put back to its previous state.',
+        'recovered' => 'An update was interrupted before it finished. The site has been put back to its previous '
+            . 'state.',
     ],
     'pricing' => [
         'title' => 'Availability and rates',

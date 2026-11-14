@@ -210,7 +210,8 @@ return [
         'found' => 'Prüfung abgeschlossen: Eine Aktualisierung ist verfügbar.',
         'checked_at' => 'Zuletzt geprüft',
         'mode' => 'Modus',
-        'recovered' => 'Eine Aktualisierung wurde vor ihrem Abschluss unterbrochen. Die Website wurde in ihren vorherigen Zustand zurückversetzt.',
+        'recovered' => 'Eine Aktualisierung wurde vor ihrem Abschluss unterbrochen. Die Website wurde in ihren '
+            . 'vorherigen Zustand zurückversetzt.',
     ],
     'pricing' => [
         'title' => 'Verfügbarkeit und Preise',

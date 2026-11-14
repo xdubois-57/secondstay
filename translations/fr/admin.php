@@ -210,7 +210,8 @@ return [
         'found' => 'Vérification effectuée : une mise à jour est disponible.',
         'checked_at' => 'Dernière vérification',
         'mode' => 'Mode',
-        'recovered' => 'Une mise à jour avait été interrompue avant la fin. Le site a été remis dans son état précédent.',
+        'recovered' => 'Une mise à jour avait été interrompue avant la fin. Le site a été remis dans son état '
+            . 'précédent.',
     ],
     'pricing' => [
         'title' => 'Disponibilités et tarifs',
