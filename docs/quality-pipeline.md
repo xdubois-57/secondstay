@@ -222,14 +222,21 @@ Un second travail, **`Claude review status`**, poste un commentaire — réécri
 sur place — disant si la revue a réellement tourné, **et échoue quand elle n'a
 pas eu lieu**. C'est lui le check exigé sur `main` (voir « Checks exigés »
 plus bas), pas `Claude review` : celui-ci sort en `success` même quand l'action
-refuse de lire, et l'exiger ne garantirait rien. C'est la durée qui sépare un
-refus d'une revue : un refus sort en une quinzaine de secondes, une vraie revue
-prend des minutes.
+refuse de lire, et l'exiger ne garantirait rien.
+
+Ce qui sépare un refus d'une revue, c'est le **journal d'exécution** de
+l'action : un refus sort avant que Claude ne démarre et n'y laisse aucun
+résultat ; une revue, même brève, y laisse un résultat réussi d'au moins un
+tour. La durée servait auparavant de critère (moins de 60 s : refus). Elle a
+classé « refusée » une revue de 47 s sur une pull request de documentation, où
+la compétence avait jugé le diff trop simple pour mériter des commentaires —
+un jugement de Claude, pas un refus. Elle n'est plus qu'affichée.
 
 `Claude review status` échoue quand :
 
 - le secret `CLAUDE_CODE_OAUTH_TOKEN` est absent ;
-- la revue a échoué, a été annulée, ou a refusé de tourner (moins de 60 s) ;
+- la revue a échoué, a été annulée, ou a refusé de tourner (Claude n'a pas
+  démarré) ;
 - la pull request est un brouillon.
 
 Il n'est **jamais sauté** : GitHub compte un check exigé sauté comme réussi.
