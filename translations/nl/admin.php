@@ -5,6 +5,14 @@ declare(strict_types=1);
 return [
     'nav' => [
         'administration' => 'Beheer',
+        'disabled' => 'uitgeschakeld',
+        'group' => [
+            'activity' => 'Activiteit',
+            'stays' => 'Verblijven',
+            'compliance' => 'Naleving',
+            'site' => 'Openbare site',
+            'system' => 'Systeem',
+        ],
         'dashboard' => 'Dashboard',
         'content' => 'Inhoud',
         'media' => 'Media',
@@ -199,6 +207,11 @@ return [
         'none_available' => 'Geen update beschikbaar.',
         'up_to_date' => 'SecondStay is up-to-date.',
         'unreachable' => 'De updatedienst is onbereikbaar.',
+        'found' => 'Controle uitgevoerd: er is een update beschikbaar.',
+        'checked_at' => 'Laatst gecontroleerd',
+        'mode' => 'Modus',
+        'recovered' => 'Een update werd onderbroken voordat ze klaar was. De site is teruggezet naar de vorige '
+            . 'toestand.',
     ],
     'pricing' => [
         'title' => 'Beschikbaarheid en tarieven',

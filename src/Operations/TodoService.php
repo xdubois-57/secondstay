@@ -145,8 +145,13 @@ final class TodoService
             $items[] = $this->item('errors_recent', 'danger', $errors, 'admin.logs');
         }
 
-        if ($this->updateAvailable()) {
+        $update = $this->updateDetail();
+        if ($update === 'scheduler.detail.update_available') {
             $items[] = $this->item('update_available', 'info', 1, 'admin.updates');
+        } elseif (in_array($update, ['scheduler.detail.update_rolled_back', 'scheduler.detail.update_refused'], true)) {
+            // L'installation automatique a échoué — refusée, ou défaite : le
+            // site tourne sur l'ancienne version, et personne ne l'a vu.
+            $items[] = $this->item('update_failed', 'danger', 1, 'admin.updates');
         }
 
         // Le site fermé et le logement sans nom sont deux états que rien
@@ -234,17 +239,16 @@ final class TodoService
      * appel sortant, sous peine de rendre l'écran d'exploitation aussi lent
      * et aussi fragile que le réseau.
      */
-    private function updateAvailable(): bool
+    private function updateDetail(): ?string
     {
         if ($this->tasks === null) {
-            return false;
+            return null;
         }
 
         try {
-            return $this->tasks->state(ScheduledTask::UpdateCheck)->lastDetail
-                === 'scheduler.detail.update_available';
+            return $this->tasks->state(ScheduledTask::UpdateCheck)->lastDetail;
         } catch (Throwable) {
-            return false;
+            return null;
         }
     }
 

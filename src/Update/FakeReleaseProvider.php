@@ -20,6 +20,9 @@ final class FakeReleaseProvider implements ReleaseProvider
 
     public int $downloadCount = 0;
 
+    /** Nombre d'interrogations de la source : le cache doit les épargner. */
+    public int $latestCount = 0;
+
     public bool $failDownload = false;
 
     public function addRelease(ReleaseInfo $release, string $localAssetPath): void
@@ -35,6 +38,7 @@ final class FakeReleaseProvider implements ReleaseProvider
 
     public function latest(bool $allowPrerelease = false): ?ReleaseInfo
     {
+        $this->latestCount++;
         foreach ($this->releases as $release) {
             if ($release->prerelease && !$allowPrerelease) {
                 continue;

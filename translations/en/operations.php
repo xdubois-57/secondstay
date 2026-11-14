@@ -16,6 +16,7 @@ return [
         'backup_stale' => 'Backup too old',
         'errors_recent' => 'Errors in the last 24 h',
         'update_available' => 'Update available',
+        'update_failed' => 'Automatic update failed',
         'title' => 'To do',
         'empty' => 'Nothing needs your attention.',
         'bookings_to_confirm' => 'Requests to approve',

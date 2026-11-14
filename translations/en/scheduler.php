@@ -62,5 +62,8 @@ return [
         'backup_done' => 'Backup created; {count} old one(s) removed.',
         'update_available' => 'An update is available.',
         'up_to_date' => 'The product is up to date.',
+        'update_installed' => 'The update was installed automatically.',
+        'update_rolled_back' => 'The automatic installation failed and was rolled back.',
+        'update_refused' => 'The automatic installation was refused before anything changed.',
     ],
 ];

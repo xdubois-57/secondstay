@@ -203,7 +203,9 @@ return [
         ],
         'auto_install' => [
             'label' => 'Mise à jour automatique',
-            'help' => 'Installe automatiquement les nouvelles versions validées.',
+            'help' => 'Au contrôle quotidien, installe la nouvelle version avec les mêmes vérifications que le bouton '
+                . ': '
+                . 'empreinte, sauvegarde, retour arrière en cas d’échec.',
         ],
         'repository' => [
             'label' => 'Dépôt des releases',

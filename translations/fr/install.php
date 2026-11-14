@@ -58,6 +58,8 @@ return [
             'access_denied' => 'Identifiants de base de données refusés.',
             'host_unreachable' => 'Hôte de base de données injoignable.',
             'generic' => 'Connexion à la base de données impossible.',
+            'already_installed' => 'Cette base contient déjà une installation de SecondStay. Choisissez une base vide, '
+                . 'ou restaurez le fichier config/local.php de cette installation.',
         ],
     ],
     'error' => [
@@ -66,6 +68,7 @@ return [
         'password_mismatch' => 'Les deux mots de passe ne correspondent pas.',
         'locale' => 'Langue non supportée.',
         'timezone' => 'Fuseau horaire inconnu.',
-        'generic' => 'L’installation a échoué. Consultez les journaux du serveur.',
+        'generic' => 'L’installation a échoué. Consultez les journaux du serveur, puis relancez-la : elle '
+            . 'reprendra là où elle s’est arrêtée.',
     ],
 ];

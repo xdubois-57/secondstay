@@ -313,6 +313,8 @@ Obligatoires :
 - `FakeImapProvider`
 - `FakePushProvider`
 - `FakeLlmProvider`
+- `FakeReleaseProvider` (mise à jour ; compte téléchargements et
+  interrogations, pour prouver que le cache épargne la source)
 
 Ils doivent permettre un scénario complet sans réseau externe.
 
@@ -1692,3 +1694,54 @@ barre de réseau.
 - qu'une ligne disparaisse de l'écran faute d'avoir quelque chose à dire : une
   ligne absente se confond avec un contrôle qui n'existe pas, et l'on ne
   cherche pas ce qu'on ne voit pas.
+
+## 33. Mise à jour, installation et menus — ce qui est désormais interdit
+
+Ces tests sont nés d'une relecture du code de base, pas d'un incident : chacun
+nomme un défaut réel que la suite laissait passer.
+
+### 33.1 Mise à jour (`UpdateServiceTest`, `GitHubReleaseProviderTest`)
+
+- installer une release **sans empreinte**, ou dont l'archive ne correspond pas
+  à l'empreinte annoncée — et toucher à quoi que ce soit avant de le savoir,
+  sauvegarde comprise ;
+- laisser en place un fichier que la nouvelle version a supprimé ;
+- annuler une mise à jour en ne rendant que les fichiers : une migration
+  appliquée puis défaite doit disparaître de la base **et** de la table des
+  migrations, sinon la tentative suivante la sauterait ;
+- laisser le site fermé après un processus tué pendant la permutation ou
+  pendant les migrations. L'état exact que laisse un tel processus est
+  reconstruit à la main — ancienne version de côté, site fermé, journal
+  présent — puis défait par `recoverInterrupted()` ;
+- défaire une mise à jour **vivante**, ou en lancer une seconde : le test tient
+  le verrou depuis un autre descripteur ;
+- retenir la première release de la liste au lieu de la plus haute version ;
+- appeler GitHub à chaque affichage de la page (`latestCount`), ou ne pas
+  l'appeler quand on clique sur « Vérifier maintenant ».
+
+`InstalledAppTest` vérifie en plus qu'**une simple requête de visiteur** suffit à
+rouvrir un site laissé en maintenance par une mise à jour interrompue.
+
+### 33.2 Installation automatique (`SchedulerWiringTest`, `OperationsServiceTest`)
+
+- un réglage `update.auto_install` sans effet : la tâche doit réellement tenter
+  l'installation (`downloadCount`), et la tenter par le même chemin que le
+  bouton — une archive à l'empreinte fausse y est refusée de la même façon ;
+- un échec d'installation automatique qui ne remonte pas dans « À faire ».
+
+### 33.3 Installation (`InstallerTest`)
+
+- une migration en échec qui laisse `config/local.php` derrière elle — donc une
+  instance « indisponible » que l'assistant ne reprend plus. Le test corrige la
+  cause et relance la même installation, qui doit aboutir ;
+- toucher à la base quand `config/` n'est pas inscriptible ;
+- réinstaller sur une base qui a déjà un administrateur.
+
+### 33.4 Menus (`AdminNavigationTest`)
+
+- une divergence entre ce que le menu montre et ce que le serveur autorise :
+  pour un responsable local, **chaque** section est ouverte, et « affichée »
+  doit valoir « répond 200 » ;
+- un module éteint visible du responsable local, ou invisible de
+  l'administrateur ;
+- un client sans lien vers ses séjours.

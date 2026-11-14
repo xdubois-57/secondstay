@@ -17,24 +17,44 @@ final class AdminUpdateController extends AdminController
     }
 
     /**
+     * Affiche le dernier résultat mémorisé : ouvrir la page ne coûte un appel
+     * à GitHub que si ce résultat est périmé.
+     *
      * @param array<string, string> $params
      */
     public function index(RequestContext $context, array $params = []): Response
     {
         $this->requireAdministrator();
 
-        return $this->renderState($context, null);
+        $updates = $this->container->get(UpdateService::class);
+        $recovered = $updates->hasInterruptedUpdate() && $updates->recoverInterrupted();
+        if ($recovered) {
+            $this->flashWarning('admin.updates.recovered');
+
+            return $this->redirectToRoute($context, 'admin.updates');
+        }
+
+        return $this->renderState($context);
     }
 
     /**
-     * Bouton « Vérifier maintenant » (RELEASE.md §12).
+     * Bouton « Vérifier maintenant » (RELEASE.md §12) : interroge la source
+     * même si un résultat récent est mémorisé.
      *
      * @param array<string, string> $params
      */
     public function check(RequestContext $context, array $params = []): Response
     {
         $this->requireAdministrator();
-        $this->flashSuccess('admin.updates.checked');
+        $updates = $this->container->get(UpdateService::class);
+
+        try {
+            $state = $updates->refresh($this->allowPrerelease());
+            $this->flashSuccess($state['available'] ? 'admin.updates.found' : 'admin.updates.checked');
+        } catch (Throwable $throwable) {
+            $this->logger()->warning('update', 'Vérification impossible', ['reason' => $throwable->getMessage()]);
+            $this->flashWarning('admin.updates.unreachable');
+        }
 
         return $this->redirectToRoute($context, 'admin.updates');
     }
@@ -48,7 +68,9 @@ final class AdminUpdateController extends AdminController
         $updates = $this->container->get(UpdateService::class);
 
         try {
-            $state = $updates->check($this->settings()->string('update.channel') === 'prerelease');
+            // L'URL et l'empreinte de l'archive sont relues à la source au
+            // moment d'installer, jamais prises dans le cache.
+            $state = $updates->refresh($this->allowPrerelease());
             if ($state['available'] === false || $state['latest'] === null) {
                 $this->flashWarning('admin.updates.none_available');
 
@@ -59,29 +81,45 @@ final class AdminUpdateController extends AdminController
 
             if ($result['installed']) {
                 $this->flashSuccess('admin.updates.installed');
-            } elseif ($result['rolled_back']) {
-                $this->flashError('admin.updates.rolled_back');
             } else {
-                $this->flashError('admin.updates.error');
+                $this->flashError('admin.updates.rolled_back');
             }
         } catch (Throwable $throwable) {
             $this->logger()->error('update', 'Mise à jour impossible', ['reason' => $throwable->getMessage()]);
-            $this->flashError('admin.updates.error');
+            $this->flashError($this->errorKey($throwable->getMessage()));
         }
 
         return $this->redirectToRoute($context, 'admin.updates');
     }
 
-    private function renderState(RequestContext $context, ?string $errorKey): Response
+    /**
+     * Les deux refus d'empreinte méritent leur propre message : « la mise à
+     * jour a échoué » n'envoie chercher nulle part.
+     */
+    private function errorKey(string $reason): string
+    {
+        return match (true) {
+            str_contains($reason, 'update.error.digest_missing') => 'update.error.digest_missing',
+            str_contains($reason, 'update.error.digest_mismatch') => 'update.error.digest_mismatch',
+            default => 'admin.updates.error',
+        };
+    }
+
+    private function allowPrerelease(): bool
+    {
+        return $this->settings()->string('update.channel') === 'prerelease';
+    }
+
+    private function renderState(RequestContext $context): Response
     {
         $updates = $this->container->get(UpdateService::class);
-        $allowPrerelease = $this->settings()->string('update.channel') === 'prerelease';
+        $allowPrerelease = $this->allowPrerelease();
 
-        $state = ['available' => false, 'current' => $updates->currentVersion(), 'latest' => null];
+        $state = ['available' => false, 'current' => $updates->currentVersion(), 'latest' => null, 'checked_at' => 0];
         $unreachable = false;
 
         try {
-            $state = $updates->check($allowPrerelease);
+            $state = $updates->state($allowPrerelease);
         } catch (Throwable) {
             $unreachable = true;
         }
@@ -95,10 +133,10 @@ final class AdminUpdateController extends AdminController
             'latest' => $latest?->toArray(),
             'notes' => $latest === null ? '' : $latest->notes,
             'unreachable' => $unreachable,
+            'checked_at' => $state['checked_at'] > 0 ? new \DateTimeImmutable('@' . $state['checked_at']) : null,
             'channel' => $this->settings()->string('update.channel'),
             'auto_install' => $this->settings()->bool('update.auto_install'),
             'repository' => $this->settings()->string('update.repository'),
-            'error_key' => $errorKey,
             'health_ok' => $updates->healthCheck(),
         ]);
     }

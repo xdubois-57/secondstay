@@ -62,5 +62,8 @@ return [
         'backup_done' => 'Sauvegarde créée ; {count} ancienne(s) supprimée(s).',
         'update_available' => 'Une mise à jour est disponible.',
         'up_to_date' => 'Le produit est à jour.',
+        'update_installed' => 'La mise à jour a été installée automatiquement.',
+        'update_rolled_back' => 'L’installation automatique a échoué et a été annulée.',
+        'update_refused' => 'L’installation automatique a été refusée avant toute modification.',
     ],
 ];

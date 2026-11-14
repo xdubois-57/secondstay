@@ -503,20 +503,23 @@ Restore protégé et audité.
 ## 25. Updates
 
 ```text
-Check Release
+Check Release (résultat mémorisé 6 h)
 → compare VERSION
 → download expected asset
-→ validate
+→ SHA-256 contre l'empreinte annoncée par GitHub
+→ validate (ReleaseArtifactPolicy)
+→ extraction préparée, site ouvert
 → maintenance
 → backup
-→ install
+→ permutation des répertoires gérés
 → migrate
 → VERSION
 → health check
 → exit maintenance
 ```
 
-Rollback si échec lorsque possible.
+Rollback des fichiers **et** de la base si échec ; reprise automatique d'une
+mise à jour interrompue (voir §30.6).
 
 ## 26. Diagnostics
 
@@ -604,8 +607,8 @@ lecteur n'a pas à croire sur parole ; tout le reste est produit par ce dépôt.
 ### 28.2 Ce que SecondStay ne fait pas : le déploiement par miroir
 
 Le ZIP de GitHub Release **est** l'unité installable, et l'updater intégré
-enchaîne téléchargement, validation, sauvegarde, maintenance, installation,
-migrations, `VERSION`, contrôle de santé et rollback (AGENTS.md §19).
+enchaîne téléchargement, empreinte, validation, maintenance, sauvegarde,
+permutation, migrations, `VERSION`, contrôle de santé et rollback (AGENTS.md §19).
 
 Un miroir FTP de l'arbre de travail contournerait les migrations, la sauvegarde
 préalable et le rollback. **C'est une décision, pas un oubli :** il n'existe
@@ -844,6 +847,24 @@ L'état `unavailable` (configuration locale présente mais base injoignable,
 schéma absent ou plus aucun administrateur actif) garantit qu'une panne ne peut
 jamais rouvrir l'assistant d'installation d'une instance déployée.
 
+Cette règle n'est juste que si `config/local.php` signifie « installation
+terminée ». `Installer` l'écrit donc **en dernier**, après les migrations, le
+contenu initial et l'administrateur : un échec en route laisse l'instance
+`not_installed`, et l'assistant se relance là où il s'est arrêté (migrations
+reprises, contenu, zones et textes légaux créés seulement s'ils manquent).
+Auparavant le fichier était écrit avant les migrations, et une migration en
+échec laissait une instance `unavailable` dont la seule issue était de
+supprimer le fichier par FTP.
+
+Deux refus encadrent cet ordre :
+
+- le répertoire `config/` doit être inscriptible **avant** que la base ne soit
+  touchée ;
+- une base qui contient déjà un administrateur est refusée
+  (`install.database.error.already_installed`) : sans `local.php`, rien ne la
+  distinguerait d'une base vide, et l'assistant y créerait une nouvelle clé de
+  chiffrement rendant illisibles tous les secrets déjà enregistrés.
+
 ### 30.3 Chaîne de requête complète
 
 ```text
@@ -852,7 +873,8 @@ public/index.php
   → Session                  démarrage (PhpSession en production)
   → InstallationState        gate installation / indisponibilité
   → LocaleResolver           préfixe URL > compte > cookie > Accept-Language
-  → MaintenanceMode          gate maintenance (503 sauf admin et /api)
+  → MaintenanceMode          gate maintenance (503 sauf admin et /api) ;
+                             défait d'abord une mise à jour interrompue
   → Router                   résolution de route
   → CSRF                     obligatoire sur toute mutation navigateur
   → Controller               autorisation serveur explicite (requireRole)
@@ -886,14 +908,69 @@ autorisés. Elle est auditée.
 ### 30.6 Mise à jour
 
 ```text
-check (GitHub Releases) → download → validate (ReleaseArtifactPolicy)
-→ backup → maintenance → snapshot des chemins gérés → install → migrations
-→ VERSION → health check → sortie de maintenance
+check (GitHub Releases, plus haute version éligible)
+→ download → SHA-256 contre `digest` de l'asset → validate (ReleaseArtifactPolicy)
+→ extraction dans storage/temp/update-*/staging          site ouvert
+→ maintenance → backup
+→ journal → permutation des chemins gérés → migrations
+→ VERSION → health check → suppression du journal → sortie de maintenance
 ```
 
-En cas d'échec à n'importe quelle étape, le snapshot est restauré et `VERSION`
-revient à la valeur précédente. `storage/` et `config/local.php` ne sont jamais
-remplacés. `FakeReleaseProvider` permet de tester tout le flux sans réseau.
+**Empreinte.** GitHub publie pour chaque asset une empreinte `sha256:<hex>`
+(`digest`), lue par l'API et non par le service de téléchargement : deux
+canaux distincts. L'archive téléchargée doit lui correspondre, et une release
+sans empreinte est refusée — la règle de l'installeur autonome.
+
+**Permutation.** Chaque chemin géré (`public`, `src`, `templates`,
+`translations`, `migrations`, `vendor`, `.htaccess`) est renommé vers
+`rollback/`, puis son remplaçant renommé à sa place. Un fichier supprimé dans la
+nouvelle version disparaît donc vraiment — l'ancien écrasement fichier par
+fichier laissait en place tout ce qui avait été retiré. `config/` est traité
+fichier par fichier, `local.php` exclu. Si `storage/` est sur un autre système
+de fichiers, le renommage devient une copie.
+
+**Rollback.** En cas d'échec, les chemins sont rendus et `VERSION` restauré.
+Si les migrations ont commencé, la sauvegarde prise site fermé est restaurée
+et les tables qu'elle ne connaissait pas sont supprimées : l'ancien code ne
+repart jamais sur le nouveau schéma.
+
+**Reprise.** Une limite de temps de l'hébergeur tue le processus sans passer
+par aucun `finally`. `set_time_limit(0)` et `ignore_user_abort(true)` sont
+tentés, sans garantie. Le journal `storage/update/journal.json` décrit donc
+l'opération en cours, et un verrou `flock` (`storage/update/update.lock`) est
+tenu par le processus vivant. Un journal présent avec un verrou libre signifie
+une mise à jour morte : `recoverInterrupted()` la défait. Elle est appelée par
+le Kernel dès qu'une requête tombe sur la maintenance, par la page des mises à
+jour et par la tâche `update_check`. Sur un système de fichiers sans verrous,
+seul un journal de plus d'une heure est tenu pour orphelin.
+
+**Vérification mémorisée.** `refresh()` interroge la source et écrit
+`storage/update/last-check.json` ; `state()` relit ce résultat pendant six
+heures, tant que le canal et la version installée n'ont pas changé. Afficher la
+page ne coûte donc plus un appel à l'API GitHub (soixante par heure et par
+adresse sans authentification, adresse partagée sur un mutualisé). « Vérifier
+maintenant » et l'installation appellent toujours `refresh()`.
+
+**Installation automatique.** La tâche `update_check` installe la nouvelle
+version si `update.auto_install` est activé, par le même `install()` que le
+bouton. Un refus ou un retour arrière se lit dans l'état de la tâche et remonte
+dans « À faire » (`update_failed`).
+
+`storage/` et `config/local.php` ne sont jamais remplacés. `FakeReleaseProvider`
+permet de tester tout le flux sans réseau.
+
+### 30.6.1 Menu d'administration
+
+`Controller\Admin\AdminNavigation` construit le menu latéral, passé à toutes
+les pages par `AdminController::renderAdmin()`. Il est **groupé** (Activité,
+Séjours, Conformité, Site public, Système), **filtré par rôle** — une entrée
+n'apparaît que si l'action `index` de son contrôleur l'autorise, ce que
+`AdminNavigationTest` vérifie section par section — et **filtré par fonction** :
+un module éteint (`imap.enabled`, `llm.enabled`, `tax.tourist_enabled`,
+`compliance.police_record_enabled`) disparaît pour le responsable local et reste
+visible, marqué « désactivé », pour l'administrateur, qui y apprend où
+l'allumer. Ce filtrage est un confort : l'autorisation reste vérifiée par
+chaque contrôleur.
 
 ### 30.7 URLs
 

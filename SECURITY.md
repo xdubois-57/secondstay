@@ -71,6 +71,11 @@ Toute lecture/écriture de réservation, document, mail, état des lieux, paieme
 
 Ne jamais considérer un bouton masqué comme un contrôle d’accès.
 
+Le menu d'administration n'affiche que les sections que le rôle peut ouvrir
+(`AdminNavigation`) ; c'est un confort de lecture. L'autorisation reste
+vérifiée par chaque contrôleur, et `AdminNavigationTest` vérifie que ce que le
+menu montre et ce que le serveur autorise coïncident.
+
 ## 6. CSRF
 
 Toute mutation navigateur nécessite une protection CSRF sauf protocole authentifié explicitement différent.
@@ -248,16 +253,17 @@ Installer uniquement l’artefact attendu d’une GitHub Release de confiance.
 Avant install :
 
 - version metadata ;
+- empreinte SHA-256 de l'asset, annoncée par l'API GitHub ;
 - structure asset ;
-- backup ;
-- maintenance.
+- maintenance ;
+- backup.
 
 Après install :
 
 - migrations ;
 - VERSION ;
 - health check ;
-- rollback si échec.
+- rollback si échec — fichiers **et** base.
 
 ## 20. Dependencies
 
@@ -332,6 +338,13 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
   chiffrement. Il n'est jamais versionné ni servi.
 - Les erreurs de connexion sont traduites par clé (`install.database.error.*`)
   et ne contiennent jamais d'identifiant.
+- `config/local.php` est écrit **en dernier** (ARCHITECTURE.md §30.2) : son
+  existence vaut installation terminée, et un échec en route laisse l'assistant
+  rejouable au lieu d'une instance indisponible.
+- Une base qui contient déjà un administrateur est refusée. Sans cela, perdre
+  `local.php` et relancer l'assistant sur la même base y créait un second
+  administrateur et une nouvelle clé de chiffrement : tous les secrets déjà
+  enregistrés devenaient illisibles, sans retour possible.
 
 ### 24.2 Chiffrement
 
@@ -384,9 +397,26 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
 - Seul un artefact conforme à `ReleaseArtifactPolicy` est installable : la
   présence de tests, de `storage/`, de `config/local.php`, de `node_modules/`
   ou de matériel cryptographique invalide l'archive avant toute écriture.
-- L'extraction refuse la traversée de chemin et n'écrit que dans les
-  répertoires gérés.
-- Échec = restauration du snapshot + `VERSION` précédente + audit.
+- L'archive doit correspondre à l'empreinte SHA-256 que GitHub publie pour
+  l'asset (`digest`). L'empreinte arrive par l'API, l'archive par le service de
+  téléchargement ; une release sans empreinte est refusée
+  (`update.error.digest_missing`), une archive qui ne correspond pas aussi
+  (`update.error.digest_mismatch`). L'installeur autonome appliquait déjà cette
+  règle ; l'updater ne vérifiait que la structure.
+- L'extraction refuse la traversée de chemin et n'écrit que dans un répertoire
+  de préparation sous `storage/temp/`. Les chemins gérés sont ensuite permutés
+  par renommage : rien de ce qui est en ligne n'est touché avant que l'archive
+  ne soit entièrement extraite et validée.
+- Échec = chemins rendus + `VERSION` précédente + restauration de la base si
+  les migrations ont commencé + audit (`update.rolled_back`).
+- Une mise à jour tuée par l'hébergeur est défaite à la requête suivante
+  (`update.recovered`). Un verrou `flock` empêche de défaire une mise à jour
+  encore vivante, comme d'en lancer deux à la fois.
+- L'installation automatique (`update.auto_install`) passe par exactement le
+  même chemin : elle ne contourne aucune validation (RELEASE.md §12).
+- Le dépôt des releases (`update.repository`) n'est modifiable que par un
+  administrateur : c'est désigner qui a le droit d'exécuter du code sur le
+  serveur, et c'est audité comme tout réglage.
 
 ### 24.7 Sorties HTTP
 

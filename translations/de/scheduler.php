@@ -62,5 +62,8 @@ return [
         'backup_done' => 'Sicherung erstellt; {count} alte entfernt.',
         'update_available' => 'Eine Aktualisierung ist verfügbar.',
         'up_to_date' => 'Das Produkt ist aktuell.',
+        'update_installed' => 'Die Aktualisierung wurde automatisch installiert.',
+        'update_rolled_back' => 'Die automatische Installation ist fehlgeschlagen und wurde rückgängig gemacht.',
+        'update_refused' => 'Die automatische Installation wurde abgelehnt, bevor etwas geändert wurde.',
     ],
 ];

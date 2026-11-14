@@ -201,7 +201,8 @@ return [
         ],
         'auto_install' => [
             'label' => 'Automatic update',
-            'help' => 'Automatically installs new validated versions.',
+            'help' => 'At the daily check, installs the new version with the same checks as the button: digest, '
+                . 'backup, rollback on failure.',
         ],
         'repository' => [
             'label' => 'Release repository',

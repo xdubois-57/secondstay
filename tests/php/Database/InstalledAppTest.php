@@ -286,6 +286,71 @@ final class InstalledAppTest extends InstalledAppTestCase
         self::assertSame('600', $response->headers()['retry-after'] ?? null);
     }
 
+    /**
+     * Un processus de mise à jour tué par l'hébergeur ne passe par aucun
+     * `finally` : le site resterait fermé indéfiniment. Le premier visiteur
+     * qui tombe dessus le rouvre, sans que personne n'ait à intervenir.
+     */
+    public function testAnInterruptedUpdateIsUndoneByTheNextRequest(): void
+    {
+        $paths = $this->container->get(\SecondStay\Core\Paths::class);
+        $this->container->get(MaintenanceMode::class)->enable('maintenance.reason.update');
+        file_put_contents($this->appRoot . '/VERSION', "1.1.0\n");
+        mkdir($paths->storage('update'), 0o750, true);
+        file_put_contents($paths->storage('update/journal.json'), json_encode([
+            'from' => '1.0.0',
+            'to' => '1.1.0',
+            'work_directory' => $paths->storage('temp/update-killed'),
+            'rollback_directory' => $paths->storage('temp/update-killed/rollback'),
+            'backup' => '',
+            'tables_before' => $this->database->tables(),
+            'maintenance_was_active' => false,
+            'phase' => 'swapping',
+            'started_at' => time(),
+        ], JSON_THROW_ON_ERROR));
+
+        $response = $this->request('/fr/');
+
+        self::assertSame(200, $response->status());
+        self::assertFalse($this->container->get(MaintenanceMode::class)->isActive());
+        self::assertSame("1.0.0\n", file_get_contents($this->appRoot . '/VERSION'));
+        self::assertFileDoesNotExist($paths->storage('update/journal.json'));
+    }
+
+    // ------------------------------------------------------- Mises à jour --
+
+    /**
+     * La page interrogeait GitHub à chaque affichage, et le bouton
+     * « Vérifier maintenant » ne vérifiait rien.
+     */
+    public function testTheUpdatesPageUsesTheRememberedCheckAndTheButtonRefreshesIt(): void
+    {
+        $provider = new \SecondStay\Update\FakeReleaseProvider();
+        $provider->addRelease(new \SecondStay\Update\ReleaseInfo(
+            '1.1.0',
+            'v1.1.0',
+            'secondstay-1.1.0.zip',
+            'https://example.test/secondstay-1.1.0.zip',
+            1,
+            gmdate('c'),
+        ), __FILE__);
+        $this->container->set(\SecondStay\Update\ReleaseProvider::class, static fn () => $provider);
+        $this->container->forget(\SecondStay\Update\UpdateService::class);
+        $this->loginAs();
+
+        $first = $this->request('/fr/admin/updates');
+        $this->request('/fr/admin/updates');
+
+        self::assertSame(200, $first->status());
+        self::assertStringContainsString('data-version="1.1.0"', $first->content());
+        self::assertStringContainsString('data-testid="update-mode"', $first->content());
+        self::assertSame(1, $provider->latestCount, 'Le second affichage doit lire le résultat mémorisé.');
+
+        $this->request('/fr/admin/updates/check', 'POST', $this->withCsrf([]));
+
+        self::assertSame(2, $provider->latestCount, '« Vérifier maintenant » doit interroger la source.');
+    }
+
     public function testHealthEndpointStaysAvailableDuringMaintenance(): void
     {
         $this->container->get(MaintenanceMode::class)->enable('maintenance.reason.update');

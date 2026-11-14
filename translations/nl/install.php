@@ -57,6 +57,8 @@ return [
             'access_denied' => 'Databasegegevens geweigerd.',
             'host_unreachable' => 'Databasehost onbereikbaar.',
             'generic' => 'Verbinding met de database is mislukt.',
+            'already_installed' => 'Deze database bevat al een SecondStay-installatie. Kies een lege database, '
+                . 'of zet het bestand config/local.php van die installatie terug.',
         ],
     ],
     'error' => [
@@ -65,6 +67,7 @@ return [
         'password_mismatch' => 'De twee wachtwoorden komen niet overeen.',
         'locale' => 'Niet-ondersteunde taal.',
         'timezone' => 'Onbekende tijdzone.',
-        'generic' => 'Installatie mislukt. Raadpleeg de serverlogboeken.',
+        'generic' => 'Installatie mislukt. Raadpleeg de serverlogboeken en start ze opnieuw: ze gaat verder '
+            . 'waar ze gestopt is.',
     ],
 ];

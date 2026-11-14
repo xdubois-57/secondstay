@@ -29,3 +29,17 @@ Commande de validation locale de référence :
 ```
 
 Ne jamais considérer un changement terminé si les tests pertinents ne passent pas.
+
+## Fin de tâche : fusionner sur `main`
+
+Consigne du propriétaire du dépôt : **un travail terminé est toujours fusionné
+sur `main` sur GitHub**, pour que rien ne reste sur une branche de travail.
+
+1. pousser la branche de travail ;
+2. ouvrir une pull request vers `main` ;
+3. attendre que les contrôles obligatoires soient verts — ne jamais fusionner
+   au rouge, ni contourner une protection de branche ;
+4. fusionner la pull request.
+
+Si la fusion est impossible (contrôle rouge, conflit, protection), le dire
+explicitement plutôt que de laisser la branche en suspens.

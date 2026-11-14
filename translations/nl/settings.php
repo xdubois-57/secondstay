@@ -202,7 +202,8 @@ return [
         ],
         'auto_install' => [
             'label' => 'Automatische update',
-            'help' => 'Installeert automatisch nieuwe gevalideerde versies.',
+            'help' => 'Installeert bij de dagelijkse controle de nieuwe versie met dezelfde controles als de knop: '
+                . 'vingerafdruk, back-up, terugdraaien bij een fout.',
         ],
         'repository' => [
             'label' => 'Release-repository',

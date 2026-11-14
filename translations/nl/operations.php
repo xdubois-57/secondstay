@@ -16,6 +16,7 @@ return [
         'backup_stale' => 'Back-up te oud',
         'errors_recent' => 'Fouten in de laatste 24 uur',
         'update_available' => 'Update beschikbaar',
+        'update_failed' => 'Automatische update mislukt',
         'title' => 'Te doen',
         'empty' => 'Er vraagt niets uw aandacht.',
         'bookings_to_confirm' => 'Aanvragen te bevestigen',

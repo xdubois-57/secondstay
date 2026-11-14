@@ -13,6 +13,7 @@ use SecondStay\Installer\InstallationState;
 use SecondStay\Installer\InstallTokenGate;
 use SecondStay\Installer\InstallTokenVerdict;
 use SecondStay\Installer\InstallationStatus;
+use SecondStay\Update\UpdateService;
 use SecondStay\Logging\Logger;
 use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Security\Csrf;
@@ -399,6 +400,16 @@ final class Kernel
             return null;
         }
 
+        // Une mise à jour tuée en route (limite de temps de l'hébergeur) ne
+        // passe par aucun retour arrière et laisse le site fermé. La première
+        // requête qui le constate le remet dans l'état d'avant.
+        if ($this->recoverInterruptedUpdate($container)) {
+            $state = $maintenance->state();
+            if (!$state['active']) {
+                return null;
+            }
+        }
+
         foreach (self::MAINTENANCE_ALLOWED_PREFIXES as $prefix) {
             if (str_starts_with($context->routePath, $prefix)) {
                 return null;
@@ -427,6 +438,21 @@ final class Kernel
             ]),
             503
         )->withHeader('Retry-After', '600');
+    }
+
+    private function recoverInterruptedUpdate(Container $container): bool
+    {
+        try {
+            $updates = $container->get(UpdateService::class);
+
+            return $updates->hasInterruptedUpdate() && $updates->recoverInterrupted();
+        } catch (Throwable $throwable) {
+            $container->get(Logger::class)->critical('update', 'Reprise de mise à jour impossible', [
+                'reason' => $throwable->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

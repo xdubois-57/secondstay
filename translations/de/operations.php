@@ -16,6 +16,7 @@ return [
         'backup_stale' => 'Sicherung zu alt',
         'errors_recent' => 'Fehler der letzten 24 Std.',
         'update_available' => 'Aktualisierung verfügbar',
+        'update_failed' => 'Automatische Aktualisierung fehlgeschlagen',
         'title' => 'Zu erledigen',
         'empty' => 'Nichts erfordert Ihre Aufmerksamkeit.',
         'bookings_to_confirm' => 'Zu bestätigende Anfragen',

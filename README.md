@@ -273,12 +273,19 @@ depuis une adresse que vous êtes seul à connaître, ou installez tout de suite
 L'assistant :
 
 1. vérifie les prérequis (PHP, extensions, droits d'écriture, espace disque) ;
-2. teste la connexion à la base sans jamais divulguer les identifiants ;
-3. écrit `config/local.php` (permissions `0600`, jamais versionné) contenant les
-   identifiants de base et la clé de chiffrement générée ;
-4. applique les migrations ;
-5. crée le premier administrateur et le connecte ;
-6. enregistre les réglages initiaux.
+2. teste la connexion à la base sans jamais divulguer les identifiants, et
+   refuse une base qui contient déjà une installation ;
+3. applique les migrations ;
+4. enregistre les réglages initiaux, le contenu, les zones d'état des lieux et
+   les textes légaux ;
+5. crée le premier administrateur ;
+6. écrit **en dernier** `config/local.php` (permissions `0600`, jamais
+   versionné) contenant les identifiants de base et la clé de chiffrement
+   générée, puis connecte l'administrateur.
+
+Si une étape échoue — une migration, un hébergeur lent — rien n'est à nettoyer
+à la main : corrigez la cause et relancez l'assistant, il reprend où il s'est
+arrêté.
 
 Une fois l'installation terminée, l'assistant renvoie 404 — y compris si la base
 devient injoignable, auquel cas le site répond 503. Une panne ne peut jamais
@@ -379,8 +386,39 @@ plusieurs niveaux. La présentation s'adapte à la saison configurée
 /fr/admin/audit        journal des actions sensibles
 ```
 
+Le menu est groupé (Activité, Séjours, Conformité, Site public, Système) et ne
+montre que ce que votre rôle peut ouvrir : un responsable local ne voit ni les
+réglages, ni les sauvegardes, ni les modules éteints. L'administrateur voit les
+modules éteints marqués « désactivé ».
+
 Le mode maintenance ferme le site public (503) tout en laissant l'administration
 et les endpoints techniques accessibles.
+
+### Mises à jour
+
+`/fr/admin/updates` affiche la version installée, la dernière release publiée
+et le mode d'installation. Le résultat de la vérification est gardé six heures :
+ouvrir la page ne coûte pas un appel à GitHub, **Vérifier maintenant** en force
+un.
+
+**Installer la mise à jour** :
+
+1. télécharge l'archive et vérifie son empreinte SHA-256 contre celle que
+   GitHub publie — une archive sans empreinte ou qui ne correspond pas est
+   refusée ;
+2. l'extrait à côté du site, qui reste ouvert pendant ce temps ;
+3. ferme le site, sauvegarde base et médias ;
+4. remplace les répertoires du code par renommage — les fichiers retirés dans
+   la nouvelle version disparaissent vraiment ;
+5. applique les migrations, contrôle la santé du site, le rouvre.
+
+En cas d'échec, le code **et la base** reviennent à leur état d'avant. Si
+l'hébergeur tue la mise à jour en route (limite de temps), le site ne reste
+pas fermé : la requête suivante défait ce qui avait été commencé.
+
+Avec le réglage **Mise à jour automatique**, le contrôle quotidien installe la
+nouvelle version par exactement le même chemin. Un échec apparaît dans
+« À faire ».
 
 ## Espace client
 
@@ -390,8 +428,10 @@ et les endpoints techniques accessibles.
 /fr/account/forgot-password  demande de réinitialisation
 /fr/account/reset            nouveau mot de passe
 /fr/account                  profil, langue préférée, mot de passe, appareils,
-                             clés d'accès, export et suppression RGPD
+                             clés d'accès, séjours, export et suppression RGPD
 ```
+
+Un client connecté trouve **Mes séjours** dans l'en-tête de chaque page.
 
 L'inscription envoie un e-mail de confirmation dans la langue choisie. Une
 inscription sur une adresse déjà connue produit exactement la même réponse

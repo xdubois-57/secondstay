@@ -448,27 +448,45 @@ Chaque bypass :
 Le site :
 
 1. lit `VERSION` ;
-2. interroge GitHub Releases ;
-3. choisit l’asset attendu ;
+2. interroge GitHub Releases et retient la plus haute version éligible ;
+3. choisit l’asset attendu (`secondstay-<version>.zip`, version de l'étiquette) ;
 4. télécharge ;
-5. valide structure ;
-6. maintenance ;
-7. backup ;
-8. installe ;
-9. migrations ;
-10. écrit `VERSION` ;
-11. health check ;
-12. rollback si nécessaire.
+5. vérifie l'empreinte SHA-256 contre le `digest` publié par GitHub — refus si
+   elle manque ou ne correspond pas ;
+6. valide la structure (`ReleaseArtifactPolicy`) ;
+7. extrait dans un répertoire de préparation, site ouvert ;
+8. maintenance ;
+9. backup ;
+10. permute les répertoires gérés (renommage) ;
+11. migrations ;
+12. écrit `VERSION` ;
+13. health check ;
+14. rollback si nécessaire — fichiers, `VERSION`, et base si les migrations ont
+    commencé.
+
+Un journal (`storage/update/journal.json`) et un verrou permettent de défaire
+une mise à jour tuée en route par l'hébergeur : la requête suivante remet le
+site dans l'état d'avant (ARCHITECTURE.md §30.6).
+
+Conséquence pour la publication : **une Release dont l'asset n'a pas
+d'empreinte n'est pas installable par l'updater.** GitHub la calcule pour tout
+asset téléversé ; il n'y a rien à faire, sauf ne pas la contourner.
 
 ## 12. Auto-update
 
-Configurable.
+Configurable (`update.auto_install`, désactivé par défaut) : la tâche
+périodique `update_check` installe la nouvelle version **par le même
+`UpdateService::install()` que le bouton**. Un refus ou un retour arrière est
+consigné dans l'état de la tâche et remonte dans « À faire ».
 
 L’administrateur dispose aussi d’un bouton :
 
 ```text
 Vérifier maintenant
 ```
+
+Il interroge la source même si un résultat récent est mémorisé ; sans lui, la
+page des mises à jour relit le dernier résultat (six heures au plus).
 
 Le comportement exact d’auto-update peut évoluer, mais jamais contourner les validations d’artefact.
 

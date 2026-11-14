@@ -111,20 +111,71 @@ final class Installer
             throw new ValidationException(['database' => $connection['error']]);
         }
 
+        $database = new Database($input['database']);
+
+        // Une base qui a déjà un administrateur appartient à une instance
+        // existante. La réinstaller y générerait une nouvelle clé de
+        // chiffrement : tous les secrets enregistrés deviendraient illisibles.
+        if ($this->hasAdministrator($database)) {
+            throw new ValidationException(['database' => 'install.database.error.already_installed']);
+        }
+
         $this->paths->ensureStorageDirectories();
 
-        $encryptionKey = Encryptor::generateKey();
         $writer = new LocalConfigWriter($this->state->localConfigPath());
-        $writer->backupExisting();
-        $writer->write($input['database'], ['k1' => $encryptionKey], 'k1');
+        // Vérifié avant d'écrire quoi que ce soit en base : découvrir à la fin
+        // que `config/` est en lecture seule laisserait une base installée
+        // qu'aucune configuration ne désigne.
+        $writer->assertWritable();
 
-        $database = new Database($input['database']);
+        $encryptionKey = Encryptor::generateKey();
+
+        // `config/local.php` est écrit en **dernier**. Tant qu'il n'existe
+        // pas, l'instance est « non installée » et l'assistant reste
+        // accessible : un échec en route — migration, hébergeur lent — se
+        // corrige en relançant l'assistant, pas en supprimant un fichier par
+        // FTP. Chaque étape ci-dessous peut donc être rejouée : les migrations
+        // reprennent où elles se sont arrêtées, et le contenu, les zones et
+        // les textes légaux ne sont créés que s'ils manquent.
         $migrator = new Migrator($database, $this->paths->migrations());
         $applied = $migrator->migrate();
 
         $users = new UserRepository($database);
         $locale = Locales::normalise($input['locale']) ?? Locales::FALLBACK;
 
+        $settings = new SettingsService(
+            new SettingRegistry(),
+            new SettingsRepository($database),
+            Encryptor::fromSingleKey($encryptionKey),
+        );
+
+        $settings->setMany($this->initialSettings($input, $locale), 'installer');
+
+        // Le site public est immédiatement complet dans les quatre langues.
+        (new ContentSeeder(
+            new ContentRepository($database),
+            new Translator($this->paths->translations(), $locale, Locales::FALLBACK),
+            $database,
+        ))->seed();
+
+        // Les zones d'état des lieux proposées : le propriétaire part d'un
+        // parcours réel plutôt que d'une page vide (SPECIFICATIONS.md §53).
+        (new ZoneRepository($database))->seedDefaults();
+
+        // Version initiale des textes légaux : le produit n'est jamais livré
+        // sans texte opposable, et une réservation faite le premier jour
+        // conserve donc une version et une langue (SPECIFICATIONS.md §65).
+        (new LegalService(
+            new LegalDocumentRepository($database),
+            new BookingConsentRepository($database),
+            new ContentRepository($database),
+            $settings,
+            new Logger($this->paths->storage('logs')),
+            new AuditTrail($database),
+        ))->publishInitialVersion();
+
+        // L'administrateur est créé juste avant la configuration : c'est lui
+        // qui fait d'une base une instance installée.
         $adminId = $users->create(
             $input['admin_email'],
             $this->hasher->hash($input['admin_password']),
@@ -136,12 +187,36 @@ final class Installer
             UserStatus::Active,
         );
 
-        $settings = new SettingsService(
-            new SettingRegistry(),
-            new SettingsRepository($database),
-            Encryptor::fromSingleKey($encryptionKey),
+        try {
+            $writer->write($input['database'], ['k1' => $encryptionKey], 'k1');
+        } catch (Throwable $throwable) {
+            // Sans configuration, cet administrateur fermerait la base à toute
+            // nouvelle tentative : il est retiré, et l'assistant reste rejouable.
+            $users->delete($adminId);
+
+            throw $throwable;
+        }
+
+        (new AuditTrail($database))->record(
+            'install.completed',
+            'installation',
+            '1',
+            null,
+            ['locale' => $locale, 'migrations' => count($applied)],
+            $adminId,
+            $input['admin_email'],
         );
 
+        return ['database' => $database, 'admin_id' => $adminId, 'migrations' => $applied];
+    }
+
+    /**
+     * @param array{property_name: string, timezone?: string, site_url?: string} $input
+     *
+     * @return array<string, string>
+     */
+    private function initialSettings(array $input, string $locale): array
+    {
         $initialSettings = [
             'property.name' => $input['property_name'],
             'site.default_locale' => $locale,
@@ -167,42 +242,16 @@ final class Installer
 
         $initialSettings['mail.from_name'] = $input['property_name'];
 
-        $settings->setMany($initialSettings, 'installer');
+        return $initialSettings;
+    }
 
-        // Le site public est immédiatement complet dans les quatre langues.
-        (new ContentSeeder(
-            new ContentRepository($database),
-            new Translator($this->paths->translations(), $locale, Locales::FALLBACK),
-            $database,
-        ))->seed();
-
-        // Les zones d'état des lieux proposées : le propriétaire part d'un
-        // parcours réel plutôt que d'une page vide (SPECIFICATIONS.md §53).
-        (new ZoneRepository($database))->seedDefaults();
-
-        // Version initiale des textes légaux : le produit n'est jamais livré
-        // sans texte opposable, et une réservation faite le premier jour
-        // conserve donc une version et une langue (SPECIFICATIONS.md §65).
-        (new LegalService(
-            new LegalDocumentRepository($database),
-            new BookingConsentRepository($database),
-            new ContentRepository($database),
-            $settings,
-            new Logger($this->paths->storage('logs')),
-            new AuditTrail($database),
-        ))->publishInitialVersion();
-
-        (new AuditTrail($database))->record(
-            'install.completed',
-            'installation',
-            '1',
-            null,
-            ['locale' => $locale, 'migrations' => count($applied)],
-            $adminId,
-            $input['admin_email'],
-        );
-
-        return ['database' => $database, 'admin_id' => $adminId, 'migrations' => $applied];
+    private function hasAdministrator(Database $database): bool
+    {
+        try {
+            return $database->tableExists('user') && (new UserRepository($database))->countAdministrators() > 0;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function safeDatabase(DatabaseConfig $config): ?Database

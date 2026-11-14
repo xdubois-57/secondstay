@@ -5,6 +5,14 @@ declare(strict_types=1);
 return [
     'nav' => [
         'administration' => 'Verwaltung',
+        'disabled' => 'deaktiviert',
+        'group' => [
+            'activity' => 'Aktivität',
+            'stays' => 'Aufenthalte',
+            'compliance' => 'Konformität',
+            'site' => 'Öffentliche Website',
+            'system' => 'System',
+        ],
         'dashboard' => 'Übersicht',
         'content' => 'Inhalte',
         'media' => 'Medien',
@@ -199,6 +207,11 @@ return [
         'none_available' => 'Keine Aktualisierung verfügbar.',
         'up_to_date' => 'SecondStay ist aktuell.',
         'unreachable' => 'Der Aktualisierungsdienst ist nicht erreichbar.',
+        'found' => 'Prüfung abgeschlossen: Eine Aktualisierung ist verfügbar.',
+        'checked_at' => 'Zuletzt geprüft',
+        'mode' => 'Modus',
+        'recovered' => 'Eine Aktualisierung wurde vor ihrem Abschluss unterbrochen. Die Website wurde in ihren '
+            . 'vorherigen Zustand zurückversetzt.',
     ],
     'pricing' => [
         'title' => 'Verfügbarkeit und Preise',
