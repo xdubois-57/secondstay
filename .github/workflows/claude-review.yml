@@ -37,8 +37,14 @@ on:
 # trois commits poussés en une minute paient une revue de l'état final, pas
 # trois d'états intermédiaires. L'exécution annulée appartient au commit
 # dépassé, donc elle ne laisse jamais de rouge sur celui qui compte.
+#
+# Une étiquette quelconque ne relit rien et ne doit rien annuler : elle a son
+# propre groupe. Sans cela, poser une étiquette pendant une revue en vol
+# annulait cette revue, et le check exigé restait sans verdict.
 concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
+  group: >-
+    claude-review-${{ github.event.pull_request.number }}-${{
+    (github.event.action == 'labeled' && github.event.label.name != 'claude-review') && 'label' || 'review' }}
   cancel-in-progress: true
 
 jobs:
@@ -75,14 +81,12 @@ jobs:
       id-token: write
 
     steps:
-      # Sans le secret, l'action échouerait à l'authentification et poserait un
-      # rouge permanent sur chaque pull request jusqu'à ce que quelqu'un le
-      # crée. Ce n'est pas la bonne façon de le demander : un rouge qu'on
-      # apprend à ignorer désarme tous les autres.
-      #
-      # On saute donc la revue et on le **dit**, dans le commentaire de statut,
-      # en toutes lettres. Un vert accompagné de « aucune revue n'a eu lieu,
-      # voici pourquoi » est honnête ; un vert silencieux ne l'aurait pas été.
+      # Sans le secret, l'action échouerait à l'authentification avec un
+      # message qui n'envoie chercher nulle part. On saute donc l'appel, et
+      # c'est le travail `status` qui conclut : il nomme le secret manquant
+      # dans le commentaire **et échoue**. La revue étant un check exigé sur
+      # `main`, un secret absent bloque la fusion au lieu de la laisser passer
+      # sans relecture — c'est la décision du mainteneur.
       - name: Le secret est-il configuré ?
         id: guard
         env:
@@ -149,7 +153,10 @@ jobs:
       #
       # D'ici là, l'indice est l'horloge : un `Claude review` vert en une
       # quinzaine de secondes n'a rien relu. C'est ce que mesure le travail
-      # `status` ci-dessous.
+      # `status` ci-dessous — qui, lui, **échoue** dans ce cas. Une pull
+      # request qui modifie ce fichier ne peut donc jamais obtenir un
+      # `Claude review status` vert : sa fusion demande une dérogation
+      # explicite du mainteneur au ruleset, et c'est voulu.
       - uses: anthropics/claude-code-action@d9a44dc489924665d246f0fd0508d102211be397 # v1
         if: steps.guard.outputs.present == 'true'
         with:
@@ -195,13 +202,20 @@ jobs:
   # en `success` en une quinzaine de secondes ; une vraie revue prend des
   # minutes. Lire l'horloge est ce qui transforme « vert » en une affirmation
   # sur ce qui a été lu, sans que personne n'ouvre le journal d'exécution.
+  #
+  # C'EST LE CHECK EXIGÉ SUR `main`. Il échoue chaque fois qu'aucune revue
+  # réelle n'a eu lieu sur la tête de la pull request — secret absent, revue
+  # refusée, échouée, annulée, brouillon — au lieu de rester vert en le
+  # disant seulement dans un commentaire. Un check exigé qui passe sans
+  # revue ne rendrait pas la revue obligatoire : il la rendrait décorative.
+  #
+  # Il ne doit jamais être « sauté » : GitHub compte un check exigé sauté
+  # comme réussi. D'où `always()` sans condition, et le cas des étiquettes
+  # quelconques traité plus bas plutôt que par un `if:`.
   status:
     name: Claude review status
     needs: review
-    # `always()` pour qu'une revue échouée ou annulée le dise, au lieu de
-    # laisser le commentaire de l'exécution précédente en place. Une pull
-    # request en brouillon saute le travail de revue, et celui-ci part avec.
-    if: always() && needs.review.result != 'skipped'
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -215,6 +229,9 @@ jobs:
       # privé il cesserait de répondre, et une dépendance au fait d'être
       # public n'est pas une dépendance à laisser tacite.
       actions: read
+      # Relire le verdict déjà rendu sur ce commit quand l'exécution courante
+      # ne relit rien (étiquette quelconque).
+      checks: read
 
     steps:
       - name: Poser ou mettre à jour le commentaire de statut
@@ -224,6 +241,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           REVIEW_RESULT: ${{ needs.review.result }}
           TOKEN_PRESENT: ${{ needs.review.outputs.token_present }}
+          EVENT_ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           # Le marqueur identifie le commentaire de ce workflow, pour que
           # chaque exécution le réécrive au lieu d'en ajouter un. Il est
@@ -231,6 +251,21 @@ jobs:
           MARKER: "<!-- claude-review-status -->"
         run: |
           set -euo pipefail
+
+          # Une étiquette autre que `claude-review` ne relit rien. Son
+          # exécution ne doit ni effacer le verdict rendu sur ce commit, ni
+          # en inventer un : elle reprend le dernier verdict terminé de ce
+          # même check sur la même tête, et ne touche pas au commentaire.
+          if [[ "${EVENT_ACTION}" == "labeled" && "${LABEL_NAME}" != "claude-review" ]]; then
+            previous="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?check_name=Claude%20review%20status&filter=all&per_page=100" \
+              --jq '[.check_runs[] | select(.status == "completed")] | sort_by(.completed_at) | last | .conclusion // ""')"
+            echo "Étiquette « ${LABEL_NAME} » : verdict précédent sur ${HEAD_SHA} = « ${previous:-aucun} »."
+            if [[ "${previous}" == "success" ]]; then
+              exit 0
+            fi
+            echo "::error::Aucune revue Claude réussie sur ce commit. Poussez, ou posez l'étiquette claude-review."
+            exit 1
+          fi
 
           # Une exécution, deux travaux au plus : aucune pagination nécessaire.
           jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs")"
@@ -257,13 +292,17 @@ jobs:
           # annulé avant elle laisse la sortie vide, et la lire d'abord ferait
           # accuser un secret absent alors qu'il est là. Le mainteneur irait
           # créer un secret qui existe déjà au lieu de lire l'échec.
-          if [[ "${REVIEW_RESULT}" != "success" ]]; then
+          reviewed=false
+          if [[ "${IS_DRAFT}" == "true" ]]; then
+            verdict="**Brouillon, non relu.** La revue part quand la pull request est marquée prête. D'ici là, ce check reste rouge : un brouillon ne se fusionne pas."
+          elif [[ "${REVIEW_RESULT}" != "success" ]]; then
             verdict="**La revue ne s'est pas terminée** (\`${REVIEW_RESULT}\`). Rien n'a été relu : considérez cette pull request comme non lue par Claude."
           elif [[ "${TOKEN_PRESENT}" != "true" ]]; then
-            verdict="**Aucune revue n'a eu lieu.** Le secret \`CLAUDE_CODE_OAUTH_TOKEN\` n'est pas configuré sur ce dépôt : le travail a été sauté plutôt que de laisser un rouge permanent. Créez-le avec \`claude setup-token\` puis rangez-le dans *Settings → Secrets and variables → Actions*. D'ici là, ce check vert ne dit rien du diff."
+            verdict="**Aucune revue n'a eu lieu.** Le secret \`CLAUDE_CODE_OAUTH_TOKEN\` n'est pas configuré pour cette exécution. Créez-le avec \`claude setup-token\` puis rangez-le dans *Settings → Secrets and variables → Actions* — et aussi dans *Dependabot* pour les pull requests de Dependabot. D'ici là, ce check reste rouge et bloque la fusion."
           elif [[ "${seconds}" -ge 0 && "${seconds}" -lt 60 ]]; then
-            verdict="**Vert sans revue.** Le travail a réussi en ${elapsed}, ce qui est la signature de l'action refusant de tourner — elle le fait quand ce workflow diffère de la copie sur \`main\`. Relisez le diff vous-même, ou fusionnez d'abord la modification du workflow puis relancez."
+            verdict="**Aucune revue : le relecteur a refusé de tourner.** Le travail a réussi en ${elapsed}, ce qui est la signature de l'action refusant de lire — elle le fait quand ce workflow diffère de la copie sur \`main\`. Ce check est rouge et bloque la fusion. Si la pull request modifie ce workflow, sa fusion revient au mainteneur après relecture humaine ; sinon, posez l'étiquette \`claude-review\` pour relancer."
           else
+            reviewed=true
             verdict="**Relu, rien à signaler.** Les constats, quand il y en a, arrivent en commentaires en ligne sur le diff et non ici ; ce commentaire n'est que la preuve que le relecteur a tourné."
           fi
 
@@ -281,4 +320,11 @@ jobs:
           else
             gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --input payload.json >/dev/null
             echo "Commentaire de statut créé."
+          fi
+
+          # Le commentaire explique ; le code de sortie décide. Sans cette
+          # ligne, le check exigé serait vert sur une pull request non lue.
+          if [[ "${reviewed}" != "true" ]]; then
+            echo "::error::Aucune revue Claude réelle sur ${HEAD_SHA} — voir le commentaire de statut."
+            exit 1
           fi

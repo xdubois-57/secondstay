@@ -219,11 +219,26 @@ approbation qui satisferait une revue exigée.
 
 **Claude review** — `.github/workflows/claude-review.yml`, à chaque poussée.
 Un second travail, **`Claude review status`**, poste un commentaire — réécrit
-sur place — disant si la revue a réellement tourné. Sans lui, un check vert
-sans commentaire est ambigu entre « a lu, rien trouvé » et « a refusé de
-lire », et seul le journal d'exécution tranche. C'est la durée qui les sépare :
-un refus sort en `success` en une quinzaine de secondes, une vraie revue prend
-des minutes.
+sur place — disant si la revue a réellement tourné, **et échoue quand elle n'a
+pas eu lieu**. C'est lui le check exigé sur `main` (voir « Checks exigés »
+plus bas), pas `Claude review` : celui-ci sort en `success` même quand l'action
+refuse de lire, et l'exiger ne garantirait rien. C'est la durée qui sépare un
+refus d'une revue : un refus sort en une quinzaine de secondes, une vraie revue
+prend des minutes.
+
+`Claude review status` échoue quand :
+
+- le secret `CLAUDE_CODE_OAUTH_TOKEN` est absent ;
+- la revue a échoué, a été annulée, ou a refusé de tourner (moins de 60 s) ;
+- la pull request est un brouillon.
+
+Il n'est **jamais sauté** : GitHub compte un check exigé sauté comme réussi.
+Une étiquette autre que `claude-review` déclenche bien le workflow, mais cette
+exécution ne relit rien ; elle reprend le dernier verdict terminé du check sur
+le même commit, sans toucher au commentaire. Elle a son propre groupe de
+concurrence, pour ne plus annuler une revue en cours.
+
+Une revue sautée par erreur se rejoue en posant l'étiquette `claude-review`.
 
 **SonarCloud** — pose une Quality Gate sur chaque pull request, sauf celles
 venues d'un fork : `SONAR_TOKEN` n'est pas exposé à ces exécutions. L'absence
@@ -279,17 +294,23 @@ Ce que les deux partagent : **rien ne prévient quand l'un manque ou est faux.**
 | Secret | Utilisé par | Sans lui |
 |---|---|---|
 | `SONAR_TOKEN` | le travail SonarCloud, la gate de release | pas de Quality Gate ; la gate de release refuse |
-| `CLAUDE_CODE_OAUTH_TOKEN` | `claude-review.yml` | la revue est **sautée**, et le commentaire de statut le dit en toutes lettres |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `claude-review.yml` | aucune revue : `Claude review status` est **rouge**, et la fusion bloquée |
 
 `CLAUDE_CODE_OAUTH_TOKEN` se génère avec `claude setup-token` et dépense un
 abonnement Claude plutôt qu'une clé facturée à l'appel. Il est lié à la
 personne qui l'a généré.
 
-Tant qu'il n'existe pas, le travail de revue est **sauté** plutôt que rouge :
-un rouge permanent qu'on apprend à ignorer désarme tous les autres. Le
-commentaire de statut porte alors la vérité — « aucune revue n'a eu lieu,
-voici pourquoi » — et c'est exactement le rôle pour lequel ce second travail
-existe.
+Tant qu'il n'existe pas, aucune pull request ne se fusionne sans dérogation :
+`Claude review status` échoue en nommant le secret manquant. C'est le choix
+inverse de celui fait au départ — un vert accompagné d'un commentaire disant
+« aucune revue n'a eu lieu » — et il est délibéré : une revue obligatoire qui
+passe quand elle n'a pas eu lieu n'est pas obligatoire.
+
+**Dependabot** n'a pas accès aux secrets Actions : ses pull requests lisent les
+*Dependabot secrets*, une liste distincte. Pour qu'elles soient relues, et donc
+fusionnables, `CLAUDE_CODE_OAUTH_TOKEN` doit aussi y être enregistré
+(Settings → Secrets and variables → Dependabot). Sans cela, chacune reste
+bloquée sur ce check.
 
 ### Étiquettes
 
@@ -314,10 +335,26 @@ personne obtient l'accès en écriture — le jour où la protection a quelque c
 
 GitHub retire les secrets des exécutions déclenchées par une pull request venue
 d'un fork. Sur une telle pull request, **SonarCloud est ignoré** et **la revue
-Claude ne peut pas tourner**. Si `Claude review` devenait un check exigé, une
-pull request venue d'un fork deviendrait définitivement non fusionnable — c'est
-une décision de gouvernance sur l'ouverture aux contributions extérieures, pas
-un détail de configuration.
+Claude ne peut pas tourner**. `Claude review status` étant exigé, une pull
+request venue d'un fork n'est fusionnable que par une dérogation du mainteneur.
+C'est une décision de gouvernance sur l'ouverture aux contributions
+extérieures : prise, ici, en faveur de la revue obligatoire.
+
+### Checks exigés sur `main`
+
+Le ruleset « Main » (Settings → Rules → Rulesets) exige une pull request. Pour
+que la revue Claude soit obligatoire, **`Claude review status`** doit figurer
+dans *Require status checks to pass*, avec la source GitHub Actions.
+
+Ce réglage vit hors du dépôt : aucun diff ne le montre et aucune gate ne le
+vérifie. Le vérifier après tout changement de ruleset, en regardant une pull
+request dont la revue a échoué : le bouton de fusion doit être bloqué.
+
+Une pull request qui modifie `claude-review.yml` ne peut **jamais** rendre ce
+check vert : l'action refuse de relire un workflow différent de celui de
+`main` (voir l'en-tête du fichier). Sa fusion passe par la liste de
+contournement du ruleset — un geste explicite du mainteneur, qui vaut relecture
+humaine de ce fichier.
 
 ## Le mode de défaillance que ce dépôt rencontre vraiment
 
@@ -341,7 +378,10 @@ quand elles échouent. Ce qui a réellement mal tourné ici, plusieurs fois, c'e
   active, et ne correspondre à rien ;
 - **`Claude review` sort en `success`** quand il refuse de tourner sur une
   pull request qui modifie son propre workflow — donc vert en quinze secondes,
-  sur exactement la pull request qu'on voudrait faire lire.
+  sur exactement la pull request qu'on voudrait faire lire. C'est pourquoi le
+  check exigé est `Claude review status`, qui échoue dans ce cas, et non
+  `Claude review`. Et pourquoi il n'a pas le droit d'être sauté : un check
+  exigé sauté compte comme réussi.
 
 L'habitude qui attrape tout cela est bon marché : **se demander à quoi
 ressemblerait un vert si la chose n'avait pas tourné du tout.** Quand la
