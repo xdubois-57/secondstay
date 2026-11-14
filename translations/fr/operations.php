@@ -16,6 +16,7 @@ return [
         'backup_stale' => 'Sauvegarde trop ancienne',
         'errors_recent' => 'Erreurs des dernières 24 h',
         'update_available' => 'Mise à jour disponible',
+        'update_failed' => 'Échec de la mise à jour automatique',
         'title' => 'À faire',
         'empty' => 'Rien ne réclame votre attention.',
         'bookings_to_confirm' => 'Demandes à valider',

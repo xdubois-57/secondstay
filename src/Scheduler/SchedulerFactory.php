@@ -9,11 +9,13 @@ use SecondStay\Booking\BookingService;
 use SecondStay\Calendar\ExternalCalendarService;
 use SecondStay\Core\Container;
 use SecondStay\Imap\InboundMailService;
+use SecondStay\Logging\Logger;
 use SecondStay\LocalContent\LocalContentService;
 use SecondStay\Notification\StayReminderService;
 use SecondStay\Privacy\RetentionService;
 use SecondStay\Settings\SettingsService;
 use SecondStay\Update\UpdateService;
+use Throwable;
 
 /**
  * Branche les tâches périodiques sur les services du produit.
@@ -157,16 +159,49 @@ final class SchedulerFactory
         });
     }
 
+    /**
+     * Vérifie, mémorise le résultat pour la page des mises à jour, et
+     * installe si l'administrateur l'a demandé (`update.auto_install`).
+     *
+     * L'installation automatique suit exactement le chemin du bouton :
+     * empreinte, politique d'artefact, sauvegarde, retour arrière. Elle
+     * n'existe pas pour contourner une seule de ces validations
+     * (RELEASE.md §12).
+     */
     private static function registerUpdateCheck(Scheduler $scheduler, Container $container): void
     {
         $scheduler->register(ScheduledTask::UpdateCheck, static function () use ($container): TaskOutcome {
             $settings = $container->get(SettingsService::class);
-            $result = $container->get(UpdateService::class)
-                ->check($settings->string('update.channel') === 'prerelease');
+            $updates = $container->get(UpdateService::class);
 
-            return $result['available']
-                ? TaskOutcome::ok('scheduler.detail.update_available')
-                : TaskOutcome::ok('scheduler.detail.up_to_date');
+            // Une mise à jour interrompue est défaite avant toute autre chose.
+            $updates->recoverInterrupted();
+
+            $result = $updates->refresh($settings->string('update.channel') === 'prerelease');
+
+            if (!$result['available'] || $result['latest'] === null) {
+                return TaskOutcome::ok('scheduler.detail.up_to_date');
+            }
+
+            if (!$settings->bool('update.auto_install')) {
+                return TaskOutcome::ok('scheduler.detail.update_available');
+            }
+
+            try {
+                $installed = $updates->install($result['latest'], 'scheduler');
+            } catch (Throwable $throwable) {
+                // Refusée avant d'avoir rien touché : empreinte, artefact,
+                // téléchargement. Le site tourne sur la version en place.
+                $container->get(Logger::class)->error('update', 'Installation automatique refusée', [
+                    'reason' => $throwable->getMessage(),
+                ]);
+
+                return TaskOutcome::error('scheduler.detail.update_refused');
+            }
+
+            return $installed['installed']
+                ? TaskOutcome::ok('scheduler.detail.update_installed')
+                : TaskOutcome::error('scheduler.detail.update_rolled_back');
         });
     }
 }

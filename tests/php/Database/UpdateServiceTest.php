@@ -110,7 +110,11 @@ final class UpdateServiceTest extends DatabaseTestCase
         return $latest;
     }
 
-    private function release(string $version): ReleaseInfo
+    /**
+     * Release dont l'empreinte annoncée est celle de l'archive : la situation
+     * normale. `$digest` permet d'en annoncer une autre, ou aucune.
+     */
+    private function release(string $version, string $artifact, ?string $digest = null): ReleaseInfo
     {
         return new ReleaseInfo(
             $version,
@@ -120,12 +124,23 @@ final class UpdateServiceTest extends DatabaseTestCase
             1024,
             gmdate('c'),
             'Notes de version ' . $version,
+            false,
+            $digest ?? (string) hash_file('sha256', $artifact),
         );
+    }
+
+    /**
+     * @param array<string, string> $extraEntries
+     */
+    private function offer(string $version, array $extraEntries = [], ?string $digest = null): void
+    {
+        $artifact = $this->buildArtifact($version, $extraEntries);
+        $this->provider->addRelease($this->release($version, $artifact, $digest), $artifact);
     }
 
     public function testCheckDetectsANewerRelease(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
 
         $state = $this->updates->check();
 
@@ -136,7 +151,7 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testCheckIgnoresOlderOrEqualReleases(): void
     {
-        $this->provider->addRelease($this->release('1.0.0'), $this->buildArtifact('1.0.0'));
+        $this->offer('1.0.0');
 
         self::assertFalse($this->updates->check()['available']);
     }
@@ -152,7 +167,7 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testInstallReplacesCodeAndVersion(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
         $result = $this->updates->install($this->latestRelease(), 'owner@example.test', 1);
 
         self::assertTrue($result['installed']);
@@ -165,7 +180,7 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testInstallCreatesABackupFirst(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
         $result = $this->updates->install($this->latestRelease());
 
         self::assertNotNull($result['backup']);
@@ -174,10 +189,10 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testAnArtifactCarryingRuntimeDataIsRefusedBeforeInstall(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0', [
+        $this->offer('1.1.0', [
             'storage/documents/facture.txt' => 'contenu malveillant',
             'config/local.php' => "<?php return ['keep' => false];\n",
-        ]));
+        ]);
 
         $problems = $this->updates->validateArtifact(
             $this->artifactDirectory . '/secondstay-1.1.0.zip'
@@ -194,7 +209,7 @@ final class UpdateServiceTest extends DatabaseTestCase
         mkdir($this->sandboxRoot . '/config', 0o750, true);
         file_put_contents($this->sandboxRoot . '/config/local.php', "<?php return ['keep' => true];\n");
 
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
         $result = $this->updates->install($this->latestRelease());
 
         self::assertTrue($result['installed']);
@@ -204,9 +219,9 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testFailedMigrationTriggersRollback(): void
     {
-        $this->provider->addRelease($this->release('1.2.0'), $this->buildArtifact('1.2.0', [
+        $this->offer('1.2.0', [
             'migrations/9999_broken.sql' => "CREATE TABLE `broken` (this is not valid sql);\n",
-        ]));
+        ]);
 
         $result = $this->updates->install($this->latestRelease(), 'owner@example.test', 1);
 
@@ -222,7 +237,7 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testMaintenanceIsLiftedAfterInstall(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
         $this->updates->install($this->latestRelease());
 
         self::assertFalse($this->maintenance->isActive());
@@ -258,7 +273,7 @@ final class UpdateServiceTest extends DatabaseTestCase
 
     public function testInstallIsAudited(): void
     {
-        $this->provider->addRelease($this->release('1.1.0'), $this->buildArtifact('1.1.0'));
+        $this->offer('1.1.0');
         $this->updates->install($this->latestRelease(), 'owner@example.test', 1);
 
         $actions = array_column((new AuditTrail($this->database))->recent(), 'action');
@@ -272,5 +287,263 @@ final class UpdateServiceTest extends DatabaseTestCase
         file_put_contents($this->sandboxRoot . '/migrations/9999_pending.sql', "SELECT 1;\n");
 
         self::assertFalse($this->updates->healthCheck());
+    }
+    // --- Empreinte -------------------------------------------------------
+
+    public function testAReleaseWithoutDigestIsRefusedAndNothingChanges(): void
+    {
+        $this->offer('1.1.0', [], '');
+
+        $this->expectExceptionMessage('update.error.digest_missing');
+
+        try {
+            $this->updates->install($this->latestRelease());
+        } finally {
+            self::assertSame('1.0.0', $this->updates->currentVersion());
+            self::assertStringContainsString('ancienne version', (string) file_get_contents($this->sandboxRoot . '/public/index.php'));
+            self::assertFalse($this->maintenance->isActive());
+        }
+    }
+
+    public function testAnArchiveThatDoesNotMatchItsDigestIsRefused(): void
+    {
+        $this->offer('1.1.0', [], str_repeat('0', 64));
+
+        $this->expectExceptionMessage('update.error.digest_mismatch');
+
+        try {
+            $this->updates->install($this->latestRelease());
+        } finally {
+            self::assertSame('1.0.0', $this->updates->currentVersion());
+            self::assertSame([], glob($this->sandboxPaths->storage('backups') . '/*.zip') ?: []);
+        }
+    }
+
+    // --- Permutation -----------------------------------------------------
+
+    /**
+     * Écraser fichier par fichier laissait en place tout ce que la nouvelle
+     * version avait supprimé : une classe retirée restait chargeable, une
+     * migration renommée restait appliquable.
+     */
+    public function testAFileRemovedByTheNewVersionDisappears(): void
+    {
+        mkdir($this->sandboxRoot . '/src', 0o750, true);
+        file_put_contents($this->sandboxRoot . '/src/Obsolete.php', "<?php // retiré en 1.1.0\n");
+
+        $this->offer('1.1.0');
+        $result = $this->updates->install($this->latestRelease());
+
+        self::assertTrue($result['installed']);
+        self::assertFileDoesNotExist($this->sandboxRoot . '/src/Obsolete.php');
+        self::assertFileExists($this->sandboxRoot . '/src/Update/UpdateService.php');
+    }
+
+    public function testNoWorkingFileIsLeftBehind(): void
+    {
+        $this->offer('1.1.0');
+        $this->updates->install($this->latestRelease());
+
+        self::assertSame([], glob($this->sandboxPaths->storage('temp') . '/update-*') ?: []);
+        self::assertFalse($this->updates->hasInterruptedUpdate());
+    }
+
+    // --- Retour arrière de la base -----------------------------------------
+
+    /**
+     * Un retour arrière qui ne rendait que les fichiers laissait l'ancien
+     * code sur le nouveau schéma. La table créée par la première migration
+     * doit disparaître avec elle, et la migration ne plus être notée comme
+     * appliquée — sinon la tentative suivante l'ignorerait.
+     */
+    public function testAFailedMigrationAlsoRestoresTheDatabase(): void
+    {
+        $this->offer('1.2.0', [
+            'migrations/9998_probe.sql' => "CREATE TABLE `update_probe` (`id` INT NOT NULL PRIMARY KEY);\n",
+            'migrations/9999_broken.sql' => "CREATE TABLE `broken` (this is not valid sql);\n",
+        ]);
+
+        $result = $this->updates->install($this->latestRelease());
+
+        self::assertTrue($result['rolled_back']);
+        self::assertFalse($this->database->tableExists('update_probe'));
+        $applied = (new \SecondStay\Database\Migrator($this->database, $this->sandboxPaths->migrations()))->applied();
+        self::assertArrayNotHasKey('9998', $applied);
+        self::assertTrue($this->updates->healthCheck());
+        self::assertFalse($this->maintenance->isActive());
+    }
+
+    // --- Reprise d'une mise à jour interrompue -----------------------------
+
+    /**
+     * Reproduit l'état exact que laisse un processus tué pendant la
+     * permutation : ancienne version de côté, nouvelle en place, site fermé,
+     * journal présent.
+     */
+    public function testAnUpdateKilledDuringTheSwapIsUndone(): void
+    {
+        $work = $this->sandboxPaths->storage('temp/update-killed');
+        mkdir($work . '/rollback', 0o750, true);
+        rename($this->sandboxRoot . '/public', $work . '/rollback/public');
+        mkdir($this->sandboxRoot . '/public', 0o750);
+        file_put_contents($this->sandboxRoot . '/public/index.php', "<?php // version à moitié posée\n");
+        file_put_contents($this->sandboxRoot . '/VERSION', "1.1.0\n");
+        $this->maintenance->enable('maintenance.reason.update');
+        $this->writeJournal([
+            'from' => '1.0.0',
+            'to' => '1.1.0',
+            'work_directory' => $work,
+            'rollback_directory' => $work . '/rollback',
+            'backup' => '',
+            'tables_before' => $this->database->tables(),
+            'maintenance_was_active' => false,
+            'phase' => 'swapping',
+            'started_at' => time(),
+        ]);
+
+        self::assertTrue($this->updates->hasInterruptedUpdate());
+        self::assertTrue($this->updates->recoverInterrupted());
+
+        self::assertSame('1.0.0', $this->updates->currentVersion());
+        self::assertStringContainsString('ancienne version', (string) file_get_contents($this->sandboxRoot . '/public/index.php'));
+        self::assertFalse($this->maintenance->isActive());
+        self::assertFalse($this->updates->hasInterruptedUpdate());
+        self::assertDirectoryDoesNotExist($work);
+
+        $actions = array_column((new AuditTrail($this->database))->recent(), 'action');
+        self::assertContains('update.recovered', $actions);
+    }
+
+    public function testAnUpdateKilledDuringMigrationsRestoresTheDatabase(): void
+    {
+        $backup = (new BackupService($this->database, $this->sandboxPaths, $this->maintenance, '1.0.0'))->create(false);
+        $tablesBefore = $this->database->tables();
+        $this->database->execute('CREATE TABLE `update_probe` (`id` INT NOT NULL PRIMARY KEY)');
+
+        $work = $this->sandboxPaths->storage('temp/update-killed');
+        mkdir($work . '/rollback', 0o750, true);
+        $this->maintenance->enable('maintenance.reason.update');
+        $this->writeJournal([
+            'from' => '1.0.0',
+            'to' => '1.1.0',
+            'work_directory' => $work,
+            'rollback_directory' => $work . '/rollback',
+            'backup' => $backup['path'],
+            'tables_before' => $tablesBefore,
+            'maintenance_was_active' => false,
+            'phase' => 'migrating',
+            'started_at' => time(),
+        ]);
+
+        self::assertTrue($this->updates->recoverInterrupted());
+        self::assertFalse($this->database->tableExists('update_probe'));
+        self::assertFalse($this->maintenance->isActive());
+    }
+
+    /**
+     * Tant que le processus qui met à jour est vivant, il tient le verrou :
+     * personne ne défait son travail sous ses pieds, ni n'en lance un second.
+     */
+    public function testARunningUpdateIsNeitherRecoveredNorDoubled(): void
+    {
+        $this->writeJournal(['from' => '1.0.0', 'to' => '1.1.0', 'phase' => 'swapping', 'started_at' => time()]);
+        $handle = fopen($this->sandboxPaths->storage('update/update.lock'), 'c');
+        self::assertNotFalse($handle);
+        self::assertTrue(flock($handle, LOCK_EX));
+
+        try {
+            self::assertFalse($this->updates->recoverInterrupted());
+            self::assertTrue($this->updates->hasInterruptedUpdate());
+
+            $this->offer('1.1.0');
+            $this->expectExceptionMessage('déjà en cours');
+            $this->updates->install($this->latestRelease());
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+    public function testAnUnreadableJournalIsDiscarded(): void
+    {
+        mkdir($this->sandboxPaths->storage('update'), 0o750, true);
+        file_put_contents($this->sandboxPaths->storage('update') . '/journal.json', '{pas du json');
+        self::assertTrue($this->updates->hasInterruptedUpdate());
+
+        self::assertFalse($this->updates->recoverInterrupted());
+        self::assertFalse($this->updates->hasInterruptedUpdate());
+    }
+
+    // --- Vérification mémorisée ------------------------------------------
+
+    public function testACheckIsRememberedUntilItExpires(): void
+    {
+        $now = 1_800_000_000;
+        $updates = $this->updatesAt(static function () use (&$now): int {
+            return $now;
+        });
+        $this->offer('1.1.0');
+
+        $updates->refresh();
+        $cached = $updates->cachedState();
+        self::assertNotNull($cached);
+        self::assertSame('1.1.0', $cached['latest']?->version);
+        self::assertTrue($cached['available']);
+
+        // Un autre canal n'est pas la même question.
+        self::assertNull($updates->cachedState(true));
+
+        $now += UpdateService::CHECK_TTL_SECONDS + 1;
+        self::assertNull($updates->cachedState());
+    }
+
+    public function testTheRememberedCheckIsForgottenOnceTheVersionChanges(): void
+    {
+        $this->offer('1.1.0');
+        $this->updates->refresh();
+        self::assertNotNull($this->updates->cachedState());
+
+        file_put_contents($this->sandboxRoot . '/VERSION', "1.1.0\n");
+
+        self::assertNull($this->updates->cachedState());
+    }
+
+    public function testStateOnlyCallsTheSourceWhenNothingValidIsRemembered(): void
+    {
+        $this->offer('1.1.0');
+
+        $first = $this->updates->state();
+        $this->offer('1.2.0');
+        $second = $this->updates->state();
+
+        self::assertSame('1.1.0', $first['latest']?->version);
+        self::assertSame('1.1.0', $second['latest']?->version);
+        self::assertSame('1.2.0', $this->updates->refresh()['latest']?->version);
+    }
+
+    /**
+     * @param array<string, mixed> $journal
+     */
+    private function writeJournal(array $journal): void
+    {
+        $directory = $this->sandboxPaths->storage('update');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0o750, true);
+        }
+        file_put_contents($directory . '/journal.json', json_encode($journal, JSON_THROW_ON_ERROR));
+    }
+
+    private function updatesAt(callable $clock): UpdateService
+    {
+        return new UpdateService(
+            $this->provider,
+            $this->sandboxPaths,
+            $this->database,
+            new BackupService($this->database, $this->sandboxPaths, $this->maintenance, '1.0.0'),
+            $this->maintenance,
+            new Logger($this->sandboxPaths->storage('logs')),
+            new AuditTrail($this->database),
+            $clock,
+        );
     }
 }

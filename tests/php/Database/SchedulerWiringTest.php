@@ -10,6 +10,7 @@ use SecondStay\Scheduler\SchedulerFactory;
 use SecondStay\Scheduler\TaskStateRepository;
 use SecondStay\Settings\SettingsService;
 use SecondStay\Update\FakeReleaseProvider;
+use SecondStay\Update\ReleaseInfo;
 use SecondStay\Update\ReleaseProvider;
 use SecondStay\Update\UpdateService;
 use SecondStay\Tests\Support\InstalledAppTestCase;
@@ -129,6 +130,62 @@ final class SchedulerWiringTest extends InstalledAppTestCase
             'SELECT `day` FROM `booking_night` WHERE `booking_id` = :id',
             ['id' => $id]
         ));
+    }
+
+    public function testAnAvailableUpdateIsOnlyReportedWithoutAutomaticInstall(): void
+    {
+        $this->offerRelease(str_repeat('0', 64));
+
+        $result = SchedulerFactory::build($this->container)->runNow(ScheduledTask::UpdateCheck);
+
+        self::assertSame('ok', $result['status']);
+        self::assertSame('scheduler.detail.update_available', $result['detail']);
+        self::assertSame('1.0.0', $this->container->get(UpdateService::class)->currentVersion());
+        // Le résultat est mémorisé pour la page des mises à jour.
+        self::assertTrue($this->container->get(UpdateService::class)->cachedState()['available'] ?? false);
+    }
+
+    /**
+     * `update.auto_install` était un réglage sans effet : le diagnostic
+     * affichait « automatique » et rien n'installait. L'installation passe
+     * maintenant par le même chemin que le bouton — et donc par les mêmes
+     * refus : ici, une archive qui ne correspond pas à son empreinte.
+     */
+    public function testAutomaticInstallTakesTheSameChecksAsTheButton(): void
+    {
+        $this->container->get(SettingsService::class)->setMany(['update.auto_install' => '1']);
+        $provider = $this->offerRelease(str_repeat('0', 64));
+
+        $result = SchedulerFactory::build($this->container)->runNow(ScheduledTask::UpdateCheck);
+
+        self::assertSame('error', $result['status']);
+        self::assertSame('scheduler.detail.update_refused', $result['detail']);
+        self::assertSame(1, $provider->downloadCount, 'L’installation doit avoir été tentée.');
+        self::assertSame('1.0.0', $this->container->get(UpdateService::class)->currentVersion());
+    }
+
+    private function offerRelease(string $digest): FakeReleaseProvider
+    {
+        $asset = $this->appRoot . '/fake-release.zip';
+        file_put_contents($asset, 'pas une vraie archive');
+
+        $provider = new FakeReleaseProvider();
+        $provider->addRelease(new ReleaseInfo(
+            '9.0.0',
+            'v9.0.0',
+            'secondstay-9.0.0.zip',
+            'https://example.test/secondstay-9.0.0.zip',
+            21,
+            gmdate('c'),
+            '',
+            false,
+            $digest,
+        ), $asset);
+
+        $this->container->set(ReleaseProvider::class, static fn (): ReleaseProvider => $provider);
+        $this->container->forget(UpdateService::class);
+
+        return $provider;
     }
 
     public function testTheBackupTaskHonoursItsSetting(): void

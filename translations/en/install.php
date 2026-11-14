@@ -57,6 +57,8 @@ return [
             'access_denied' => 'Database credentials were refused.',
             'host_unreachable' => 'Database host unreachable.',
             'generic' => 'Could not connect to the database.',
+            'already_installed' => 'This database already holds a SecondStay installation. Choose an empty '
+                . 'database, or restore that installation\'s config/local.php file.',
         ],
     ],
     'error' => [
@@ -65,6 +67,7 @@ return [
         'password_mismatch' => 'The two passwords do not match.',
         'locale' => 'Unsupported language.',
         'timezone' => 'Unknown time zone.',
-        'generic' => 'Installation failed. Check the server logs.',
+        'generic' => 'Installation failed. Check the server logs, then run it again: it will resume where it '
+            . 'stopped.',
     ],
 ];

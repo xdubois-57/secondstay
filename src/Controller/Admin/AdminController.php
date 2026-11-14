@@ -26,7 +26,10 @@ abstract class AdminController extends AbstractController
      */
     protected function renderAdmin(string $template, array $context = [], int $status = 200): Response
     {
-        return $this->render($template, $context + ['admin_section' => $this->section()], $status);
+        return $this->render($template, $context + [
+            'admin_section' => $this->section(),
+            'admin_menu' => (new AdminNavigation($this->settings()))->forUser($this->auth()->user()),
+        ], $status);
     }
 
     abstract protected function section(): string;

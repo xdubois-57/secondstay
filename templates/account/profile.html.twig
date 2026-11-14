@@ -133,7 +133,7 @@
             {% endif %}
 
             {# --- Séjours -------------------------------------------------------- #}
-            <div class="card mb-4" data-testid="my-bookings">
+            <div class="card mb-4" id="my-bookings" data-testid="my-bookings">
                 <div class="card-header">{{ t('booking.journey.my_bookings') }}</div>
                 <ul class="list-group list-group-flush">
                     {% for booking in bookings %}

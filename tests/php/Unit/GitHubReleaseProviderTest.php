@@ -131,9 +131,58 @@ final class GitHubReleaseProviderTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * L'API liste par date de création : un correctif publié après coup sur
+     * une branche plus ancienne arrive en tête et ne doit pas masquer la
+     * dernière version.
      */
-    private function release(string $tag, bool $draft = false, bool $prerelease = false): array
+    public function testTheHighestVersionWinsWhateverTheListOrder(): void
+    {
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::ENDPOINT, [
+            $this->release('v1.3.9'),
+            $this->release('v1.10.0'),
+            $this->release('v1.4.0'),
+        ]);
+
+        self::assertSame('1.10.0', $this->provider($http)->latest()?->version);
+    }
+
+    public function testTheDigestPublishedByGitHubIsCarried(): void
+    {
+        $digest = str_repeat('ab', 32);
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::ENDPOINT, [$this->release('v1.4.0', digest: 'sha256:' . strtoupper($digest))]);
+
+        self::assertSame($digest, $this->provider($http)->latest()?->digest);
+    }
+
+    /**
+     * Un autre algorithme, une longueur fausse ou rien du tout : pas
+     * d'empreinte, donc une release que l'updater refusera d'installer.
+     */
+    public function testAnythingButASha256DigestCountsAsNoDigest(): void
+    {
+        foreach (['', 'md5:' . str_repeat('a', 32), 'sha256:abc', 'sha512:' . str_repeat('a', 128)] as $digest) {
+            self::assertSame('', GitHubReleaseProvider::sha256FromDigest($digest), $digest);
+        }
+    }
+
+    public function testAnAssetCarryingAnotherVersionThanItsTagIsIgnored(): void
+    {
+        $release = $this->release('v2.0.0');
+        $release['assets'][0]['name'] = 'secondstay-9.9.9.zip';
+
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::ENDPOINT, [$release, $this->release('v1.4.0')]);
+
+        self::assertSame('1.4.0', $this->provider($http)->latest()?->version);
+    }
+
+    /**
+     * @return array{tag_name: string, draft: bool, prerelease: bool, published_at: string, body: string,
+     *     assets: list<array{name: string, browser_download_url: string, size: int, digest: string}>}
+     */
+    private function release(string $tag, bool $draft = false, bool $prerelease = false, string $digest = ''): array
     {
         $version = ltrim($tag, 'v');
 
@@ -147,6 +196,7 @@ final class GitHubReleaseProviderTest extends TestCase
                 'name' => 'secondstay-' . $version . '.zip',
                 'browser_download_url' => 'https://github.example/download/' . $version . '.zip',
                 'size' => 4_200_000,
+                'digest' => $digest !== '' ? $digest : 'sha256:' . hash('sha256', $version),
             ]],
         ];
     }

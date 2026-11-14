@@ -84,6 +84,9 @@
                     {% if current_user %}
                         {% if is_operational %}
                             <a class="btn btn-sm btn-outline-primary" href="{{ path('admin.dashboard') }}" data-testid="admin-link">{{ t('admin.nav.administration') }}</a>
+                        {% else %}
+                            {# Un client n'avait aucun chemin visible vers ses réservations : elles n'apparaissaient qu'au bas de son profil. #}
+                            <a class="btn btn-sm btn-outline-primary" href="{{ path('account.profile') }}#my-bookings" data-testid="my-bookings-link">{{ t('booking.journey.my_bookings') }}</a>
                         {% endif %}
                         <a class="btn btn-sm btn-outline-secondary" href="{{ path('account.profile') }}" data-testid="account-link">{{ t('account.profile.title') }}</a>
                         <span class="small text-body-secondary" data-testid="current-user">{{ current_user.name }}</span>

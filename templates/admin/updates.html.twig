@@ -5,6 +5,13 @@
         <div class="card-body">
             <p class="mb-1">{{ t('admin.updates.current') }} : <strong data-testid="current-version">{{ current_version }}</strong></p>
             <p class="mb-1">{{ t('admin.updates.repository') }} : <code>{{ repository }}</code> ({{ t('admin.settings.value.update.channel.' ~ channel) }})</p>
+            <p class="mb-1">
+                {{ t('admin.updates.mode') }} :
+                <strong data-testid="update-mode">{{ auto_install ? t('diagnostics.update.automatic') : t('diagnostics.update.manual') }}</strong>
+            </p>
+            {% if checked_at %}
+                <p class="mb-1 small text-body-secondary" data-testid="update-checked-at">{{ t('admin.updates.checked_at') }} : {{ checked_at|localdatetime('short') }}</p>
+            {% endif %}
             <p class="mb-0">
                 {{ t('admin.updates.health') }} :
                 <span class="badge {{ health_ok ? 'text-bg-success' : 'text-bg-danger' }}" data-testid="update-health">

@@ -62,5 +62,8 @@ return [
         'backup_done' => 'Back-up gemaakt; {count} oude verwijderd.',
         'update_available' => 'Er is een update beschikbaar.',
         'up_to_date' => 'Het product is up-to-date.',
+        'update_installed' => 'De update is automatisch geïnstalleerd.',
+        'update_rolled_back' => 'De automatische installatie is mislukt en teruggedraaid.',
+        'update_refused' => 'De automatische installatie werd geweigerd voordat er iets veranderde.',
     ],
 ];

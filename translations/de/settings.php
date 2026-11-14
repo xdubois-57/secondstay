@@ -202,7 +202,8 @@ return [
         ],
         'auto_install' => [
             'label' => 'Automatische Aktualisierung',
-            'help' => 'Installiert neue geprüfte Versionen automatisch.',
+            'help' => 'Installiert bei der täglichen Prüfung die neue Version mit denselben Kontrollen wie die '
+                . 'Schaltfläche: Prüfsumme, Sicherung, Rücknahme bei Fehlern.',
         ],
         'repository' => [
             'label' => 'Release-Repository',

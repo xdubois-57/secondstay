@@ -95,7 +95,8 @@ enum ScheduledTask: string
     public function lockMinutes(): int
     {
         return match ($this) {
-            self::Backup => 60,
+            // Une installation automatique sauvegarde, télécharge et migre.
+            self::Backup, self::UpdateCheck => 60,
             self::LocalContent => 30,
             default => 15,
         };

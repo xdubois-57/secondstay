@@ -12,39 +12,24 @@
     <div class="container-fluid py-4">
         <div class="row g-4">
             <aside class="col-12 col-lg-3 col-xl-2">
-                <nav class="nav flex-column nav-pills" aria-label="{{ t('admin.nav.administration') }}" data-testid="admin-nav">
-                    {% set sections = [
-                        {'id': 'dashboard', 'route': 'admin.dashboard', 'label': 'admin.nav.dashboard'},
-                        {'id': 'content', 'route': 'admin.content', 'label': 'admin.nav.content'},
-                        {'id': 'media', 'route': 'admin.media', 'label': 'admin.nav.media'},
-                        {'id': 'operations', 'route': 'admin.operations', 'label': 'admin.nav.operations'},
-                        {'id': 'bookings', 'route': 'admin.bookings', 'label': 'admin.nav.bookings'},
-                        {'id': 'pricing', 'route': 'admin.pricing', 'label': 'admin.nav.pricing'},
-                        {'id': 'payments', 'route': 'admin.payments', 'label': 'admin.nav.payments'},
-                        {'id': 'inspections', 'route': 'admin.inspections', 'label': 'admin.nav.inspections'},
-                        {'id': 'incidents', 'route': 'admin.incidents', 'label': 'admin.nav.incidents'},
-                        {'id': 'compliance', 'route': 'admin.compliance', 'label': 'admin.nav.compliance'},
-                        {'id': 'tax', 'route': 'admin.tax', 'label': 'admin.nav.tax'},
-                        {'id': 'police', 'route': 'admin.police', 'label': 'admin.nav.police'},
-                        {'id': 'disputes', 'route': 'admin.disputes', 'label': 'admin.nav.disputes'},
-                        {'id': 'reports', 'route': 'admin.reports', 'label': 'admin.nav.reports'},
-                        {'id': 'documents', 'route': 'admin.documents', 'label': 'admin.nav.documents'},
-                        {'id': 'mailbox', 'route': 'admin.mailbox', 'label': 'admin.nav.mailbox'},
-                        {'id': 'stay', 'route': 'admin.stay', 'label': 'admin.nav.stay'},
-                        {'id': 'local', 'route': 'admin.local', 'label': 'admin.nav.local'},
-                        {'id': 'settings', 'route': 'admin.settings', 'label': 'admin.nav.settings'},
-                        {'id': 'users', 'route': 'admin.users', 'label': 'admin.nav.users'},
-                        {'id': 'backups', 'route': 'admin.backups', 'label': 'admin.nav.backups'},
-                        {'id': 'updates', 'route': 'admin.updates', 'label': 'admin.nav.updates'},
-                        {'id': 'diagnostics', 'route': 'admin.diagnostics', 'label': 'admin.nav.diagnostics'},
-                        {'id': 'logs', 'route': 'admin.logs', 'label': 'admin.nav.logs'},
-                        {'id': 'audit', 'route': 'admin.audit', 'label': 'admin.nav.audit'}
-                    ] %}
-                    {% for section in sections %}
-                        <a class="nav-link{{ admin_section == section.id ? ' active' : '' }}"
-                           href="{{ path(section.route) }}"
-                           data-admin-section="{{ section.id }}"
-                           {{ admin_section == section.id ? 'aria-current="page"' : '' }}>{{ t(section.label) }}</a>
+                <nav aria-label="{{ t('admin.nav.administration') }}" data-testid="admin-nav">
+                    {% for group in admin_menu|default([]) %}
+                        {# Pas de titre de section : l'aside précède le h1 de la page, et l'ordre des titres doit rester juste. #}
+                        <p class="text-uppercase text-body-secondary small fw-semibold mt-3 mb-1 px-3" id="admin-nav-{{ group.id }}">{{ t(group.label) }}</p>
+                        <ul class="nav flex-column nav-pills" aria-labelledby="admin-nav-{{ group.id }}" data-admin-group="{{ group.id }}">
+                            {% for section in group.items %}
+                                <li class="nav-item">
+                                    <a class="nav-link py-1{{ admin_section == section.id ? ' active' : '' }}{{ section.disabled ? ' text-body-secondary' : '' }}"
+                                       href="{{ path(section.route) }}"
+                                       data-admin-section="{{ section.id }}"
+                                       {{ section.disabled ? 'data-disabled="true"' : '' }}
+                                       {{ admin_section == section.id ? 'aria-current="page"' : '' }}>
+                                        {{ t(section.label) }}
+                                        {% if section.disabled %}<span class="badge text-bg-light border ms-1">{{ t('admin.nav.disabled') }}</span>{% endif %}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% endfor %}
                 </nav>
             </aside>

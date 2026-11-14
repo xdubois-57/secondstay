@@ -5,6 +5,14 @@ declare(strict_types=1);
 return [
     'nav' => [
         'administration' => 'Administration',
+        'disabled' => 'disabled',
+        'group' => [
+            'activity' => 'Activity',
+            'stays' => 'Stays',
+            'compliance' => 'Compliance',
+            'site' => 'Public site',
+            'system' => 'System',
+        ],
         'dashboard' => 'Dashboard',
         'content' => 'Content',
         'media' => 'Media',
@@ -198,6 +206,10 @@ return [
         'none_available' => 'No update available.',
         'up_to_date' => 'SecondStay is up to date.',
         'unreachable' => 'The update service is unreachable.',
+        'found' => 'Check complete: an update is available.',
+        'checked_at' => 'Last checked',
+        'mode' => 'Mode',
+        'recovered' => 'An update was interrupted before it finished. The site has been put back to its previous state.',
     ],
     'pricing' => [
         'title' => 'Availability and rates',

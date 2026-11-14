@@ -197,6 +197,74 @@ final class InstallerTest extends DatabaseTestCase
         $this->installer->install($this->validInput());
     }
 
+    // --- Une installation interrompue se reprend ---------------------------
+
+    /**
+     * `config/local.php` était écrit avant les migrations. Une migration en
+     * échec laissait donc une instance « installée mais indisponible » :
+     * l'assistant répondait 404, et la seule issue était de supprimer le
+     * fichier par FTP — sans que rien ne le dise.
+     */
+    public function testAFailureMidwayLeavesNoConfigurationAndCanBeRetried(): void
+    {
+        file_put_contents($this->sandboxRoot . '/migrations/9999_broken.sql', "CREATE TABLE `x` (not valid sql);\n");
+
+        try {
+            $this->installer->install($this->validInput());
+            self::fail('La migration invalide aurait dû interrompre l’installation.');
+        } catch (\PDOException) {
+            // Attendu.
+        }
+
+        self::assertFalse($this->state->hasLocalConfig());
+        self::assertSame(InstallationStatus::NotInstalled, $this->state->status($this->database));
+        self::assertSame(0, (new UserRepository($this->database))->countAdministrators());
+
+        // La cause corrigée, la même installation reprend où elle s'était
+        // arrêtée : aucune table à supprimer à la main.
+        unlink($this->sandboxRoot . '/migrations/9999_broken.sql');
+        $result = $this->installer->install($this->validInput());
+
+        self::assertTrue($this->state->isInstalled($this->database));
+        self::assertGreaterThan(0, $result['admin_id']);
+    }
+
+    public function testAnUnwritableConfigDirectoryIsRefusedBeforeTouchingTheDatabase(): void
+    {
+        self::removeDirectory($this->sandboxRoot . '/config');
+
+        try {
+            $this->installer->install($this->validInput());
+            self::fail('Un répertoire de configuration absent aurait dû être refusé.');
+        } catch (\RuntimeException $exception) {
+            self::assertStringContainsString('configuration', $exception->getMessage());
+        }
+
+        self::assertSame([], $this->database->tables());
+    }
+
+    /**
+     * Sans `local.php`, rien ne distinguait une base vide de celle d'une
+     * instance existante : l'assistant y aurait créé un second
+     * administrateur et une nouvelle clé de chiffrement, rendant illisibles
+     * tous les secrets déjà enregistrés.
+     */
+    public function testADatabaseThatAlreadyHasAnAdministratorIsRefused(): void
+    {
+        $this->installer->install($this->validInput());
+        unlink($this->state->localConfigPath());
+
+        try {
+            $this->installer->install($this->validInput());
+            self::fail('Une base déjà installée aurait dû être refusée.');
+        } catch (ValidationException $exception) {
+            self::assertSame(['database' => 'install.database.error.already_installed'], $exception->errors());
+        }
+
+        self::assertFalse($this->state->hasLocalConfig());
+        self::assertSame(1, (new UserRepository($this->database))->countAdministrators());
+    }
+
     public function testWeakPasswordIsRejected(): void
     {
         $input = $this->validInput();

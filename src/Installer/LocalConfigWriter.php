@@ -64,10 +64,7 @@ final class LocalConfigWriter
             . "    ],\n"
             . "];\n";
 
-        $directory = dirname($this->path);
-        if (!is_dir($directory) || !is_writable($directory)) {
-            throw new RuntimeException('Le répertoire de configuration n’est pas accessible en écriture.');
-        }
+        $this->assertWritable();
 
         $temporary = $this->path . '.tmp';
         if (file_put_contents($temporary, $content, LOCK_EX) === false) {
@@ -82,19 +79,15 @@ final class LocalConfigWriter
         }
     }
 
-    public function backupExisting(): ?string
+    /**
+     * @throws RuntimeException si le fichier ne pourra pas être écrit
+     */
+    public function assertWritable(): void
     {
-        if (!is_file($this->path)) {
-            return null;
+        $directory = dirname($this->path);
+        if (!is_dir($directory) || !is_writable($directory)) {
+            throw new RuntimeException('Le répertoire de configuration n’est pas accessible en écriture.');
         }
-
-        $backup = $this->path . '.' . gmdate('Ymd-His') . '.bak';
-        if (!copy($this->path, $backup)) {
-            throw new RuntimeException('Sauvegarde de la configuration locale impossible.');
-        }
-        @chmod($backup, 0o600);
-
-        return $backup;
     }
 
     private function exportPair(string $key, mixed $value): string

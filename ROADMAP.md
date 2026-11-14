@@ -1138,3 +1138,40 @@ et la seule à laquelle le serveur ne sait pas répondre lui-même.
 Le déploiement, pour les raisons de la section précédente. L'installeur est son
 inverse exact : il ne pousse rien depuis une machine de développement, il tire
 une release publiée depuis l'hébergement lui-même, et il ne tourne qu'une fois.
+
+## Relecture des fonctions de base : installation, mises à jour, menus
+
+### Livré
+
+Une relecture du code des trois fonctions sur lesquelles tout le reste repose a
+trouvé des défauts que ni la suite ni la CI ne voyaient, parce qu'aucun test ne
+reproduisait les conditions d'un hébergement mutualisé réel : une limite de
+temps, un dossier en lecture seule, une release téléchargée par un autre canal
+que ses métadonnées.
+
+| Défaut | Correction |
+|---|---|
+| `update.auto_install` ne faisait rien, et le diagnostic affichait « automatique » | la tâche `update_check` installe, par le même chemin que le bouton ; un échec remonte dans « À faire » |
+| l'updater ne vérifiait pas l'empreinte de l'archive, contrairement à l'installeur autonome | SHA-256 contre le `digest` publié par GitHub ; refus sans empreinte |
+| une mise à jour tuée par la limite de temps laissait fichiers à moitié remplacés et site fermé | extraction préparée site ouvert, permutation par renommage, journal + verrou, reprise à la requête suivante |
+| le retour arrière rendait les fichiers mais pas la base | restauration de la sauvegarde et retrait des tables nouvelles si les migrations ont commencé |
+| les fichiers supprimés d'une version restaient sur le serveur | permutation des répertoires au lieu d'un écrasement fichier par fichier |
+| la page des mises à jour appelait GitHub à chaque affichage ; « Vérifier maintenant » ne vérifiait rien | résultat mémorisé six heures ; le bouton force la vérification |
+| la release retenue était la première de la liste, pas la plus haute version | plus haute version éligible |
+| `config/local.php` écrit avant les migrations : un échec laissait une instance bloquée, à réparer par FTP | fichier écrit en dernier ; l'assistant se relance et reprend |
+| l'assistant acceptait une base déjà installée, y créant une nouvelle clé de chiffrement | refus explicite |
+| menu admin de vingt-cinq entrées à plat, 403 pour le responsable local, modules éteints affichés | menu groupé, filtré par rôle et par fonction |
+| aucun lien client vers ses séjours | « Mes séjours » dans l'en-tête |
+
+### Ce qui reste hors périmètre
+
+- Les tables créées par une migration en échec *partiel* sur MySQL (le DDL n'est
+  pas transactionnel) sont retirées par la restauration ; une migration qui
+  modifierait des données **hors** base — fichiers de `storage/` — ne le serait
+  pas. Aucune migration ne le fait, et `Migrator` n'exécute que des fichiers
+  `.sql` : une migration ne peut pas toucher au disque.
+- Si l'hébergeur tue le processus **exactement** entre deux renommages de
+  `vendor/`, le code n'est plus chargeable et la reprise ne peut pas s'exécuter
+  d'elle-même. La fenêtre est celle d'un appel système ; le journal et la copie
+  de l'ancienne version restent sur le disque, et remettre
+  `storage/temp/update-*/rollback/vendor` à sa place suffit.

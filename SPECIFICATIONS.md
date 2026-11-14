@@ -87,6 +87,8 @@ Mobile : hamburger + sections + compte intégré.
 
 Le sélecteur de langue est accessible sans perturber la navigation.
 
+Un client connecté accède à ses séjours depuis l'en-tête. Le menu d'administration est groupé par usage et ne montre que les sections que le rôle peut ouvrir ; un module désactivé n'y apparaît pas pour le responsable local.
+
 ## 6. Site public
 
 Pages possibles :
@@ -536,7 +538,9 @@ Mode maintenance pour update, restore et migrations sensibles.
 
 Source GitHub Releases. Bouton « Vérifier maintenant » + auto-update configurable.
 
-Flux : download → validate → backup → maintenance → install → migrations → VERSION → health → rollback.
+Flux : download → empreinte SHA-256 → validate → maintenance → backup → install → migrations → VERSION → health → rollback (fichiers et base).
+
+L'auto-update installe par le même chemin que le bouton, lors du contrôle quotidien. Une mise à jour interrompue par l'hébergeur ne laisse jamais le site fermé : elle est défaite à la requête suivante.
 
 ## 70. Tests
 

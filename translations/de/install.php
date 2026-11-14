@@ -58,6 +58,8 @@ return [
             'access_denied' => 'Datenbank-Zugangsdaten abgelehnt.',
             'host_unreachable' => 'Datenbank-Host nicht erreichbar.',
             'generic' => 'Verbindung zur Datenbank nicht möglich.',
+            'already_installed' => 'Diese Datenbank enthält bereits eine SecondStay-Installation. Wählen Sie eine '
+                . 'leere Datenbank oder stellen Sie die Datei config/local.php dieser Installation wieder her.',
         ],
     ],
     'error' => [
@@ -66,6 +68,7 @@ return [
         'password_mismatch' => 'Die beiden Passwörter stimmen nicht überein.',
         'locale' => 'Nicht unterstützte Sprache.',
         'timezone' => 'Unbekannte Zeitzone.',
-        'generic' => 'Installation fehlgeschlagen. Prüfen Sie die Serverprotokolle.',
+        'generic' => 'Installation fehlgeschlagen. Prüfen Sie die Serverprotokolle und starten Sie sie erneut: '
+            . 'Sie setzt dort fort, wo sie angehalten hat.',
     ],
 ];

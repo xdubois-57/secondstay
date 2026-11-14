@@ -506,6 +506,25 @@ final class OperationsServiceTest extends DatabaseTestCase
     }
 
     /**
+     * Une installation automatique qui échoue ne se voit nulle part
+     * ailleurs : le site tourne, sur l'ancienne version.
+     */
+    public function testAFailedAutomaticUpdateIsRaised(): void
+    {
+        $tasks = new TaskStateRepository($this->database);
+        $now = gmdate('Y-m-d H:i:s');
+
+        foreach (['scheduler.detail.update_rolled_back', 'scheduler.detail.update_refused'] as $detail) {
+            $tasks->claim(ScheduledTask::UpdateCheck, $now, gmdate('Y-m-d H:i:s', time() - 1));
+            $tasks->release(ScheduledTask::UpdateCheck, $now, TaskOutcome::error($detail), 1);
+
+            $items = $this->fullTodo()->items();
+            self::assertContains('update_failed', array_column($items, 'code'), $detail);
+            self::assertNotContains('update_available', array_column($items, 'code'), $detail);
+        }
+    }
+
+    /**
      * La pastille du courrier non rattaché compte la boîte entière.
      *
      * Une pastille plafonnée à la taille d'une page annoncerait « 50 » à une

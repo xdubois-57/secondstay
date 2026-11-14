@@ -24,6 +24,12 @@ final class GitHubReleaseProvider implements ReleaseProvider
         }
     }
 
+    /**
+     * La release retenue est la **plus haute version** éligible, pas la
+     * première de la liste : l'API trie par date de création, et un correctif
+     * publié sur une branche plus ancienne ne doit pas masquer la dernière
+     * version.
+     */
     public function latest(bool $allowPrerelease = false): ?ReleaseInfo
     {
         $response = $this->http->getJson(
@@ -35,45 +41,78 @@ final class GitHubReleaseProvider implements ReleaseProvider
             return null;
         }
 
+        $best = null;
         foreach ($response as $entry) {
             if (!is_array($entry)) {
                 continue;
             }
-            if (($entry['draft'] ?? false) === true) {
-                continue;
-            }
-            $prerelease = ($entry['prerelease'] ?? false) === true;
-            if ($prerelease && !$allowPrerelease) {
-                continue;
-            }
-
-            $tag = (string) ($entry['tag_name'] ?? '');
-            if (preg_match('/^v(\d+\.\d+\.\d+)$/', $tag, $matches) !== 1) {
-                continue;
-            }
-
-            /** @var list<array<string, mixed>> $assets */
-            $assets = is_array($entry['assets'] ?? null) ? $entry['assets'] : [];
-            foreach ($assets as $asset) {
-                $name = (string) ($asset['name'] ?? '');
-                if (preg_match(self::ASSET_PATTERN, $name) !== 1) {
-                    continue;
-                }
-
-                return new ReleaseInfo(
-                    $matches[1],
-                    $tag,
-                    $name,
-                    (string) ($asset['browser_download_url'] ?? ''),
-                    (int) ($asset['size'] ?? 0),
-                    (string) ($entry['published_at'] ?? ''),
-                    (string) ($entry['body'] ?? ''),
-                    $prerelease,
-                );
+            $candidate = $this->candidate($entry, $allowPrerelease);
+            if ($candidate !== null && ($best === null || version_compare($candidate->version, $best->version, '>'))) {
+                $best = $candidate;
             }
         }
 
+        return $best;
+    }
+
+    /**
+     * @param array<mixed> $entry
+     */
+    private function candidate(array $entry, bool $allowPrerelease): ?ReleaseInfo
+    {
+        if (($entry['draft'] ?? false) === true) {
+            return null;
+        }
+        $prerelease = ($entry['prerelease'] ?? false) === true;
+        if ($prerelease && !$allowPrerelease) {
+            return null;
+        }
+
+        $tag = is_string($entry['tag_name'] ?? null) ? $entry['tag_name'] : '';
+        if (preg_match('/^v(\d+\.\d+\.\d+)$/', $tag, $matches) !== 1) {
+            return null;
+        }
+
+        $assets = is_array($entry['assets'] ?? null) ? $entry['assets'] : [];
+        foreach ($assets as $asset) {
+            if (!is_array($asset)) {
+                continue;
+            }
+            $name = is_string($asset['name'] ?? null) ? $asset['name'] : '';
+            // L'archive doit porter la version de son étiquette : une release
+            // v1.4.0 qui joindrait secondstay-9.9.9.zip n'offre rien.
+            if (preg_match(self::ASSET_PATTERN, $name) !== 1 || $name !== 'secondstay-' . $matches[1] . '.zip') {
+                continue;
+            }
+
+            return new ReleaseInfo(
+                $matches[1],
+                $tag,
+                $name,
+                is_string($asset['browser_download_url'] ?? null) ? $asset['browser_download_url'] : '',
+                is_int($asset['size'] ?? null) ? $asset['size'] : 0,
+                is_string($entry['published_at'] ?? null) ? $entry['published_at'] : '',
+                is_string($entry['body'] ?? null) ? $entry['body'] : '',
+                $prerelease,
+                self::sha256FromDigest(is_string($asset['digest'] ?? null) ? $asset['digest'] : ''),
+            );
+        }
+
         return null;
+    }
+
+    /**
+     * GitHub publie l'empreinte d'un asset sous la forme `sha256:<hex>`.
+     * Toute autre forme — absente, autre algorithme, longueur fausse — est
+     * traitée comme « pas d'empreinte » : la release ne sera pas installable.
+     */
+    public static function sha256FromDigest(string $digest): string
+    {
+        if (preg_match('/^sha256:([0-9a-f]{64})$/i', trim($digest), $matches) !== 1) {
+            return '';
+        }
+
+        return strtolower($matches[1]);
     }
 
     public function download(ReleaseInfo $release, string $destination): int
