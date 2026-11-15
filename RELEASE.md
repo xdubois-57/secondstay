@@ -242,7 +242,9 @@ Là où rien n'interdit d'écrire sur la branche de release, le commit de versio
 y va directement.
 
 Là où une règle impose une pull request — le ruleset « Main » de ce dépôt le
-fait, sans aucun acteur en dérogation — le serveur refuse la poussée avec
+fait ; sa seule dérogation, accordée au rôle *Repository admin*, vaut **pour
+les pull requests uniquement** et ne permet donc aucune poussée directe — le
+serveur refuse la poussée avec
 « Changes must be made through a pull request ». Le script ouvre alors une
 branche `release/<version>`, une pull request, l'auto-fusionne, attend la
 fusion, puis pose le tag sur le commit de fusion.

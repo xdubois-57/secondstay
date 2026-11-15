@@ -365,6 +365,22 @@ check vert : l'action refuse de relire un workflow différent de celui de
 contournement du ruleset — un geste explicite du mainteneur, qui vaut relecture
 humaine de ce fichier.
 
+Configuration de cette dérogation, dans le ruleset « Main » → *Bypass list* :
+le rôle **Repository admin**, en mode **For pull requests only**. Ce mode est
+celui qui convient :
+
+- il fait apparaître, sur une pull request bloquée, la case *Merge without
+  waiting for requirements to be met (bypass rules)* — un geste délibéré,
+  coché pull request par pull request, et tracé par GitHub ;
+- il **n'autorise aucune poussée directe** sur `main` : `release.sh` continue
+  de passer par une pull request de version (RELEASE.md §5.1), et rien n'arrive
+  sur `main` sans les gates.
+
+Le mode *Always* l'autoriserait, et ferait de chaque poussée de l'administrateur
+une poussée sans contrôle. Ne pas l'utiliser.
+
+**Aucun agent ne fait ce geste à la place du mainteneur** (`CLAUDE.md`).
+
 ## Le mode de défaillance que ce dépôt rencontre vraiment
 
 Le rouge n'est pas le danger : toutes les couches ci-dessus sont bruyantes
