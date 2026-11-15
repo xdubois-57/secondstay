@@ -87,6 +87,6 @@ ready(() => {
     initPasskeySignIn(document, window);
     initPushControls(document, window);
     // Le service worker apporte le cache hors ligne et la réception du push.
-    registerServiceWorker(window);
+    registerServiceWorker(window).catch(() => null);
     document.documentElement.dataset.jsReady = 'true';
 });
