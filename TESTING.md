@@ -637,13 +637,19 @@ PHP n’étant pas couvert par CodeQL de la même façon, PHPStan + SonarCloud +
 
 ## 13. Dependabot
 
-Activer pour :
+**Alertes seulement, aucune pull request automatique.** Les alertes de sécurité
+Dependabot restent actives sur le dépôt : ouvertes et de gravité haute ou
+critique, elles bloquent une release (`RELEASE.md` §6, `release.sh` étape 9).
 
-- Composer ;
-- npm ;
-- GitHub Actions.
+Les pull requests de mise à jour automatiques ont été retirées à la demande du
+mainteneur (`.github/dependabot.yml` supprimé). Elles ne recevaient aucun
+secret — ni `SONAR_TOKEN` ni `CLAUDE_CODE_OAUTH_TOKEN` —, restaient donc
+rouges, et la revue Claude étant exigée, ne pouvaient plus être fusionnées.
 
-Les alertes sécurité ouvertes bloquent une release selon `RELEASE.md`.
+Le retard de mise à jour reste surveillé : la gate de fraîcheur
+(`scripts/dependency-freshness.php`) le mesure à chaque release. Une montée de
+version se fait dans une pull request ordinaire, relue et analysée comme les
+autres.
 
 ## 14. SonarCloud
 
@@ -1745,3 +1751,24 @@ rouvrir un site laissé en maintenance par une mise à jour interrompue.
 - un module éteint visible du responsable local, ou invisible de
   l'administrateur ;
 - un client sans lien vers ses séjours.
+
+### 33.5 Hébergements qui affichent les erreurs, PHP 8.5 (`BootstrapTest`, `KernelTest`)
+
+Né d'une installation réelle qui échouait dès la première étape, sans rien
+dans la console, sur un hébergement en PHP 8.5 affichant les erreurs.
+
+- lire la variable magique des en-têtes HTTP, dépréciée par PHP 8.5 **à la
+  compilation** : le test parcourt les jetons de `bootstrap.php`,
+  `public/index.php` et de tout `src/` ;
+- un corps vide parce que `json_encode()` a échoué sur un octet invalide ;
+- une erreur fatale rendue telle quelle au navigateur, ou avec le chemin de
+  l'hébergement ;
+- une séquence `\n` du JavaScript de l'installeur transformée en vrai retour à
+  la ligne par le heredoc qui l'émet — elle cassait toute la page ;
+- `display_errors` laissé actif par le Kernel hors mode debug.
+
+**Ce qui n'est pas prouvé ici :** l'exécution sous PHP 8.5 elle-même. La CI
+joue PHP 8.2 et 8.4 ; aucun environnement 8.5 n'était disponible pour cette
+correction, qui repose sur le comportement documenté de 8.5. Le jour où
+`checks.yml` ajoute 8.5 à sa matrice, ce paragraphe doit disparaître.
+

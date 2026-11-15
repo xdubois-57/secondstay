@@ -12,6 +12,10 @@ declare(strict_types=1);
 use SecondStay\Core\Http\Request;
 use SecondStay\Core\Kernel;
 
+// Avant même l'autoload : un avertissement émis en chargeant les dépendances
+// ne doit pas s'imprimer dans la page. Le Kernel le rétablit en mode debug.
+ini_set('display_errors', '0');
+
 $projectRoot = dirname(__DIR__);
 
 $autoload = $projectRoot . '/vendor/autoload.php';

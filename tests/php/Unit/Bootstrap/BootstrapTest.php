@@ -1473,4 +1473,112 @@ final class BootstrapTest extends TestCase
 
         return $results;
     }
+    // -------------------------------------------------------------------
+    // Hébergements qui affichent les erreurs, PHP 8.5
+    // -------------------------------------------------------------------
+
+    /**
+     * PHP 8.5 a déprécié la variable magique des en-têtes HTTP, et le dit **à
+     * la compilation** : à chaque requête, avant la première instruction et
+     * avant tout tampon. Sur un hébergement qui affiche les erreurs,
+     * l'avertissement précédait chaque réponse JSON des étapes, et
+     * l'installation échouait dès la première avec « La réponse du serveur
+     * n'a pas pu être interprétée ». Le nom ne doit plus être lu nulle part,
+     * ni dans l'installeur ni dans l'application.
+     */
+    public function testNoCodeReadsTheVariableThatPhp85DeprecatesAtCompileTime(): void
+    {
+        $root = dirname(__DIR__, 4);
+        $files = [$root . '/bootstrap/bootstrap.php', $root . '/public/index.php'];
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root . '/src'));
+        foreach ($iterator as $file) {
+            if ($file instanceof \SplFileInfo && $file->getExtension() === 'php') {
+                $files[] = $file->getPathname();
+            }
+        }
+
+        $offenders = [];
+        foreach ($files as $path) {
+            foreach (token_get_all((string) file_get_contents($path)) as $token) {
+                if (is_array($token) && $token[0] === T_VARIABLE && $token[1] === '$http' . '_response_header') {
+                    $offenders[] = substr($path, strlen($root) + 1) . ':' . $token[2];
+                }
+            }
+        }
+
+        self::assertSame([], $offenders);
+    }
+
+    public function testResponseHeadersAreReadWithoutNamingTheDeprecatedVariable(): void
+    {
+        if (function_exists('http_get_last_response_headers')) {
+            self::markTestSkipped('PHP 8.4+ : les en-têtes viennent de http_get_last_response_headers().');
+        }
+
+        $scope = ['http' . '_response_header' => ['HTTP/1.1 302 Found', 'Location: https://example.test/a']];
+
+        self::assertSame(
+            ['HTTP/1.1 302 Found', 'Location: https://example.test/a'],
+            bootstrap_last_response_headers($scope)
+        );
+        // Aucune réponse arrivée : la variable n'existe pas du tout.
+        self::assertSame([], bootstrap_last_response_headers([]));
+    }
+
+    public function testAStreamWithoutHttpMetadataYieldsNoHeaders(): void
+    {
+        $stream = fopen('php://memory', 'rb');
+        self::assertNotFalse($stream);
+
+        self::assertSame([], bootstrap_stream_response_headers($stream));
+        fclose($stream);
+    }
+
+    /**
+     * `json_encode()` rend `false` sur un octet UTF-8 invalide, et `echo
+     * false` n'imprime rien : le navigateur recevait un corps vide.
+     */
+    public function testAnInvalidByteNeverEmptiesTheResponse(): void
+    {
+        $json = bootstrap_encode_json(['error' => "Chemin \xC3\x28 illisible"]);
+
+        self::assertNotSame('', $json);
+        $decoded = json_decode($json, true);
+        self::assertIsArray($decoded);
+        self::assertStringContainsString('illisible', (string) $decoded['error']);
+    }
+
+    /**
+     * Une limite de temps arrête le script sans passer par aucun `catch` : le
+     * gestionnaire d'arrêt doit rendre un JSON qui le dit, sans révéler le
+     * chemin de l'hébergement, et qui marque que rien n'a été annulé.
+     */
+    public function testAFatalErrorBecomesAReadableAnswer(): void
+    {
+        $payload = bootstrap_fatal_error_payload(
+            'Maximum execution time of 30 seconds exceeded in /home/vol1/htdocs/bootstrap.php on line 812',
+            '/home/vol1/htdocs'
+        );
+
+        self::assertTrue($payload['fatal']);
+        self::assertTrue($payload['done']);
+        self::assertStringNotContainsString('/home/vol1', $payload['error']);
+        self::assertStringContainsString('limite de temps', $payload['error']);
+    }
+
+    /**
+     * Le script de la page est émis par un heredoc interpolé : un `\n` écrit
+     * tel quel dans le source PHP y devient un vrai retour à la ligne et
+     * casse la chaîne JavaScript — donc toute la page. La séquence doit
+     * arriver intacte au navigateur.
+     */
+    public function testTheRenderedPageKeepsItsJavaScriptEscapes(): void
+    {
+        ob_start();
+        bootstrap_render_ui($this->temporaryDirectory);
+        $html = (string) ob_get_clean();
+
+        self::assertStringContainsString("text.lastIndexOf('\\n{')", $html);
+        self::assertStringContainsString('function excerpt(text)', $html);
+    }
 }

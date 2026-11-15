@@ -46,6 +46,13 @@ final class Kernel
         $container = new Container();
         $config = Config::load($this->projectRoot);
 
+        // L'hébergeur choisit `display_errors`, pas le produit. Affichées, les
+        // erreurs PHP s'imprimeraient dans les pages et les réponses JSON —
+        // avec les chemins du serveur (SECURITY.md §17). Elles restent
+        // journalisées ; seul le mode debug les montre.
+        ini_set('display_errors', $config->bool('app.debug') ? '1' : '0');
+        ini_set('log_errors', '1');
+
         $storagePath = $config->string('paths.storage');
         if ($storagePath === '') {
             $storagePath = $this->projectRoot . '/storage';

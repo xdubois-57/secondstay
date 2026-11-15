@@ -222,14 +222,21 @@ Un second travail, **`Claude review status`**, poste un commentaire — réécri
 sur place — disant si la revue a réellement tourné, **et échoue quand elle n'a
 pas eu lieu**. C'est lui le check exigé sur `main` (voir « Checks exigés »
 plus bas), pas `Claude review` : celui-ci sort en `success` même quand l'action
-refuse de lire, et l'exiger ne garantirait rien. C'est la durée qui sépare un
-refus d'une revue : un refus sort en une quinzaine de secondes, une vraie revue
-prend des minutes.
+refuse de lire, et l'exiger ne garantirait rien.
+
+Ce qui sépare un refus d'une revue, c'est le **journal d'exécution** de
+l'action : un refus sort avant que Claude ne démarre et n'y laisse aucun
+résultat ; une revue, même brève, y laisse un résultat réussi d'au moins un
+tour. La durée servait auparavant de critère (moins de 60 s : refus). Elle a
+classé « refusée » une revue de 47 s sur une pull request de documentation, où
+la compétence avait jugé le diff trop simple pour mériter des commentaires —
+un jugement de Claude, pas un refus. Elle n'est plus qu'affichée.
 
 `Claude review status` échoue quand :
 
 - le secret `CLAUDE_CODE_OAUTH_TOKEN` est absent ;
-- la revue a échoué, a été annulée, ou a refusé de tourner (moins de 60 s) ;
+- la revue a échoué, a été annulée, ou a refusé de tourner (Claude n'a pas
+  démarré) ;
 - la pull request est un brouillon.
 
 Il n'est **jamais sauté** : GitHub compte un check exigé sauté comme réussi.
@@ -306,11 +313,13 @@ inverse de celui fait au départ — un vert accompagné d'un commentaire disant
 « aucune revue n'a eu lieu » — et il est délibéré : une revue obligatoire qui
 passe quand elle n'a pas eu lieu n'est pas obligatoire.
 
-**Dependabot** n'a pas accès aux secrets Actions : ses pull requests lisent les
-*Dependabot secrets*, une liste distincte. Pour qu'elles soient relues, et donc
-fusionnables, `CLAUDE_CODE_OAUTH_TOKEN` doit aussi y être enregistré
-(Settings → Secrets and variables → Dependabot). Sans cela, chacune reste
-bloquée sur ce check.
+**Dependabot n'ouvre plus de pull request** (`.github/dependabot.yml` retiré) :
+ses exécutions ne reçoivent pas les secrets Actions, ses pull requests
+restaient donc rouges sur SonarCloud et sur la revue Claude. Seules ses
+**alertes de sécurité** restent actives, et elles n'ouvrent rien : elles
+bloquent une release (étape 9 de `release.sh`). Pour qu'aucune pull request
+automatique ne reparaisse, *Dependabot security updates* doit aussi rester
+désactivé (Settings → Code security), sans toucher à *Dependabot alerts*.
 
 ### Étiquettes
 
@@ -355,6 +364,22 @@ check vert : l'action refuse de relire un workflow différent de celui de
 `main` (voir l'en-tête du fichier). Sa fusion passe par la liste de
 contournement du ruleset — un geste explicite du mainteneur, qui vaut relecture
 humaine de ce fichier.
+
+Configuration de cette dérogation, dans le ruleset « Main » → *Bypass list* :
+le rôle **Repository admin**, en mode **For pull requests only**. Ce mode est
+celui qui convient :
+
+- il fait apparaître, sur une pull request bloquée, la case *Merge without
+  waiting for requirements to be met (bypass rules)* — un geste délibéré,
+  coché pull request par pull request, et tracé par GitHub ;
+- il **n'autorise aucune poussée directe** sur `main` : `release.sh` continue
+  de passer par une pull request de version (RELEASE.md §5.1), et rien n'arrive
+  sur `main` sans les gates.
+
+Le mode *Always* l'autoriserait, et ferait de chaque poussée de l'administrateur
+une poussée sans contrôle. Ne pas l'utiliser.
+
+**Aucun agent ne fait ce geste à la place du mainteneur** (`CLAUDE.md`).
 
 ## Le mode de défaillance que ce dépôt rencontre vraiment
 

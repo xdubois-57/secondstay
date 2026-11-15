@@ -129,7 +129,6 @@ final class CurlHttpFetcher implements HttpFetcher
             $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
             $location = (string) curl_getinfo($curl, CURLINFO_REDIRECT_URL);
             $error = curl_error($curl);
-            curl_close($curl);
             fclose($handle);
 
             if ($success === false && $error !== '') {
@@ -187,7 +186,6 @@ final class CurlHttpFetcher implements HttpFetcher
         $body = curl_exec($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         $error = curl_error($curl);
-        curl_close($curl);
 
         if ($body === false) {
             throw new RuntimeException(

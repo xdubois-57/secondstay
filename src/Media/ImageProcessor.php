@@ -82,7 +82,6 @@ final class ImageProcessor
                 imagealphablending($resized, false);
                 imagesavealpha($resized, true);
                 imagecopyresampled($resized, $image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
-                imagedestroy($image);
                 $image = $resized;
                 $width = $targetWidth;
                 $height = $targetHeight;
@@ -110,9 +109,10 @@ final class ImageProcessor
 
             return ['width' => $width, 'height' => $height];
         } finally {
-            if (is_resource($image) || $image instanceof \GdImage) {
-                imagedestroy($image);
-            }
+            // Depuis PHP 8.0 une image GD est un objet, libéré avec sa dernière
+            // référence ; `imagedestroy()` n'y fait plus rien, et PHP 8.5 l'a
+            // déprécié. Lâcher la référence suffit.
+            unset($image);
         }
     }
 
@@ -152,8 +152,6 @@ final class ImageProcessor
         if ($rotated === false || $rotated === null) {
             return $image;
         }
-
-        imagedestroy($image);
 
         return $rotated;
     }

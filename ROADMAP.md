@@ -1175,3 +1175,30 @@ que ses métadonnées.
   d'elle-même. La fenêtre est celle d'un appel système ; le journal et la copie
   de l'ancienne version restent sur le disque, et remettre
   `storage/temp/update-*/rollback/vendor` à sa place suffit.
+
+## Installation réelle sur un hébergement en PHP 8.5
+
+### Livré
+
+La première installation par `bootstrap.php` sur un hébergement réel (PHP 8.5,
+erreurs affichées) a échoué dès la première étape : « La réponse du serveur
+n'a pas pu être interprétée », rien dans la console.
+
+| Défaut | Correction |
+|---|---|
+| la variable magique des en-têtes HTTP, dépréciée par PHP 8.5 à la compilation, imprimait un avertissement avant chaque réponse JSON | en-têtes lus par `http_get_last_response_headers()` ou les métadonnées du flux ; un test interdit le retour du nom |
+| l'installeur et l'application laissaient `display_errors` à l'hébergeur | coupé dès la première instruction, sauf mode debug |
+| une réponse illisible ne disait rien de ce qu'elle contenait | le navigateur affiche le statut et le début du corps, et tolère du texte ajouté avant le JSON |
+| une erreur fatale (limite de temps) rendait une page d'erreur ou rien | gestionnaire d'arrêt qui rend un JSON nommant la cause |
+| `json_encode()` pouvait rendre un corps vide | octets invalides remplacés |
+| `curl_close()` et `imagedestroy()`, sans effet depuis PHP 8.0, dépréciés en 8.5 | retirés |
+
+### Ce qui reste hors périmètre
+
+- PHP 8.5 n'est pas dans la matrice de CI (8.2 et 8.4). L'y ajouter est la
+  prochaine étape : c'est la seule façon de voir ce genre de défaut avant un
+  utilisateur.
+- La correction n'atteint les nouvelles installations qu'avec une nouvelle
+  Release : `bootstrap.php` est un asset de Release, pas un fichier lu depuis
+  `main`.
+

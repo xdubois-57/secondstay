@@ -648,6 +648,12 @@ mutualisés. Un verrou (`.bootstrap.lock`, périmé après dix minutes) empêche
 deux tentatives simultanées ; il est posé par une **création exclusive**, et sa
 reprise quand il est périmé est sérialisée (SECURITY.md §42.4).
 
+Chaque réponse d'étape est un JSON d'une ligne, émis en dernier après vidage
+de tout tampon (`bootstrap_send_json()`), et une erreur fatale est convertie en
+JSON par un gestionnaire d'arrêt (`bootstrap_begin_json_response()`). Le
+navigateur tolère du texte ajouté avant ce JSON et, s'il ne peut rien lire,
+affiche ce que le serveur a renvoyé (SECURITY.md §42.6).
+
 Les trois actions POST refusent une requête qui ne vient pas de cette page
 (SECURITY.md §42.2), et une copie interrompue fait remonter les entrées déjà
 écrites pour que l'annulation puisse les retirer (§42.5).
