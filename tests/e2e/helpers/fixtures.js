@@ -87,17 +87,9 @@ export const ADMIN_STATE_FILE = 'tests/e2e/.auth/admin.json';
 export async function signIn(page, email = ADMIN.email, password = ADMIN.password, locale = 'fr') {
     await page.goto(`/${locale}/login`);
 
-    // Le champ e-mail porte `autofocus`. Sous WebKit ce focus peut arriver
-    // **après** que la saisie a commencé : `fill('#password')` place le focus
-    // sur le mot de passe, l'autofocus le ramène sur l'e-mail, et le texte
-    // s'insère alors au début du champ e-mail. La connexion échoue ensuite sur
-    // « adresse e-mail ou mot de passe incorrect », ce qui ne dit rien du
-    // produit — c'est le harnais qui a tapé au mauvais endroit.
-    //
-    // On attend donc que l'autofocus ait eu lieu avant de saisir quoi que ce
-    // soit. Attendre le chargement de la page ne suffit pas : c'est
-    // précisément ce qui était fait, et l'échec survenait quand même.
-    await expect(page.locator('#email')).toBeFocused();
+    // Le champ e-mail ne prend plus le focus de lui-même (`autofocus` retiré,
+    // règle d'accessibilité) : plus de focus tardif qui détourne la saisie.
+    await expect(page.locator('#email')).toBeVisible();
 
     await page.fill('#email', email);
     await page.fill('#password', password);
