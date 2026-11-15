@@ -185,4 +185,23 @@ final class KernelTest extends KernelTestCase
 
         self::assertSame(403, $response->status());
     }
+    /**
+     * Un hébergement qui affiche les erreurs PHP les imprimait dans chaque
+     * page et chaque réponse JSON, avec les chemins du serveur. Le produit
+     * coupe l'affichage dès le démarrage, sauf en mode debug.
+     */
+    public function testPhpErrorsAreNeverDisplayedOutsideDebugMode(): void
+    {
+        $previous = ini_get('display_errors');
+        ini_set('display_errors', '1');
+
+        try {
+            $this->kernel();
+
+            self::assertSame('0', ini_get('display_errors'));
+            self::assertSame('1', ini_get('log_errors'));
+        } finally {
+            ini_set('display_errors', $previous === false ? '1' : $previous);
+        }
+    }
 }

@@ -71,8 +71,6 @@ final class IconGenerator
         $background = imagecolorallocate($image, self::BACKGROUND[0], self::BACKGROUND[1], self::BACKGROUND[2]);
         $foreground = imagecolorallocate($image, 255, 255, 255);
         if ($background === false || $foreground === false) {
-            imagedestroy($image);
-
             throw new RuntimeException('pwa.error.generation_failed');
         }
 
@@ -89,8 +87,6 @@ final class IconGenerator
 
         $layer = imagecreatetruecolor(max(1, $characterWidth * strlen($initials)), max(1, $characterHeight));
         if ($layer === false) {
-            imagedestroy($image);
-
             throw new RuntimeException('pwa.error.generation_failed');
         }
         $layerBackground = (int) imagecolorallocate(
@@ -115,11 +111,8 @@ final class IconGenerator
             imagesx($layer),
             imagesy($layer)
         );
-        imagedestroy($layer);
 
         $written = imagepng($image, $file, 9);
-        imagedestroy($image);
-
         if ($written === false) {
             throw new RuntimeException('pwa.error.generation_failed');
         }

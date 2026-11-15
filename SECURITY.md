@@ -228,6 +228,14 @@ Ne jamais logguer :
 
 Production : aucune stack trace au visiteur.
 
+Aucune erreur PHP n'est **affichée** hors mode debug, quel que soit le réglage
+`display_errors` de l'hébergeur : `public/index.php` le coupe avant même
+l'autoload, et le Kernel le maintient coupé (sauf `app.debug`). Beaucoup
+d'hébergements, gratuits surtout, l'activent par défaut ; chaque avertissement
+s'imprimait alors dans les pages avec les chemins du serveur. Les erreurs
+restent journalisées (`log_errors`). L'installeur autonome applique la même
+règle dès sa première instruction.
+
 ## 18. Backups
 
 Pure PHP.
@@ -1432,3 +1440,25 @@ nettoyer » — de les nommer, donc de les retirer. Sans cela, une copie
 interrompue au milieu de `vendor/` laissait `src/` en place, la reprise butait
 sur « déjà installé », le bouton d'annulation relisait un état vide et
 répondait « ok » sans rien faire : il ne restait que le FTP.
+
+### 42.6 Une réponse illisible dit ce qu'elle contenait
+
+PHP 8.5 a déprécié la variable magique qui portait les en-têtes HTTP, et
+l'avertissement est émis **à la compilation** du fichier : avant la première
+instruction, donc avant `display_errors=0` et avant tout tampon. Sur un
+hébergement qui affiche les erreurs, il précédait chaque réponse JSON des
+étapes, et l'installation échouait dès la première sur « La réponse du serveur
+n'a pas pu être interprétée », sans rien dans la console.
+
+- Le nom de cette variable n'est plus lu nulle part ; un test l'interdit, dans
+  l'installeur comme dans l'application.
+- Le navigateur lit chaque réponse comme du texte : le JSON de l'installeur
+  étant la dernière ligne, il l'y reprend et **signale** le texte ajouté
+  avant ; sinon il affiche le statut HTTP et le début du corps reçu, sans
+  balises. Une panne d'hébergeur se lit à l'écran au lieu de se deviner.
+- Une erreur fatale (limite de temps, de mémoire) passe par un gestionnaire
+  d'arrêt qui rend un JSON nommant la cause, chemins du serveur retirés, et
+  marqué `fatal` : rien n'a été annulé côté serveur, l'écran propose donc
+  l'annulation explicite.
+- L'encodage JSON remplace les octets UTF-8 invalides au lieu d'échouer :
+  `json_encode()` rendait `false`, et le navigateur recevait un corps vide.

@@ -2057,6 +2057,52 @@ function bootstrap_step_cleanup(string $docRoot, array $state, ?callable $selfDe
 // =============================================================================
 
 /**
+ * En-têtes de la dernière réponse HTTP obtenue par `file_get_contents()`.
+ *
+ * **La variable magique `http_response_header` ne doit être lue nulle part
+ * dans ce fichier.** PHP 8.5 a déprécié cette variable, et l'avertissement est émis à
+ * la *compilation* du fichier, donc à chaque requête, avant la première
+ * instruction — avant tout tampon de sortie. Sur un hébergement qui affiche
+ * les erreurs, il précédait chaque réponse JSON des étapes, et le navigateur
+ * ne pouvait plus en lire aucune : « La réponse du serveur n'a pas pu être
+ * interprétée ». `BootstrapTest` interdit le retour de ce nom.
+ *
+ * PHP 8.4 offre `http_get_last_response_headers()`. Avant lui, la variable
+ * existe dans la portée de l'appelant, qui la transmet par
+ * `get_defined_vars()` sans jamais la nommer. Elle n'existe pas du tout si
+ * aucune réponse n'est arrivée (DNS, refus de connexion).
+ *
+ * @param array<string, mixed> $callerScope `get_defined_vars()` de l'appelant
+ *
+ * @return list<string>
+ */
+function bootstrap_last_response_headers(array $callerScope): array
+{
+    if (function_exists('http_get_last_response_headers')) {
+        $headers = http_get_last_response_headers();
+    } else {
+        $headers = $callerScope['http' . '_response_header'] ?? null;
+    }
+
+    return is_array($headers) ? array_values(array_map('strval', $headers)) : [];
+}
+
+/**
+ * En-têtes de réponse d'un flux ouvert par l'enveloppe HTTP.
+ *
+ * @param resource $stream
+ *
+ * @return list<string>
+ */
+function bootstrap_stream_response_headers($stream): array
+{
+    $meta = stream_get_meta_data($stream);
+    $headers = $meta['wrapper_data'] ?? null;
+
+    return is_array($headers) ? array_values(array_map('strval', $headers)) : [];
+}
+
+/**
  * @param list<string> $headers
  *
  * @return array{status: int, headers: array<string, string>, body: string}
@@ -2086,19 +2132,12 @@ function bootstrap_default_http_get(string $url, array $headers = []): array
     $status = 0;
     $responseHeaders = [];
 
-    // `$http_response_header` est une variable locale que PHP crée dans cette
-    // portée après l'opération de flux — mais uniquement si une réponse est
-    // réellement arrivée. Un échec de connexion (DNS, refus) ne la crée pas
-    // du tout, d'où ce `isset()` que l'analyse statique croit superflu.
-    // @phpstan-ignore-next-line
-    if (isset($http_response_header) && is_array($http_response_header)) {
-        foreach ($http_response_header as $line) {
-            if (preg_match('#^HTTP/\S+\s+(\d+)#', (string) $line, $matches) === 1) {
-                $status = (int) $matches[1];
-            } elseif (str_contains((string) $line, ':')) {
-                [$name, $value] = explode(':', (string) $line, 2);
-                $responseHeaders[strtolower(trim($name))] = trim($value);
-            }
+    foreach (bootstrap_last_response_headers(get_defined_vars()) as $line) {
+        if (preg_match('#^HTTP/\S+\s+(\d+)#', $line, $matches) === 1) {
+            $status = (int) $matches[1];
+        } elseif (str_contains($line, ':')) {
+            [$name, $value] = explode(':', $line, 2);
+            $responseHeaders[strtolower(trim($name))] = trim($value);
         }
     }
 
@@ -2144,11 +2183,9 @@ function bootstrap_default_downloader(string $url, string $destination): void
             throw new RuntimeException('Le téléchargement a échoué.');
         }
 
-        // PHP renseigne cette variable dans la portée locale à chaque
-        // ouverture réussie par l'enveloppe HTTP — et le schéma vient d'être
-        // contrôlé, donc c'est bien cette enveloppe qui a servi.
-        /** @var list<string> $responseHeaders */
-        $responseHeaders = $http_response_header;
+        // Les en-têtes d'un flux HTTP sont dans ses métadonnées : c'est
+        // l'accès documenté, et il ne dépend d'aucune variable magique.
+        $responseHeaders = bootstrap_stream_response_headers($stream);
         $status = bootstrap_status_from_headers($responseHeaders);
 
         if ($status >= 300 && $status < 400) {
@@ -2398,11 +2435,10 @@ function bootstrap_preview_preflight(string $docRoot): array
  */
 function bootstrap_handle_step_request(string $docRoot, string $stateFile): void
 {
-    header('Content-Type: application/json; charset=utf-8');
     // Voir `bootstrap_send_json()` : chaque sortie passe par là plutôt que par
     // un `echo json_encode()` nu, pour qu'un avertissement PHP égaré ne
     // corrompe pas la réponse.
-    ob_start();
+    bootstrap_begin_json_response();
 
     $input = json_decode((string) file_get_contents('php://input'), true);
     $step = (int) (is_array($input) ? ($input['step'] ?? 0) : 0);
@@ -2525,8 +2561,7 @@ function bootstrap_handle_step_request(string $docRoot, string $stateFile): void
  */
 function bootstrap_handle_abort_request(string $docRoot, string $stateFile): void
 {
-    header('Content-Type: application/json; charset=utf-8');
-    ob_start();
+    bootstrap_begin_json_response();
 
     try {
         $state = bootstrap_read_state($stateFile);
@@ -2563,8 +2598,7 @@ function bootstrap_handle_abort_request(string $docRoot, string $stateFile): voi
  */
 function bootstrap_handle_gate_report(string $docRoot, string $stateFile): void
 {
-    header('Content-Type: application/json; charset=utf-8');
-    ob_start();
+    bootstrap_begin_json_response();
 
     $lockFile = $docRoot . '/' . BOOTSTRAP_LOCK_FILE;
     $input = json_decode((string) file_get_contents('php://input'), true);
@@ -2727,7 +2761,105 @@ function bootstrap_send_json(array $payload): void
         ob_end_clean();
     }
 
-    echo json_encode($payload);
+    echo bootstrap_encode_json($payload);
+    bootstrap_json_response_sent(true);
+}
+
+/**
+ * Encodage qui ne peut pas rendre une chaîne vide.
+ *
+ * `json_encode()` renvoie `false` sur un octet UTF-8 invalide — un message
+ * d'erreur système dans un autre encodage, un chemin d'hébergeur exotique —
+ * et `echo false` n'imprime rien : le navigateur recevait un corps vide, sans
+ * aucune indication. Les octets invalides sont désormais remplacés, et un
+ * échec résiduel produit tout de même un JSON qui le dit.
+ *
+ * @param array<string, mixed> $payload
+ */
+function bootstrap_encode_json(array $payload): string
+{
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($json === false) {
+        return '{"done":true,"error":"Réponse impossible à encoder. Consultez les journaux PHP de l’hébergement."}';
+    }
+
+    return $json;
+}
+
+/**
+ * Retient qu'une réponse JSON complète est partie, pour que le gestionnaire
+ * d'arrêt n'en ajoute pas une seconde.
+ */
+function bootstrap_json_response_sent(?bool $sent = null): bool
+{
+    static $state = false;
+    if ($sent !== null) {
+        $state = $sent;
+    }
+
+    return $state;
+}
+
+/**
+ * Ouvre une réponse JSON : en-tête, tampon, et filet pour les erreurs fatales.
+ *
+ * Une erreur fatale — limite de temps ou de mémoire de l'hébergeur — arrête le
+ * script sans passer par aucun `catch` ni par `bootstrap_send_json()`. PHP
+ * vide alors le tampon tel quel : au mieux un message d'erreur HTML, au pire
+ * rien, et le navigateur ne peut que conclure à une « réponse inattendue ».
+ * Le gestionnaire d'arrêt remplace ce corps par un JSON qui nomme la cause.
+ */
+function bootstrap_begin_json_response(): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    bootstrap_json_response_sent(false);
+    ob_start();
+
+    register_shutdown_function(static function (): void {
+        if (bootstrap_json_response_sent()) {
+            return;
+        }
+
+        $error = error_get_last();
+        $fatal = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR;
+        if ($error === null || ($error['type'] & $fatal) === 0) {
+            return;
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        if (!headers_sent()) {
+            http_response_code(200);
+        }
+
+        echo bootstrap_encode_json(bootstrap_fatal_error_payload($error['message'], __DIR__));
+    });
+}
+
+/**
+ * Message rendu au navigateur après une erreur fatale PHP.
+ *
+ * Le champ `fatal` dit au navigateur que rien n'a été annulé côté serveur : le
+ * script s'est arrêté net. Il propose donc l'annulation explicite plutôt que
+ * de conclure.
+ *
+ * @return array{done: true, fatal: true, error: string}
+ */
+function bootstrap_fatal_error_payload(string $message, string $docRoot): array
+{
+    $hint = str_contains($message, 'Maximum execution time')
+        ? ' L’hébergement a interrompu le script (limite de temps). Relancez l’installation : elle reprend où '
+            . 'elle s’est arrêtée.'
+        : (str_contains($message, 'Allowed memory size')
+            ? ' L’hébergement a interrompu le script (limite de mémoire).'
+            : '');
+
+    return [
+        'done' => true,
+        'fatal' => true,
+        'error' => 'Erreur fatale PHP : ' . bootstrap_sanitize_error_for_client($message, $docRoot) . $hint,
+    ];
 }
 
 /** Échappement HTML pour les quelques valeurs que les écrans de l'installeur affichent. */
@@ -2883,12 +3015,44 @@ function bootstrap_render_ui(string $docRoot): void
     progressLog.scrollTop = progressLog.scrollHeight;
   }
 
+  /**
+   * Lit la réponse comme du texte avant de l'interpréter.
+   *
+   * `response.json()` échouait sur la moindre ligne ajoutée par l'hébergeur
+   * avant le JSON — un avertissement PHP affiché, une bannière — et l'erreur
+   * ne disait rien de ce qui était arrivé. Le JSON de l'installeur est
+   * toujours la dernière ligne : on l'y reprend, et on signale le texte en
+   * trop. Si rien n'est lisible, l'erreur porte le statut HTTP et le début
+   * du corps reçu : c'est ce qu'il faut pour savoir quoi corriger.
+   */
   function postJson(url, body) {
     return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body || {})
-    }).then(function (response) { return response.json(); });
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        try {
+          return JSON.parse(text);
+        } catch (ignored) {
+          var start = text.lastIndexOf('\\n{');
+          if (start >= 0) {
+            try {
+              var data = JSON.parse(text.slice(start + 1));
+              logLine('Le serveur a ajouté du texte avant sa réponse : ' + excerpt(text.slice(0, start)), true);
+              return data;
+            } catch (alsoIgnored) { /* on tombe sur l'erreur détaillée */ }
+          }
+          throw new Error('HTTP ' + response.status + ' — ' + (excerpt(text) || 'réponse vide'));
+        }
+      });
+    });
+  }
+
+  /** Les premiers caractères d'un corps reçu, sans balises, pour l'afficher. */
+  function excerpt(text) {
+    var plain = String(text).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return plain.length > 400 ? plain.slice(0, 400) + '…' : plain;
   }
 
   function runProbe(probe) {
@@ -2910,6 +3074,12 @@ function bootstrap_render_ui(string $docRoot): void
   function runStep(step) {
     setProgress(step, 0);
     postJson('?action=step', { step: step }).then(function (data) {
+      if (data.fatal) {
+        // Le script s'est arrêté net : rien n'a été annulé côté serveur.
+        logLine("Échec à l'étape " + step + ' : ' + data.error, true);
+        showAbortRecovery(data.error);
+        return;
+      }
       if (data.error && !data.done) {
         logLine('Erreur : ' + data.error, true);
         return;
@@ -2933,8 +3103,8 @@ function bootstrap_render_ui(string $docRoot): void
       if (step === TOTAL_STEPS) { showReport(data, true); return; }
       runStep(step + 1);
     }).catch(function (error) {
-      logLine('Erreur réseau : ' + error, true);
-      showAbortRecovery();
+      logLine('Erreur : ' + (error && error.message ? error.message : error), true);
+      showAbortRecovery(error && error.message ? error.message : String(error));
     });
   }
 
@@ -2954,6 +3124,11 @@ function bootstrap_render_ui(string $docRoot): void
         + "à cet instant sont normales : ce sont les refus que l'on cherchait.");
       return postJson('?action=gate-report', { results: results });
     }).then(function (gateData) {
+      if (gateData.fatal) {
+        logLine('Échec des contrôles : ' + gateData.error, true);
+        showAbortRecovery(gateData.error);
+        return;
+      }
       if (gateData.gate_passed) {
         logLine('Contrôles réussis.');
         runStep(10);
@@ -2962,8 +3137,8 @@ function bootstrap_render_ui(string $docRoot): void
         showReport(gateData, false);
       }
     }).catch(function (error) {
-      logLine('Erreur réseau : ' + error, true);
-      showAbortRecovery();
+      logLine('Erreur : ' + (error && error.message ? error.message : error), true);
+      showAbortRecovery(error && error.message ? error.message : String(error));
     });
   }
 
@@ -3005,13 +3180,14 @@ function bootstrap_render_ui(string $docRoot): void
    * « déjà installé » refuserait chaque reprise, et il n'y aurait aucun
    * recours sans FTP.
    */
-  function showAbortRecovery() {
+  function showAbortRecovery(detail) {
     showScreen('report');
     document.getElementById('report-table').innerHTML = '';
     var summary = document.getElementById('report-summary');
     summary.textContent = "La réponse du serveur n'a pas pu être interprétée (problème réseau, ou "
       + "réponse inattendue). Des fichiers ont peut-être déjà été copiés. Annulez proprement cette "
-      + "tentative avant de réessayer.";
+      + "tentative avant de réessayer."
+      + (detail ? ' Ce que le serveur a renvoyé : ' + detail : '');
     summary.className = 'alert alert-error';
     attachAbortButton(summary);
   }
@@ -3100,6 +3276,12 @@ HTML;
  */
 function bootstrap_main(): void
 {
+    // Un hébergement qui affiche les erreurs imprimerait chaque avertissement
+    // dans les réponses JSON des étapes, et le navigateur ne pourrait plus en
+    // lire aucune. Elles restent journalisées par l'hébergement.
+    @ini_set('display_errors', '0');
+    @ini_set('log_errors', '1');
+
     $docRoot = __DIR__;
     $stateFile = $docRoot . '/' . BOOTSTRAP_STATE_FILE;
 

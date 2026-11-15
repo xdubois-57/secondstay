@@ -257,6 +257,13 @@ n'importe qui pourrait installer le site à votre place (SECURITY.md §41) ; il
 est supprimé dès que votre compte administrateur existe. Le rapport complet des
 contrôles reste dans `storage/logs/install-report.json`.
 
+Si l'installation s'arrête sur « La réponse du serveur n'a pas pu être
+interprétée », le message affiche désormais ce que le serveur a renvoyé à la
+place : c'est la cause à corriger chez l'hébergeur (limite de temps, page
+d'erreur, protection anti-robots). Cliquez ensuite sur **Annuler l'installation
+et nettoyer** avant de réessayer. Si même l'annulation échoue, supprimez par FTP
+les fichiers copiés ainsi que `.bootstrap-state.php` et `.bootstrap.lock`.
+
 ### À la main
 
 Copier l'archive de release à la racine web (FTP possible), puis ouvrir le
