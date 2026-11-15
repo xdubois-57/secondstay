@@ -142,4 +142,37 @@ final class PublicPathPolicyTest extends TestCase
 
         self::assertStringContainsString('Require all denied', $htaccess);
     }
+    /**
+     * « Pas bloqué » ne suffisait pas : sous Apache, la règle de rattrapage
+     * envoyait `/bootstrap.php` au contrôleur frontal. L'étape qui copie
+     * l'archive pose ce `.htaccess` ; dès lors, chaque étape suivante de
+     * l'installeur recevait la page de l'assistant au lieu de s'exécuter, et
+     * l'installation échouait sur « La réponse du serveur n'a pas pu être
+     * interprétée ». Le serveur PHP intégré de la CI ignore `.htaccess` : seul
+     * ce test, et un essai sous Apache, pouvaient le voir.
+     */
+    public function testHtaccessLetsTheInstallerRunBeforeTheFrontController(): void
+    {
+        $lines = file(dirname(__DIR__, 3) . '/.htaccess', FILE_IGNORE_NEW_LINES);
+        self::assertIsArray($lines);
+        $lines = array_map('trim', $lines);
+
+        $installer = array_search('RewriteRule ^bootstrap\.php$ - [L]', $lines, true);
+        $frontController = array_search('RewriteRule ^ public/index.php [L]', $lines, true);
+        $firstDenial = null;
+        foreach ($lines as $number => $line) {
+            if (str_starts_with($line, 'RewriteRule') && str_contains($line, '[F,')) {
+                $firstDenial = $number;
+                break;
+            }
+        }
+
+        self::assertIsInt($installer, 'Le .htaccess doit laisser s’exécuter bootstrap.php.');
+        self::assertIsInt($frontController);
+        self::assertIsInt($firstDenial);
+        self::assertLessThan($frontController, $installer, 'L’exception doit précéder le contrôleur frontal.');
+        self::assertGreaterThan($firstDenial, $installer, 'Les refus doivent passer avant l’exception.');
+        // L'exception ne vaut que pour le fichier réellement présent.
+        self::assertSame('RewriteCond %{REQUEST_FILENAME} -f', $lines[$installer - 1]);
+    }
 }

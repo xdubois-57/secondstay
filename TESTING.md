@@ -1772,3 +1772,25 @@ joue PHP 8.2 et 8.4 ; aucun environnement 8.5 n'était disponible pour cette
 correction, qui repose sur le comportement documenté de 8.5. Le jour où
 `checks.yml` ajoute 8.5 à sa matrice, ce paragraphe doit disparaître.
 
+### 33.6 L'installeur derrière le vrai `.htaccess` (`PublicPathPolicyTest`)
+
+Né de la même installation réelle, une fois l'avertissement PHP 8.5 levé :
+l'étape 7 recevait la page de l'assistant de SecondStay au lieu de sa réponse
+JSON. Le `.htaccess` de l'archive, posé à l'étape 6, envoyait `/bootstrap.php`
+au contrôleur frontal.
+
+- **Interdit :** que la règle qui laisse s'exécuter `bootstrap.php` disparaisse,
+  perde sa condition `-f`, passe avant les refus ou après le contrôleur frontal.
+  Le test échoue sur le `.htaccess` de 0.19.0 et passe sur le correctif.
+- **Constaté une fois sous Apache 2.4 + mod_php, non rejoué par la CI :** sur
+  l'archive réelle de 0.19.0 copiée telle quelle, les étapes 7 à 11 échouent
+  avec son `.htaccess` (réponse vide : redirection vers l'assistant), et
+  aboutissent avec le correctif — sondes de protection B1 à B10 vertes,
+  assistant joignable avec son jeton, `token.php` refusé, `bootstrap.php`
+  supprimé.
+
+**Ce qui manque :** la CI ne sert jamais le produit derrière Apache. Le serveur
+PHP intégré et `scripts/router.php` appliquent la politique de chemins, mais
+pas les règles de réécriture elles-mêmes. Un travail qui jouerait la campagne
+E2E — et l'installeur — derrière Apache fermerait cette classe de défauts.
+

@@ -50,6 +50,14 @@ Refuser l’accès direct à :
 
 Playwright doit tester ces chemins.
 
+**Une seule exception, et elle est bornée :** `bootstrap.php` à la racine
+s'exécute tant qu'il existe (`RewriteCond %{REQUEST_FILENAME} -f`), placée
+**après** toutes les règles de refus et **avant** le contrôleur frontal. Sans
+elle, l'étape de l'installeur qui copie l'archive pose ce `.htaccess`, et
+chaque étape suivante était capturée par l'application. L'installeur se
+supprime une fois l'installation finie, refuse de tourner sur une instance
+installée, et le dossier `bootstrap/` du dépôt reste refusé.
+
 ## 4. Authentification
 
 - password hashing via API PHP recommandée ;
