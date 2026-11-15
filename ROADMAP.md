@@ -1192,12 +1192,17 @@ n'a pas pu être interprétée », rien dans la console.
 | une erreur fatale (limite de temps) rendait une page d'erreur ou rien | gestionnaire d'arrêt qui rend un JSON nommant la cause |
 | `json_encode()` pouvait rendre un corps vide | octets invalides remplacés |
 | `curl_close()` et `imagedestroy()`, sans effet depuis PHP 8.0, dépréciés en 8.5 | retirés |
+| une fois l'avertissement levé, l'étape 7 recevait la page de l'assistant : le `.htaccess` de l'archive, posé à l'étape 6, envoyait `/bootstrap.php` au contrôleur frontal | exception bornée pour `bootstrap.php` présent, entre les refus et le contrôleur frontal ; vérifiée sous Apache |
 
 ### Ce qui reste hors périmètre
 
 - PHP 8.5 n'est pas dans la matrice de CI (8.2 et 8.4). L'y ajouter est la
   prochaine étape : c'est la seule façon de voir ce genre de défaut avant un
   utilisateur.
+- La CI ne sert jamais le produit derrière Apache : les règles de réécriture du
+  `.htaccess` ne sont vérifiées que par lecture (`PublicPathPolicyTest`). Un
+  travail Apache qui jouerait l'installeur et la campagne E2E est l'autre
+  prochaine étape.
 - La correction n'atteint les nouvelles installations qu'avec une nouvelle
   Release : `bootstrap.php` est un asset de Release, pas un fichier lu depuis
   `main`.

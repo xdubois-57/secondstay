@@ -654,6 +654,13 @@ JSON par un gestionnaire d'arrêt (`bootstrap_begin_json_response()`). Le
 navigateur tolère du texte ajouté avant ce JSON et, s'il ne peut rien lire,
 affiche ce que le serveur a renvoyé (SECURITY.md §42.6).
 
+**L'installeur doit rester exécutable après l'étape 6**, qui pose le
+`.htaccess` de l'archive. Ce `.htaccess` envoie toute adresse qui n'est pas un
+fichier de `public/` au contrôleur frontal : sans l'exception qu'il porte pour
+`bootstrap.php` (SECURITY.md §3), les étapes 7 à 11 recevaient la page de
+l'assistant. Le serveur PHP intégré de la CI ignore `.htaccess` ; ce défaut ne
+s'est donc vu que sur un hébergement réel.
+
 Les trois actions POST refusent une requête qui ne vient pas de cette page
 (SECURITY.md §42.2), et une copie interrompue fait remonter les entrées déjà
 écrites pour que l'annulation puisse les retirer (§42.5).

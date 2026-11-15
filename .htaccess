@@ -33,6 +33,15 @@ DirectoryIndex index.php
     # --- Extensions jamais servies telles quelles ---
     RewriteRule \.(sql|sqlite|db|ini|log|bak|swp|dist|neon|yaml|yml|sh|env|pem|key|crt|p12|zip|tar|gz)$ - [F,L,NC]
 
+    # --- Installeur autonome ---
+    # bootstrap.php vit a la racine le temps d'une installation, puis se
+    # supprime. L'etape qui copie l'archive pose ce fichier-ci : sans cette
+    # regle, chaque etape suivante etait capturee par le controleur frontal,
+    # qui repondait la page de l'assistant au lieu de laisser l'installeur
+    # s'executer. La condition -f limite l'exception au fichier present.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^bootstrap\.php$ - [L]
+
     # --- Assets publics reels ---
     RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
     RewriteRule ^(.*)$ public/$1 [L]
