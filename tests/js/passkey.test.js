@@ -236,7 +236,7 @@ describe('amorces DOM', () => {
         expect(fetcher.mock.calls[0][0]).toBe('/app/api/passkeys/register/options');
         expect(fetcher.mock.calls[1][0]).toBe('/app/api/passkeys/register');
         expect(JSON.parse(fetcher.mock.calls[1][1].body).label).toBe('Téléphone');
-        expect(document.querySelector('[data-passkey-status]').textContent).toBe('ok');
+        expect(document.querySelector('.toast-body')?.textContent).toBe('ok');
     });
 
     it('affiche l’erreur traduite du serveur et réactive le bouton', async () => {
@@ -261,7 +261,7 @@ describe('amorces DOM', () => {
         button.click();
 
         await vi.waitFor(() => expect(button.disabled).toBe(false));
-        expect(document.querySelector('[data-passkey-status]').textContent).toBe(
+        expect(document.querySelector('.toast-body')?.textContent).toBe(
             'Cette clé d’accès est déjà enregistrée.'
         );
         expect(scope.location.reload).not.toHaveBeenCalled();
@@ -327,7 +327,7 @@ describe('amorces DOM', () => {
         button.click();
 
         await vi.waitFor(() => expect(button.disabled).toBe(false));
-        expect(document.querySelector('[data-passkey-signin-status]').textContent).toBe('NotAllowedError');
+        expect(document.querySelector('.toast-body')?.textContent).toBe('NotAllowedError');
         expect(scope.location.assign).not.toHaveBeenCalled();
     });
 });

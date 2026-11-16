@@ -115,7 +115,7 @@ test.describe('clés d’accès', () => {
         await page.click('[data-testid="passkey-add"]');
         await expect(page.locator('[data-passkey-id]')).toHaveCount(before + 1);
 
-        await page.click('[data-testid="logout"]');
+        await page.click('[data-testid="logout"]:visible');
         await expect(page).toHaveURL(/\/fr\/?$/);
 
         await page.goto('/fr/login');

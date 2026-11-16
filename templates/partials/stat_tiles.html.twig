@@ -1,0 +1,34 @@
+{#
+  Rangée de chiffres clés — le « résumé avant le détail » en tête d'un
+  tableau de bord, même dessin que ScoutMagic (Finances) : deux tuiles par
+  ligne sur téléphone, `columns` à partir de `md`. Le chiffre reste couleur
+  d'encre ; `tone` ne colore que l'icône.
+
+  Usage :
+  {% include 'partials/stat_tiles.html.twig' with {
+      tiles: [ { label: 'Comptes', value: 12, icon: 'bi-people', tone: 'primary',
+                 sublabel: '…', link_label: 'Gérer →', link_url: '/…', metric: 'users' } ],
+      columns: 4,
+  } only %}
+#}
+<div class="row row-cols-2 row-cols-md-{{ columns|default(4) }} g-3 mb-4 stat-tiles">
+    {% for tile in tiles %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body py-3">
+                    <div class="small text-body-secondary d-flex align-items-center gap-1 mb-1">
+                        {% if tile.icon|default('') %}<i class="bi {{ tile.icon }} text-{{ tile.tone|default('primary') }}" aria-hidden="true"></i>{% endif %}
+                        {{ tile.label }}
+                    </div>
+                    <div class="fs-3 fw-semibold lh-1"{% if tile.metric|default('') %} data-metric="{{ tile.metric }}"{% endif %}>{{ tile.value }}</div>
+                    {% if tile.sublabel|default('') %}
+                        <div class="small text-body-secondary mt-1">{{ tile.sublabel }}</div>
+                    {% endif %}
+                    {% if tile.link_label|default('') and tile.link_url|default('') %}
+                        <a href="{{ tile.link_url }}" class="small mt-1 d-inline-block">{{ tile.link_label }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>

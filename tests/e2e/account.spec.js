@@ -160,7 +160,7 @@ test.describe('comptes', () => {
 
         // Le lien « Mon compte » est présent dans la navigation.
         await openNavigation(page);
-        await expect(page.locator('[data-testid="account-link"]')).toBeVisible();
+        await expect(page.locator('[data-testid="account-link"]:visible')).toBeVisible();
         // Le menu mobile recouvre le formulaire : on le referme avant de saisir.
         await closeNavigation(page);
 

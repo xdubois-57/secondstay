@@ -1752,6 +1752,14 @@ rouvrir un site laissé en maintenance par une mise à jour interrompue.
   l'administrateur ;
 - un client sans lien vers ses séjours.
 
+`SiteNavigation` (`tests/php/Unit/SiteNavigationTest.php`) défend le menu
+construit pour chaque visiteur : menus selon le rôle, colonnes des pages à
+sous-pages, sélection par le plus long préfixe (une page de détail garde sa
+liste), une icône par section d'administration. Côté navigateur,
+`tests/js/nav.test.js` (panneaux au clic, Échap, appui extérieur, fil d'Ariane,
+barre de sous-pages) et `tests/js/toast.test.js` (balisage du toast, tons,
+échéances, message jamais interprété comme du HTML).
+
 ### 33.5 Hébergements qui affichent les erreurs, PHP 8.5 (`BootstrapTest`, `KernelTest`)
 
 Né d'une installation réelle qui échouait dès la première étape, sans rien

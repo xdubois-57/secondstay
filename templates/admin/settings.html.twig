@@ -1,15 +1,20 @@
 {% extends 'layout/admin.html.twig' %}
 
 {% block admin_content %}
-    <ul class="nav nav-tabs mb-4" data-testid="settings-modules">
-        {% for module in modules %}
-            <li class="nav-item">
-                <a class="nav-link{{ module == current_module ? ' active' : '' }}"
-                   href="{{ path('admin.settings', {'module': module}) }}"
-                   data-settings-module="{{ module }}">{{ t('admin.settings.module.' ~ module) }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% set _module_rail = [] %}
+    {% for module in modules %}
+        {% set _module_rail = _module_rail|merge([{
+            url: path('admin.settings', {'module': module}),
+            label: t('admin.settings.module.' ~ module),
+            selected: module == current_module,
+            attributes: {'data-settings-module': module},
+        }]) %}
+    {% endfor %}
+    {% include 'partials/nav_rail.html.twig' with {
+        rail_id: 'settings-modules',
+        items: _module_rail,
+        testid: 'settings-modules',
+    } only %}
 
     <form method="post" action="{{ path('admin.settings.save') }}" novalidate data-testid="settings-form">
         <input type="hidden" name="_csrf" value="{{ csrf_token }}">

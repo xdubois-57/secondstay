@@ -1,0 +1,44 @@
+{#
+  Barre de sous-pages — même composant que ScoutMagic (ses pages Finances) :
+  une seule rangée d'onglets soulignés (`nav nav-underline`), défilant
+  horizontalement, jamais repliée ni coupée, l'onglet courant ramené au
+  centre par `assets/js/modules/nav-rail.js`. Chaque onglet est un vrai lien
+  rendu côté serveur : la barre fonctionne sans JavaScript.
+
+  Pour un ensemble fixe de vues d'une même page, déclaré dans le code, aux
+  libellés courts : les sections d'un groupe d'administration, les langues
+  d'un contenu, les filtres d'état d'une liste.
+
+  Usage :
+  {% include 'partials/nav_rail.html.twig' with {
+      rail_id: 'incident-filters',
+      items: [ { url: '/fr/admin/incidents', label: 'Tous', selected: true, icon: 'bi-…',
+                 count: 3, attributes: {'data-incident-filter': 'all'} } ],
+      aria_label: 'Filtres',            -- facultatif
+      testid: 'incident-filters',       -- facultatif
+  } only %}
+
+  `attributes` porte les attributs de données propres à l'appelant ; `count`
+  s'affiche entre parenthèses quand il est supérieur à zéro.
+#}
+{% if items|length > 0 %}
+    <div class="page-picker mb-3">
+        <nav class="nav-rail" id="{{ rail_id }}" aria-label="{{ aria_label|default(t('common.page_navigation')) }}">
+            <ul class="nav nav-underline flex-nowrap overflow-auto"{% if testid|default('') %} data-testid="{{ testid }}"{% endif %}>
+                {% for item in items %}
+                    {% set _selected = item.selected|default(false) %}
+                    <li class="nav-item">
+                        <a href="{{ item.url }}"
+                           class="nav-link tap-target text-nowrap d-inline-flex align-items-center gap-1{{ _selected ? ' active' : '' }}"
+                           data-selected="{{ _selected ? 'true' : 'false' }}"
+                           {% for name, value in item.attributes|default({}) %}{{ name }}="{{ value }}" {% endfor %}
+                           {{ _selected ? 'aria-current="page"' : '' }}>
+                            {% if item.icon|default('') %}<i class="bi {{ item.icon }}" aria-hidden="true"></i>{% endif %}
+                            <span>{{ item.label }}{% if item.count|default(0) %} ({{ item.count }}){% endif %}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+{% endif %}

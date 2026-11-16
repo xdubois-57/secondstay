@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace SecondStay\Core;
 
 use SecondStay\Auth\AuthService;
+use SecondStay\Controller\Admin\AdminNavigation;
+use SecondStay\Navigation\SiteNavigation;
+use SecondStay\Settings\SettingsService;
 use SecondStay\Core\Exception\ForbiddenException;
 use SecondStay\Core\Exception\HttpException;
 use SecondStay\Core\Http\Request;
@@ -298,6 +301,23 @@ final class Kernel
         }
         $view->share('menu_tree', $menu);
         $view->share('legal_links', $legal);
+
+        // Menus de la barre et du panneau mobile : construits une fois ici,
+        // pour toutes les pages, et filtrés par rôle — un confort de lecture,
+        // jamais une protection (chaque contrôleur revérifie).
+        $adminGroups = [];
+        if ($user !== null && $user->isOperational()) {
+            try {
+                $adminGroups = (new AdminNavigation($container->get(SettingsService::class)))->forUser($user);
+            } catch (Throwable) {
+                $adminGroups = (new AdminNavigation())->forUser($user);
+            }
+        }
+        $navigation = (new SiteNavigation($container->get(Router::class)))
+            ->build($menu, $user, $adminGroups, $context->routePath);
+        $view->share('menus', $navigation['menus']);
+        $view->share('active_menu_id', $navigation['active_menu_id']);
+        $view->share('active_page_path', $navigation['active_page_path']);
     }
 
     /**

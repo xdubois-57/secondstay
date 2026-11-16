@@ -1,0 +1,26 @@
+{# Sélecteur de langue. Sur la barre de bureau, un bouton discret à côté du
+   thème ; en pied du panneau mobile, un bouton pleine largeur qui s'ouvre
+   vers le haut. Chaque option mène à la même page dans l'autre langue.
+   Paramètre : `placement` (`desktop` ou `mobile`). #}
+{% set _mobile = placement|default('desktop') == 'mobile' %}
+<div class="dropdown{{ _mobile ? ' dropup w-100' : '' }}" data-locale-switcher="{{ placement|default('desktop') }}">
+    <button class="btn {{ _mobile ? 'btn-outline-secondary btn-sm w-100' : 'btn-link text-body p-2 text-decoration-none' }} dropdown-toggle d-inline-flex align-items-center justify-content-center gap-1"
+            type="button" id="locale-switcher-{{ placement|default('desktop') }}" data-bs-toggle="dropdown" aria-expanded="false"
+            title="{{ t('common.language_selector') }}">
+        <i class="bi bi-translate" aria-hidden="true"></i>
+        <span class="visually-hidden">{{ t('common.language_selector') }} :</span>
+        <span{{ _mobile ? '' : ' class="small"' }}>{{ _mobile ? locale_name(locale) : locale|upper }}</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end{{ _mobile ? ' w-100' : '' }}" aria-labelledby="locale-switcher-{{ placement|default('desktop') }}">
+        {% for available in locales %}
+            <li>
+                <a class="dropdown-item{{ available == locale ? ' active' : '' }}"
+                   hreflang="{{ available }}"
+                   lang="{{ available }}"
+                   data-locale-option="{{ available }}"
+                   {{ available == locale ? 'aria-current="true"' : '' }}
+                   href="{{ base_path }}/{{ available }}{{ current_path == '/' ? '/' : current_path }}">{{ locale_name(available) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</div>

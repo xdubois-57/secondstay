@@ -1,10 +1,9 @@
 {% extends 'layout/admin.html.twig' %}
 
+{% block admin_title %}<code data-testid="booking-reference">{{ booking.reference }}</code>
+    <span class="badge {{ booking.status.badgeClass }}" data-testid="booking-status">{{ t(booking.status.labelKey) }}</span>{% endblock %}
+
 {% block admin_content %}
-    <h1 class="h4 mb-1">
-        <code data-testid="booking-reference">{{ booking.reference }}</code>
-        <span class="badge {{ booking.status.badgeClass }}" data-testid="booking-status">{{ t(booking.status.labelKey) }}</span>
-    </h1>
     <p class="text-body-secondary">{{ booking.guestName }} — {{ booking.guestEmail }}</p>
 
     <div class="row g-4">

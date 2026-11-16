@@ -972,18 +972,76 @@ dans « À faire » (`update_failed`).
 `storage/` et `config/local.php` ne sont jamais remplacés. `FakeReleaseProvider`
 permet de tester tout le flux sans réseau.
 
-### 30.6.1 Menu d'administration
+### 30.6.1 Menus du site et menu d'administration
 
-`Controller\Admin\AdminNavigation` construit le menu latéral, passé à toutes
-les pages par `AdminController::renderAdmin()`. Il est **groupé** (Activité,
-Séjours, Conformité, Site public, Système), **filtré par rôle** — une entrée
-n'apparaît que si l'action `index` de son contrôleur l'autorise, ce que
-`AdminNavigationTest` vérifie section par section — et **filtré par fonction** :
-un module éteint (`imap.enabled`, `llm.enabled`, `tax.tourist_enabled`,
-`compliance.police_record_enabled`) disparaît pour le responsable local et reste
-visible, marqué « désactivé », pour l'administrateur, qui y apprend où
-l'allumer. Ce filtrage est un confort : l'autorisation reste vérifiée par
-chaque contrôleur.
+La navigation reprend le dessin de ScoutMagic, sur les deux largeurs
+(`templates/partials/nav.html.twig`) :
+
+- **mobile** : une barre (bouton de menu à gauche, nom du logement, thème,
+  avatar) et un panneau latéral (offcanvas) qui glisse depuis la gauche — carte
+  de l'utilisateur, un accordéon par menu, puis langue et
+  connexion/déconnexion en pied ;
+- **bureau** : une barre horizontale — nom à gauche, menus au centre en onglets
+  soulignés, thème, langue et utilisateur à droite. Un onglet ouvre au clic
+  (jamais au survol) un panneau « mega-menu » de colonnes titrées, une par
+  groupe ; un second clic, Échap ou un appui hors de la barre le referment
+  (`assets/js/modules/nav.js`). L'onglet du menu de la page courante reste
+  souligné.
+
+`Navigation\SiteNavigation` construit ces menus une fois par requête, dans
+`Kernel::shareViewGlobals()`, et les partage avec toutes les pages (`menus`,
+`active_menu_id`, `active_page_path`) :
+
+- **Le logement**, pour tout le monde : l'accueil et les pages publiées sans
+  enfant dans une colonne sans titre, puis une colonne par page qui a des
+  sous-pages ;
+- **Mon espace**, pour un client : ses réservations et son compte ;
+- **Administration**, pour l'équipe : les groupes de
+  `Controller\Admin\AdminNavigation`.
+
+La page courante est la plus longue correspondance avec le chemin courant :
+`/admin/bookings/12` sélectionne « Réservations ». Un fil d'Ariane
+(`partials/breadcrumb_bar.html.twig`) s'en déduit à toutes les largeurs : le
+menu de la page est un bouton qui l'ouvre (`modules/breadcrumb.js`), la liste
+d'une page de détail est un lien.
+
+`AdminNavigation` reste la source du menu d'administration. Il est **groupé**
+(Activité, Séjours, Conformité, Site public, Système), **filtré par rôle** —
+une entrée n'apparaît que si l'action `index` de son contrôleur l'autorise, ce
+que `AdminNavigationTest` vérifie section par section — et **filtré par
+fonction** : un module éteint (`imap.enabled`, `llm.enabled`,
+`tax.tourist_enabled`, `compliance.police_record_enabled`) disparaît pour le
+responsable local et reste visible, marqué « désactivé », pour
+l'administrateur, qui y apprend où l'allumer. Ce filtrage est un confort :
+l'autorisation reste vérifiée par chaque contrôleur.
+
+Les pages d'administration suivent le dessin des pages Finances de ScoutMagic
+(`layout/admin.html.twig`) : un titre unique (`partials/page_header.html.twig`),
+puis une barre d'onglets soulignés vers les autres pages du même groupe
+(`partials/nav_rail.html.twig`, défilante, jamais repliée, l'onglet courant
+centré par `modules/nav-rail.js`). Le même composant sert les vues fixes d'une
+page : langues du livret et des zones d'état des lieux, modules de
+configuration, filtres d'état des réservations, incidents et litiges. Les
+chiffres clés d'un tableau de bord sont des tuiles
+(`partials/stat_tiles.html.twig`).
+
+Les icônes viennent de Bootstrap Icons, embarqué dans
+`public/assets/vendor/bootstrap-icons/` (MIT). La CSP interdisant les styles en
+ligne, chaque dimension fixe de ces composants est une classe `ss-…` de
+`app.css`.
+
+### 30.6.2 Retour des mises à jour dynamiques
+
+Toute mise à jour faite sans recharger la page (clé d'accès enregistrée ou
+refusée, abonnement push activé ou retiré…) annonce son résultat par un
+**toast**, le même que ScoutMagic : `modules/toast.js`, un toast Bootstrap
+`text-bg-{success|danger|warning|info}` sans bordure, empilé en bas à droite
+dans une région `aria-live="polite"`, refermé seul après 4 s (8 s pour une
+erreur). Le message est toujours posé en `textContent`. Le toast n'intercepte
+pas les clics destinés à la page ; seul son bouton de fermeture est cliquable.
+Les scripts qui ne sont pas des modules l'atteignent par
+`window.SecondStayToast.show()`. Une page rechargée par un formulaire garde ses
+messages flash.
 
 ### 30.7 URLs
 

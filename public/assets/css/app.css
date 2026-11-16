@@ -178,20 +178,6 @@
     }
 }
 
-/* --- Navigation repliée -------------------------------------------------
-   Le menu du site grandit avec le nombre de pages publiées. Sur un écran
-   étroit, le menu déplié doit rester entièrement atteignable : on le limite
-   à la hauteur disponible et on le rend défilant, sinon les commandes de fin
-   de barre (compte, thème, langue) sortent de l'écran. */
-@media (max-width: 991.98px) {
-    .navbar-expand-lg .navbar-collapse.show,
-    .navbar-expand-lg .navbar-collapse.collapsing {
-        max-height: calc(100vh - 4.5rem);
-        overflow-y: auto;
-        overscroll-behavior: contain;
-    }
-}
-
 /* --- Calendrier de disponibilités ---------------------------------------
    Les états sont portés par des attributs de données : la couleur n'est
    jamais le seul indice, chaque case reste lisible au clavier et par un
@@ -383,4 +369,207 @@
 
 .ss-usage[data-level="danger"]::-moz-progress-bar {
     background-color: var(--bs-danger);
+}
+
+/* ===========================================================================
+   Navigation, fil d'Ariane, sous-pages et toasts — même dessin que ScoutMagic.
+
+   Les gabarits n'ont pas le droit d'écrire un attribut `style` (CSP
+   `style-src 'self'`) : chaque dimension fixe que ScoutMagic pose en ligne
+   vit donc ici, sous une classe `ss-…` nommée par ce qu'elle fait.
+   =========================================================================== */
+
+/* Petits utilitaires des barres de navigation. */
+.ss-mobile-bar,
+.ss-desktop-bar {
+    height: 56px;
+}
+
+.ss-icon-target {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.ss-min-w-0 {
+    min-width: 0;
+}
+
+.ss-user-name {
+    max-width: 140px;
+}
+
+.ss-user-name-desktop {
+    max-width: 160px;
+}
+
+.ss-text-xs {
+    font-size: .75rem;
+}
+
+.ss-icon-slot-24 {
+    width: 24px;
+    min-width: 24px;
+}
+
+.ss-icon-slot-32 {
+    width: 32px;
+    min-width: 32px;
+}
+
+.ss-tap-row {
+    min-height: 44px;
+}
+
+/* Avatar rond : des initiales sur le fond primaire atténué — une identité
+   plutôt qu'une image manquante, assez discrète pour une barre de menu. */
+.ss-avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary-text-emphasis);
+    font-weight: 600;
+    line-height: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.ss-avatar-24 { width: 24px; height: 24px; font-size: .6rem; }
+.ss-avatar-32 { width: 32px; height: 32px; font-size: .8rem; }
+.ss-avatar-36 { width: 36px; height: 36px; font-size: .8rem; }
+.ss-avatar-40 { width: 40px; height: 40px; font-size: .9rem; }
+
+/* Pleine largeur sous `sm`, largeur naturelle au-delà. Bootstrap n'a pas de
+   variante réactive de `w-100`. */
+@media (max-width: 575.98px) {
+    .w-100-below-sm {
+        width: 100%;
+    }
+}
+
+/* Zones tactiles : 44 px quand le pointeur principal est un doigt, la taille
+   compacte de Bootstrap avec une souris. */
+@media (pointer: coarse) {
+    .tap-target {
+        min-height: 44px;
+    }
+}
+
+/* --- Barre de bureau : les menus sont des onglets ----------------------
+   Texte discret, soulignement primaire sur le menu de la page courante. La
+   place du soulignement est toujours réservée : activer un menu ne change
+   jamais la hauteur de la barre. */
+.desktop-menu-btn {
+    border: 0;
+    border-radius: 0;
+    color: var(--bs-secondary-color);
+    border-bottom: 2px solid transparent;
+    padding-top: .65rem;
+    padding-bottom: .65rem;
+}
+
+.desktop-menu-btn:hover {
+    color: var(--bs-body-color);
+}
+
+.desktop-menu-btn.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+    font-weight: 600;
+}
+
+/* L'onglet dont le panneau est ouvert — distinct de `.active`, le menu de
+   la page courante. Les deux peuvent être vrais ensemble ou séparément. */
+.desktop-menu-btn[aria-expanded="true"] {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+/* Panneau « mega-menu » sous la barre : il flotte au-dessus de la page sans
+   la pousser. z-index sous le voile d'un panneau latéral (1040) et sous les
+   toasts : un menu ne cache jamais un message sur ce qui vient d'arriver. */
+#desktopNav {
+    position: relative;
+}
+
+.desktop-megamenu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 1030;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+.desktop-megamenu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .25rem 2rem;
+    align-items: start;
+}
+
+.desktop-megamenu-title {
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding-bottom: .25rem;
+    margin-bottom: .25rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* --- Fil d'Ariane ----------------------------------------------------------
+   Visible à toutes les largeurs. Le séparateur reste sur la ligne du texte
+   même quand un parent est un bouton de 44 px (pointeur tactile), et perd
+   l'essentiel du rembourrage de Bootstrap, trop large pour un téléphone. */
+.breadcrumb-bar {
+    display: flex;
+}
+
+.breadcrumb-bar .breadcrumb-item + .breadcrumb-item {
+    padding-left: 0;
+}
+
+.breadcrumb-bar .breadcrumb-item + .breadcrumb-item::before {
+    padding-right: 0;
+    float: none;
+    margin-left: .25rem;
+    margin-right: .25rem;
+}
+
+/* --- Barre de sous-pages (`partials/nav_rail.html.twig`) ------------------
+   Onglets soulignés de Bootstrap ; ces règles masquent seulement la barre de
+   défilement et dessinent l'ombre qui signale qu'il reste des onglets. Les
+   dégradés couleur du fond voyagent avec le contenu et couvrent l'ombre à
+   chaque extrémité atteinte : sur une barre courte, rien ne s'estompe. */
+.nav-rail .nav {
+    scrollbar-width: none;
+    background-image:
+        linear-gradient(to right, var(--bs-body-bg), rgba(0, 0, 0, 0)),
+        linear-gradient(to left, var(--bs-body-bg), rgba(0, 0, 0, 0)),
+        linear-gradient(to right, rgba(0, 0, 0, .12), rgba(0, 0, 0, 0)),
+        linear-gradient(to left, rgba(0, 0, 0, .12), rgba(0, 0, 0, 0));
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem 100%, 1.25rem 100%, .6rem 100%, .6rem 100%;
+    background-attachment: local, local, scroll, scroll;
+}
+
+.nav-rail .nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* --- Toasts (`assets/js/modules/toast.js`) --------------------------------
+   Un toast annonce, il n'intercepte jamais un clic destiné à la page : le coin
+   bas-droit est celui des boutons d'action. Bootstrap rend le conteneur
+   transparent aux clics mais réactive `.toast` ; seul le bouton de fermeture
+   reste cliquable. */
+.toast-container .toast {
+    pointer-events: none;
+}
+
+.toast-container .toast .btn-close,
+.toast-container .toast .btn {
+    pointer-events: auto;
 }

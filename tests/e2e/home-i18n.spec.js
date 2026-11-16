@@ -33,7 +33,7 @@ test.describe('page d’accueil multilingue', () => {
     test('le sélecteur de langue conduit à la même page traduite', async ({ page }) => {
         await page.goto('/fr/');
         await openLocaleSwitcher(page);
-        await page.locator('[data-locale-switcher] a[data-locale-option="de"]').click();
+        await page.locator('[data-locale-switcher]:visible a[data-locale-option="de"]').click();
 
         await expect(page.locator('html')).toHaveAttribute('lang', 'de');
         await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen');

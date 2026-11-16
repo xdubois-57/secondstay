@@ -166,7 +166,7 @@ describe('boutons d’abonnement', () => {
         document.querySelector('[data-push-subscribe]').click();
 
         await vi.waitFor(() =>
-            expect(document.querySelector('[data-push-status]').textContent).toBe('Activées')
+            expect(document.querySelector('.toast-body')?.textContent).toBe('Activées')
         );
 
         expect(fetcher.mock.calls[0][0]).toBe('/app/api/push/key');
@@ -194,7 +194,7 @@ describe('boutons d’abonnement', () => {
         document.querySelector('[data-push-subscribe]').click();
 
         await vi.waitFor(() =>
-            expect(document.querySelector('[data-push-status]').textContent).toBe('Refusé')
+            expect(document.querySelector('.toast-body')?.textContent).toBe('Refusé')
         );
         expect(fetcher).not.toHaveBeenCalled();
         expect(target.subscribeSpy).not.toHaveBeenCalled();
@@ -213,7 +213,7 @@ describe('boutons d’abonnement', () => {
         document.querySelector('[data-push-subscribe]').click();
 
         await vi.waitFor(() =>
-            expect(document.querySelector('[data-push-status]').textContent).toBe(
+            expect(document.querySelector('.toast-body')?.textContent).toBe(
                 'Trop d’appareils abonnés pour ce compte.'
             )
         );
@@ -242,7 +242,7 @@ describe('boutons d’abonnement', () => {
         document.querySelector('[data-push-unsubscribe]').click();
 
         await vi.waitFor(() =>
-            expect(document.querySelector('[data-push-status]').textContent).toBe('Désactivées')
+            expect(document.querySelector('.toast-body')?.textContent).toBe('Désactivées')
         );
         expect(unsubscribe).toHaveBeenCalled();
         expect(JSON.parse(fetcher.mock.calls[0][1].body).endpoint).toBe('https://push.example.test/s/1');

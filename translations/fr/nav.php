@@ -15,4 +15,5 @@ return [
     'privacy' => 'Confidentialité',
     'terms' => 'Conditions générales',
     'account' => 'Mon compte',
+    'my_space' => 'Mon espace',
 ];

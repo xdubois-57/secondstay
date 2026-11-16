@@ -1,21 +1,25 @@
 {% extends 'layout/admin.html.twig' %}
 
 {% block admin_content %}
-    <h1 class="h4 mb-4">{{ t('booking.admin.title') }}</h1>
-
-    <ul class="nav nav-pills mb-3" data-testid="booking-filters">
-        <li class="nav-item">
-            <a class="nav-link{{ filter == '' ? ' active' : '' }}" href="{{ path('admin.bookings') }}"
-               data-status-filter="all">{{ t('booking.admin.all') }}</a>
-        </li>
-        {% for status in statuses %}
-            <li class="nav-item">
-                <a class="nav-link{{ filter == status.value ? ' active' : '' }}"
-                   href="{{ path('admin.bookings') }}?status={{ status.value }}"
-                   data-status-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% set _filters = [{
+        url: path('admin.bookings'),
+        label: t('booking.admin.all'),
+        selected: filter == '',
+        attributes: {'data-status-filter': 'all'},
+    }] %}
+    {% for status in statuses %}
+        {% set _filters = _filters|merge([{
+            url: path('admin.bookings') ~ '?status=' ~ status.value,
+            label: t(status.labelKey),
+            selected: filter == status.value,
+            attributes: {'data-status-filter': status.value},
+        }]) %}
+    {% endfor %}
+    {% include 'partials/nav_rail.html.twig' with {
+        rail_id: 'booking-filters',
+        items: _filters,
+        testid: 'booking-filters',
+    } only %}
 
     <div class="table-responsive">
         <table class="table align-middle" data-testid="booking-list">

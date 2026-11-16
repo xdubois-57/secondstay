@@ -1,0 +1,5 @@
+{# Avatar rond de la personne connectée : ses initiales, sur le fond primaire
+   atténué — le même cercle que ScoutMagic. Décoratif : le nom est toujours
+   écrit à côté, ou dans le libellé du lien qui l'entoure.
+   Paramètres : `name`, `size` (24, 32, 36 ou 40). #}
+<span class="ss-avatar ss-avatar-{{ size|default(40) }} rounded-circle" title="{{ name }}" aria-hidden="true">{{ name|initials }}</span>

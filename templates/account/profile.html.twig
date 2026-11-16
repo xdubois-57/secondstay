@@ -121,12 +121,10 @@
                                    placeholder="{{ t('account.passkey.label_placeholder') }}" data-passkey-label>
                             <button class="btn btn-outline-primary" type="button" data-passkey-register
                                     data-csrf="{{ csrf_token }}" data-base="{{ base_path }}"
-                                    data-busy="{{ t('common.loading') }}"
                                     data-success-label="{{ t('account.passkey.registered') }}"
                                     data-error-label="{{ t('webauthn.error.generic') }}"
                                     data-testid="passkey-add">{{ t('account.passkey.add') }}</button>
                         </div>
-                        <output class="small mt-2 mb-0 d-block" data-passkey-status></output>
                         <p class="small text-body-secondary mb-0" data-passkey-unsupported hidden>{{ t('account.passkey.unsupported') }}</p>
                     </div>
                 </div>

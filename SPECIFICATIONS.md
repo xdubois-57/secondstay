@@ -81,9 +81,11 @@ Tous les droits applicatifs. Plusieurs administrateurs possibles. Hérite du rô
 
 Menu multi-niveaux inspiré de ScoutMagic.
 
-Desktop : navigation + sous-menus + compte en haut à droite.
+Desktop : barre horizontale, menus en onglets ouvrant un panneau de colonnes titrées au clic, compte en haut à droite.
 
-Mobile : hamburger + sections + compte intégré.
+Mobile : barre avec bouton de menu ouvrant un panneau latéral (carte du compte, un accordéon par menu, langue et connexion en pied).
+
+Les pages d'administration ont un titre unique et une barre d'onglets soulignés vers les autres pages de leur groupe ; un fil d'Ariane indique où se trouve chaque page. Le résultat d'une mise à jour faite sans recharger la page s'affiche dans un toast.
 
 Le sélecteur de langue est accessible sans perturber la navigation.
 

@@ -3,19 +3,25 @@
 {% block admin_content %}
     <p class="text-body-secondary">{{ t('dispute.intro') }}</p>
 
-    <ul class="nav nav-pills mb-4" data-testid="dispute-filters">
-        <li class="nav-item">
-            <a class="nav-link{{ current_status is null ? ' active' : '' }}"
-               href="{{ path('admin.disputes') }}" data-dispute-filter="all">{{ t('dispute.filter.all') }}</a>
-        </li>
-        {% for status in statuses %}
-            <li class="nav-item">
-                <a class="nav-link{{ current_status is not null and current_status.value == status.value ? ' active' : '' }}"
-                   href="{{ path('admin.disputes') }}?status={{ status.value }}"
-                   data-dispute-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% set _filters = [{
+        url: path('admin.disputes'),
+        label: t('dispute.filter.all'),
+        selected: current_status is null,
+        attributes: {'data-dispute-filter': 'all'},
+    }] %}
+    {% for status in statuses %}
+        {% set _filters = _filters|merge([{
+            url: path('admin.disputes') ~ '?status=' ~ status.value,
+            label: t(status.labelKey),
+            selected: current_status is not null and current_status.value == status.value,
+            attributes: {'data-dispute-filter': status.value},
+        }]) %}
+    {% endfor %}
+    {% include 'partials/nav_rail.html.twig' with {
+        rail_id: 'dispute-filters',
+        items: _filters,
+        testid: 'dispute-filters',
+    } only %}
 
     <div class="table-responsive">
         <table class="table align-middle" data-testid="dispute-list">

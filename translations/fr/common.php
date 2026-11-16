@@ -21,7 +21,12 @@ return [
     'continue' => 'Continuer',
     'loading' => 'Chargement…',
     'version' => 'Version',
+    'navigation' => 'Navigation',
+    'breadcrumb' => 'Fil d’Ariane',
+    'page_navigation' => 'Navigation de la page',
     'theme' => [
+        'label' => 'Thème',
+        'current' => 'Thème : {mode} (cliquer pour changer)',
         'auto' => 'Automatique',
         'light' => 'Clair',
         'dark' => 'Sombre',
