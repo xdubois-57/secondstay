@@ -86,7 +86,7 @@
                                         {% set _current = active_page_path != '' and page.path == active_page_path %}
                                         <li class="list-group-item list-group-item-action border-0 ps-4 d-flex align-items-center ss-tap-row">
                                             <a href="{{ nav.page_url(page) }}"
-                                               class="d-flex align-items-center gap-2 text-decoration-none{{ _current ? ' fw-semibold text-primary' : ' text-body' }}"
+                                               class="d-flex align-items-center gap-2 text-decoration-none{{ _current ? ' ss-nav-current' : ' text-body' }}"
                                                {{ _current ? 'aria-current="page"' : '' }}>
                                                 <span class="d-inline-flex align-items-center justify-content-center text-body-secondary ss-icon-slot-32" aria-hidden="true">
                                                     <i class="bi {{ page.icon ?: 'bi-dot' }}"></i>
@@ -174,7 +174,7 @@
                                 {% set _current = active_page_path != '' and page.path == active_page_path %}
                                 <li>
                                     <a href="{{ nav.page_url(page) }}"
-                                       class="d-flex align-items-center gap-2 py-1 text-decoration-none{{ _current ? ' fw-semibold text-primary' : ' text-body' }}"
+                                       class="d-flex align-items-center gap-2 py-1 text-decoration-none{{ _current ? ' ss-nav-current' : ' text-body' }}"
                                        {% if menu.id == 'admin' %}data-admin-section="{{ page.id }}"{% if page.disabled %} data-disabled="true"{% endif %}{% endif %}
                                        {% if page.route == 'page.show' %}data-menu-slug="{{ page.params.slug }}"{% endif %}
                                        {% if menu.id == 'account' and page.fragment == 'my-bookings' %}data-testid="my-bookings-link"{% endif %}

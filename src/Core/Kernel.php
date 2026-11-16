@@ -124,6 +124,24 @@ final class Kernel
         return $container;
     }
 
+    /**
+     * Ressources techniques de l'application installable : icônes, manifeste
+     * et service worker. Aucune ne lit la session — et elles ne doivent pas
+     * l'ouvrir.
+     *
+     * Le navigateur les demande en parallèle de la page, avec le cookie qu'il
+     * détient à cet instant. Juste après une connexion, ce cookie peut encore
+     * être l'ancien : la connexion a régénéré l'identifiant et supprimé
+     * l'ancienne session. En mode strict, PHP refusait alors l'identifiant
+     * inconnu et en émettait un nouveau, vide, qui remplaçait dans le
+     * navigateur le cookie de la session tout juste connectée : le visiteur
+     * se retrouvait déconnecté (ARCHITECTURE.md §33.6).
+     */
+    public static function isSessionless(string $path): bool
+    {
+        return preg_match('#^/(?:icon-(?:maskable-)?(?:192|512)\.png|manifest\.webmanifest|sw\.js)$#', $path) === 1;
+    }
+
     public function handle(Request $request): Response
     {
         $container = $this->boot();
@@ -143,7 +161,9 @@ final class Kernel
             }
 
             $session = $container->get(Session::class);
-            $session->start();
+            if (!self::isSessionless($request->path)) {
+                $session->start();
+            }
 
             $resolver = $container->get(LocaleResolver::class);
             $extracted = $resolver->extractPrefix($request->path);

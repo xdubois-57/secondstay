@@ -474,7 +474,10 @@
 }
 
 .desktop-menu-btn.active {
-    color: var(--bs-primary);
+    /* Couleur de lien plutôt que primaire : elle atteint le seuil WCAG AA
+       sur fond clair comme sur fond sombre, où le bleu primaire tombe sous
+       4,5. Le soulignement, lui, reste primaire. */
+    color: var(--bs-link-color);
     border-bottom-color: var(--bs-primary);
     font-weight: 600;
 }
@@ -525,6 +528,22 @@
    l'essentiel du rembourrage de Bootstrap, trop large pour un téléphone. */
 .breadcrumb-bar {
     display: flex;
+}
+
+/* Sur le fond tertiaire du fil d'Ariane, le bleu des liens tombe sous le
+   seuil WCAG AA (4,3) : la teinte de survol de Bootstrap, plus soutenue, le
+   franchit, et suit le thème sombre. */
+.breadcrumb-bar a,
+.breadcrumb-bar .breadcrumb-parent-btn {
+    --bs-btn-color: var(--bs-link-hover-color);
+    color: var(--bs-link-hover-color);
+}
+
+/* Entrée de menu de la page courante : en gras, couleur de lien — lisible
+   dans les deux thèmes, contrairement à `text-primary` en thème sombre. */
+.ss-nav-current {
+    color: var(--bs-link-color);
+    font-weight: 600;
 }
 
 .breadcrumb-bar .breadcrumb-item + .breadcrumb-item {

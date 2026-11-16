@@ -1307,6 +1307,16 @@ service worker, icône, page publique consultée par un robot) ne reçoit donc
 aucun cookie : ces réponses restent réellement cachables et une installation
 ne crée plus une session par passage de robot.
 
+Les ressources techniques de l'application installable — icônes,
+manifeste, service worker (`Kernel::isSessionless()`) — n'ouvrent jamais la
+session, même quand la requête porte un cookie. Le navigateur les demande en
+parallèle de la page avec le cookie qu'il détient à cet instant ; juste après
+une connexion, c'est encore l'ancien, dont la session vient d'être supprimée
+par la régénération de l'identifiant. En mode strict, PHP émettait alors un
+nouvel identifiant vide qui écrasait, dans le navigateur, le cookie de la
+session tout juste connectée : le visiteur était déconnecté sans rien avoir
+fait.
+
 ### 33.7 Messages flash et service worker
 
 Un message flash appartient à la page réellement affichée. Une requête
