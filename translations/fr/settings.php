@@ -199,7 +199,9 @@ return [
     'update' => [
         'channel' => [
             'label' => 'Canal de mise à jour',
-            'help' => 'Stable installe uniquement les versions publiées.',
+            'help' => 'Stable installe uniquement les versions publiées. Préversion y ajoute les préversions '
+                . 'publiées. Développement installe chaque commit poussé sur la branche suivie, dès que GitHub le '
+                . 'signale.',
         ],
         'auto_install' => [
             'label' => 'Mise à jour automatique',
@@ -210,6 +212,15 @@ return [
         'repository' => [
             'label' => 'Dépôt des releases',
             'help' => 'Dépôt GitHub fournissant les artefacts installables.',
+        ],
+        'dev_branch' => [
+            'label' => 'Branche suivie (développement)',
+            'help' => 'Branche dont chaque poussée est installée sur le canal Développement.',
+        ],
+        'webhook_secret' => [
+            'label' => 'Secret du webhook GitHub',
+            'help' => 'Secret partagé qui signe les notifications GitHub du canal Développement. Générez-le depuis la '
+                . 'page des mises à jour.',
         ],
     ],
     'logging' => [
@@ -223,6 +234,7 @@ return [
         ],
     ],
     'error' => [
+        'branch' => 'Nom de branche invalide.',
         'token_too_short' => 'Le jeton doit compter au moins 32 caractères.',
         'required' => 'Ce réglage est obligatoire.',
         'unknown' => 'Réglage inconnu.',

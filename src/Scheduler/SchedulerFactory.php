@@ -14,6 +14,7 @@ use SecondStay\LocalContent\LocalContentService;
 use SecondStay\Notification\StayReminderService;
 use SecondStay\Privacy\RetentionService;
 use SecondStay\Settings\SettingsService;
+use SecondStay\Update\DevUpdater;
 use SecondStay\Update\UpdateService;
 use Throwable;
 
@@ -44,6 +45,7 @@ final class SchedulerFactory
         self::registerRetention($scheduler, $container);
         self::registerBackup($scheduler, $container);
         self::registerUpdateCheck($scheduler, $container);
+        self::registerDevUpdate($scheduler, $container);
 
         return $scheduler;
     }
@@ -177,7 +179,17 @@ final class SchedulerFactory
             // Une mise à jour interrompue est défaite avant toute autre chose.
             $updates->recoverInterrupted();
 
-            $result = $updates->refresh($settings->string('update.channel') === 'prerelease');
+            $channel = UpdateService::channel($settings->string('update.channel'));
+            $result = $updates->refresh($channel);
+
+            // Le canal de développement installe sur notification GitHub
+            // (`dev_update`), jamais au contrôle quotidien : celui-ci ne fait
+            // que tenir la page des mises à jour à jour.
+            if ($channel === UpdateService::CHANNEL_DEV) {
+                return TaskOutcome::ok(
+                    $result['available'] ? 'scheduler.detail.update_available' : 'scheduler.detail.up_to_date'
+                );
+            }
 
             if (!$result['available'] || $result['latest'] === null) {
                 return TaskOutcome::ok('scheduler.detail.up_to_date');
@@ -202,6 +214,28 @@ final class SchedulerFactory
             return $installed['installed']
                 ? TaskOutcome::ok('scheduler.detail.update_installed')
                 : TaskOutcome::error('scheduler.detail.update_rolled_back');
+        });
+    }
+
+    /**
+     * Canal de développement : installe le commit qu'une notification GitHub
+     * a mis en attente, dès que la CI en a publié l'archive (`DevUpdater`).
+     */
+    private static function registerDevUpdate(Scheduler $scheduler, Container $container): void
+    {
+        $scheduler->register(ScheduledTask::DevUpdate, static function () use ($container): TaskOutcome {
+            $channel = $container->get(SettingsService::class)->string('update.channel');
+            $result = $container->get(DevUpdater::class)->process($channel);
+
+            return match ($result['status']) {
+                DevUpdater::IDLE, DevUpdater::CANCELLED => TaskOutcome::ok(),
+                DevUpdater::WAITING => TaskOutcome::ok('scheduler.detail.dev_waiting'),
+                DevUpdater::ALREADY => TaskOutcome::ok('scheduler.detail.up_to_date'),
+                DevUpdater::INSTALLED => TaskOutcome::ok('scheduler.detail.update_installed'),
+                DevUpdater::ROLLED_BACK => TaskOutcome::error('scheduler.detail.update_rolled_back'),
+                DevUpdater::EXPIRED => TaskOutcome::error('scheduler.detail.dev_expired'),
+                default => TaskOutcome::error('scheduler.detail.update_refused'),
+            };
         });
     }
 }

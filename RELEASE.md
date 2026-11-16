@@ -10,6 +10,14 @@ Ne jamais installer directement un ZIP arbitraire de `main` en production.
 
 Le système de mise à jour intégré consomme les assets de GitHub Releases.
 
+**Seule exception, explicite et choisie par l'administrateur : le canal
+« Développement »** (§12.1). Il installe chaque commit de la branche suivie,
+mais jamais l'archive brute du dépôt : un artefact construit par la CI avec les
+mêmes outils et la même politique qu'une release, publié sur la préversion
+`dev-latest`, vérifié par son empreinte SHA-256. Il est réservé aux
+installations de test ; une installation de production reste sur le canal
+stable.
+
 ## 2. Version
 
 Fichier racine :
@@ -491,6 +499,31 @@ Il interroge la source même si un résultat récent est mémorisé ; sans lui, 
 page des mises à jour relit le dernier résultat (six heures au plus).
 
 Le comportement exact d’auto-update peut évoluer, mais jamais contourner les validations d’artefact.
+
+### 12.1 Canal de développement
+
+Avec `update.channel = dev`, chaque poussée sur la branche suivie
+(`update.dev_branch`, `main` par défaut) est installée automatiquement :
+
+1. `.github/workflows/dev-build.yml` construit, à chaque poussée sur `main`,
+   l'artefact `secondstay-<base>-dev.<sha7>.zip` — `composer install --no-dev`,
+   `build-release-zip.sh`, inspection `release-artifact.php` — et le publie sur
+   l'unique préversion `dev-latest` (`--prerelease --latest=false`, jamais
+   « latest ») ;
+2. GitHub notifie le site (`POST /webhook/github`, signé avec le secret généré
+   sur la page des mises à jour) ;
+3. la tâche `dev_update` installe l'archive de ce commit dès qu'elle est
+   publiée, par le même `UpdateService::install()` qu'une release.
+
+Déclaration du webhook dans GitHub (Settings › Webhooks › Add webhook) :
+l'URL et le secret affichés sur la page des mises à jour, content type
+`application/json`, événement « Just the push event ».
+
+L'étiquette `dev-latest` est une adresse que chaque installation construit :
+la renommer abandonne toutes celles qui tournent l'ancienne valeur.
+`dev-latest` n'est **pas** une release au sens du §1 : `release.sh` ne la
+touche pas, et ni `bootstrap.php` ni les canaux stable et préversion ne la
+voient.
 
 ## 13. Mac et iPhone
 

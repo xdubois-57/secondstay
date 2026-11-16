@@ -21,6 +21,62 @@
         </div>
     </div>
 
+    {% if channel == 'dev' %}
+        {# Canal de développement : chaque poussée sur la branche suivie est
+           installée, sur notification GitHub signée. Ce bloc dit tout ce qu'il
+           faut pour déclarer le webhook, et s'il a déjà été reçu. #}
+        <div class="card mb-4" data-testid="dev-channel">
+            <div class="card-header">{{ t('admin.updates.dev.title') }}</div>
+            <div class="card-body">
+                <p class="text-body-secondary">{{ t('admin.updates.dev.intro', {'branch': dev_branch}) }}</p>
+
+                {% if generated_secret %}
+                    <div class="alert alert-warning" role="alert" data-testid="webhook-secret-generated">
+                        <p class="mb-2">{{ t('admin.updates.dev.secret_once') }}</p>
+                        <code class="d-block text-break user-select-all" data-testid="webhook-secret-value">{{ generated_secret }}</code>
+                    </div>
+                {% endif %}
+
+                <dl class="row mb-3 small">
+                    <dt class="col-sm-4">{{ t('admin.updates.dev.payload_url') }}</dt>
+                    <dd class="col-sm-8"><code class="text-break user-select-all" data-testid="webhook-url">{{ webhook_url }}</code></dd>
+                    <dt class="col-sm-4">{{ t('admin.updates.dev.content_type') }}</dt>
+                    <dd class="col-sm-8"><code>application/json</code></dd>
+                    <dt class="col-sm-4">{{ t('admin.updates.dev.events') }}</dt>
+                    <dd class="col-sm-8">{{ t('admin.updates.dev.events_push') }}</dd>
+                    <dt class="col-sm-4">{{ t('admin.updates.dev.secret') }}</dt>
+                    <dd class="col-sm-8" data-testid="webhook-secret-state" data-defined="{{ webhook_secret_defined ? 'true' : 'false' }}">
+                        {{ webhook_secret_defined ? t('admin.updates.dev.secret_defined') : t('admin.settings.secret_empty') }}
+                    </dd>
+                    <dt class="col-sm-4">{{ t('admin.updates.dev.last_delivery') }}</dt>
+                    <dd class="col-sm-8" data-testid="webhook-last-delivery">
+                        {% if last_delivery %}
+                            {{ last_delivery.received_at|localdatetime('short') }} — {{ last_delivery.event }} ({{ t('admin.updates.dev.outcome.' ~ last_delivery.outcome) }})
+                        {% else %}
+                            {{ t('admin.updates.dev.never') }}
+                        {% endif %}
+                    </dd>
+                    {% if dev_pending %}
+                        <dt class="col-sm-4">{{ t('admin.updates.dev.pending') }}</dt>
+                        <dd class="col-sm-8" data-testid="dev-pending"><code>{{ dev_pending.commit }}</code> — {{ dev_pending.received_at|localdatetime('short') }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if not webhook_secret_defined %}
+                    <div class="alert alert-info small" role="status" data-testid="webhook-not-configured">{{ t('admin.updates.dev.not_configured') }}</div>
+                {% endif %}
+
+                {% if webhook_secret_defined %}<p class="small text-body-secondary mb-2">{{ t('admin.updates.dev.regenerate_help') }}</p>{% endif %}
+                <form method="post" action="{{ path('admin.updates.webhook_secret') }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit" data-testid="generate-webhook-secret">
+                        {{ webhook_secret_defined ? t('admin.updates.dev.regenerate') : t('admin.updates.dev.generate') }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
     {% if unreachable %}
         <div class="alert alert-warning" role="alert" data-testid="update-unreachable">{{ t('admin.updates.unreachable') }}</div>
     {% endif %}

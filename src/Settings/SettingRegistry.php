@@ -343,9 +343,13 @@ final class SettingRegistry
                 SettingType::Enum,
                 'stable',
                 'update',
-                enumValues: ['stable', 'prerelease'],
+                enumValues: ['stable', 'prerelease', 'dev'],
             ),
             new SettingDefinition('update.auto_install', SettingType::Bool, false, 'update'),
+            // Canal de développement : branche dont chaque poussée est
+            // installée, et secret partagé qui signe les notifications GitHub.
+            new SettingDefinition('update.dev_branch', SettingType::String, 'main', 'update', max: 100, required: true),
+            new SettingDefinition('update.webhook_secret', SettingType::Secret, null, 'update'),
             new SettingDefinition(
                 'update.repository',
                 SettingType::String,

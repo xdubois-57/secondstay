@@ -132,7 +132,7 @@ return [
                 'encryption' => ['none' => 'Keine', 'starttls' => 'STARTTLS', 'tls' => 'Implizites TLS'],
             ],
             'update' => [
-                'channel' => ['stable' => 'Stabil', 'prerelease' => 'Vorabversion'],
+                'channel' => ['stable' => 'Stabil', 'prerelease' => 'Vorabversion', 'dev' => 'Entwicklung'],
             ],
             'logging' => [
                 'level' => [
@@ -212,6 +212,39 @@ return [
         'mode' => 'Modus',
         'recovered' => 'Eine Aktualisierung wurde vor ihrem Abschluss unterbrochen. Die Website wurde in ihren '
             . 'vorherigen Zustand zurückversetzt.',
+        'dev' => [
+            'title' => 'Entwicklungskanal',
+            'intro' => 'Jeder Commit, der auf den Branch „{branch}“ gepusht wird, wird automatisch installiert, mit '
+                . 'denselben Prüfungen wie eine veröffentlichte Version: Prüfsumme, Sicherung, Rücknahme bei einem '
+                . 'Fehler. GitHub benachrichtigt die Website über einen Webhook; die Installation erfolgt beim '
+                . 'nächsten Lauf des Planers, sobald die kontinuierliche Integration das Archiv des Commits '
+                . 'veröffentlicht hat.',
+            'secret_once' => 'Kopieren Sie dieses Geheimnis in das Feld „Secret“ des GitHub-Webhooks. Es wird nie '
+                . 'wieder angezeigt.',
+            'payload_url' => 'Payload URL',
+            'content_type' => 'Content type',
+            'events' => 'Ereignisse',
+            'events_push' => 'Just the push event',
+            'secret' => 'Geheimnis',
+            'secret_defined' => 'Gespeichert',
+            'last_delivery' => 'Zuletzt empfangene Benachrichtigung',
+            'never' => 'Keine',
+            'pending' => 'Wartender Commit',
+            'not_configured' => 'Es ist kein Geheimnis gespeichert: GitHub-Benachrichtigungen werden abgelehnt und '
+                . 'nichts wird installiert. Erzeugen Sie ein Geheimnis und richten Sie dann den Webhook in den '
+                . 'Einstellungen des GitHub-Repositorys ein (Settings › Webhooks).',
+            'generate' => 'Geheimnis erzeugen',
+            'regenerate' => 'Neues Geheimnis erzeugen',
+            'regenerate_help' => 'Ein neues Geheimnis macht das alte ungültig: Der GitHub-Webhook muss dann '
+                . 'aktualisiert werden.',
+            'outcome' => [
+                'pong' => 'Test empfangen',
+                'queued' => 'Commit vorgemerkt',
+                'ignored_event' => 'Ereignis ignoriert',
+                'ignored_channel' => 'nicht auf dem Entwicklungskanal',
+                'ignored_push' => 'anderes Repository oder anderer Branch',
+            ],
+        ],
     ],
     'pricing' => [
         'title' => 'Verfügbarkeit und Preise',

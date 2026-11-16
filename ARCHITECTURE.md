@@ -1043,6 +1043,75 @@ Les scripts qui ne sont pas des modules l'atteignent par
 `window.SecondStayToast.show()`. Une page rechargée par un formulaire garde ses
 messages flash.
 
+### 30.6.3 Canal de développement
+
+Troisième valeur de `update.channel`, à côté de `stable` et `prerelease`
+(« Développement » dans Configuration › Mise à jour) : **chaque commit poussé
+sur la branche suivie** (`update.dev_branch`, `main` par défaut) est installé
+sur notification GitHub, comme le canal de développement de ScoutMagic.
+
+```text
+push sur main ──► GitHub ──► POST /webhook/github (signé HMAC-SHA256)
+                                 └► DevUpdateQueue : commit en attente (1 h max)
+     └► .github/workflows/dev-build.yml : artefact de release
+        secondstay-<base>-dev.<sha7>.zip sur la préversion dev-latest
+planificateur, tâche dev_update (chaque passage)
+     └► DevUpdater : construction de dev-latest = commit attendu ?
+        └► UpdateService::install() — même chemin qu'une release
+```
+
+**L'archive est un artefact de release, jamais l'arbre du dépôt.**
+`dev-build.yml` construit avec les mêmes outils que `release.sh` —
+`composer install --no-dev`, `build-release-zip.sh`, inspection
+`ReleaseArtifactPolicy` — et attache le ZIP à une unique préversion roulante,
+`dev-latest`. L'archive du dépôt (`zipball`) n'a pas de `vendor/` et
+embarquerait `tests/`, `scripts/`, `.github/` sur une racine web : il n'y a
+délibérément **aucun repli** sur elle. `VERSION` y vaut
+`<dernière release>-dev.<sha7>` ; `UpdateService::validateArtifact()` refuse
+une archive dont le `VERSION` diffère de celui qu'annonce son nom.
+
+**Deux sources qui ne se mélangent pas.** `GitHubReleaseProvider::latest()`
+(canaux stable et préversion) ne retient que les étiquettes `vX.Y.Z` ;
+`devBuild()` lit `releases/tags/dev-latest` et n'accepte que l'asset nommé pour
+le commit que la release désigne (`target_commitish`). `dev-latest` est publiée
+`--prerelease --latest=false` : `bootstrap.php`, qui lit `/releases/latest`, ne
+la voit jamais. L'empreinte SHA-256 publiée par GitHub est exigée comme pour
+une release.
+
+**Comparer les versions.** `version_compare()` classe `1.2.3-dev.abc` avant
+`1.2.3`, alors que ce commit est postérieur à la release. `UpdateVersion`
+porte donc la règle : sur le canal de développement, une construction est
+proposée dès qu'elle n'est pas celle qui tourne ; sur les autres canaux, une
+installation de développement ne se voit proposer qu'une release
+**strictement supérieure** à sa base.
+
+**Le webhook.** `POST /webhook/github` (`GitHubWebhookController`), public,
+hors langue, exempté de CSRF par le préfixe `/webhook/`. La signature
+`X-Hub-Signature-256` est vérifiée en temps constant avec
+`update.webhook_secret` avant toute lecture du corps ; sans secret, tout est
+refusé (403). Un `push` n'est retenu que sur le canal de développement, pour le
+dépôt `update.repository` et la branche suivie ; tout le reste répond 200
+(GitHub réessaie sur toute autre réponse, et il n'y a rien à réessayer). Le
+secret (32 octets aléatoires) est généré depuis la page des mises à jour,
+montré une seule fois dans la réponse qui le crée (`Cache-Control: no-store`),
+et stocké chiffré comme tout réglage `Secret`.
+
+**Pourquoi une file et une tâche.** La notification arrive à l'instant de la
+poussée ; l'archive n'existe qu'une fois la CI passée, quelques minutes plus
+tard. Le commit est noté dans `storage/update/dev-pending.json` — une poussée
+plus récente le remplace — et la tâche `dev_update` (intervalle d'une minute,
+donc à chaque passage du cron) l'installe dès que `dev-latest` porte son
+archive. Sans commit en attente, elle ne fait aucun appel réseau. L'attente
+dure une heure au plus (`DevUpdateQueue::WAIT_SECONDS`), ce qui couvre la CI et
+un cron toutes les dix minutes ; au-delà, elle est abandonnée et consignée. Une
+installation déjà en cours (`UpdateInProgressException`) fait patienter le
+commit suivant au lieu de le perdre. Quitter le canal de développement annule
+l'attente.
+
+Sur ce canal, le contrôle quotidien `update_check` rafraîchit l'état affiché
+mais n'installe rien : seule une notification déclenche une installation. Le
+bouton « Installer la mise à jour » installe la dernière construction publiée.
+
 ### 30.7 URLs
 
 Les segments de chemin sont neutres et stables (`/admin/settings`,

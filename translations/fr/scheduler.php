@@ -42,6 +42,7 @@ return [
         'retention' => 'Purge des données arrivées à échéance',
         'backup' => 'Sauvegarde automatique',
         'update_check' => 'Contrôle des mises à jour',
+        'dev_update' => 'Installation des versions de développement',
     ],
     'detail' => [
         'nothing' => 'Rien à faire.',
@@ -65,5 +66,7 @@ return [
         'update_installed' => 'La mise à jour a été installée automatiquement.',
         'update_rolled_back' => 'L’installation automatique a échoué et a été annulée.',
         'update_refused' => 'L’installation automatique a été refusée avant toute modification.',
+        'dev_waiting' => 'Un commit attend que son archive soit publiée.',
+        'dev_expired' => 'L’archive du commit notifié n’a jamais été publiée ; l’attente a été abandonnée.',
     ],
 ];

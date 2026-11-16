@@ -102,21 +102,60 @@ final class UpdateService
         return $content === false ? '0.0.0' : trim($content);
     }
 
+    /** Canaux de mise à jour (`update.channel`). */
+    public const CHANNEL_STABLE = 'stable';
+    public const CHANNEL_PRERELEASE = 'prerelease';
+    public const CHANNEL_DEV = 'dev';
+
     /**
-     * Vérification en direct auprès de la source des releases.
+     * Le canal d'un appel. Un booléen reste accepté — `true` pour les
+     * préversions — : c'est la forme qu'avait l'API avant le canal de
+     * développement.
+     */
+    public static function channel(bool|string $channel): string
+    {
+        if (is_bool($channel)) {
+            return $channel ? self::CHANNEL_PRERELEASE : self::CHANNEL_STABLE;
+        }
+
+        return in_array($channel, [self::CHANNEL_PRERELEASE, self::CHANNEL_DEV], true) ? $channel : self::CHANNEL_STABLE;
+    }
+
+    /**
+     * Vérification en direct auprès de la source du canal.
+     *
+     * Canaux stable et préversion : la plus haute release éligible, offerte
+     * si elle dépasse ce qui est installé (`UpdateVersion::isNewerRelease()`).
+     * Canal de développement : la dernière construction publiée par la CI,
+     * offerte dès qu'elle n'est pas celle qui tourne — un commit n'est ni
+     * « plus haut » ni « plus bas » qu'un autre, il est ou n'est pas installé.
      *
      * @return array{available: bool, current: string, latest: ?ReleaseInfo}
      */
-    public function check(bool $allowPrerelease = false): array
+    public function check(bool|string $channel = false): array
     {
+        $channel = self::channel($channel);
         $current = $this->currentVersion();
-        $latest = $this->provider->latest($allowPrerelease);
+        $latest = $channel === self::CHANNEL_DEV
+            ? $this->provider->devBuild()
+            : $this->provider->latest($channel === self::CHANNEL_PRERELEASE);
 
         return [
-            'available' => $latest !== null && version_compare($latest->version, $current, '>'),
+            'available' => self::isAvailable($latest, $current),
             'current' => $current,
             'latest' => $latest,
         ];
+    }
+
+    private static function isAvailable(?ReleaseInfo $latest, string $current): bool
+    {
+        if ($latest === null) {
+            return false;
+        }
+
+        return $latest->isDevBuild()
+            ? $latest->version !== $current
+            : UpdateVersion::isNewerRelease($latest->version, $current);
     }
 
     /**
@@ -124,14 +163,15 @@ final class UpdateService
      *
      * @return array{available: bool, current: string, latest: ?ReleaseInfo, checked_at: int}
      */
-    public function refresh(bool $allowPrerelease = false): array
+    public function refresh(bool|string $channel = false): array
     {
-        $state = $this->check($allowPrerelease);
+        $channel = self::channel($channel);
+        $state = $this->check($channel);
         $checkedAt = $this->now();
 
         $this->writeJson($this->updateFile('last-check.json'), [
             'checked_at' => $checkedAt,
-            'channel' => $allowPrerelease ? 'prerelease' : 'stable',
+            'channel' => $channel,
             'current' => $state['current'],
             'latest' => $state['latest']?->toStorage(),
         ]);
@@ -150,7 +190,7 @@ final class UpdateService
      *
      * @return array{available: bool, current: string, latest: ?ReleaseInfo, checked_at: int}|null
      */
-    public function cachedState(bool $allowPrerelease = false): ?array
+    public function cachedState(bool|string $channel = false): ?array
     {
         $data = $this->readJson($this->updateFile('last-check.json'));
         if ($data === null) {
@@ -159,7 +199,7 @@ final class UpdateService
 
         $checkedAt = is_int($data['checked_at'] ?? null) ? $data['checked_at'] : 0;
         $current = $this->currentVersion();
-        if (($data['channel'] ?? null) !== ($allowPrerelease ? 'prerelease' : 'stable')
+        if (($data['channel'] ?? null) !== self::channel($channel)
             || ($data['current'] ?? null) !== $current
             || $this->now() - $checkedAt > self::CHECK_TTL_SECONDS
         ) {
@@ -169,7 +209,7 @@ final class UpdateService
         $latest = is_array($data['latest'] ?? null) ? ReleaseInfo::fromStorage($data['latest']) : null;
 
         return [
-            'available' => $latest !== null && version_compare($latest->version, $current, '>'),
+            'available' => self::isAvailable($latest, $current),
             'current' => $current,
             'latest' => $latest,
             'checked_at' => $checkedAt,
@@ -181,9 +221,9 @@ final class UpdateService
      *
      * @return array{available: bool, current: string, latest: ?ReleaseInfo, checked_at: int}
      */
-    public function state(bool $allowPrerelease = false): array
+    public function state(bool|string $channel = false): array
     {
-        return $this->cachedState($allowPrerelease) ?? $this->refresh($allowPrerelease);
+        return $this->cachedState($channel) ?? $this->refresh($channel);
     }
 
     /**
@@ -191,7 +231,7 @@ final class UpdateService
      *
      * @return list<string> problèmes bloquants
      */
-    public function validateArtifact(string $zipPath): array
+    public function validateArtifact(string $zipPath, ?string $expectedVersion = null): array
     {
         if (!is_file($zipPath)) {
             return ['update.error.asset_missing'];
@@ -205,8 +245,15 @@ final class UpdateService
         $version = $zip->getFromName('VERSION');
         $zip->close();
 
-        if ($version === false || preg_match('/^\d+\.\d+\.\d+$/', trim($version)) !== 1) {
+        if ($version === false || !UpdateVersion::isValid(trim($version))) {
             return ['update.error.asset_no_version'];
+        }
+
+        // L'archive doit être ce que la source annonçait : une construction
+        // de développement nommée pour un commit et portant un autre `VERSION`
+        // installerait une chose en en affichant une autre.
+        if ($expectedVersion !== null && trim($version) !== $expectedVersion) {
+            return ['update.error.asset_version_mismatch'];
         }
 
         $problems = (new ReleaseArtifactInspector())->inspect($zipPath);
@@ -260,7 +307,7 @@ final class UpdateService
         ignore_user_abort(true);
 
         if (!$this->acquireLock()) {
-            throw new RuntimeException('Une mise à jour est déjà en cours.');
+            throw new UpdateInProgressException('Une mise à jour est déjà en cours.');
         }
 
         try {
@@ -344,7 +391,7 @@ final class UpdateService
 
             $problems = array_merge(
                 $this->verifyDigest($release, $assetPath),
-                $this->validateArtifact($assetPath)
+                $this->validateArtifact($assetPath, $release->version)
             );
             if ($problems !== []) {
                 throw new RuntimeException('Artefact invalide : ' . implode(', ', $problems));

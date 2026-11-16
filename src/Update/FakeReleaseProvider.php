@@ -25,6 +25,24 @@ final class FakeReleaseProvider implements ReleaseProvider
 
     public bool $failDownload = false;
 
+    private ?ReleaseInfo $devBuild = null;
+
+    /**
+     * Publie (ou retire, avec null) la construction de développement.
+     */
+    public function setDevBuild(?ReleaseInfo $build, ?string $localAssetPath = null): void
+    {
+        $this->devBuild = $build;
+        if ($build !== null && $localAssetPath !== null) {
+            $this->assets[$build->version] = $localAssetPath;
+        }
+    }
+
+    public function devBuild(): ?ReleaseInfo
+    {
+        return $this->devBuild;
+    }
+
     public function addRelease(ReleaseInfo $release, string $localAssetPath): void
     {
         $this->releases[] = $release;

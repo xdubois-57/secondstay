@@ -11,6 +11,8 @@ use SecondStay\Logging\Logger;
 use SecondStay\Maintenance\MaintenanceMode;
 use SecondStay\Release\ReleaseArtifactBuilder;
 use SecondStay\Tests\Support\DatabaseTestCase;
+use SecondStay\Update\DevUpdateQueue;
+use SecondStay\Update\DevUpdater;
 use SecondStay\Update\FakeReleaseProvider;
 use SecondStay\Update\ReleaseInfo;
 use SecondStay\Update\UpdateService;
@@ -519,6 +521,205 @@ final class UpdateServiceTest extends DatabaseTestCase
         self::assertSame('1.1.0', $first['latest']?->version);
         self::assertSame('1.1.0', $second['latest']?->version);
         self::assertSame('1.2.0', $this->updates->refresh()['latest']?->version);
+    }
+
+    // --- Canal de développement -------------------------------------------
+
+    private const COMMIT = '0123456789abcdef0123456789abcdef01234567';
+
+    /**
+     * Publie la construction de développement d'un commit, comme le fait
+     * `.github/workflows/dev-build.yml` : même artefact qu'une release, `VERSION`
+     * en `<base>-dev.<sha7>`, empreinte annoncée.
+     *
+     * @param array<string, string> $extraEntries
+     */
+    private function publishDevBuild(
+        string $commit = self::COMMIT,
+        string $base = '1.0.0',
+        array $extraEntries = [],
+        ?string $zipVersion = null,
+    ): ReleaseInfo {
+        $version = $base . '-dev.' . substr($commit, 0, 7);
+        $artifact = $this->buildArtifact($zipVersion ?? $version, $extraEntries);
+        $build = new ReleaseInfo(
+            $version,
+            'dev-latest',
+            'secondstay-' . $version . '.zip',
+            'https://example.test/secondstay-' . $version . '.zip',
+            1024,
+            gmdate('c'),
+            '',
+            true,
+            (string) hash_file('sha256', $artifact),
+            $commit,
+        );
+        $this->provider->setDevBuild($build, $artifact);
+
+        return $build;
+    }
+
+    private function devUpdater(DevUpdateQueue $queue): DevUpdater
+    {
+        return new DevUpdater($this->updates, $queue, new Logger($this->sandboxPaths->storage('logs')));
+    }
+
+    public function testTheDevelopmentChannelOffersTheBuildThatIsNotInstalled(): void
+    {
+        self::assertFalse($this->updates->check(UpdateService::CHANNEL_DEV)['available']);
+
+        $this->publishDevBuild();
+        $state = $this->updates->check(UpdateService::CHANNEL_DEV);
+        self::assertTrue($state['available']);
+        self::assertSame('1.0.0-dev.0123456', $state['latest']?->version);
+
+        // Une release n'est jamais proposée par le canal de développement, ni
+        // une construction de développement par le canal stable.
+        $this->offer('1.1.0');
+        self::assertSame('1.0.0-dev.0123456', $this->updates->check(UpdateService::CHANNEL_DEV)['latest']?->version);
+        self::assertSame('1.1.0', $this->updates->check(UpdateService::CHANNEL_STABLE)['latest']?->version);
+    }
+
+    public function testADevelopmentBuildInstallsLikeARelease(): void
+    {
+        $build = $this->publishDevBuild();
+
+        $result = $this->updates->install($build);
+
+        self::assertTrue($result['installed']);
+        self::assertSame("1.0.0-dev.0123456\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+        self::assertNotEmpty(glob($this->sandboxPaths->storage('backups') . '/*'));
+        // Installée, elle n'est plus proposée.
+        self::assertFalse($this->updates->check(UpdateService::CHANNEL_DEV)['available']);
+    }
+
+    public function testADevelopmentBuildIsVerifiedLikeARelease(): void
+    {
+        // Une archive qui embarquerait les tests est refusée, comme pour une
+        // release : la construction de développement ne contourne rien.
+        $build = $this->publishDevBuild(extraEntries: ['tests/php/Unit/Fake.php' => '<?php']);
+
+        try {
+            $this->updates->install($build);
+            self::fail('Artefact non conforme installé.');
+        } catch (\RuntimeException $exception) {
+            self::assertStringContainsString('update.error.artifact', $exception->getMessage());
+        }
+        self::assertSame("1.0.0\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+    }
+
+    public function testAnArchiveWhoseVersionDiffersFromItsNameIsRefused(): void
+    {
+        $build = $this->publishDevBuild(zipVersion: '9.9.9');
+
+        $this->expectExceptionMessage('update.error.asset_version_mismatch');
+        $this->updates->install($build);
+    }
+
+    public function testADevelopmentInstallationIsOnlyOfferedAHigherRelease(): void
+    {
+        file_put_contents($this->sandboxRoot . '/VERSION', "1.1.0-dev.abcdef1\n");
+
+        // 1.1.0 est la base de ce qui tourne : elle est plus ancienne.
+        $this->offer('1.1.0');
+        self::assertFalse($this->updates->check(UpdateService::CHANNEL_STABLE)['available']);
+
+        $this->offer('1.1.1');
+        self::assertTrue($this->updates->check(UpdateService::CHANNEL_STABLE)['available']);
+    }
+
+    public function testTheNotifiedCommitIsInstalledOnceItsBuildIsPublished(): void
+    {
+        $queue = new DevUpdateQueue($this->sandboxPaths);
+        $queue->enqueue(self::COMMIT, 'main');
+        $updater = $this->devUpdater($queue);
+
+        // La notification arrive avant la construction : rien n'est installé,
+        // rien n'est abandonné.
+        self::assertSame(DevUpdater::WAITING, $updater->process('dev')['status']);
+        self::assertNotNull($queue->pending());
+        self::assertSame("1.0.0\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+
+        // La construction d'un autre commit ne compte pas.
+        $this->publishDevBuild('ffffffffffffffffffffffffffffffffffffffff');
+        self::assertSame(DevUpdater::WAITING, $updater->process('dev')['status']);
+
+        $this->publishDevBuild();
+        $result = $updater->process('dev');
+
+        self::assertSame(DevUpdater::INSTALLED, $result['status']);
+        self::assertSame('1.0.0-dev.0123456', $result['version']);
+        self::assertSame("1.0.0-dev.0123456\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+        self::assertNull($queue->pending());
+        self::assertSame(DevUpdater::IDLE, $updater->process('dev')['status']);
+    }
+
+    public function testAWaitThatOutlivesItsDeadlineIsAbandoned(): void
+    {
+        $now = 1_800_000_000;
+        $queue = new DevUpdateQueue($this->sandboxPaths, static function () use (&$now): int {
+            return $now;
+        });
+        $queue->enqueue(self::COMMIT, 'main');
+        $updater = $this->devUpdater($queue);
+
+        self::assertSame(DevUpdater::WAITING, $updater->process('dev')['status']);
+
+        $now += DevUpdateQueue::WAIT_SECONDS + 1;
+        self::assertSame(DevUpdater::EXPIRED, $updater->process('dev')['status']);
+        self::assertNull($queue->pending());
+    }
+
+    public function testLeavingTheDevelopmentChannelCancelsTheWait(): void
+    {
+        $queue = new DevUpdateQueue($this->sandboxPaths);
+        $queue->enqueue(self::COMMIT, 'main');
+        $this->publishDevBuild();
+
+        self::assertSame(DevUpdater::CANCELLED, $this->devUpdater($queue)->process('stable')['status']);
+        self::assertNull($queue->pending());
+        self::assertSame("1.0.0\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+    }
+
+    public function testAnInstallationInProgressMakesTheCommitWaitItsTurn(): void
+    {
+        $queue = new DevUpdateQueue($this->sandboxPaths);
+        $queue->enqueue(self::COMMIT, 'main');
+        $this->publishDevBuild();
+        if (!is_dir($this->sandboxPaths->storage('update'))) {
+            mkdir($this->sandboxPaths->storage('update'), 0o750, true);
+        }
+        $handle = fopen($this->sandboxPaths->storage('update/update.lock'), 'c');
+        self::assertNotFalse($handle);
+        self::assertTrue(flock($handle, LOCK_EX));
+
+        try {
+            self::assertSame(DevUpdater::WAITING, $this->devUpdater($queue)->process('dev')['status']);
+            self::assertNotNull($queue->pending());
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
+    public function testARefusedBuildIsDroppedAndTheSiteKeepsRunning(): void
+    {
+        $queue = new DevUpdateQueue($this->sandboxPaths);
+        $queue->enqueue(self::COMMIT, 'main');
+        $this->publishDevBuild(zipVersion: '9.9.9');
+
+        self::assertSame(DevUpdater::REFUSED, $this->devUpdater($queue)->process('dev')['status']);
+        self::assertNull($queue->pending());
+        self::assertSame("1.0.0\n", file_get_contents($this->sandboxRoot . '/VERSION'));
+    }
+
+    public function testANewerPushReplacesTheCommitWaitingToBeInstalled(): void
+    {
+        $queue = new DevUpdateQueue($this->sandboxPaths);
+        $queue->enqueue(self::COMMIT, 'main');
+        $queue->enqueue('ffffffffffffffffffffffffffffffffffffffff', 'main');
+
+        self::assertSame('ffffffffffffffffffffffffffffffffffffffff', $queue->pending()['commit'] ?? null);
     }
 
     /**

@@ -427,6 +427,13 @@ Avec le réglage **Mise à jour automatique**, le contrôle quotidien installe l
 nouvelle version par exactement le même chemin. Un échec apparaît dans
 « À faire ».
 
+Sur le canal **Développement** (installations de test), chaque commit poussé
+sur la branche suivie est installé automatiquement. La page des mises à jour
+donne l'URL du webhook et génère son secret, à déclarer dans GitHub
+(Settings › Webhooks : content type `application/json`, événement « Just the
+push event »). L'installation a lieu au passage suivant du planificateur, dès
+que l'intégration continue a publié l'archive du commit (RELEASE.md §12.1).
+
 ## Espace client
 
 ```text

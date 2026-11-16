@@ -198,7 +198,9 @@ return [
     'update' => [
         'channel' => [
             'label' => 'Updatekanaal',
-            'help' => 'Stabiel installeert alleen gepubliceerde versies.',
+            'help' => 'Stabiel installeert alleen gepubliceerde versies. Pre-release voegt gepubliceerde pre-releases '
+                . 'toe. Ontwikkeling installeert elke commit die naar de gevolgde branch wordt gepusht, zodra GitHub '
+                . 'die meldt.',
         ],
         'auto_install' => [
             'label' => 'Automatische update',
@@ -208,6 +210,15 @@ return [
         'repository' => [
             'label' => 'Release-repository',
             'help' => 'GitHub-repository met installeerbare artefacten.',
+        ],
+        'dev_branch' => [
+            'label' => 'Gevolgde branch (ontwikkeling)',
+            'help' => 'Branch waarvan elke push wordt geïnstalleerd op het kanaal Ontwikkeling.',
+        ],
+        'webhook_secret' => [
+            'label' => 'Geheim van de GitHub-webhook',
+            'help' => 'Gedeeld geheim dat de GitHub-meldingen van het kanaal Ontwikkeling ondertekent. Genereer het '
+                . 'vanaf de updatepagina.',
         ],
     ],
     'logging' => [
@@ -221,6 +232,7 @@ return [
         ],
     ],
     'error' => [
+        'branch' => 'Ongeldige branchnaam.',
         'token_too_short' => 'Het token moet minstens 32 tekens lang zijn.',
         'required' => 'Deze instelling is verplicht.',
         'unknown' => 'Onbekende instelling.',

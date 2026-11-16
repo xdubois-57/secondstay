@@ -714,8 +714,19 @@ Toute vulnérabilité corrigée doit recevoir un test de régression.
 ### 30.3 CSRF et point d'entrée webhook
 
 - `/webhook/payment` est exempté de CSRF : il est authentifié par la relecture
-  de l'état chez le fournisseur, pas par une session de navigateur. C'est la
-  seule exemption, et elle est portée par le préfixe `/webhook/`.
+  de l'état chez le fournisseur, pas par une session de navigateur.
+- `/webhook/github` (canal de développement des mises à jour) l'est aussi : il
+  est authentifié par la signature HMAC-SHA256 du corps (`X-Hub-Signature-256`)
+  avec un secret partagé de 32 octets, comparée en temps constant avant toute
+  lecture du corps. Sans secret enregistré, il refuse tout (403) ; une
+  signature fausse est consignée. Le secret est stocké chiffré, montré une
+  seule fois à sa génération, jamais relisible ensuite. Une notification
+  valide ne fait que **désigner un commit** du dépôt et de la branche que
+  nomment les réglages : ce qui est installé est l'archive que la CI a publiée
+  pour ce commit, vérifiée par son empreinte SHA-256 et par la politique
+  d'artefact, comme une release (ARCHITECTURE.md §30.6.3).
+- Ces exemptions sont portées par le préfixe `/webhook/`, et seulement par
+  lui.
 - Toutes les actions de paiement du navigateur — ouvrir un paiement,
   enregistrer un encaissement, rembourser, faire avancer une caution — passent
   par POST avec jeton CSRF et contrôle de rôle serveur.

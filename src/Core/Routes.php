@@ -51,6 +51,7 @@ use SecondStay\Controller\SchedulerController;
 use SecondStay\Controller\QuoteController;
 use SecondStay\Controller\SeoController;
 use SecondStay\Controller\WebhookController;
+use SecondStay\Controller\GitHubWebhookController;
 
 /**
  * Table de routage de l'application.
@@ -334,6 +335,10 @@ final class Routes
         // de l'état chez le fournisseur, donc exemptée de CSRF (Kernel).
         $router->post('/webhook/payment', [WebhookController::class, 'payment'], 'payment.webhook', false);
 
+        // Notification GitHub du canal de développement : hors langue,
+        // authentifiée par signature HMAC, donc exemptée de CSRF (Kernel).
+        $router->post('/webhook/github', [GitHubWebhookController::class, 'receive'], 'github.webhook', false);
+
         // Déclenchement HTTP du planificateur, pour les hébergements dont le
         // cron n'appelle que des URLs. Fermé tant qu'aucun jeton n'est
         // enregistré : sans jeton, la route répond 404 (SchedulerController).
@@ -547,6 +552,12 @@ final class Routes
             '/admin/updates/install',
             [AdminUpdateController::class, 'install'],
             'admin.updates.install',
+            access: Access::Administrator
+        );
+        $router->post(
+            '/admin/updates/webhook-secret',
+            [AdminUpdateController::class, 'webhookSecret'],
+            'admin.updates.webhook_secret',
             access: Access::Administrator
         );
 

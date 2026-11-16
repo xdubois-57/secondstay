@@ -42,6 +42,7 @@ return [
         'retention' => 'Gegevens buiten de bewaartermijn wissen',
         'backup' => 'Automatische back-up',
         'update_check' => 'Controle op updates',
+        'dev_update' => 'Installatie van ontwikkelversies',
     ],
     'detail' => [
         'nothing' => 'Niets te doen.',
@@ -65,5 +66,7 @@ return [
         'update_installed' => 'De update is automatisch geïnstalleerd.',
         'update_rolled_back' => 'De automatische installatie is mislukt en teruggedraaid.',
         'update_refused' => 'De automatische installatie werd geweigerd voordat er iets veranderde.',
+        'dev_waiting' => 'Een commit wacht tot zijn archief is gepubliceerd.',
+        'dev_expired' => 'Het archief van de gemelde commit werd nooit gepubliceerd; het wachten is gestopt.',
     ],
 ];

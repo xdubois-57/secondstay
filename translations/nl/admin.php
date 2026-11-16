@@ -132,7 +132,7 @@ return [
                 'encryption' => ['none' => 'Geen', 'starttls' => 'STARTTLS', 'tls' => 'Impliciete TLS'],
             ],
             'update' => [
-                'channel' => ['stable' => 'Stabiel', 'prerelease' => 'Pre-release'],
+                'channel' => ['stable' => 'Stabiel', 'prerelease' => 'Pre-release', 'dev' => 'Ontwikkeling'],
             ],
             'logging' => [
                 'level' => [
@@ -212,6 +212,38 @@ return [
         'mode' => 'Modus',
         'recovered' => 'Een update werd onderbroken voordat ze klaar was. De site is teruggezet naar de vorige '
             . 'toestand.',
+        'dev' => [
+            'title' => 'Ontwikkelkanaal',
+            'intro' => 'Elke commit die naar de branch „{branch}” wordt gepusht, wordt automatisch geïnstalleerd, met '
+                . 'dezelfde controles als een gepubliceerde versie: vingerafdruk, back-up, terugdraaien bij een fout. '
+                . 'GitHub verwittigt de site via een webhook; de installatie gebeurt bij de volgende doorgang van de '
+                . 'planner, zodra de continue integratie het archief van de commit heeft gepubliceerd.',
+            'secret_once' => 'Kopieer dit geheim naar het veld „Secret” van de GitHub-webhook. Het wordt nooit meer '
+                . 'getoond.',
+            'payload_url' => 'Payload URL',
+            'content_type' => 'Content type',
+            'events' => 'Gebeurtenissen',
+            'events_push' => 'Just the push event',
+            'secret' => 'Geheim',
+            'secret_defined' => 'Opgeslagen',
+            'last_delivery' => 'Laatst ontvangen melding',
+            'never' => 'Geen',
+            'pending' => 'Wachtende commit',
+            'not_configured' => 'Er is geen geheim opgeslagen: GitHub-meldingen worden geweigerd en er wordt niets '
+                . 'geïnstalleerd. Genereer een geheim en declareer daarna de webhook in de instellingen van de '
+                . 'GitHub-repository (Settings › Webhooks).',
+            'generate' => 'Een geheim genereren',
+            'regenerate' => 'Een nieuw geheim genereren',
+            'regenerate_help' => 'Een nieuw geheim maakt het oude ongeldig: de GitHub-webhook moet dan worden '
+                . 'bijgewerkt.',
+            'outcome' => [
+                'pong' => 'test ontvangen',
+                'queued' => 'commit in wachtrij',
+                'ignored_event' => 'gebeurtenis genegeerd',
+                'ignored_channel' => 'niet op het ontwikkelkanaal',
+                'ignored_push' => 'andere repository of branch',
+            ],
+        ],
     ],
     'pricing' => [
         'title' => 'Beschikbaarheid en tarieven',

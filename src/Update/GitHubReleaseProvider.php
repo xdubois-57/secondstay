@@ -15,6 +15,17 @@ final class GitHubReleaseProvider implements ReleaseProvider
 {
     public const ASSET_PATTERN = '/^secondstay-\d+\.\d+\.\d+\.zip$/';
 
+    /**
+     * Étiquette de la préversion roulante publiée par
+     * `.github/workflows/dev-build.yml`. Elle est l'adresse que construit
+     * chaque installation : la renommer abandonne toutes celles qui tournent
+     * encore l'ancienne valeur.
+     */
+    public const DEV_TAG = 'dev-latest';
+
+    /** Asset d'une construction de développement : `secondstay-<base>-dev.<sha7>.zip`. */
+    public const DEV_ASSET_PATTERN = '/^secondstay-(\d+\.\d+\.\d+-dev\.[0-9a-f]{7})\.zip$/';
+
     public function __construct(
         private readonly HttpFetcher $http,
         private readonly string $repository = 'xdubois-57/secondstay',
@@ -53,6 +64,62 @@ final class GitHubReleaseProvider implements ReleaseProvider
         }
 
         return $best;
+    }
+
+    /**
+     * La construction de développement est lue par son étiquette, jamais dans
+     * la liste des releases : celle-ci est la source des canaux stable et
+     * préversion, et `candidate()` y écarte toute étiquette qui n'est pas
+     * `vX.Y.Z`. Les deux sources ne peuvent donc pas se mélanger.
+     *
+     * L'empreinte est exigée comme pour une release : sans elle, rien ne
+     * relie l'archive téléchargée à ce que la CI a publié.
+     */
+    public function devBuild(): ?ReleaseInfo
+    {
+        $entry = $this->http->getJson(
+            'https://api.github.com/repos/' . $this->repository . '/releases/tags/' . self::DEV_TAG,
+            ['Accept' => 'application/vnd.github+json', 'User-Agent' => 'SecondStay-Updater']
+        );
+
+        if (!is_array($entry) || ($entry['draft'] ?? false) === true) {
+            return null;
+        }
+
+        $commit = is_string($entry['target_commitish'] ?? null) ? strtolower($entry['target_commitish']) : '';
+        if (preg_match('/^[0-9a-f]{40}\z/', $commit) !== 1) {
+            return null;
+        }
+
+        $assets = is_array($entry['assets'] ?? null) ? $entry['assets'] : [];
+        foreach ($assets as $asset) {
+            if (!is_array($asset)) {
+                continue;
+            }
+            $name = is_string($asset['name'] ?? null) ? $asset['name'] : '';
+            // L'asset doit nommer le commit que la release désigne : une
+            // archive d'un autre commit laissée en place n'est pas celle-ci.
+            if (preg_match(self::DEV_ASSET_PATTERN, $name, $matches) !== 1
+                || !str_ends_with($matches[1], '-dev.' . substr($commit, 0, 7))
+            ) {
+                continue;
+            }
+
+            return new ReleaseInfo(
+                $matches[1],
+                self::DEV_TAG,
+                $name,
+                is_string($asset['browser_download_url'] ?? null) ? $asset['browser_download_url'] : '',
+                is_int($asset['size'] ?? null) ? $asset['size'] : 0,
+                is_string($entry['published_at'] ?? null) ? $entry['published_at'] : '',
+                is_string($entry['body'] ?? null) ? $entry['body'] : '',
+                true,
+                self::sha256FromDigest(is_string($asset['digest'] ?? null) ? $asset['digest'] : ''),
+                $commit,
+            );
+        }
+
+        return null;
     }
 
     /**

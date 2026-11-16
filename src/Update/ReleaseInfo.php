@@ -11,6 +11,8 @@ final class ReleaseInfo
      *                       minuscules) annoncée par la source, ou chaîne vide
      *                       si la source n'en publie pas — auquel cas la
      *                       release n'est pas installable
+     * @param string $commit commit complet d'une construction de
+     *                       développement, vide pour une release
      */
     public function __construct(
         public readonly string $version,
@@ -22,6 +24,7 @@ final class ReleaseInfo
         public readonly string $notes = '',
         public readonly bool $prerelease = false,
         public readonly string $digest = '',
+        public readonly string $commit = '',
     ) {
     }
 
@@ -39,14 +42,20 @@ final class ReleaseInfo
             'asset_size' => $this->assetSize,
             'published_at' => $this->publishedAt,
             'prerelease' => $this->prerelease,
+            'commit' => $this->commit,
         ];
+    }
+
+    public function isDevBuild(): bool
+    {
+        return UpdateVersion::isDev($this->version);
     }
 
     /**
      * Forme complète, pour le cache de vérification.
      *
      * @return array{version: string, tag: string, asset_name: string, asset_url: string, asset_size: int,
-     *     published_at: string, notes: string, prerelease: bool, digest: string}
+     *     published_at: string, notes: string, prerelease: bool, digest: string, commit: string}
      */
     public function toStorage(): array
     {
@@ -60,6 +69,7 @@ final class ReleaseInfo
             'notes' => $this->notes,
             'prerelease' => $this->prerelease,
             'digest' => $this->digest,
+            'commit' => $this->commit,
         ];
     }
 
@@ -69,7 +79,7 @@ final class ReleaseInfo
     public static function fromStorage(array $data): ?self
     {
         $version = $data['version'] ?? null;
-        if (!is_string($version) || preg_match('/^\d+\.\d+\.\d+$/', $version) !== 1) {
+        if (!is_string($version) || !UpdateVersion::isValid($version)) {
             return null;
         }
 
@@ -85,6 +95,7 @@ final class ReleaseInfo
             $string('notes'),
             ($data['prerelease'] ?? false) === true,
             $string('digest'),
+            $string('commit'),
         );
     }
 }

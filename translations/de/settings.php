@@ -198,7 +198,9 @@ return [
     'update' => [
         'channel' => [
             'label' => 'Aktualisierungskanal',
-            'help' => 'Stabil installiert nur veröffentlichte Versionen.',
+            'help' => 'Stabil installiert nur veröffentlichte Versionen. Vorabversion ergänzt veröffentlichte '
+                . 'Vorabversionen. Entwicklung installiert jeden Commit, der auf den verfolgten Branch gepusht wird, '
+                . 'sobald GitHub ihn meldet.',
         ],
         'auto_install' => [
             'label' => 'Automatische Aktualisierung',
@@ -208,6 +210,15 @@ return [
         'repository' => [
             'label' => 'Release-Repository',
             'help' => 'GitHub-Repository mit installierbaren Artefakten.',
+        ],
+        'dev_branch' => [
+            'label' => 'Verfolgter Branch (Entwicklung)',
+            'help' => 'Branch, dessen jeder Push auf dem Kanal Entwicklung installiert wird.',
+        ],
+        'webhook_secret' => [
+            'label' => 'Geheimnis des GitHub-Webhooks',
+            'help' => 'Gemeinsames Geheimnis, das die GitHub-Benachrichtigungen des Kanals Entwicklung signiert. '
+                . 'Erzeugen Sie es auf der Aktualisierungsseite.',
         ],
     ],
     'logging' => [
@@ -221,6 +232,7 @@ return [
         ],
     ],
     'error' => [
+        'branch' => 'Ungültiger Branch-Name.',
         'token_too_short' => 'Das Token muss mindestens 32 Zeichen lang sein.',
         'required' => 'Diese Einstellung ist erforderlich.',
         'unknown' => 'Unbekannte Einstellung.',

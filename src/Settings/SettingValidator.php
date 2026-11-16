@@ -7,6 +7,7 @@ namespace SecondStay\Settings;
 use SecondStay\Payment\EpcQrBuilder;
 use SecondStay\Scheduler\Scheduler;
 use SecondStay\Support\Money;
+use SecondStay\Update\GitHubWebhook;
 
 /**
  * Validation et normalisation des valeurs de réglages.
@@ -78,6 +79,15 @@ final class SettingValidator
             'scheduler.http_token' => strlen($string) >= Scheduler::MINIMUM_TOKEN_LENGTH
                 ? ['ok' => true, 'value' => $string]
                 : ['ok' => false, 'error' => 'settings.error.token_too_short'],
+            // Même raison : le secret signe les notifications GitHub qui
+            // déclenchent une installation.
+            'update.webhook_secret' => strlen($string) >= GitHubWebhook::MINIMUM_SECRET_LENGTH
+                ? ['ok' => true, 'value' => $string]
+                : ['ok' => false, 'error' => 'settings.error.token_too_short'],
+            'update.dev_branch' => preg_match('#^[A-Za-z0-9._/-]{1,100}$#', $string) === 1
+                && !str_contains($string, '..')
+                ? ['ok' => true, 'value' => $string]
+                : ['ok' => false, 'error' => 'settings.error.branch'],
             'payment.currency' => preg_match('/^[A-Za-z]{3}$/', $string) === 1
                 ? ['ok' => true, 'value' => strtoupper($string)]
                 : ['ok' => false, 'error' => 'settings.error.currency'],

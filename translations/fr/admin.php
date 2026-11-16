@@ -132,7 +132,7 @@ return [
                 'encryption' => ['none' => 'Aucun', 'starttls' => 'STARTTLS', 'tls' => 'TLS implicite'],
             ],
             'update' => [
-                'channel' => ['stable' => 'Stable', 'prerelease' => 'Préversion'],
+                'channel' => ['stable' => 'Stable', 'prerelease' => 'Préversion', 'dev' => 'Développement'],
             ],
             'logging' => [
                 'level' => [
@@ -212,6 +212,38 @@ return [
         'mode' => 'Mode',
         'recovered' => 'Une mise à jour avait été interrompue avant la fin. Le site a été remis dans son état '
             . 'précédent.',
+        'dev' => [
+            'title' => 'Canal de développement',
+            'intro' => 'Chaque commit poussé sur la branche « {branch} » est installé automatiquement, avec les mêmes '
+                . 'vérifications qu’une version publiée : empreinte, sauvegarde, retour arrière en cas d’échec. '
+                . 'GitHub prévient le site par un webhook ; l’installation a lieu au passage suivant du '
+                . 'planificateur, dès que l’intégration continue a publié l’archive du commit.',
+            'secret_once' => 'Copiez ce secret dans le champ « Secret » du webhook GitHub. Il ne sera plus jamais '
+                . 'affiché.',
+            'payload_url' => 'Payload URL',
+            'content_type' => 'Content type',
+            'events' => 'Événements',
+            'events_push' => 'Just the push event',
+            'secret' => 'Secret',
+            'secret_defined' => 'Enregistré',
+            'last_delivery' => 'Dernière notification reçue',
+            'never' => 'Aucune',
+            'pending' => 'Commit en attente',
+            'not_configured' => 'Aucun secret n’est enregistré : les notifications GitHub sont refusées et rien n’est '
+                . 'installé. Générez un secret, puis déclarez le webhook dans les réglages du dépôt GitHub (Settings '
+                . '› Webhooks).',
+            'generate' => 'Générer un secret',
+            'regenerate' => 'Générer un nouveau secret',
+            'regenerate_help' => 'Générer un nouveau secret invalide l’ancien : le webhook GitHub devra être mis à '
+                . 'jour.',
+            'outcome' => [
+                'pong' => 'test reçu',
+                'queued' => 'commit mis en attente',
+                'ignored_event' => 'événement ignoré',
+                'ignored_channel' => 'canal non développement',
+                'ignored_push' => 'autre dépôt ou branche',
+            ],
+        ],
     ],
     'pricing' => [
         'title' => 'Disponibilités et tarifs',

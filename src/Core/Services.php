@@ -142,6 +142,8 @@ use SecondStay\Reporting\ReportService;
 use SecondStay\Tax\TouristTaxCalculator;
 use SecondStay\Tax\TouristTaxContextRepository;
 use SecondStay\Tax\TouristTaxRuleRepository;
+use SecondStay\Update\DevUpdateQueue;
+use SecondStay\Update\DevUpdater;
 use SecondStay\Update\GitHubReleaseProvider;
 use SecondStay\Update\ReleaseProvider;
 use SecondStay\Update\UpdateService;
@@ -419,6 +421,20 @@ final class Services
                 $c->get(MaintenanceMode::class),
                 $c->get(Logger::class),
                 $c->get(AuditTrail::class),
+            )
+        );
+
+        $container->set(
+            DevUpdateQueue::class,
+            static fn (Container $c): DevUpdateQueue => new DevUpdateQueue($c->get(Paths::class))
+        );
+
+        $container->set(
+            DevUpdater::class,
+            static fn (Container $c): DevUpdater => new DevUpdater(
+                $c->get(UpdateService::class),
+                $c->get(DevUpdateQueue::class),
+                $c->get(Logger::class),
             )
         );
 

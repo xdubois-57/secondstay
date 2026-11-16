@@ -7,6 +7,8 @@ return [
         'asset_missing' => 'Artefact de mise à jour introuvable.',
         'asset_unreadable' => 'Artefact de mise à jour illisible.',
         'asset_no_version' => 'L’artefact ne contient pas de version valide.',
+        'asset_version_mismatch' => 'La version contenue dans l’artefact ne correspond pas à celle annoncée : il '
+            . 'n’est pas installé.',
         'artifact' => 'L’artefact ne respecte pas la politique de release.',
         'digest_missing' => 'La release n’annonce pas d’empreinte SHA-256 : son intégrité ne peut pas être vérifiée, '
             . 'elle n’est pas installée.',
