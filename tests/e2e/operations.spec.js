@@ -153,7 +153,7 @@ test.describe('exploitation', () => {
 
             const table = page.locator('[data-testid="scheduled-tasks"]');
             await expect(table).toBeVisible();
-            await expect(table.locator('tr[data-task]')).toHaveCount(8);
+            await expect(table.locator('tr[data-task]')).toHaveCount(9);
 
             // Avant tout passage du cron, rien n'a tourné — et rien n'est
             // pour autant présenté comme en retard.

@@ -1207,3 +1207,26 @@ n'a pas pu être interprétée », rien dans la console.
   Release : `bootstrap.php` est un asset de Release, pas un fichier lu depuis
   `main`.
 
+
+## Canal de développement des mises à jour
+
+### Livré
+
+Un troisième canal, « Développement », installe chaque commit poussé sur la
+branche suivie, sur notification GitHub — sur le modèle du canal de
+développement de ScoutMagic (RELEASE.md §12.1, ARCHITECTURE.md §30.6.3).
+
+| Élément | Ce qu'il apporte |
+|---|---|
+| `.github/workflows/dev-build.yml` | à chaque poussée sur `main`, l'artefact de release `secondstay-<base>-dev.<sha7>.zip` publié sur la préversion `dev-latest` |
+| `POST /webhook/github` | notification signée HMAC-SHA256, secret généré et montré une fois sur la page des mises à jour |
+| tâche `dev_update` | installe le commit notifié dès que son archive est publiée, par le même chemin qu'une release |
+| `UpdateVersion` | compare `X.Y.Z-dev.<sha7>` et les releases sans l'erreur de `version_compare()` |
+
+### Ce qui reste hors périmètre
+
+- L'installation attend le passage suivant du planificateur (dix minutes avec
+  le cron conseillé) : le webhook n'installe rien lui-même, l'archive
+  n'existant pas encore quand il arrive.
+- Seule la branche `main` est construite par la CI : suivre une autre branche
+  demande d'ajouter cette branche au déclencheur de `dev-build.yml`.

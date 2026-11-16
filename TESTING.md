@@ -1743,6 +1743,20 @@ rouvrir un site laissé en maintenance par une mise à jour interrompue.
 - toucher à la base quand `config/` n'est pas inscriptible ;
 - réinstaller sur une base qui a déjà un administrateur.
 
+### 33.3.1 Canal de développement des mises à jour
+
+`UpdateVersionTest` (une construction `X.Y.Z-dev.<sha7>` n'est jamais plus
+ancienne que sa base, `version_compare()` dirait l'inverse),
+`GitHubWebhookTest` (signature exacte du corps, secret trop court, dépôt,
+branche, suppression de branche), `GitHubReleaseProviderTest` (`dev-latest`
+lue par son étiquette, asset d'un autre commit refusé, jamais visible des
+canaux stable et préversion), `UpdateServiceTest` (installation, refus d'un
+artefact non conforme ou dont le `VERSION` diffère de son nom, attente de la
+construction, délai dépassé, canal quitté, installation déjà en cours) et
+`GitHubWebhookEndpointTest` (403 sans secret ou signature fausse, poussée
+mise en attente sur le seul canal de développement, secret montré une seule
+fois et stocké chiffré).
+
 ### 33.4 Menus (`AdminNavigationTest`)
 
 - une divergence entre ce que le menu montre et ce que le serveur autorise :

@@ -42,6 +42,7 @@ return [
         'retention' => 'Daten nach Ablauf der Aufbewahrung löschen',
         'backup' => 'Automatische Sicherung',
         'update_check' => 'Prüfung auf Aktualisierungen',
+        'dev_update' => 'Installation von Entwicklungsversionen',
     ],
     'detail' => [
         'nothing' => 'Nichts zu tun.',
@@ -65,5 +66,7 @@ return [
         'update_installed' => 'Die Aktualisierung wurde automatisch installiert.',
         'update_rolled_back' => 'Die automatische Installation ist fehlgeschlagen und wurde rückgängig gemacht.',
         'update_refused' => 'Die automatische Installation wurde abgelehnt, bevor etwas geändert wurde.',
+        'dev_waiting' => 'Ein Commit wartet auf die Veröffentlichung seines Archivs.',
+        'dev_expired' => 'Das Archiv des gemeldeten Commits wurde nie veröffentlicht; das Warten wurde abgebrochen.',
     ],
 ];

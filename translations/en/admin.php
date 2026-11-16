@@ -132,7 +132,7 @@ return [
                 'encryption' => ['none' => 'None', 'starttls' => 'STARTTLS', 'tls' => 'Implicit TLS'],
             ],
             'update' => [
-                'channel' => ['stable' => 'Stable', 'prerelease' => 'Pre-release'],
+                'channel' => ['stable' => 'Stable', 'prerelease' => 'Pre-release', 'dev' => 'Development'],
             ],
             'logging' => [
                 'level' => [
@@ -211,6 +211,38 @@ return [
         'mode' => 'Mode',
         'recovered' => 'An update was interrupted before it finished. The site has been put back to its previous '
             . 'state.',
+        'dev' => [
+            'title' => 'Development channel',
+            'intro' => 'Every commit pushed to the “{branch}” branch is installed automatically, with the same checks '
+                . 'as a published release: digest, backup, rollback on failure. GitHub notifies the site through a '
+                . 'webhook; the installation happens at the next scheduler run, as soon as continuous integration has '
+                . 'published the commit’s archive.',
+            'secret_once' => 'Copy this secret into the “Secret” field of the GitHub webhook. It will never be shown '
+                . 'again.',
+            'payload_url' => 'Payload URL',
+            'content_type' => 'Content type',
+            'events' => 'Events',
+            'events_push' => 'Just the push event',
+            'secret' => 'Secret',
+            'secret_defined' => 'Stored',
+            'last_delivery' => 'Last notification received',
+            'never' => 'None',
+            'pending' => 'Pending commit',
+            'not_configured' => 'No secret is stored: GitHub notifications are refused and nothing is installed. '
+                . 'Generate a secret, then declare the webhook in the GitHub repository settings (Settings › '
+                . 'Webhooks).',
+            'generate' => 'Generate a secret',
+            'regenerate' => 'Generate a new secret',
+            'regenerate_help' => 'Generating a new secret invalidates the old one: the GitHub webhook will have to be '
+                . 'updated.',
+            'outcome' => [
+                'pong' => 'test received',
+                'queued' => 'commit queued',
+                'ignored_event' => 'event ignored',
+                'ignored_channel' => 'not on the development channel',
+                'ignored_push' => 'other repository or branch',
+            ],
+        ],
     ],
     'pricing' => [
         'title' => 'Availability and rates',

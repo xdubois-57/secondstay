@@ -178,6 +178,81 @@ final class GitHubReleaseProviderTest extends TestCase
         self::assertSame('1.4.0', $this->provider($http)->latest()?->version);
     }
 
+    private const DEV_ENDPOINT = 'https://api.github.com/repos/xdubois-57/secondstay/releases/tags/dev-latest';
+
+    private const COMMIT = '0123456789abcdef0123456789abcdef01234567';
+
+    public function testTheDevelopmentBuildIsReadFromItsTag(): void
+    {
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::DEV_ENDPOINT, $this->devRelease());
+
+        $build = $this->provider($http)->devBuild();
+
+        self::assertNotNull($build);
+        self::assertSame('1.4.0-dev.0123456', $build->version);
+        self::assertSame(self::COMMIT, $build->commit);
+        self::assertSame('dev-latest', $build->tag);
+        self::assertTrue($build->isDevBuild());
+        self::assertSame(hash('sha256', 'dev'), $build->digest);
+    }
+
+    public function testADevelopmentAssetNamingAnotherCommitIsRefused(): void
+    {
+        // Archive d'un commit précédent laissée sur la release : elle n'est pas
+        // celle que la release désigne.
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::DEV_ENDPOINT, $this->devRelease('secondstay-1.4.0-dev.fffffff.zip'));
+
+        self::assertNull($this->provider($http)->devBuild());
+    }
+
+    public function testADevelopmentReleaseWithoutCommitOrAsReleaseNameIsRefused(): void
+    {
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::DEV_ENDPOINT, ['target_commitish' => 'main'] + $this->devRelease());
+        self::assertNull($this->provider($http)->devBuild());
+
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::DEV_ENDPOINT, $this->devRelease('secondstay-1.4.0.zip'));
+        self::assertNull($this->provider($http)->devBuild());
+
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::DEV_ENDPOINT, ['draft' => true] + $this->devRelease());
+        self::assertNull($this->provider($http)->devBuild());
+    }
+
+    public function testTheDevelopmentTagNeverReachesTheReleaseChannels(): void
+    {
+        // Même publiée en préversion, `dev-latest` n'est pas une étiquette
+        // `vX.Y.Z` : ni le canal stable ni le canal préversion ne la voient.
+        $http = $this->fetcher();
+        $http->addJsonResponse(self::ENDPOINT, [['tag_name' => 'dev-latest'] + $this->devRelease(), $this->release('v1.3.0')]);
+
+        self::assertSame('1.3.0', $this->provider($http)->latest(true)?->version);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function devRelease(string $asset = 'secondstay-1.4.0-dev.0123456.zip'): array
+    {
+        return [
+            'tag_name' => 'dev-latest',
+            'target_commitish' => self::COMMIT,
+            'draft' => false,
+            'prerelease' => true,
+            'published_at' => '2026-05-01T10:00:00Z',
+            'body' => 'Construction roulante',
+            'assets' => [[
+                'name' => $asset,
+                'browser_download_url' => 'https://github.example/download/dev.zip',
+                'size' => 4_200_000,
+                'digest' => 'sha256:' . hash('sha256', 'dev'),
+            ]],
+        ];
+    }
+
     /**
      * @return array{tag_name: string, draft: bool, prerelease: bool, published_at: string, body: string,
      *     assets: list<array{name: string, browser_download_url: string, size: int, digest: string}>}

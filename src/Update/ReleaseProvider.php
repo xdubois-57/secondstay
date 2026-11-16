@@ -15,6 +15,12 @@ interface ReleaseProvider
     public function latest(bool $allowPrerelease = false): ?ReleaseInfo;
 
     /**
+     * Dernière construction de développement publiée par la CI (étiquette
+     * `dev-latest`), ou null si aucune n'est disponible.
+     */
+    public function devBuild(): ?ReleaseInfo;
+
+    /**
      * Télécharge l'asset attendu dans `$destination`.
      *
      * @return int taille téléchargée en octets

@@ -197,7 +197,8 @@ return [
     'update' => [
         'channel' => [
             'label' => 'Update channel',
-            'help' => 'Stable installs published releases only.',
+            'help' => 'Stable installs published releases only. Pre-release adds published pre-releases. Development '
+                . 'installs every commit pushed to the tracked branch, as soon as GitHub reports it.',
         ],
         'auto_install' => [
             'label' => 'Automatic update',
@@ -207,6 +208,15 @@ return [
         'repository' => [
             'label' => 'Release repository',
             'help' => 'GitHub repository providing installable artifacts.',
+        ],
+        'dev_branch' => [
+            'label' => 'Tracked branch (development)',
+            'help' => 'Branch whose every push is installed on the Development channel.',
+        ],
+        'webhook_secret' => [
+            'label' => 'GitHub webhook secret',
+            'help' => 'Shared secret signing the GitHub notifications of the Development channel. Generate it from '
+                . 'the updates page.',
         ],
     ],
     'logging' => [
@@ -220,6 +230,7 @@ return [
         ],
     ],
     'error' => [
+        'branch' => 'Invalid branch name.',
         'token_too_short' => 'The token must be at least 32 characters long.',
         'required' => 'This setting is required.',
         'unknown' => 'Unknown setting.',

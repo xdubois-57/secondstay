@@ -431,6 +431,11 @@ Une GitHub Release est l’unité installable.
 
 Ne pas publier une archive arbitraire de `main`.
 
+Le canal de mises à jour « Développement » n'y fait pas exception : il installe
+un artefact construit par la CI (`.github/workflows/dev-build.yml`) avec la même
+politique qu'une release, publié sur la préversion `dev-latest`, jamais
+l'archive du dépôt (RELEASE.md §12.1).
+
 `scripts/release.sh` doit :
 
 1. vérifier working tree propre ;

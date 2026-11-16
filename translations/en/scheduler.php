@@ -42,6 +42,7 @@ return [
         'retention' => 'Purge data past its retention',
         'backup' => 'Automatic backup',
         'update_check' => 'Check for updates',
+        'dev_update' => 'Development build installation',
     ],
     'detail' => [
         'nothing' => 'Nothing to do.',
@@ -65,5 +66,7 @@ return [
         'update_installed' => 'The update was installed automatically.',
         'update_rolled_back' => 'The automatic installation failed and was rolled back.',
         'update_refused' => 'The automatic installation was refused before anything changed.',
+        'dev_waiting' => 'A commit is waiting for its archive to be published.',
+        'dev_expired' => 'The archive of the notified commit was never published; the wait was abandoned.',
     ],
 ];

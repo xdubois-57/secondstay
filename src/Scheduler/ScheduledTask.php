@@ -47,6 +47,14 @@ enum ScheduledTask: string
     case UpdateCheck = 'update_check';
 
     /**
+     * Installation du commit qu'une notification GitHub a mis en attente,
+     * canal de développement (ARCHITECTURE.md §30.6.3). Sans commit en
+     * attente, elle ne fait rien — pas même un appel réseau — : elle peut
+     * donc passer à chaque cron.
+     */
+    case DevUpdate = 'dev_update';
+
+    /**
      * Intervalle minimal entre deux exécutions, en minutes.
      */
     public function intervalMinutes(): int
@@ -56,6 +64,7 @@ enum ScheduledTask: string
             self::InboundMail => 15,
             self::CalendarImport => 60,
             self::LocalContent, self::StayReminders, self::Retention, self::Backup, self::UpdateCheck => 1440,
+            self::DevUpdate => 1,
         };
     }
 
@@ -96,7 +105,7 @@ enum ScheduledTask: string
     {
         return match ($this) {
             // Une installation automatique sauvegarde, télécharge et migre.
-            self::Backup, self::UpdateCheck => 60,
+            self::Backup, self::UpdateCheck, self::DevUpdate => 60,
             self::LocalContent => 30,
             default => 15,
         };

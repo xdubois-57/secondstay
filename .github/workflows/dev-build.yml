@@ -1,0 +1,120 @@
+# Construction du canal de développement (ARCHITECTURE.md §30.6.3).
+#
+# Chaque poussée sur `main` produit **le même** artefact installable qu'une
+# release — `scripts/build-release-zip.sh`, `ReleaseArtifactPolicy`, inspection
+# par `release-artifact.php` — et l'attache à une unique préversion roulante,
+# étiquetée `dev-latest`. Les installations sur le canal « Développement » en
+# reçoivent la notification par webhook GitHub et l'installent par le même
+# `UpdateService::install()` qu'une release : empreinte SHA-256 publiée par
+# GitHub, politique d'artefact, sauvegarde, retour arrière.
+#
+# CE N'EST JAMAIS L'ARCHIVE DU DÉPÔT. `api.github.com/.../zipball/<sha>` est
+# l'arbre git : pas de `vendor/` (ignoré), mais `tests/`, `.github/`, `scripts/`
+# et `bootstrap/` posés sur une racine web de production. C'est exactement ce
+# que RELEASE.md §1 interdit, et la raison d'être de cette construction.
+#
+# `VERSION` vaut `<dernière release>-dev.<sha7>` : l'updater sait comparer cette
+# forme (`UpdateVersion`), l'afficher, et refuser une archive dont le `VERSION`
+# ne correspond pas au nom de son asset.
+#
+# LA PRÉVERSION EST UN INVARIANT, PAS UNE PRÉFÉRENCE. `bootstrap.php` lit
+# `/releases/latest`, que GitHub définit comme excluant brouillons et
+# préversions, et l'updater ne retient que les étiquettes `vX.Y.Z`. Une
+# `dev-latest` qui deviendrait « latest » serait proposée à une installation
+# neuve : `--prerelease --latest=false` est donc réaffirmé à chaque exécution.
+#
+# L'ÉTIQUETTE EST UNE ADRESSE. Chaque installation la construit
+# (`GitHubReleaseProvider::DEV_TAG`) : la renommer abandonne toutes celles qui
+# tournent encore l'ancienne valeur.
+#
+# PUBLICATION. Si l'immuabilité des releases est activée sur le dépôt, les
+# assets d'une release publiée sont figés : la précédente est donc supprimée,
+# puis la nouvelle créée en brouillon **avec** son asset, et publiée ensuite.
+# Ce chemin marche avec ou sans immuabilité.
+
+name: Dev build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Écrire l'étiquette, la release et ses assets — et rien d'autre.
+permissions:
+  contents: write
+
+# Deux poussées rapprochées se disputeraient la même étiquette : les
+# exécutions sont mises en file, jamais annulées.
+concurrency:
+  group: dev-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Construction et publication
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # PHP 8.2, la plus basse version supportée (composer.json) : les
+      # dépendances résolues ici tournent partout où le produit tourne.
+      - name: PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo_mysql, zip, gd, dom, sodium
+          coverage: none
+
+      # Mêmes options que l'étape 19 de `scripts/release.sh`.
+      - name: Dépendances de production
+        run: composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction --no-progress
+
+      - name: Construction de l'artefact
+        run: |
+          set -euo pipefail
+          BASE="$(tr -d '[:space:]' < VERSION)"
+          if ! [[ "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION inattendu : ${BASE}" >&2
+            exit 1
+          fi
+          DEV_VERSION="${BASE}-dev.${GITHUB_SHA:0:7}"
+          printf '%s\n' "$DEV_VERSION" > VERSION
+          ASSET="secondstay-${DEV_VERSION}.zip"
+          ./scripts/build-release-zip.sh --build "${GITHUB_WORKSPACE}/build/dev/${ASSET}"
+          php scripts/release-artifact.php inspect "${GITHUB_WORKSPACE}/build/dev/${ASSET}"
+          test "$(unzip -p "${GITHUB_WORKSPACE}/build/dev/${ASSET}" VERSION | tr -d '[:space:]')" = "$DEV_VERSION"
+          echo "ASSET=${ASSET}" >> "$GITHUB_ENV"
+
+      # Toute suppression peut échouer sans arrêter la publication ; la
+      # publication, elle, ne le peut pas. Pendant la fenêtre suppression →
+      # publication, l'asset répond 404 : l'installation en attente patiente
+      # (`DevUpdater`), elle n'échoue pas.
+      - name: Publication de la préversion dev-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: dev-latest
+        run: |
+          set -euo pipefail
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release delete "$RELEASE_TAG" --yes \
+              || echo "AVERTISSEMENT : la release ${RELEASE_TAG} précédente n'a pas pu être supprimée"
+          fi
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/${RELEASE_TAG}" >/dev/null 2>&1 \
+            || echo "Pas d'étiquette ${RELEASE_TAG} précédente à supprimer"
+
+          gh release create "$RELEASE_TAG" "${GITHUB_WORKSPACE}/build/dev/${ASSET}" \
+            --draft --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Construction de développement" \
+            --notes "Construction roulante de \`main\` (\`${GITHUB_SHA}\`), installée par le canal Développement. Ce n'est jamais une release stable : préversion volontaire, que \`/releases/latest\` ne voit pas." >/dev/null
+
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false >/dev/null
+
+          # L'adresse que chaque installation construit doit répondre, sinon
+          # c'est cette exécution qui échoue, pas une installation plus tard.
+          sleep 5
+          curl -sSfLI -o /dev/null \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET}"
+          echo "Publié : ${ASSET} sur ${RELEASE_TAG} (${GITHUB_SHA})"

@@ -544,6 +544,8 @@ Flux : download → empreinte SHA-256 → validate → maintenance → backup �
 
 L'auto-update installe par le même chemin que le bouton, lors du contrôle quotidien. Une mise à jour interrompue par l'hébergeur ne laisse jamais le site fermé : elle est défaite à la requête suivante.
 
+Canaux : stable, préversion, développement. Sur le canal développement, chaque commit poussé sur la branche suivie est installé automatiquement, sur notification GitHub (webhook signé par un secret généré depuis la page des mises à jour), dès que l'intégration continue a publié son archive — avec les mêmes vérifications qu'une version publiée. Réservé aux installations de test.
+
 ## 70. Tests
 
 Local Mac et GitHub partagent les mêmes commandes.
