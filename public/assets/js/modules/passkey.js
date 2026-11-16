@@ -6,7 +6,13 @@
  * réponse) et en amorces DOM. Les fonctions pures sont testées par Vitest sans
  * navigateur ; l'API WebAuthn elle-même est vérifiée par les tests E2E via
  * l'authentificateur virtuel.
+ *
+ * Le résultat d'un enregistrement ou d'une connexion s'affiche dans un toast
+ * (`toast.js`), comme toute mise à jour faite sans recharger la page.
  */
+
+import { showToast } from './toast.js';
+import { documentOf } from './dom.js';
 
 const BASE64URL = /^[A-Za-z0-9_-]*$/;
 
@@ -131,12 +137,11 @@ export async function postJson(url, csrf, payload, fetcher) {
     return { status: response.status, body };
 }
 
-function status(element, message, variant) {
-    if (!element) {
+function status(root, target, message, variant) {
+    if (!message) {
         return;
     }
-    element.textContent = message;
-    element.className = 'small mt-2 mb-0 ' + (variant === 'error' ? 'text-danger' : 'text-success');
+    showToast(documentOf(root), target, message, { variant });
 }
 
 /**
@@ -150,7 +155,6 @@ export function initPasskeyRegistration(root, scope) {
     }
 
     const unsupported = root.querySelector('[data-passkey-unsupported]');
-    const feedback = root.querySelector('[data-passkey-status]');
     if (!isSupported(target)) {
         button.disabled = true;
         if (unsupported) {
@@ -164,7 +168,7 @@ export function initPasskeyRegistration(root, scope) {
 
     button.addEventListener('click', async () => {
         button.disabled = true;
-        status(feedback, button.dataset.busy || '…', 'info');
+        button.setAttribute('aria-busy', 'true');
         try {
             const options = await postJson(base + '/api/passkeys/register/options', csrf, {}, target.fetch);
             if (options.status !== 200) {
@@ -183,11 +187,12 @@ export function initPasskeyRegistration(root, scope) {
             if (!result.body.ok) {
                 throw new Error(result.body.error || button.dataset.errorLabel || 'error');
             }
-            status(feedback, button.dataset.successLabel || '', 'success');
+            status(root, target, button.dataset.successLabel || '', 'success');
             target.location.reload();
         } catch (error) {
-            status(feedback, error?.message ? error.message : String(error), 'error');
+            status(root, target, error?.message ? error.message : String(error), 'error');
             button.disabled = false;
+            button.removeAttribute('aria-busy');
         }
     });
 
@@ -204,7 +209,6 @@ export function initPasskeySignIn(root, scope) {
         return false;
     }
 
-    const feedback = root.querySelector('[data-passkey-signin-status]');
     if (!isSupported(target)) {
         button.hidden = true;
         return false;
@@ -235,7 +239,7 @@ export function initPasskeySignIn(root, scope) {
             }
             target.location.assign(result.body.redirect);
         } catch (error) {
-            status(feedback, error?.message ? error.message : String(error), 'error');
+            status(root, target, error?.message ? error.message : String(error), 'error');
             button.disabled = false;
         }
     });

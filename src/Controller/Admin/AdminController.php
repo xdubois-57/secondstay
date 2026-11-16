@@ -26,10 +26,9 @@ abstract class AdminController extends AbstractController
      */
     protected function renderAdmin(string $template, array $context = [], int $status = 200): Response
     {
-        $context += [
-            'admin_section' => $this->section(),
-            'admin_menu' => (new AdminNavigation($this->settings()))->forUser($this->auth()->user()),
-        ];
+        // Le menu lui-même est construit pour toutes les pages par le noyau
+        // (`SiteNavigation`) : la section suffit à choisir l'onglet courant.
+        $context += ['admin_section' => $this->section()];
 
         return $this->render($template, $context, $status);
     }

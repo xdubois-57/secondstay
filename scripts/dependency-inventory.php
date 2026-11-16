@@ -54,6 +54,7 @@ $root = dirname(__DIR__);
  */
 const VENDOR_LICENCES = [
     'bootstrap' => 'MIT',
+    'bootstrap-icons' => 'MIT',
 ];
 
 /**
@@ -309,11 +310,14 @@ echo "visiteur exécute réellement.\n\n";
 echo inventoryTable($vendor, '_Aucune trouvée — vérifiez le balayage de scripts/dependency-inventory.php._');
 
 echo "\n#### Ce qui n'est pas couvert par la licence du projet\n\n";
-echo "_Rien à ce jour._ SecondStay n'embarque ni police, ni image, ni marque\n";
-echo "sous des conditions distinctes : les icônes de l'application sont\n";
-echo "générées à l'installation avec la police interne de GD, et les documents\n";
-echo "PDF utilisent les polices standard du format, qu'aucun fichier du dépôt\n";
-echo "ne porte.\n\n";
+echo "- **Police d'icônes Bootstrap Icons** (`public/assets/vendor/bootstrap-icons/fonts/`,\n";
+echo "  `bootstrap-icons.woff2` et `.woff`) — une police, sous **MIT** comme la\n";
+echo "  feuille de style qui la déclare (© The Bootstrap Authors). Elle dessine\n";
+echo "  les icônes de la navigation et des pages.\n\n";
+echo "Rien d'autre : les icônes de l'application installée sont générées à\n";
+echo "l'installation avec la police interne de GD, et les documents PDF\n";
+echo "utilisent les polices standard du format, qu'aucun fichier du dépôt ne\n";
+echo "porte.\n\n";
 echo "Cette section reste imprimée même vide : « rien » est une information,\n";
 echo "l'absence de section n'en est pas une.\n";
 

@@ -1,32 +1,15 @@
 {% extends 'layout/admin.html.twig' %}
 
 {% block admin_content %}
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
-                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.users') }}</p>
-                <p class="h4 mb-0" data-metric="users">{{ user_count }}</p>
-            </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
-                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.administrators') }}</p>
-                <p class="h4 mb-0" data-metric="administrators">{{ administrator_count }}</p>
-            </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
-                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.backups') }}</p>
-                <p class="h4 mb-0" data-metric="backups">{{ backup_count }}</p>
-            </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card h-100"><div class="card-body">
-                <p class="text-body-secondary small mb-1">{{ t('admin.dashboard.schema') }}</p>
-                <p class="h4 mb-0" data-metric="schema">{{ schema_version ?: '—' }}</p>
-            </div></div>
-        </div>
-    </div>
+    {% include 'partials/stat_tiles.html.twig' with {
+        tiles: [
+            { label: t('admin.dashboard.users'), value: user_count, icon: 'bi-people', metric: 'users' },
+            { label: t('admin.dashboard.administrators'), value: administrator_count, icon: 'bi-shield-lock', metric: 'administrators' },
+            { label: t('admin.dashboard.backups'), value: backup_count, icon: 'bi-archive', metric: 'backups' },
+            { label: t('admin.dashboard.schema'), value: schema_version ?: '—', icon: 'bi-database', metric: 'schema' },
+        ],
+        columns: 4,
+    } only %}
 
     <div class="card mb-4">
         <div class="card-header">{{ t('admin.dashboard.todo') }}</div>

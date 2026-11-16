@@ -1,42 +1,56 @@
 {% extends 'layout/base.html.twig' %}
 
-{% block navigation %}
-    <ul class="navbar-nav me-auto mb-2 mb-lg-0" data-testid="primary-menu">
-        <li class="nav-item">
-            <a class="nav-link" href="{{ path('home') }}">{{ t('nav.home') }}</a>
-        </li>
-    </ul>
-{% endblock %}
+{#
+  Pages d'administration — même dessin que les pages Finances de ScoutMagic :
+  le menu « Administration » de la barre mène à la page ; en tête de page, un
+  titre unique (`partials/page_header.html.twig`), puis une barre d'onglets
+  soulignés vers les autres pages du même groupe (`partials/nav_rail.html.twig`).
+  La colonne latérale qui répétait tout le menu a disparu : le menu et le fil
+  d'Ariane disent déjà où l'on est.
 
+  Le groupe affiché est celui qui contient la page courante, d'après les menus
+  construits par `SiteNavigation`. Une page de détail (une réservation) garde
+  sa liste sélectionnée.
+#}
 {% block content %}
-    <div class="container-fluid py-4">
-        <div class="row g-4">
-            <aside class="col-12 col-lg-3 col-xl-2">
-                <nav aria-label="{{ t('admin.nav.administration') }}" data-testid="admin-nav">
-                    {% for group in admin_menu|default([]) %}
-                        {# Pas de titre de section : l'aside précède le h1 de la page, et l'ordre des titres doit rester juste. #}
-                        <p class="text-uppercase text-body-secondary small fw-semibold mt-3 mb-1 px-3" id="admin-nav-{{ group.id }}">{{ t(group.label) }}</p>
-                        <ul class="nav flex-column nav-pills" aria-labelledby="admin-nav-{{ group.id }}" data-admin-group="{{ group.id }}">
-                            {% for section in group.items %}
-                                <li class="nav-item">
-                                    <a class="nav-link py-1{{ admin_section == section.id ? ' active' : '' }}{{ section.disabled ? ' text-body-secondary' : '' }}"
-                                       href="{{ path(section.route) }}"
-                                       data-admin-section="{{ section.id }}"
-                                       {{ section.disabled ? 'data-disabled="true"' : '' }}
-                                       {{ admin_section == section.id ? 'aria-current="page"' : '' }}>
-                                        {{ t(section.label) }}
-                                        {% if section.disabled %}<span class="badge text-bg-light border ms-1">{{ t('admin.nav.disabled') }}</span>{% endif %}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endfor %}
-                </nav>
-            </aside>
-            <div class="col-12 col-lg-9 col-xl-10">
-                <h1 class="h3 mb-4">{% block admin_title %}{{ meta_title }}{% endblock %}</h1>
-                {% block admin_content %}{% endblock %}
-            </div>
-        </div>
+    {% set _admin_group = null %}
+    {% for menu in menus|default([]) %}
+        {% if menu.id == 'admin' %}
+            {% for group in menu.groups %}
+                {% for page in group.pages %}
+                    {% if _admin_group is null and page.id == admin_section|default('') %}
+                        {% set _admin_group = group %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
+    <div class="container py-3">
+        {% include 'partials/page_header.html.twig' with {
+            title_html: block('admin_title'),
+        } only %}
+
+        {% if _admin_group is not null and _admin_group.pages|length > 1 %}
+            {% set _rail = [] %}
+            {% for page in _admin_group.pages %}
+                {% set _rail = _rail|merge([{
+                    url: path(page.route, page.params),
+                    label: t(page.label_key),
+                    icon: page.icon,
+                    selected: page.id == admin_section|default(''),
+                    attributes: {'data-admin-rail': page.id},
+                }]) %}
+            {% endfor %}
+            {% include 'partials/nav_rail.html.twig' with {
+                rail_id: 'admin-page-picker',
+                items: _rail,
+                aria_label: t(_admin_group.label_key),
+                testid: 'admin-nav',
+            } only %}
+        {% endif %}
+
+        {% block admin_content %}{% endblock %}
     </div>
 {% endblock %}
+
+{% block admin_title %}{{ meta_title }}{% endblock %}

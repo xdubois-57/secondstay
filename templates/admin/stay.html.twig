@@ -3,15 +3,21 @@
 {% block admin_content %}
     <p class="text-body-secondary">{{ t('stay.admin.intro') }}</p>
 
-    <ul class="nav nav-tabs mb-4" data-testid="stay-locales">
-        {% for available in locales %}
-            <li class="nav-item">
-                <a class="nav-link{{ available == current_locale ? ' active' : '' }}"
-                   href="{{ path('admin.stay') }}?locale={{ available }}"
-                   data-stay-locale="{{ available }}">{{ locale_name(available) }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% set _locale_rail = [] %}
+    {% for available in locales %}
+        {% set _locale_rail = _locale_rail|merge([{
+            url: path('admin.stay') ~ '?locale=' ~ available,
+            label: locale_name(available),
+            selected: available == current_locale,
+            attributes: {'data-stay-locale': available},
+        }]) %}
+    {% endfor %}
+    {% include 'partials/nav_rail.html.twig' with {
+        rail_id: 'stay-locales',
+        items: _locale_rail,
+        aria_label: t('common.language_selector'),
+        testid: 'stay-locales',
+    } only %}
 
     <div class="card mb-4">
         <div class="card-header">{{ t('stay.admin.completeness') }}</div>

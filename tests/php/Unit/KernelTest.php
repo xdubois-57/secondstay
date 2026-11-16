@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SecondStay\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use SecondStay\Core\Kernel;
 use SecondStay\I18n\Locales;
 use SecondStay\Tests\Support\KernelTestCase;
 
@@ -203,5 +204,33 @@ final class KernelTest extends KernelTestCase
         } finally {
             ini_set('display_errors', $previous === false ? '1' : $previous);
         }
+    }
+
+    /**
+     * @return list<array{string, bool}>
+     */
+    public static function sessionlessPaths(): array
+    {
+        return [
+            ['/icon-192.png', true],
+            ['/icon-512.png', true],
+            ['/icon-maskable-512.png', true],
+            ['/manifest.webmanifest', true],
+            ['/sw.js', true],
+            ['/fr/account', false],
+            ['/fr/account/confirm', false],
+            ['/icon-64.png', false],
+            ['/fr/sw.js', false],
+        ];
+    }
+
+    /**
+     * Juste après une connexion, une icône demandée avec l'ancien cookie ne
+     * doit pas pouvoir remplacer le cookie de la session connectée.
+     */
+    #[DataProvider('sessionlessPaths')]
+    public function testPwaResourcesNeverOpenTheSession(string $path, bool $expected): void
+    {
+        self::assertSame($expected, Kernel::isSessionless($path));
     }
 }

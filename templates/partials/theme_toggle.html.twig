@@ -1,0 +1,16 @@
+{# Bouton de thème — un clic passe de clair à sombre puis automatique
+   (`assets/js/modules/theme.js`). Rendu avec l'icône « automatique » : la
+   préférence réelle vit dans le navigateur, et `app.js` corrige l'icône et
+   le libellé au chargement. Le même bouton sert la barre mobile et la barre
+   de bureau — ne jamais recopier ce balisage ailleurs. #}
+<button type="button"
+        class="btn btn-link text-body p-2 d-inline-flex align-items-center justify-content-center"
+        data-theme-toggle
+        data-label-template="{{ t('common.theme.current', {mode: '__mode__'}) }}"
+        data-auto="{{ t('common.theme.auto') }}"
+        data-light="{{ t('common.theme.light') }}"
+        data-dark="{{ t('common.theme.dark') }}"
+        aria-label="{{ t('common.theme.current', {mode: t('common.theme.auto')}) }}"
+        title="{{ t('common.theme.label') }}">
+    <i class="bi bi-circle-half fs-5" aria-hidden="true" data-theme-toggle-icon></i>
+</button>

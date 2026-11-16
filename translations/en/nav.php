@@ -15,4 +15,5 @@ return [
     'privacy' => 'Privacy',
     'terms' => 'Terms and conditions',
     'account' => 'My account',
+    'my_space' => 'My space',
 ];

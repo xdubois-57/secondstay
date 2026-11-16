@@ -4,7 +4,15 @@
  * Le module enregistre le service worker, gère l'abonnement et le
  * désabonnement, et n'expose que des fonctions pures pour la partie
  * testable : conversion de clé et lecture d'état.
+ *
+ * Le résultat d'un abonnement ou d'un désabonnement s'affiche dans un toast
+ * (`toast.js`), comme toute mise à jour faite sans recharger la page. Seul un
+ * navigateur incapable de recevoir le push l'écrit en ligne : c'est un état
+ * durable de la page, pas le résultat d'une action.
  */
+
+import { showToast } from './toast.js';
+import { documentOf } from './dom.js';
 
 export function base64UrlToUint8Array(value) {
     const input = String(value ?? '');
@@ -98,12 +106,27 @@ export async function registerServiceWorker(scope) {
     }
 }
 
+/**
+ * Message d'état durable, écrit en ligne (navigateur non compatible).
+ */
 function report(element, key, variant) {
     if (!element) {
         return;
     }
     element.textContent = element.dataset[key] || '';
     element.className = 'small mt-2 mb-0 ' + (variant === 'error' ? 'text-danger' : 'text-success');
+}
+
+/**
+ * Résultat d'une action : un toast, avec le texte que porte l'élément d'état
+ * (traduit côté serveur) ou le message d'erreur reçu.
+ */
+function notify(root, target, element, key, variant, message) {
+    const doc = documentOf(root);
+    const text = message ?? (element?.dataset[key] || '');
+    if (text !== '') {
+        showToast(doc, target, text, { variant });
+    }
 }
 
 /**
@@ -154,7 +177,7 @@ export function initPushControls(root, scope) {
             try {
                 const permission = await target.Notification.requestPermission();
                 if (permission !== 'granted') {
-                    report(status, 'denied', 'error');
+                    notify(root, target, status, 'denied', 'error');
                     subscribeButton.disabled = false;
                     return;
                 }
@@ -183,13 +206,10 @@ export function initPushControls(root, scope) {
                 if (counter) {
                     counter.textContent = String(Number(counter.textContent || '0') + 1);
                 }
-                report(status, 'enabled', 'success');
+                notify(root, target, status, 'enabled', 'success');
                 showState(true);
             } catch (error) {
-                if (status) {
-                    status.textContent = error?.message ? error.message : String(error);
-                    status.className = 'small mt-2 mb-0 text-danger';
-                }
+                notify(root, target, status, '', 'error', error?.message ? error.message : String(error));
             } finally {
                 subscribeButton.disabled = false;
             }
@@ -208,13 +228,10 @@ export function initPushControls(root, scope) {
                         counter.textContent = String(Math.max(0, Number(counter.textContent || '1') - 1));
                     }
                 }
-                report(status, 'disabled', 'success');
+                notify(root, target, status, 'disabled', 'success');
                 showState(false);
             } catch (error) {
-                if (status) {
-                    status.textContent = error?.message ? error.message : String(error);
-                    status.className = 'small mt-2 mb-0 text-danger';
-                }
+                notify(root, target, status, '', 'error', error?.message ? error.message : String(error));
             } finally {
                 unsubscribeButton.disabled = false;
             }

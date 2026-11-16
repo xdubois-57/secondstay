@@ -21,7 +21,12 @@ return [
     'continue' => 'Weiter',
     'loading' => 'Laden…',
     'version' => 'Version',
+    'navigation' => 'Navigation',
+    'breadcrumb' => 'Brotkrümelnavigation',
+    'page_navigation' => 'Seitennavigation',
     'theme' => [
+        'label' => 'Design',
+        'current' => 'Design: {mode} (zum Ändern klicken)',
         'auto' => 'Automatisch',
         'light' => 'Hell',
         'dark' => 'Dunkel',

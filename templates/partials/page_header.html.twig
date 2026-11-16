@@ -1,0 +1,33 @@
+{#
+  Titre de page : un seul <h1>, à une seule taille (`h3`), l'action
+  principale à côté — même bloc que ScoutMagic. L'action est en
+  `btn-primary`, une au plus par écran ; sur téléphone elle passe sous le
+  titre, pleine largeur.
+
+  Usage :
+  {% include 'partials/page_header.html.twig' with {
+      title: 'Réservations',
+      title_html: '…',               -- facultatif, à la place de title (déjà échappé)
+      subtitle: 'Une phrase.',       -- facultatif
+      badge: '2026',                 -- facultatif
+      action_label: 'Nouvelle…',     -- facultatif, avec action_url
+      action_url: '/…',
+      action_icon: 'bi-plus-lg',     -- facultatif
+  } only %}
+#}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4 page-header">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 class="h3 mb-0">{% if title_html is defined and title_html %}{{ title_html|raw }}{% else %}{{ title }}{% endif %}</h1>
+            {% if badge|default('') %}<span class="badge text-bg-secondary">{{ badge }}</span>{% endif %}
+        </div>
+        {% if subtitle|default('') %}
+            <p class="text-body-secondary small mb-0 mt-1">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+    {% if action_label|default('') and action_url|default('') %}
+        <a href="{{ action_url }}" class="btn btn-primary w-100-below-sm flex-shrink-0">
+            <i class="bi {{ action_icon|default('bi-plus-lg') }}" aria-hidden="true"></i> {{ action_label }}
+        </a>
+    {% endif %}
+</div>

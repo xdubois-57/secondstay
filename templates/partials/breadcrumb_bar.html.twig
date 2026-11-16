@@ -1,0 +1,53 @@
+{#
+  Fil d'Ariane — visible à toutes les largeurs, comme sur ScoutMagic : c'est
+  la seule chose à l'écran qui dise où se trouve la page courante, puisque
+  les menus de bureau sont des panneaux qui s'ouvrent et se referment.
+
+  Il se déduit des menus (`SiteNavigation`), sans déclaration par page :
+
+  - l'icône maison mène toujours à l'accueil ;
+  - le **menu** qui contient la page courante est un bouton, jamais un lien :
+    il ouvre ce menu (le panneau sur ordinateur, la section de l'accordéon
+    sur téléphone — `assets/js/modules/breadcrumb.js`). Un menu n'est pas une
+    page ;
+  - quand la page affichée est une page de détail sous une entrée de menu
+    (`/admin/bookings/12` sous « Réservations »), cette entrée devient un vrai
+    lien : c'est la liste d'où l'on vient, et le site n'a pas de bouton
+    « Retour » ;
+  - la page courante n'est jamais un lien. Son libellé est `breadcrumb_current`
+    si la page le fournit, son titre (`meta_title`) sinon.
+#}
+{% set _active_menu = null %}
+{% set _active_page = null %}
+{% for menu in menus|default([]) %}
+    {% if menu.id == active_menu_id|default('') %}
+        {% set _active_menu = menu %}
+        {% for group in menu.groups %}
+            {% for page in group.pages %}
+                {% if _active_page is null and page.path == active_page_path %}
+                    {% set _active_page = page %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+{% set _is_home = current_path|default('') == '/' %}
+{% set _current_label = breadcrumb_current|default(meta_title|default('')) %}
+<nav class="breadcrumb-bar border-bottom bg-body-tertiary px-3 py-2 align-items-center" aria-label="{{ t('common.breadcrumb') }}" data-testid="breadcrumb">
+    <ol class="breadcrumb mb-0 small align-items-center flex-grow-1 ss-min-w-0">
+        <li class="breadcrumb-item"><a href="{{ path('home') }}" class="text-decoration-none" aria-label="{{ t('nav.home') }}"><i class="bi bi-house-door" aria-hidden="true"></i></a></li>
+        {% if _is_home %}
+            <li class="breadcrumb-item active text-truncate" aria-current="page">{{ t('nav.home') }}</li>
+        {% else %}
+            {% if _active_menu is not null %}
+                <li class="breadcrumb-item"><button type="button" class="btn btn-link p-0 border-0 align-baseline text-decoration-none breadcrumb-parent-btn" data-open-menu="{{ _active_menu.id }}">{{ t(_active_menu.label_key) }}</button></li>
+            {% endif %}
+            {% if _active_page is not null and current_path|default('') != _active_page.path %}
+                <li class="breadcrumb-item text-truncate"><a href="{{ path(_active_page.route, _active_page.params) }}" class="text-decoration-none">{{ _active_page.label_key ? t(_active_page.label_key) : _active_page.label }}</a></li>
+            {% endif %}
+            {% if _current_label %}
+                <li class="breadcrumb-item active text-truncate" aria-current="page">{{ _current_label }}</li>
+            {% endif %}
+        {% endif %}
+    </ol>
+</nav>

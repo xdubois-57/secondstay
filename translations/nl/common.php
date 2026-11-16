@@ -21,7 +21,12 @@ return [
     'continue' => 'Doorgaan',
     'loading' => 'Laden…',
     'version' => 'Versie',
+    'navigation' => 'Navigatie',
+    'breadcrumb' => 'Kruimelpad',
+    'page_navigation' => 'Paginanavigatie',
     'theme' => [
+        'label' => 'Thema',
+        'current' => 'Thema: {mode} (klik om te wijzigen)',
         'auto' => 'Automatisch',
         'light' => 'Licht',
         'dark' => 'Donker',

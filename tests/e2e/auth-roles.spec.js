@@ -17,9 +17,9 @@ test.describe('authentification et rôles', () => {
         await openNavigation(page);
         await expect(page.locator('[data-testid="current-user"]')).toContainText('Claire Dubois');
 
-        await page.click('[data-testid="logout"]');
+        await page.click('[data-testid="logout"]:visible');
         await openNavigation(page);
-        await expect(page.locator('[data-testid="login-link"]')).toBeVisible();
+        await expect(page.locator('[data-testid="login-link"]:visible')).toBeVisible();
 
         const response = await page.goto('/fr/admin');
         expect(response?.status()).toBe(403);

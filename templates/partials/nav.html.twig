@@ -1,0 +1,196 @@
+{#
+  Navigation du site — même dessin que ScoutMagic, sur les deux largeurs.
+
+  - **Mobile** (sous `lg`) : une barre (menu à gauche, nom du logement,
+    thème, avatar) et un panneau latéral qui glisse depuis la gauche : carte
+    de l'utilisateur, un accordéon par menu (un seul ouvert à la fois), puis
+    langue et connexion/déconnexion en pied.
+  - **Bureau** (`lg` et plus) : une barre horizontale (nom à gauche, menus au
+    centre en onglets soulignés, utilisateur à droite). Un onglet ouvre un
+    panneau flottant sous la barre — colonnes titrées, une par groupe —
+    au clic, jamais au survol ; un second clic, Échap ou un appui en dehors
+    le referment (`assets/js/modules/nav.js`). L'onglet du menu de la page
+    courante garde son soulignement quoi qu'il soit ouvert.
+
+  Les menus viennent de `SecondStay\Navigation\SiteNavigation`, construits
+  une fois par requête dans le noyau et filtrés par rôle.
+
+  Pas de classe Bootstrap `active` sur les entrées : sur un élément de liste
+  elle peint un fond plein. La page courante est en gras, couleur primaire,
+  et porte `aria-current="page"`.
+#}
+{% macro page_url(page) -%}
+    {{ path(page.route, page.params) }}{{ page.fragment ? '#' ~ page.fragment : '' }}
+{%- endmacro %}
+{% macro page_label(page) -%}
+    {{ page.label_key ? t(page.label_key) : page.label }}
+{%- endmacro %}
+{% import _self as nav %}
+{% set _user_name = current_user ? current_user.name : '' %}
+
+{# Barre mobile — visible sous lg #}
+<header class="d-lg-none d-flex align-items-center px-3 border-bottom bg-body ss-mobile-bar">
+    <button class="btn btn-link text-body p-2 me-auto d-inline-flex align-items-center justify-content-center ss-icon-target"
+            type="button" data-bs-toggle="offcanvas" data-bs-target="#navOffcanvas" aria-controls="navOffcanvas"
+            data-testid="mobile-menu-toggle">
+        <i class="bi bi-list fs-3" aria-hidden="true"></i>
+        <span class="visually-hidden">{{ t('common.menu') }}</span>
+    </button>
+    <span class="fw-semibold text-truncate ss-min-w-0">{{ app_name }}</span>
+    {% include 'partials/theme_toggle.html.twig' %}
+    {% if current_user %}
+        <a href="{{ path('account.profile') }}" class="text-decoration-none ms-1" title="{{ t('account.profile.title') }}">
+            {% include 'partials/avatar.html.twig' with {name: _user_name, size: 36} only %}
+            <span class="visually-hidden">{{ t('account.profile.title') }}</span>
+        </a>
+    {% endif %}
+</header>
+
+{# Panneau mobile — glisse depuis la gauche #}
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="navOffcanvas" aria-labelledby="navOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <h2 class="offcanvas-title h5" id="navOffcanvasLabel">{{ app_name }}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="{{ t('common.close') }}"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column p-0">
+        {% if current_user %}
+            <div class="d-flex align-items-center gap-2 p-3 border-bottom bg-body-tertiary">
+                <a href="{{ path('account.profile') }}" class="d-flex align-items-center gap-2 text-decoration-none text-body flex-grow-1"
+                   data-testid="account-link">
+                    {% include 'partials/avatar.html.twig' with {name: _user_name, size: 40} only %}
+                    <div class="ss-min-w-0">
+                        <div class="fw-semibold small text-truncate ss-user-name">{{ _user_name }}</div>
+                        <div class="text-body-secondary ss-text-xs">{{ t('account.profile.title') }}</div>
+                    </div>
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="accordion accordion-flush flex-grow-1 overflow-auto" id="mobileMenuAccordion" data-testid="mobile-menu">
+            {% for menu in menus|default([]) %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button{{ menu.id != active_menu_id ? ' collapsed' : '' }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#mob-{{ menu.id }}"
+                                aria-controls="mob-{{ menu.id }}"
+                                aria-expanded="{{ menu.id == active_menu_id ? 'true' : 'false' }}">
+                            <i class="bi {{ menu.icon }} me-2" aria-hidden="true"></i> {{ t(menu.label_key) }}
+                        </button>
+                    </h2>
+                    <div id="mob-{{ menu.id }}" class="accordion-collapse collapse{{ menu.id == active_menu_id ? ' show' : '' }}"
+                         data-bs-parent="#mobileMenuAccordion">
+                        <div class="accordion-body p-0">
+                            <ul class="list-group list-group-flush">
+                                {% for group in menu.groups %}
+                                    {% for page in group.pages %}
+                                        {% set _current = active_page_path != '' and page.path == active_page_path %}
+                                        <li class="list-group-item list-group-item-action border-0 ps-4 d-flex align-items-center ss-tap-row">
+                                            <a href="{{ nav.page_url(page) }}"
+                                               class="d-flex align-items-center gap-2 text-decoration-none{{ _current ? ' ss-nav-current' : ' text-body' }}"
+                                               {{ _current ? 'aria-current="page"' : '' }}>
+                                                <span class="d-inline-flex align-items-center justify-content-center text-body-secondary ss-icon-slot-32" aria-hidden="true">
+                                                    <i class="bi {{ page.icon ?: 'bi-dot' }}"></i>
+                                                </span>
+                                                <span>{{ nav.page_label(page) }}</span>
+                                                {% if page.disabled %}<span class="badge text-bg-light border">{{ t('admin.nav.disabled') }}</span>{% endif %}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="p-3 border-top mt-auto d-flex flex-column gap-2">
+            {% include 'partials/locale_switcher.html.twig' with {placement: 'mobile'} %}
+            {% if current_user %}
+                <form method="post" action="{{ path('logout') }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm w-100" data-testid="logout">{{ t('auth.logout.action') }}</button>
+                </form>
+            {% else %}
+                <a href="{{ path('login') }}" class="btn btn-primary btn-sm w-100" data-testid="login-link">{{ t('auth.login.action') }}</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Navigation de bureau — visible à partir de lg #}
+<nav class="d-none d-lg-block border-bottom bg-body" id="desktopNav" aria-label="{{ t('common.navigation') }}">
+    <div class="container-fluid d-flex align-items-center px-3 ss-desktop-bar">
+        <a href="{{ path('home') }}" class="text-decoration-none text-body-emphasis fw-semibold me-4">{{ app_name }}</a>
+
+        <div class="d-flex align-items-center gap-1 flex-grow-1" id="desktopMenus" data-testid="primary-menu">
+            {% for menu in menus|default([]) %}
+                <button type="button"
+                        class="btn btn-sm desktop-menu-btn{{ menu.id == active_menu_id ? ' active' : '' }}"
+                        data-menu-id="{{ menu.id }}"
+                        aria-expanded="false"
+                        aria-controls="megamenu-{{ menu.id }}"
+                        {% if menu.id == 'admin' %}data-testid="admin-link"{% elseif menu.id == 'account' %}data-testid="my-space-link"{% endif %}>
+                    <i class="bi {{ menu.icon }} me-1" aria-hidden="true"></i>{{ t(menu.label_key) }}
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+            {% include 'partials/theme_toggle.html.twig' %}
+            {% include 'partials/locale_switcher.html.twig' with {placement: 'desktop'} %}
+            {% if current_user %}
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ path('account.profile') }}" class="d-flex align-items-center gap-2 text-decoration-none text-body"
+                       data-testid="account-link">
+                        {% include 'partials/avatar.html.twig' with {name: _user_name, size: 32} only %}
+                        <span class="small text-truncate ss-user-name-desktop" data-testid="current-user">{{ _user_name }}</span>
+                    </a>
+                    <form method="post" action="{{ path('logout') }}" class="d-inline ms-2">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm" data-testid="logout">{{ t('auth.logout.action') }}</button>
+                    </form>
+                </div>
+            {% else %}
+                <a href="{{ path('login') }}" class="btn btn-primary btn-sm" data-testid="login-link">{{ t('auth.login.action') }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Un panneau par menu, sous la barre, fermé tant que son onglet n'est
+       pas cliqué. Une colonne par groupe ; un groupe sans titre n'en dessine
+       pas. Chaque libellé démarre au même x : l'icône occupe une case de
+       largeur fixe. #}
+    {% for menu in menus|default([]) %}
+        <div class="desktop-megamenu d-none border-bottom bg-body" id="megamenu-{{ menu.id }}" data-megamenu-id="{{ menu.id }}">
+            <div class="container-fluid px-3 py-3 desktop-megamenu-grid">
+                {% for group in menu.groups %}
+                    <div {% if group.id is defined %}data-admin-group="{{ group.id }}"{% endif %}>
+                        {% if group.label_key or group.label %}
+                            <div class="desktop-megamenu-title text-body-secondary">{{ group.label_key ? t(group.label_key) : group.label }}</div>
+                        {% endif %}
+                        <ul class="list-unstyled mb-0">
+                            {% for page in group.pages %}
+                                {% set _current = active_page_path != '' and page.path == active_page_path %}
+                                <li>
+                                    <a href="{{ nav.page_url(page) }}"
+                                       class="d-flex align-items-center gap-2 py-1 text-decoration-none{{ _current ? ' ss-nav-current' : ' text-body' }}"
+                                       {% if menu.id == 'admin' %}data-admin-section="{{ page.id }}"{% if page.disabled %} data-disabled="true"{% endif %}{% endif %}
+                                       {% if page.route == 'page.show' %}data-menu-slug="{{ page.params.slug }}"{% endif %}
+                                       {% if menu.id == 'account' and page.fragment == 'my-bookings' %}data-testid="my-bookings-link"{% endif %}
+                                       {{ _current ? 'aria-current="page"' : '' }}>
+                                        <span class="d-inline-flex align-items-center justify-content-center text-body-secondary ss-icon-slot-24" aria-hidden="true">
+                                            <i class="bi {{ page.icon ?: 'bi-dot' }}"></i>
+                                        </span>
+                                        <span class="small">{{ nav.page_label(page) }}</span>
+                                        {% if page.disabled %}<span class="badge text-bg-light border">{{ t('admin.nav.disabled') }}</span>{% endif %}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</nav>

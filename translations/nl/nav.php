@@ -15,4 +15,5 @@ return [
     'privacy' => 'Privacy',
     'terms' => 'Algemene voorwaarden',
     'account' => 'Mijn account',
+    'my_space' => 'Mijn ruimte',
 ];

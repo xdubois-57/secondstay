@@ -75,6 +75,23 @@ final class View
         return $this->twig;
     }
 
+    /**
+     * Initiales d'un nom pour l'avatar rond de la navigation : deux lettres,
+     * la première et la dernière partie du nom, « ? » pour un nom vide.
+     */
+    public static function initials(string $name): string
+    {
+        $words = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($words === []) {
+            return '?';
+        }
+        if (count($words) === 1) {
+            return mb_strtoupper(mb_substr($words[0], 0, 2));
+        }
+
+        return mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr($words[count($words) - 1], 0, 1));
+    }
+
     private function registerFunctions(): void
     {
         $translator = $this->translator;
@@ -111,6 +128,7 @@ final class View
         ));
 
         $this->twig->addFunction(new TwigFunction('locales', static fn (): array => Locales::ALL));
+        $this->twig->addFilter(new TwigFilter('initials', [self::class, 'initials']));
         $this->twig->addFunction(new TwigFunction(
             'locale_name',
             static fn (string $locale): string => Locales::nativeName($locale)

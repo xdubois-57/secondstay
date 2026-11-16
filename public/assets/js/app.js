@@ -9,6 +9,13 @@ import { initCalendar } from './modules/calendar.js';
 import { initGalleryLightbox } from './modules/lightbox.js';
 import { initPasskeyRegistration, initPasskeySignIn } from './modules/passkey.js';
 import { initPushControls, registerServiceWorker } from './modules/push.js';
+import { initDesktopMenus } from './modules/nav.js';
+import { initNavRails } from './modules/nav-rail.js';
+import { initBreadcrumb } from './modules/breadcrumb.js';
+import { showToast } from './modules/toast.js';
+
+/** Icône du bouton de thème pour chaque préférence. */
+const THEME_ICONS = { auto: 'bi-circle-half', light: 'bi-sun', dark: 'bi-moon-stars' };
 
 function prefersDark() {
     return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
@@ -19,18 +26,31 @@ function initTheme() {
     let mode = readStoredTheme(window.localStorage);
     applyTheme(root, mode, prefersDark());
 
-    const toggle = document.querySelector('[data-theme-toggle]');
-    if (toggle) {
+    // Deux boutons — barre mobile et barre de bureau — pour une préférence.
+    const toggles = Array.from(document.querySelectorAll('[data-theme-toggle]'));
+    const label = (toggle, value) => {
+        const name = toggle.dataset[value] || value;
+        return (toggle.dataset.labelTemplate || '__mode__').replace('__mode__', name);
+    };
+    const render = (value) => {
+        toggles.forEach((element) => {
+            const toggle = /** @type {HTMLElement} */ (element);
+            toggle.setAttribute('aria-label', label(toggle, value));
+            const icon = queryElement(toggle, '[data-theme-toggle-icon]');
+            if (icon) {
+                icon.className = `bi ${THEME_ICONS[value] || THEME_ICONS.auto} fs-5`;
+            }
+        });
+    };
+    render(mode);
+    toggles.forEach((toggle) => {
         toggle.addEventListener('click', () => {
             mode = nextTheme(root.dataset.themeMode || 'auto');
             storeTheme(window.localStorage, mode);
             applyTheme(root, mode, prefersDark());
-            const label = queryElement(toggle, '[data-theme-label]');
-            if (label?.dataset[mode]) {
-                label.textContent = label.dataset[mode];
-            }
+            render(mode);
         });
-    }
+    });
 
     if (window.matchMedia) {
         const query = window.matchMedia('(prefers-color-scheme: dark)');
@@ -77,6 +97,14 @@ function ready(callback) {
 
 ready(() => {
     initTheme();
+    const desktopMenus = initDesktopMenus(document);
+    initBreadcrumb(document, window, desktopMenus);
+    initNavRails(document, window);
+    // Le toast est le seul retour d'une mise à jour faite sans recharger la
+    // page ; exposé pour les rares scripts qui ne sont pas des modules.
+    /** @type {any} */ (window).SecondStayToast = {
+        show: (message, options) => showToast(document, window, message, options)
+    };
     initPasswordStrength();
     // Un formulaire renvoyé en erreur place le curseur sur le champ refusé :
     // sur un téléphone, il est souvent hors de l'écran.

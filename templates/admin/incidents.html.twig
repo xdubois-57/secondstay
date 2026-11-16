@@ -3,19 +3,25 @@
 {% block admin_content %}
     <p class="text-body-secondary">{{ t('incident.admin.intro') }}</p>
 
-    <ul class="nav nav-pills mb-4" data-testid="incident-filters">
-        <li class="nav-item">
-            <a class="nav-link{{ current_status is null ? ' active' : '' }}"
-               href="{{ path('admin.incidents') }}" data-incident-filter="all">{{ t('incident.filter.all') }}</a>
-        </li>
-        {% for status in statuses %}
-            <li class="nav-item">
-                <a class="nav-link{{ current_status is not null and current_status.value == status.value ? ' active' : '' }}"
-                   href="{{ path('admin.incidents') }}?status={{ status.value }}"
-                   data-incident-filter="{{ status.value }}">{{ t(status.labelKey) }}</a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% set _filters = [{
+        url: path('admin.incidents'),
+        label: t('incident.filter.all'),
+        selected: current_status is null,
+        attributes: {'data-incident-filter': 'all'},
+    }] %}
+    {% for status in statuses %}
+        {% set _filters = _filters|merge([{
+            url: path('admin.incidents') ~ '?status=' ~ status.value,
+            label: t(status.labelKey),
+            selected: current_status is not null and current_status.value == status.value,
+            attributes: {'data-incident-filter': status.value},
+        }]) %}
+    {% endfor %}
+    {% include 'partials/nav_rail.html.twig' with {
+        rail_id: 'incident-filters',
+        items: _filters,
+        testid: 'incident-filters',
+    } only %}
 
     <div class="table-responsive mb-4">
         <table class="table align-middle" data-testid="incident-list">

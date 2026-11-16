@@ -1,7 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { ADMIN_STATE_FILE } from './helpers/fixtures.js';
-import { openNavigation } from './helpers/navigation.js';
 
 test.describe('rendu et accessibilité de base', () => {
     test('la page est utilisable au clavier', async ({ page }) => {
@@ -18,8 +17,8 @@ test.describe('rendu et accessibilité de base', () => {
 
     test('le thème peut être basculé et persiste', async ({ page }) => {
         await page.goto('/fr/');
-        await openNavigation(page);
-        await page.locator('[data-theme-toggle]').click();
+        await page.waitForSelector('html[data-js-ready="true"]');
+        await page.locator('[data-theme-toggle]:visible').click();
         await expect(page.locator('html')).toHaveAttribute('data-theme-mode', 'light');
 
         await page.reload();
